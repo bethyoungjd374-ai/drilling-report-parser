@@ -22,6 +22,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -319,6 +323,9 @@ h2 {
 }
 
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--blue);
   background: var(--blue);
   color: #ffffff;
@@ -328,6 +335,7 @@ h2 {
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .button.secondary {
@@ -343,6 +351,14 @@ h2 {
 
 .button:hover {
   filter: brightness(0.96);
+}
+
+.button:disabled {
+  border-color: #cbd5e1;
+  background: #e5eaf0;
+  color: #8a97a6;
+  cursor: not-allowed;
+  filter: none;
 }
 
 .status-strip {
@@ -800,6 +816,377 @@ td textarea {
   transform: translateY(0);
 }
 
+.record-dashboard {
+  margin-top: 12px;
+}
+
+.record-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.well-panel {
+  min-height: 620px;
+}
+
+.well-search {
+  margin-bottom: 10px;
+}
+
+.well-list {
+  display: grid;
+  gap: 8px;
+}
+
+.well-card {
+  width: 100%;
+  min-height: 64px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 10px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.well-card.active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.well-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.well-card strong,
+.well-card small {
+  display: block;
+}
+
+.well-card strong {
+  font-size: 14px;
+}
+
+.well-card small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.well-card i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #9aa6b2;
+}
+
+.well-card.active i {
+  background: var(--blue);
+}
+
+.add-well-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.record-main {
+  display: grid;
+  gap: 12px;
+}
+
+.record-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(310px, 0.85fr);
+  gap: 12px;
+}
+
+.calendar-month {
+  color: var(--navy);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays {
+  border-bottom: 1px solid var(--border);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.calendar-weekdays span {
+  padding: 8px 0;
+}
+
+.calendar-days button {
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid #dbe5ee;
+  background: #ffffff;
+  color: var(--text);
+  position: relative;
+  cursor: pointer;
+}
+
+.calendar-days button:hover {
+  background: var(--surface-2);
+}
+
+.calendar-days button.muted {
+  color: #a8b3bf;
+  cursor: default;
+}
+
+.calendar-days button.has-upload::after,
+.calendar-days button.needs-upload::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.calendar-days button.has-upload {
+  background: #0b72e7;
+  color: #ffffff;
+  border-bottom-color: #0b72e7;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14);
+  font-weight: 900;
+}
+
+.calendar-days button.has-upload span {
+  position: relative;
+  z-index: 1;
+}
+
+.calendar-days button.has-upload::before {
+  content: "已";
+  position: absolute;
+  inset: 6px 8px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.calendar-days button.has-upload::after {
+  background: #ffffff;
+  bottom: 5px;
+}
+
+.calendar-days button.needs-upload {
+  background: #fff1f0;
+}
+
+.calendar-days button.needs-upload::after {
+  background: #e84b5a;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: -9px;
+}
+
+.dot.upload {
+  background: #0b72e7;
+}
+
+.dot.pending {
+  background: #e84b5a;
+}
+
+.record-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.record-summary-card {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 13px;
+  min-height: 96px;
+  background: #ffffff;
+}
+
+.record-summary-card span,
+.record-summary-card small {
+  display: block;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.record-summary-card strong {
+  display: block;
+  margin: 6px 0 5px;
+  color: var(--navy);
+  font-size: 24px;
+}
+
+.record-summary-card.blue {
+  background: #f3f8fe;
+}
+
+.record-summary-card.red {
+  background: #fff6f6;
+}
+
+.record-summary-card.green {
+  background: #f1faf4;
+}
+
+.record-summary-card.violet {
+  background: #f7f4ff;
+}
+
+.calendar-hint {
+  margin-top: 12px;
+  border: 1px solid #c6dbf3;
+  border-radius: 7px;
+  background: var(--blue-soft);
+  color: var(--navy);
+  padding: 9px 10px;
+  font-weight: 700;
+}
+
+.record-table-heading {
+  align-items: center;
+}
+
+.record-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.record-actions select {
+  min-width: 130px;
+}
+
+.record-table {
+  min-width: 960px;
+}
+
+.record-table th {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.record-table td {
+  padding: 8px 9px;
+  vertical-align: middle;
+}
+
+.type-pill,
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 5px;
+  padding: 0 8px;
+  font-weight: 800;
+}
+
+.type-pill {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.status-pill.uploaded {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.status-pill.warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.status-pill.failed {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.progress-status {
+  display: grid;
+  gap: 5px;
+  min-width: 118px;
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #dbe6f0;
+  overflow: hidden;
+}
+
+.progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.empty-records {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -815,6 +1202,11 @@ td textarea {
   }
 
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .record-layout,
+  .record-top-grid {
     grid-template-columns: 1fr;
   }
 

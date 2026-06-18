@@ -72,12 +72,17 @@
               <button type="button" data-lang="en">EN</button>
               <button type="button" data-lang="es">ES</button>
             </div>
-            <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden />
+            <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
             <button class="button secondary" type="button" id="importPdf" data-i18n="importPdf">导入 PDF 日报</button>
+            <button class="button secondary" type="button" data-back-records="drilling" data-i18n="backRecords">返回记录</button>
+            <button class="button" type="button" data-save-report="drilling" data-i18n="saveDatabase">保存</button>
+            <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
           </div>
         </header>
 
-        <section class="status-strip" aria-label="填报状态">
+        <div class="record-dashboard" data-record-dashboard="drilling"></div>
+
+        <section class="status-strip" data-detail-view="drilling" aria-label="填报状态">
           <div class="status-card">
             <span data-i18n="metricCompletion">完成度</span>
             <strong id="completionRate">0%</strong>
@@ -96,7 +101,7 @@
           </div>
         </section>
 
-        <div class="content-grid">
+        <div class="content-grid" data-detail-view="drilling">
           <form id="reportForm" class="report-form" novalidate>
             <section class="panel" id="basic">
               <div class="panel-heading">
@@ -310,12 +315,17 @@
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
-              <input id="completionPdfInput" type="file" accept="application/pdf,.pdf" hidden />
+              <input id="completionPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
               <button class="button secondary" type="button" id="importCompletionPdf" data-i18n="importPdf">导入 PDF 日报</button>
+              <button class="button secondary" type="button" data-back-records="completion" data-i18n="backRecords">返回记录</button>
+              <button class="button" type="button" data-save-report="completion" data-i18n="saveDatabase">保存</button>
+              <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
             </div>
           </header>
 
-          <section class="status-strip" aria-label="完井日报填报状态">
+          <div class="record-dashboard" data-record-dashboard="completion"></div>
+
+          <section class="status-strip" data-detail-view="completion" aria-label="完井日报填报状态">
             <div class="status-card">
               <span data-i18n="metricCompletion">完成度</span>
               <strong id="completionCompletionRate">0%</strong>
@@ -334,7 +344,7 @@
             </div>
           </section>
 
-          <div class="content-grid">
+          <div class="content-grid" data-detail-view="completion">
             <form id="completionReportForm" class="report-form" novalidate>
               <section class="panel" id="completion-basic">
                 <div class="panel-heading">
@@ -471,12 +481,17 @@
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
-              <input id="workoverPdfInput" type="file" accept="application/pdf,.pdf" hidden />
+              <input id="workoverPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
               <button class="button secondary" type="button" id="importWorkoverPdf" data-i18n="importPdf">导入 PDF 日报</button>
+              <button class="button secondary" type="button" data-back-records="workover" data-i18n="backRecords">返回记录</button>
+              <button class="button" type="button" data-save-report="workover" data-i18n="saveDatabase">保存</button>
+              <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
             </div>
           </header>
 
-          <section class="status-strip" aria-label="修井日报填报状态">
+          <div class="record-dashboard" data-record-dashboard="workover"></div>
+
+          <section class="status-strip" data-detail-view="workover" aria-label="修井日报填报状态">
             <div class="status-card">
               <span data-i18n="metricCompletion">完成度</span>
               <strong id="workoverCompletionRate">0%</strong>
@@ -495,7 +510,7 @@
             </div>
           </section>
 
-          <div class="content-grid">
+          <div class="content-grid" data-detail-view="workover">
             <form id="workoverReportForm" class="report-form" novalidate>
               <section class="panel" id="workover-basic">
                 <div class="panel-heading">
@@ -633,12 +648,17 @@
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
-              <input id="movePdfInput" type="file" accept="application/pdf,.pdf" hidden />
+              <input id="movePdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
               <button class="button secondary" type="button" id="importMovePdf" data-i18n="importPdf">导入 PDF 日报</button>
+              <button class="button secondary" type="button" data-back-records="move" data-i18n="backRecords">返回记录</button>
+              <button class="button" type="button" data-save-report="move" data-i18n="saveDatabase">保存</button>
+              <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
             </div>
           </header>
 
-          <section class="status-strip" aria-label="搬迁日报填报状态">
+          <div class="record-dashboard" data-record-dashboard="move"></div>
+
+          <section class="status-strip" data-detail-view="move" aria-label="搬迁日报填报状态">
             <div class="status-card">
               <span data-i18n="metricCompletion">完成度</span>
               <strong id="moveCompletionRate">0%</strong>
@@ -653,7 +673,7 @@
             </div>
           </section>
 
-          <div class="content-grid">
+          <div class="content-grid" data-detail-view="move">
             <form id="moveReportForm" class="report-form" novalidate>
               <section class="panel" id="move-basic">
                 <div class="panel-heading">

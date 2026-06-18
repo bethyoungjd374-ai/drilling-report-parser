@@ -11,14 +11,15 @@ const i18n = {
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成每日各队伍安全生产关键信息汇总。", descPeriodSafetyReport: "基于 HSSE 数据生成周度、月度安全生产统计报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
-      importPdf: "导入 PDF 日报", sourceFileEmpty: "未上传文件",
+      importPdf: "导入 PDF 日报", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
+      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "预览", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间",
       sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "Survey Data (Last 6)", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "Operations", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
       noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、BOP、泵压、扭矩和钩载", noteIncidents: "HSE 状态、同步作业和其他说明",
       completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "对应搬迁 PDF 顶部日报抬头、AFE 和井队信息", moveNoteRemarks: "其他现场备注原文",
       addSurvey: "新增测斜", addBha: "新增 BHA", addOperation: "新增作业行", addCost: "新增成本", addBulk: "新增库存", addInterval: "新增区间", rulesTitle: "基础条件限制规则", liveValidation: "实时校验",
       noIssues: "当前没有校验问题。", pdfImporting: "正在解析 PDF 日报...", pdfImported: "PDF 日报已解析并填充到界面。", pdfImportFailed: "PDF 解析失败，请检查文件格式或模板。",
-      thMd: "MD", thIncl: "Incl", thAzi: "Azi", thTvd: "TVD", thVse: "VSE", thNs: "N/-S", thDls: "DLS", thBuild: "Build", thComponent: "Component", thOd: "OD", thId: "ID", thJts: "Jts", thLength: "Length", thFrom: "From", thTo: "To", thHrs: "Hrs", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD", thBaseMd: "Base MD", thDensity: "Density", thCharges: "Charges", thPhase: "Phase", thPenetration: "Penetration", thDiameter: "Diameter", thDate: "Date", thStatus: "Status", thComments: "Comments", thLocation: "Location", thEquipment: "Equipment", thPlate: "Plate", thEntryDate: "Entry Date", thEntryTime: "Entry Time", thGuide: "Guide", thCargo: "Cargo", thTrip: "Trip"
+      thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments", thLocation: "Location", thEquipment: "Equipment", thPlate: "Plate", thEntryDate: "Entry Date", thEntryTime: "Entry Time", thGuide: "Guide", thCargo: "Cargo", thTrip: "Trip"
     },
     fields: {
       event: "Event", reportDate: "Date", reportNo: "Report No", wellbore: "Wellbore", rig: "Rig", primaryReason: "Primary Reason", afeNumber: "AFE Number", refDatum: "Ref Datum", todayMd: "Today's MD (ft)", prevMd: "Prev MD (ft)", progress: "Progress (ft)", rotHrsToday: "Rot Hrs Today",
@@ -77,14 +78,15 @@ const i18n = {
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate daily key safety production summaries from HSSE collection data.", descPeriodSafetyReport: "Generate weekly and monthly HSSE statistical reports for stage analysis and reporting.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
-      importPdf: "Import PDF Report", sourceFileEmpty: "No file uploaded",
+      importPdf: "Import PDF Report", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
+      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "Preview", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals",
       sectionBasic: "Basic Info", sectionSummary: "Operations Summary", sectionWellControl: "Well Control & Hydraulics", sectionSurvey: "Survey Data (Last 6)", sectionMud: "Mud Data", sectionBitBha: "Bit & BHA", sectionOperations: "Operations", sectionCosts: "Costs & Bulks", sectionIncidents: "Incidents & Remarks", sectionPersonnel: "Personnel", sectionPerforationIntervals: "Perforated Intervals",
       noteBasic: "Header and well information from the PDF template", noteSummary: "Current operation, 24-hour summary, and next plan", noteWellControl: "Casing, BOP, pump pressure, torque, and hookload", noteIncidents: "HSE status, simultaneous operations, and remarks",
       completionNoteBasic: "Completion PDF header, AFP, and well information", completionNotePersonnel: "Supervisors, engineers, geologist, and total personnel", completionNoteRemarks: "Safety comments, solids control, and field remarks", workoverNoteBasic: "Workover PDF header, AFP, and well information", workoverNotePersonnel: "Supervisors, engineers, geologist, and total personnel", workoverNoteRemarks: "Safety comments, solids control, and field remarks",
       addSurvey: "Add Survey", addBha: "Add BHA", addOperation: "Add Operation", addCost: "Add Cost", addBulk: "Add Bulk", addInterval: "Add Interval", rulesTitle: "Basic Validation Rules", liveValidation: "Live Validation",
       noIssues: "No validation issues.", pdfImporting: "Parsing PDF report...", pdfImported: "PDF report parsed and filled into the form.", pdfImportFailed: "PDF parsing failed. Check the file format or template.",
-      thMd: "MD", thIncl: "Incl", thAzi: "Azi", thTvd: "TVD", thVse: "VSE", thNs: "N/-S", thDls: "DLS", thBuild: "Build", thComponent: "Component", thOd: "OD", thId: "ID", thJts: "Jts", thLength: "Length", thFrom: "From", thTo: "To", thHrs: "Hrs", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD", thBaseMd: "Base MD", thDensity: "Density", thCharges: "Charges", thPhase: "Phase", thPenetration: "Penetration", thDiameter: "Diameter", thDate: "Date", thStatus: "Status", thComments: "Comments"
+      thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments"
     },
     fields: {
       event: "Event", reportDate: "Date", reportNo: "Report No", wellbore: "Wellbore", rig: "Rig", primaryReason: "Primary Reason", afeNumber: "AFE Number", refDatum: "Reference Datum", todayMd: "Today's MD (ft)", prevMd: "Previous MD (ft)", progress: "Progress (ft)", rotHrsToday: "Rotating Hours Today",
@@ -143,14 +145,15 @@ const i18n = {
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera resúmenes diarios de información clave de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Genera reportes estadísticos HSSE semanales y mensuales para análisis y presentación.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
-      importPdf: "Importar Reporte PDF", sourceFileEmpty: "No se ha cargado archivo",
+      importPdf: "Importar Reporte PDF", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
+      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Vista previa", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos",
       sectionBasic: "Información Básica", sectionSummary: "Resumen Operacional", sectionWellControl: "Control de Pozo e Hidráulica", sectionSurvey: "Datos Direccionales (Últimos 6)", sectionMud: "Datos de Lodo", sectionBitBha: "Broca y BHA", sectionOperations: "Operaciones", sectionCosts: "Costos e Inventario", sectionIncidents: "Incidentes y Observaciones", sectionPersonnel: "Personal", sectionPerforationIntervals: "Intervalos Cañoneados",
       noteBasic: "Encabezado e información del pozo según la plantilla PDF", noteSummary: "Operación actual, resumen de 24 horas y plan siguiente", noteWellControl: "Casing, BOP, presión de bomba, torque y hookload", noteIncidents: "Estado HSE, operaciones simultáneas y observaciones",
       completionNoteBasic: "Encabezado PDF de completación, AFP e información del pozo", completionNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", completionNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo", workoverNoteBasic: "Encabezado PDF de workover, AFP e información del pozo", workoverNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", workoverNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo",
       addSurvey: "Agregar Survey", addBha: "Agregar BHA", addOperation: "Agregar Operación", addCost: "Agregar Costo", addBulk: "Agregar Inventario", addInterval: "Agregar Intervalo", rulesTitle: "Reglas Básicas de Validación", liveValidation: "Validación en Vivo",
       noIssues: "Sin alertas de validación.", pdfImporting: "Analizando reporte PDF...", pdfImported: "Reporte PDF analizado y cargado en el formulario.", pdfImportFailed: "No se pudo analizar el PDF. Revise el formato o la plantilla.",
-      thMd: "MD", thIncl: "Incl", thAzi: "Azi", thTvd: "TVD", thVse: "VSE", thNs: "N/-S", thDls: "DLS", thBuild: "Build", thComponent: "Componente", thOd: "OD", thId: "ID", thJts: "Jts", thLength: "Longitud", thFrom: "Desde", thTo: "Hasta", thHrs: "Hrs", thOpCode: "Código Op", thOpSub: "Sub Op", thType: "Tipo", thOperationDetails: "Detalle de Operación", thCostDescription: "Descripción de Costo", thVendor: "Proveedor", thAmount: "Monto", thBulk: "Inventario", thQtyStart: "Cant. Inicial", thQtyUsed: "Cant. Usada", thQtyEnd: "Cant. Final", thFormation: "Formación", thTopMd: "Tope MD", thBaseMd: "Base MD", thDensity: "Densidad", thCharges: "Cargas", thPhase: "Fase", thPenetration: "Penetración", thDiameter: "Diámetro", thDate: "Fecha", thStatus: "Estado", thComments: "Comentarios"
+      thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Componente", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Longitud (ft)", thFrom: "Desde (HH:MM)", thTo: "Hasta (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Código Op", thOpSub: "Sub Op", thType: "Tipo", thOperationDetails: "Detalle de Operación", thCostDescription: "Descripción de Costo", thVendor: "Proveedor", thAmount: "Monto (USD)", thBulk: "Inventario", thQtyStart: "Cant. Inicial", thQtyUsed: "Cant. Usada", thQtyEnd: "Cant. Final", thFormation: "Formación", thTopMd: "Tope MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Densidad (spf)", thCharges: "Cargas", thPhase: "Fase (deg)", thPenetration: "Penetración (in)", thDiameter: "Diámetro (in)", thDate: "Fecha", thStatus: "Estado", thComments: "Comentarios"
     },
     fields: {
       event: "Evento", reportDate: "Fecha", reportNo: "No. de Reporte", wellbore: "Pozo", rig: "Taladro", primaryReason: "Razón Principal", afeNumber: "Número AFE", refDatum: "Datum de Referencia", todayMd: "MD de Hoy (ft)", prevMd: "MD Anterior (ft)", progress: "Progreso (ft)", rotHrsToday: "Horas Rotando Hoy",
@@ -232,6 +235,28 @@ const toast = document.querySelector("#toast");
 let currentLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
 let activeMenuTarget = "drilling-daily";
 let drillingSourceFileName = "";
+const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
+const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
+const recordState = {
+  drilling: { records: [], selectedWell: "", selectedDate: "", search: "" },
+  completion: { records: [], selectedWell: "", selectedDate: "", search: "" },
+  workover: { records: [], selectedWell: "", selectedDate: "", search: "" },
+  move: { records: [], selectedWell: "", selectedDate: "", search: "" }
+};
+const uploadJobs = [];
+const reportNames = {
+  drilling: "钻井日报",
+  completion: "完井日报",
+  workover: "修井日报",
+  move: "搬迁日报"
+};
+const reportInputIds = {
+  drilling: "pdfInput",
+  completion: "completionPdfInput",
+  workover: "workoverPdfInput",
+  move: "movePdfInput"
+};
+const fallbackWells = ["SCHAO-611", "PCNC-040", "SCHAS-513", "LOBC-010", "ACAH-270H", "TCHA-006I"];
 
 function ui(key) {
   return i18n[currentLanguage].ui[key] || i18n.zh.ui[key] || key;
@@ -256,6 +281,48 @@ function activeMenuLink() {
 function setDrillingSourceFile(filename = "") {
   drillingSourceFileName = filename;
   document.querySelector("#drillingSourceFile").textContent = filename || ui("sourceFileEmpty");
+}
+
+function reportName(reportType) {
+  const keys = { drilling: "menuDrillingDaily", completion: "menuCompletionDaily", workover: "menuWorkoverDaily", move: "menuMoveDaily" };
+  return ui(keys[reportType]) || reportNames[reportType] || reportType;
+}
+
+function recordUploadInput(reportType) {
+  return document.querySelector(`#${reportInputIds[reportType]}`);
+}
+
+function setReportMode(reportType, mode) {
+  document.querySelectorAll(`[data-record-dashboard="${reportType}"]`).forEach((el) => {
+    el.hidden = mode !== "records";
+  });
+  document.querySelectorAll(`[data-detail-view="${reportType}"]`).forEach((el) => {
+    el.hidden = mode !== "detail";
+  });
+  document.querySelectorAll(`[data-back-records="${reportType}"], [data-save-report="${reportType}"]`).forEach((el) => {
+    el.hidden = mode !== "detail";
+  });
+}
+
+function showReportRecords(reportType) {
+  setReportMode(reportType, "records");
+  refreshRecords(reportType);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showReportDetail(reportType) {
+  setReportMode(reportType, "detail");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function rememberRecord(reportType, payload = {}) {
+  const recordId = payload.metadata?.record_id || "";
+  currentRecordIds[reportType] = recordId;
+  if (reportType === "drilling") {
+    const source = payload.metadata?.source_file || drillingSourceFileName || "";
+    const suffix = recordId ? ` · ${ui("databaseRecord")}: ${recordId}` : "";
+    document.querySelector("#drillingSourceFile").textContent = source ? `${source}${suffix}` : ui("sourceFileEmpty");
+  }
 }
 
 function renderModulePlaceholder(link = activeMenuLink()) {
@@ -285,6 +352,10 @@ function setActiveMenu(target) {
   document.querySelector("#modulePlaceholder").hidden = !showPlaceholder;
   document.querySelector("#modulePlaceholder").classList.toggle("active", showPlaceholder);
   if (showPlaceholder) renderModulePlaceholder();
+  if (isDrillingDaily) showReportRecords("drilling");
+  if (isCompletionDaily) showReportRecords("completion");
+  if (isWorkoverDaily) showReportRecords("workover");
+  if (isMoveDaily) showReportRecords("move");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -312,15 +383,18 @@ function applyLanguage(language) {
     if (control) setLeadingLabelText(label, labelFor(control.name));
   });
   setDrillingSourceFile(drillingSourceFileName);
+  if (currentRecordIds.drilling) rememberRecord("drilling", { metadata: { source_file: drillingSourceFileName, record_id: currentRecordIds.drilling } });
   document.querySelector("#rulesList").innerHTML = i18n[language].rules.map((rule) => `<li>${rule}</li>`).join("");
   document.querySelector("#completionRulesList").innerHTML = i18n[language].completionRules.map((rule) => `<li>${rule}</li>`).join("");
   document.querySelector("#workoverRulesList").innerHTML = i18n[language].workoverRules.map((rule) => `<li>${rule}</li>`).join("");
   document.querySelector("#moveRulesList").innerHTML = i18n[language].moveRules.map((rule) => `<li>${rule}</li>`).join("");
+  Object.keys(recordState).forEach((reportType) => renderRecordDashboard(reportType));
   renderModulePlaceholder();
   validate();
   validateCompletion();
   validateWorkover();
   validateMove();
+  updateAllSaveButtons();
 }
 
 function makeInput(field, value = "") {
@@ -359,6 +433,7 @@ function addRow(tableId, values = []) {
   button.addEventListener("click", () => {
     tr.remove();
     validateForTable(tableId);
+    updateSaveButton(tableReportType(tableId));
   });
   action.appendChild(button);
   tr.appendChild(action);
@@ -386,6 +461,225 @@ function validateForTable(tableId) {
   } else {
     validate();
   }
+}
+
+function escapeHtml(value = "") {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char]);
+}
+
+async function refreshRecords(reportType) {
+  try {
+    const response = await fetch(`/api/records?report_type=${encodeURIComponent(reportType)}`);
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Records failed");
+    recordState[reportType].records = payload.records || [];
+  } catch (error) {
+    console.error(error);
+    recordState[reportType].records = [];
+  }
+  renderRecordDashboard(reportType);
+}
+
+function renderRecordDashboard(reportType) {
+  const host = document.querySelector(`[data-record-dashboard="${reportType}"]`);
+  if (!host) return;
+  const state = recordState[reportType];
+  const records = state.records;
+  const jobs = uploadJobs.filter((job) => job.reportType === reportType);
+  const wells = [...new Set(records.map((record) => record.wellbore).filter(Boolean))];
+  const sourceWells = wells.length ? wells : fallbackWells;
+  const wellList = sourceWells.filter((well) => !state.search || well.toLowerCase().includes(state.search.toLowerCase()));
+  if (!state.selectedWell || !wellList.includes(state.selectedWell)) state.selectedWell = wellList[0] || "";
+  const selectedRecords = records.filter((record) => !state.selectedWell || record.wellbore === state.selectedWell);
+  const selectedJobs = jobs.filter((job) => !state.selectedWell || !job.wellbore || job.wellbore === state.selectedWell);
+  const monthBase = selectedRecords[0]?.reportDate || records[0]?.reportDate || new Date().toISOString().slice(0, 10);
+  const monthRecords = recordsForMonth(selectedRecords, monthBase);
+  const uploadedDays = new Set(monthRecords.map((record) => dayOfMonth(record.reportDate)));
+  const pendingDays = pendingCalendarDays(uploadedDays, monthBase);
+  const tableRecords = sortedRecords(state.selectedDate ? selectedRecords.filter((record) => record.reportDate === state.selectedDate) : selectedRecords);
+
+  host.innerHTML = `
+    <div class="record-layout">
+      <aside class="well-panel panel">
+        <div class="panel-heading">
+          <h2>${ui("wellSelection")}</h2>
+        </div>
+        <input class="well-search" type="search" value="${escapeHtml(state.search)}" placeholder="${ui("searchWell")}" data-well-search="${reportType}" />
+        <div class="well-list">
+          ${wellList.map((well, index) => `
+            <button class="well-card ${well === state.selectedWell ? "active" : ""}" type="button" data-well="${escapeHtml(well)}" data-report-type="${reportType}">
+              <span class="well-icon">${String(index + 1).padStart(2, "0")}</span>
+              <span><strong>${escapeHtml(well)}</strong><small>${well === state.selectedWell ? ui("selectedWell") : reportName(reportType)}</small></span>
+              <i></i>
+            </button>
+          `).join("")}
+        </div>
+        <button class="button secondary add-well-button" type="button">${ui("addWell")}</button>
+      </aside>
+      <section class="record-main">
+        <div class="record-top-grid">
+          <section class="panel calendar-panel">
+            <div class="panel-heading">
+              <h2>${ui("reportCalendar")}</h2>
+              <strong class="calendar-month">${calendarMonthLabel(monthBase)}</strong>
+            </div>
+            ${calendarMarkup(reportType, monthBase, uploadedDays, pendingDays)}
+          </section>
+          <section class="panel record-summary-panel">
+            <div class="record-summary-grid">
+              ${summaryCard("monthlyUploaded", `${monthRecords.length}`, ui("recordsCount"), "blue")}
+              ${summaryCard("monthlyPending", `${pendingDays.size}`, "", "red")}
+              ${summaryCard("reportKinds", "1", reportName(reportType), "green")}
+              ${summaryCard("monthlyUploaders", `${new Set(monthRecords.map((record) => record.uploader || record.source_file || "local")).size}`, "", "violet")}
+            </div>
+            <div class="calendar-hint">${ui("calendarHint")}</div>
+          </section>
+        </div>
+        <section class="panel upload-record-panel">
+          <div class="panel-heading record-table-heading">
+            <h2>${ui("uploadRecords")}</h2>
+            <div class="record-actions">
+              <button class="button secondary small" type="button" data-record-upload="${reportType}">${ui("importPdf")}</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            ${recordTableMarkup(reportType, tableRecords, selectedJobs)}
+          </div>
+        </section>
+      </section>
+    </div>
+  `;
+}
+
+function summaryCard(labelKey, value, caption, tone) {
+  return `
+    <div class="record-summary-card ${tone}">
+      <span>${ui(labelKey)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(caption)}</small>
+    </div>
+  `;
+}
+
+function recordsForMonth(records, dateValue) {
+  const month = (dateValue || "").slice(0, 7);
+  return records.filter((record) => (record.reportDate || "").startsWith(month));
+}
+
+function sortedRecords(records) {
+  return [...records].sort((a, b) => {
+    const left = `${a.reportDate || ""} ${a.updated_at || a.created_at || ""}`;
+    const right = `${b.reportDate || ""} ${b.updated_at || b.created_at || ""}`;
+    return right.localeCompare(left);
+  });
+}
+
+function dayOfMonth(dateValue) {
+  const day = Number((dateValue || "").slice(8, 10));
+  return Number.isFinite(day) ? day : 0;
+}
+
+function pendingCalendarDays(uploadedDays, monthBase) {
+  const days = new Set();
+  const date = new Date(`${(monthBase || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
+  const totalDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === date.getFullYear() && today.getMonth() === date.getMonth();
+  const upper = isCurrentMonth ? today.getDate() : totalDays;
+  for (let day = 1; day <= upper; day++) {
+    if (!uploadedDays.has(day)) days.add(day);
+  }
+  return days;
+}
+
+function calendarMonthLabel(dateValue) {
+  const date = new Date(`${(dateValue || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
+  if (currentLanguage === "zh") return `${date.getFullYear()}年${date.getMonth() + 1}月`;
+  return date.toLocaleDateString(currentLanguage === "es" ? "es-ES" : "en-US", { year: "numeric", month: "long" });
+}
+
+function calendarMarkup(reportType, dateValue, uploadedDays, pendingDays) {
+  const base = new Date(`${(dateValue || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+  const firstDay = base.getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const prevTotal = new Date(year, month, 0).getDate();
+  const cells = [];
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevTotal - i, muted: true });
+  for (let day = 1; day <= totalDays; day++) cells.push({ day, date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` });
+  while (cells.length % 7) cells.push({ day: cells.length - totalDays - firstDay + 1, muted: true });
+  return `
+    <div class="calendar-grid calendar-weekdays">
+      ${["日", "一", "二", "三", "四", "五", "六"].map((day) => `<span>${day}</span>`).join("")}
+    </div>
+    <div class="calendar-grid calendar-days">
+      ${cells.map((cell) => {
+        const statusClass = cell.muted ? "muted" : uploadedDays.has(cell.day) ? "has-upload" : pendingDays.has(cell.day) ? "needs-upload" : "";
+        return `<button type="button" class="${statusClass}" data-calendar-date="${cell.date || ""}" data-report-type="${reportType}" ${cell.muted ? "disabled" : ""}><span>${cell.day}</span></button>`;
+      }).join("")}
+    </div>
+    <div class="calendar-legend"><span class="dot upload"></span>${ui("uploaded")}<span class="dot pending"></span>${ui("pending")}</div>
+  `;
+}
+
+function recordTableMarkup(reportType, records, jobs = []) {
+  if (!records.length && !jobs.length) return `<div class="empty-records">${ui("noRecords")}</div>`;
+  return `
+    <table class="record-table">
+      <thead><tr><th>${ui("date")}</th><th>${ui("well")}</th><th>${ui("reportType")}</th><th>${ui("fileName")}</th><th>${ui("uploadTime")}</th><th>${ui("uploader")}</th><th>${ui("status")}</th><th>${ui("operation")}</th></tr></thead>
+      <tbody>
+        ${jobs.map((job) => `
+          <tr>
+            <td>${escapeHtml(job.reportDate || "-")}</td>
+            <td>${escapeHtml(job.wellbore || "识别中")}</td>
+            <td><span class="type-pill">${reportName(reportType)}</span></td>
+            <td>${escapeHtml(job.fileName)}</td>
+            <td>${escapeHtml(formatRecordTime(job.updated_at))}</td>
+            <td>${escapeHtml(job.uploader || "本地导入")}</td>
+            <td>${jobStatusMarkup(job)}</td>
+            <td>${job.recordId ? `<button class="link-button" type="button" data-record-preview="${escapeHtml(job.recordId)}" data-report-type="${reportType}">${ui("preview")}</button>` : "-"}</td>
+          </tr>
+        `).join("")}
+        ${records.map((record) => `
+          <tr>
+            <td>${escapeHtml(record.reportDate)}</td>
+            <td>${escapeHtml(record.wellbore)}</td>
+            <td><span class="type-pill">${reportName(reportType)}</span></td>
+            <td>${escapeHtml(record.source_file || `${record.wellbore || reportType}_${record.reportDate || "report"}.pdf`)}</td>
+            <td>${escapeHtml(formatRecordTime(record.updated_at || record.created_at))}</td>
+            <td>${escapeHtml(record.uploader || "本地导入")}</td>
+            <td>${recordStatusMarkup(record)}</td>
+            <td><button class="link-button" type="button" data-record-preview="${escapeHtml(record.record_id)}" data-report-type="${reportType}">${ui("preview")}</button></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function recordStatusMarkup(record) {
+  const warnings = record.validation_warnings || "";
+  if (record.validation_status === "warning") {
+    return `<span class="status-pill warning" title="${escapeHtml(warnings)}">${ui("warningStatus")}</span>`;
+  }
+  return `<span class="status-pill uploaded">${ui("uploaded")}</span>`;
+}
+
+function jobStatusMarkup(job) {
+  if (job.status === "failed") return `<span class="status-pill failed" title="${escapeHtml(job.error || "")}">${ui("failed")}</span>`;
+  const label = job.status === "queued" ? ui("queued") : job.status === "done" ? ui("uploaded") : ui("parsing");
+  return `
+    <div class="progress-status">
+      <span>${label} ${job.progress}%</span>
+      <div class="progress-track"><i style="width:${Math.max(4, Math.min(100, job.progress))}%"></i></div>
+    </div>
+  `;
+}
+
+function formatRecordTime(value = "") {
+  if (!value) return "";
+  return value.replace("T", " ").replace("+00:00", "").slice(0, 16);
 }
 
 function toNumber(value) {
@@ -479,9 +773,121 @@ function rowsFromPayload(rows, tableId) {
   return (rows || []).map((row) => tableSchemas[tableId].map((field) => row[field.name] ?? ""));
 }
 
+function reportPayload(reportType) {
+  const builders = {
+    drilling: () => ({
+      metadata: { report_type: "drilling", record_id: currentRecordIds.drilling, source_file: drillingSourceFileName },
+      report_fields: normalizedReportFields(formData(form)),
+      survey_data: readTable("surveyTable"),
+      bha_components: readTable("bhaTable"),
+      operations: readTable("operationsTable"),
+      daily_costs: readTable("costTable"),
+      bulks: readTable("bulkTable")
+    }),
+    completion: () => ({
+      metadata: { report_type: "completion", record_id: currentRecordIds.completion },
+      report_fields: formData(completionForm),
+      operations: readTable("completionOperationsTable"),
+      bulks: readTable("completionBulkTable"),
+      daily_costs: readTable("completionCostTable"),
+      perforation_intervals: readTable("perforationIntervalsTable")
+    }),
+    workover: () => ({
+      metadata: { report_type: "workover", record_id: currentRecordIds.workover },
+      report_fields: formData(workoverForm),
+      operations: readTable("workoverOperationsTable"),
+      bulks: readTable("workoverBulkTable"),
+      daily_costs: readTable("workoverCostTable"),
+      perforation_intervals: readTable("workoverIntervalsTable")
+    }),
+    move: () => ({
+      metadata: { report_type: "move", record_id: currentRecordIds.move },
+      report_fields: formData(moveForm),
+      operations: readTable("moveOperationsTable")
+    })
+  };
+  return builders[reportType]();
+}
+
+function reportSignature(reportType) {
+  try {
+    return JSON.stringify(reportPayload(reportType));
+  } catch {
+    return "";
+  }
+}
+
+function markReportSaved(reportType) {
+  savedReportSignatures[reportType] = reportSignature(reportType);
+  updateSaveButton(reportType);
+}
+
+function updateSaveButton(reportType) {
+  if (!reportType) return;
+  const button = document.querySelector(`[data-save-report="${reportType}"]`);
+  if (!button) return;
+  const currentSignature = reportSignature(reportType);
+  button.disabled = !currentSignature || currentSignature === savedReportSignatures[reportType];
+}
+
+function updateAllSaveButtons() {
+  Object.keys(savedReportSignatures).forEach((reportType) => updateSaveButton(reportType));
+}
+
+function tableReportType(tableId) {
+  if (completionTableIds.includes(tableId)) return "completion";
+  if (workoverTableIds.includes(tableId)) return "workover";
+  if (moveTableIds.includes(tableId)) return "move";
+  return "drilling";
+}
+
+async function saveCurrentReport(reportType) {
+  updateSaveButton(reportType);
+  const button = document.querySelector(`[data-save-report="${reportType}"]`);
+  if (button?.disabled) return;
+  const payload = reportPayload(reportType);
+  try {
+    const response = await fetch("/api/save-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ report_type: reportType, payload })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Save failed");
+    payload.metadata = { ...(payload.metadata || {}), ...(result.metadata || {}) };
+    rememberRecord(reportType, payload);
+    markReportSaved(reportType);
+    refreshRecords(reportType);
+    showToast(ui("databaseSaved"));
+  } catch (error) {
+    console.error(error);
+    showToast(ui("databaseSaveFailed"));
+  }
+}
+
+async function openRecordDetail(reportType, recordId) {
+  try {
+    const response = await fetch("/api/load-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ record_id: recordId })
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Load failed");
+    if (reportType === "drilling") applyImportedPayload(payload);
+    if (reportType === "completion") applyImportedCompletionPayload(payload);
+    if (reportType === "workover") applyImportedWorkoverPayload(payload);
+    if (reportType === "move") applyImportedMovePayload(payload);
+  } catch (error) {
+    console.error(error);
+    showToast(ui("databaseSaveFailed"));
+  }
+}
+
 function applyImportedPayload(payload) {
   applyReportFields(payload.report_fields || {});
   setDrillingSourceFile(payload.metadata?.source_file || "");
+  rememberRecord("drilling", payload);
   loadRows({
     surveyTable: rowsFromPayload(payload.survey_data, "surveyTable"),
     bhaTable: rowsFromPayload(payload.bha_components, "bhaTable"),
@@ -489,11 +895,14 @@ function applyImportedPayload(payload) {
     costTable: rowsFromPayload(payload.daily_costs, "costTable"),
     bulkTable: rowsFromPayload(payload.bulks, "bulkTable")
   });
+  showReportDetail("drilling");
+  markReportSaved("drilling");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function applyImportedCompletionPayload(payload) {
   applyReportFields(payload.report_fields || {}, completionForm);
+  rememberRecord("completion", payload);
   loadRows({
     completionOperationsTable: rowsFromPayload(payload.operations, "completionOperationsTable"),
     completionBulkTable: rowsFromPayload(payload.bulks, "completionBulkTable"),
@@ -501,10 +910,13 @@ function applyImportedCompletionPayload(payload) {
     perforationIntervalsTable: rowsFromPayload(payload.perforation_intervals, "perforationIntervalsTable")
   }, completionTableIds);
   setActiveMenu("completion-daily");
+  showReportDetail("completion");
+  markReportSaved("completion");
 }
 
 function applyImportedWorkoverPayload(payload) {
   applyReportFields(payload.report_fields || {}, workoverForm);
+  rememberRecord("workover", payload);
   loadRows({
     workoverOperationsTable: rowsFromPayload(payload.operations, "workoverOperationsTable"),
     workoverBulkTable: rowsFromPayload(payload.bulks, "workoverBulkTable"),
@@ -512,83 +924,104 @@ function applyImportedWorkoverPayload(payload) {
     workoverIntervalsTable: rowsFromPayload(payload.perforation_intervals, "workoverIntervalsTable")
   }, workoverTableIds);
   setActiveMenu("workover-daily");
+  showReportDetail("workover");
+  markReportSaved("workover");
 }
 
 function applyImportedMovePayload(payload) {
   applyReportFields(payload.report_fields || {}, moveForm);
+  rememberRecord("move", payload);
   loadRows({
     moveOperationsTable: rowsFromPayload(payload.operations, "moveOperationsTable")
   }, moveTableIds);
   setActiveMenu("move-daily");
+  showReportDetail("move");
+  markReportSaved("move");
 }
 
-async function importPdfFile(file) {
+function importEndpoint(reportType) {
+  return {
+    drilling: "/api/import-pdf",
+    completion: "/api/import-completion-pdf",
+    workover: "/api/import-workover-pdf",
+    move: "/api/import-move-pdf"
+  }[reportType];
+}
+
+async function importReportFiles(reportType, fileList) {
+  const files = Array.from(fileList || []).filter(Boolean);
+  if (!files.length) return;
+  showReportRecords(reportType);
+  showToast(`${ui("pdfImporting")} ${files.length}`);
+  const jobs = files.map((file) => ({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    reportType,
+    fileName: file.name,
+    status: "queued",
+    progress: 0,
+    updated_at: new Date().toISOString()
+  }));
+  uploadJobs.unshift(...jobs);
+  renderRecordDashboard(reportType);
+  for (const job of jobs) {
+    await uploadReportFile(reportType, job, files.find((file) => file.name === job.fileName));
+  }
+  refreshRecords(reportType);
+}
+
+async function uploadReportFile(reportType, job, file) {
   if (!file) return;
-  showToast(ui("pdfImporting"));
+  job.status = "parsing";
+  job.progress = 15;
+  job.updated_at = new Date().toISOString();
+  renderRecordDashboard(reportType);
   const body = new FormData();
   body.append("report", file);
   try {
-    const response = await fetch("/api/import-pdf", { method: "POST", body });
+    const response = await fetch(importEndpoint(reportType), { method: "POST", body });
+    job.progress = 70;
+    renderRecordDashboard(reportType);
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "PDF import failed");
     payload.metadata = { ...(payload.metadata || {}), source_file: payload.metadata?.source_file || file.name };
-    applyImportedPayload(payload);
+    job.status = "done";
+    job.progress = 100;
+    job.recordId = payload.metadata?.record_id || "";
+    job.wellbore = payload.report_fields?.wellbore || "";
+    job.reportDate = payload.report_fields?.reportDate || "";
+    job.warning = payload.metadata?.validation_status === "warning";
+    job.updated_at = new Date().toISOString();
+    rememberRecord(reportType, payload);
+    await refreshRecords(reportType);
+    const index = uploadJobs.findIndex((item) => item.id === job.id);
+    if (index >= 0) uploadJobs.splice(index, 1);
+    renderRecordDashboard(reportType);
     showToast(ui("pdfImported"));
   } catch (error) {
     console.error(error);
-    showToast(ui("pdfImportFailed"));
+    job.status = "failed";
+    job.progress = 100;
+    job.error = error?.message || "";
+    job.updated_at = new Date().toISOString();
+    renderRecordDashboard(reportType);
+    showImportError(error);
   }
+}
+
+async function importPdfFile(file) {
+  return importReportFiles("drilling", file ? [file] : []);
 }
 
 async function importCompletionPdfFile(file) {
-  if (!file) return;
-  showToast(ui("pdfImporting"));
-  const body = new FormData();
-  body.append("report", file);
-  try {
-    const response = await fetch("/api/import-completion-pdf", { method: "POST", body });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Completion PDF import failed");
-    applyImportedCompletionPayload(payload);
-    showToast(ui("pdfImported"));
-  } catch (error) {
-    console.error(error);
-    showToast(ui("pdfImportFailed"));
-  }
+  return importReportFiles("completion", file ? [file] : []);
 }
 
 async function importWorkoverPdfFile(file) {
-  if (!file) return;
-  showToast(ui("pdfImporting"));
-  const body = new FormData();
-  body.append("report", file);
-  try {
-    const response = await fetch("/api/import-workover-pdf", { method: "POST", body });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Workover PDF import failed");
-    applyImportedWorkoverPayload(payload);
-    showToast(ui("pdfImported"));
-  } catch (error) {
-    console.error(error);
-    showToast(ui("pdfImportFailed"));
-  }
+  return importReportFiles("workover", file ? [file] : []);
 }
 
 async function importMovePdfFile(file) {
-  if (!file) return;
-  showToast(ui("pdfImporting"));
-  const body = new FormData();
-  body.append("report", file);
-  try {
-    const response = await fetch("/api/import-move-pdf", { method: "POST", body });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Move PDF import failed");
-    applyImportedMovePayload(payload);
-    showToast(ui("pdfImported"));
-  } catch (error) {
-    console.error(error);
-    showToast(ui("pdfImportFailed"));
-  }
+  return importReportFiles("move", file ? [file] : []);
 }
 
 function validate() {
@@ -918,10 +1351,92 @@ function showToast(text) {
   window.setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
+function showImportError(error) {
+  const detail = error?.message ? `：${error.message}` : "";
+  showToast(`${ui("pdfImportFailed")}${detail}`);
+}
+
 document.querySelectorAll("[data-add-row]").forEach((button) => {
   button.addEventListener("click", () => {
     addRow(button.dataset.addRow);
     validateForTable(button.dataset.addRow);
+    updateSaveButton(tableReportType(button.dataset.addRow));
+  });
+});
+
+document.querySelectorAll("[data-save-report]").forEach((button) => {
+  button.addEventListener("click", () => {
+    saveCurrentReport(button.dataset.saveReport);
+  });
+});
+
+document.querySelectorAll("[data-back-records]").forEach((button) => {
+  button.addEventListener("click", () => {
+    showReportRecords(button.dataset.backRecords);
+  });
+});
+
+document.addEventListener("click", (event) => {
+  const wellButton = event.target.closest("[data-well]");
+  if (wellButton) {
+    const reportType = wellButton.dataset.reportType;
+    recordState[reportType].selectedWell = wellButton.dataset.well;
+    recordState[reportType].selectedDate = "";
+    renderRecordDashboard(reportType);
+    return;
+  }
+  const dateButton = event.target.closest("[data-calendar-date]");
+  if (dateButton && dateButton.dataset.calendarDate) {
+    const reportType = dateButton.dataset.reportType;
+    const state = recordState[reportType];
+    const record = sortedRecords(state.records).find((item) => {
+      return item.reportDate === dateButton.dataset.calendarDate
+        && (!state.selectedWell || item.wellbore === state.selectedWell)
+        && item.status !== "failed";
+    });
+    if (record) {
+      openRecordDetail(reportType, record.record_id);
+      return;
+    }
+    state.selectedDate = dateButton.dataset.calendarDate;
+    renderRecordDashboard(reportType);
+    return;
+  }
+  const uploadButton = event.target.closest("[data-record-upload]");
+  if (uploadButton) {
+    const input = recordUploadInput(uploadButton.dataset.recordUpload);
+    if (input) {
+      input.value = "";
+      input.click();
+    }
+    return;
+  }
+  const previewButton = event.target.closest("[data-record-preview]");
+  if (previewButton) {
+    openRecordDetail(previewButton.dataset.reportType, previewButton.dataset.recordPreview);
+  }
+  const addWellButton = event.target.closest(".add-well-button");
+  if (addWellButton) {
+    const dashboard = addWellButton.closest("[data-record-dashboard]");
+    const reportType = dashboard?.dataset.recordDashboard;
+    if (reportType) {
+      const wellName = prompt(ui("addWell") + " — " + ui("searchWell") + ":");
+      if (wellName && wellName.trim()) {
+        recordState[reportType].selectedWell = wellName.trim();
+        renderRecordDashboard(reportType);
+      }
+    }
+  }
+});
+
+document.addEventListener("input", (event) => {
+  const search = event.target.closest("[data-well-search]");
+  if (!search) return;
+  const reportType = search.dataset.wellSearch;
+  const term = search.value.trim().toLowerCase();
+  recordState[reportType].search = search.value.trim();
+  search.closest(".well-panel")?.querySelectorAll("[data-well]").forEach((button) => {
+    button.hidden = term && !button.dataset.well.toLowerCase().includes(term);
   });
 });
 
@@ -953,7 +1468,7 @@ document.querySelector("#importPdf").addEventListener("click", () => {
   input.click();
 });
 document.querySelector("#pdfInput").addEventListener("change", (event) => {
-  importPdfFile(event.target.files?.[0]);
+  importReportFiles("drilling", event.target.files);
 });
 document.querySelector("#importCompletionPdf").addEventListener("click", () => {
   const input = document.querySelector("#completionPdfInput");
@@ -961,7 +1476,7 @@ document.querySelector("#importCompletionPdf").addEventListener("click", () => {
   input.click();
 });
 document.querySelector("#completionPdfInput").addEventListener("change", (event) => {
-  importCompletionPdfFile(event.target.files?.[0]);
+  importReportFiles("completion", event.target.files);
 });
 document.querySelector("#importWorkoverPdf").addEventListener("click", () => {
   const input = document.querySelector("#workoverPdfInput");
@@ -969,7 +1484,7 @@ document.querySelector("#importWorkoverPdf").addEventListener("click", () => {
   input.click();
 });
 document.querySelector("#workoverPdfInput").addEventListener("change", (event) => {
-  importWorkoverPdfFile(event.target.files?.[0]);
+  importReportFiles("workover", event.target.files);
 });
 document.querySelector("#importMovePdf").addEventListener("click", () => {
   const input = document.querySelector("#movePdfInput");
@@ -977,16 +1492,16 @@ document.querySelector("#importMovePdf").addEventListener("click", () => {
   input.click();
 });
 document.querySelector("#movePdfInput").addEventListener("change", (event) => {
-  importMovePdfFile(event.target.files?.[0]);
+  importReportFiles("move", event.target.files);
 });
-form.addEventListener("input", validate);
-form.addEventListener("change", validate);
-completionForm.addEventListener("input", validateCompletion);
-completionForm.addEventListener("change", validateCompletion);
-workoverForm.addEventListener("input", validateWorkover);
-workoverForm.addEventListener("change", validateWorkover);
-moveForm.addEventListener("input", validateMove);
-moveForm.addEventListener("change", validateMove);
+form.addEventListener("input", () => { validate(); updateSaveButton("drilling"); });
+form.addEventListener("change", () => { validate(); updateSaveButton("drilling"); });
+completionForm.addEventListener("input", () => { validateCompletion(); updateSaveButton("completion"); });
+completionForm.addEventListener("change", () => { validateCompletion(); updateSaveButton("completion"); });
+workoverForm.addEventListener("input", () => { validateWorkover(); updateSaveButton("workover"); });
+workoverForm.addEventListener("change", () => { validateWorkover(); updateSaveButton("workover"); });
+moveForm.addEventListener("input", () => { validateMove(); updateSaveButton("move"); });
+moveForm.addEventListener("change", () => { validateMove(); updateSaveButton("move"); });
 
 loadRows();
 loadRows({}, completionTableIds);
@@ -995,3 +1510,7 @@ loadRows({}, moveTableIds);
 applyLanguage(currentLanguage);
 setDrillingSourceFile();
 setActiveMenu("drilling-daily");
+Object.keys(savedReportSignatures).forEach((reportType) => {
+  savedReportSignatures[reportType] = reportSignature(reportType);
+});
+updateAllSaveButtons();

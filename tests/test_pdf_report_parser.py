@@ -6,12 +6,25 @@ from pathlib import Path
 from drilling_report_parser.pdf_report_parser import parse_pdf_daily_report
 
 
-SAMPLE_DIR = Path("/Users/wujianhui/Documents/1、Work/厄瓜多尔资料/华为ai任务资料/钻井日报")
+SAMPLE_DIRS = [
+    Path("/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/华为ai任务资料/钻井日报"),
+    Path("/Users/wujianhui/Documents/1、Work/厄瓜多尔资料/华为ai任务资料/钻井日报"),
+]
+
+
+def sample_pdf(name_part: str) -> Path:
+    for sample_dir in SAMPLE_DIRS:
+        if not sample_dir.exists():
+            continue
+        matches = sorted(sample_dir.glob(f"*{name_part}*.pdf"))
+        if matches:
+            return matches[0]
+    return SAMPLE_DIRS[0] / f"*{name_part}*.pdf"
 
 
 class PdfReportParserTest(unittest.TestCase):
     def test_parse_schao_sample(self) -> None:
-        pdf = SAMPLE_DIR / "06112026-SCHAO-611-SNP-129-PEC-016-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf"
+        pdf = sample_pdf("SCHAO-611")
         if not pdf.exists():
             self.skipTest(f"Sample PDF not found: {pdf}")
         payload = parse_pdf_daily_report(pdf)
@@ -47,7 +60,7 @@ class PdfReportParserTest(unittest.TestCase):
         self.assertEqual(payload["bulks"][0]["bulk"], "DIESEL - RIG")
 
     def test_parse_pcnc_sample(self) -> None:
-        pdf = SAMPLE_DIR / "11062026_PCNC-040_SIN-248_RD11_REPORTE DIARIO DE PERFORACION.pdf"
+        pdf = sample_pdf("PCNC-040")
         if not pdf.exists():
             self.skipTest(f"Sample PDF not found: {pdf}")
         payload = parse_pdf_daily_report(pdf)

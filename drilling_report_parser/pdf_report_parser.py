@@ -447,11 +447,17 @@ def _operation_from_words(words: list[dict[str, Any]]) -> dict[str, str] | None:
         "op_code": _normalize_op_code(_column_text(words, 106, 133)),
         "op_sub": _clean_op_sub(_column_text(words, 133, 185)),
         "op_type": op_type,
-        "operation_details": _clean_operation_details(_column_text(words, 210, 585)),
+        "operation_details": _clean_operation_details(_column_text(words, 210, 585, preserve_lines=True)),
     }
 
 
-def _column_text(words: list[dict[str, Any]], left: float, right: float, first_line_only: bool = False) -> str:
+def _column_text(
+    words: list[dict[str, Any]],
+    left: float,
+    right: float,
+    first_line_only: bool = False,
+    preserve_lines: bool = False,
+) -> str:
     selected = [word for word in words if left <= word["x0"] < right]
     if not selected:
         return ""
@@ -459,6 +465,22 @@ def _column_text(words: list[dict[str, Any]], left: float, right: float, first_l
         top = min(word["top"] for word in selected)
         selected = [word for word in selected if abs(word["top"] - top) <= 2.5]
     selected.sort(key=lambda word: (round(word["top"], 1), word["x0"]))
+    if preserve_lines:
+        lines: list[str] = []
+        current_top: float | None = None
+        current_words: list[str] = []
+        for word in selected:
+            top = round(word["top"], 1)
+            if current_top is None or abs(top - current_top) <= 2.5:
+                current_top = top if current_top is None else current_top
+                current_words.append(word["text"])
+                continue
+            lines.append(_clean(" ".join(current_words)))
+            current_top = top
+            current_words = [word["text"]]
+        if current_words:
+            lines.append(_clean(" ".join(current_words)))
+        return _join_text_lines(lines)
     return _clean(" ".join(word["text"] for word in selected))
 
 
@@ -485,9 +507,26 @@ def _clean_op_sub(value: str) -> str:
 
 
 def _clean_operation_details(value: str) -> str:
-    text = _clean(value)
+    text = _clean_multiline(value)
     text = text.replace(" ,", ",").replace(" .", ".").replace(" :", ":")
-    return _clean(text)
+    return _clean_multiline(text)
+
+
+def _clean_multiline(value: str) -> str:
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in str(value or "").splitlines()]
+    return _join_text_lines(lines)
+
+
+def _join_text_lines(lines: list[str]) -> str:
+    cleaned = [_clean(line) for line in lines if _clean(line)]
+    if not cleaned:
+        return ""
+    punctuated: list[str] = []
+    for line in cleaned:
+        if not re.search(r"[.!?;:。！？；：]$", line):
+            line = f"{line};"
+        punctuated.append(line)
+    return "\n".join(punctuated)
 
 
 def _parse_operations(layout_pages: list[str]) -> list[dict[str, str]]:
@@ -498,7 +537,7 @@ def _parse_operations(layout_pages: list[str]) -> list[dict[str, str]]:
         match = TIME_ROW_RE.match(line)
         if match:
             if current:
-                current["operation_details"] = _clean(current["operation_details"])
+                current["operation_details"] = _clean_operation_details(current["operation_details"])
                 rows.append(current)
             start, end, hours, rest = match.groups()
             op_type = "NPT" if re.search(r"\bNPT\b", rest) else ("P" if re.search(r"\bP\b", rest) else "")
@@ -516,9 +555,9 @@ def _parse_operations(layout_pages: list[str]) -> list[dict[str, str]]:
             }
             continue
         if current and _is_operation_continuation(line):
-            current["operation_details"] += " " + line
+            current["operation_details"] += "\n" + line
     if current:
-        current["operation_details"] = _clean(current["operation_details"])
+        current["operation_details"] = _clean_operation_details(current["operation_details"])
         rows.append(current)
     return rows
 
