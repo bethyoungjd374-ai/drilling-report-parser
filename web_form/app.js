@@ -13,11 +13,14 @@ const i18n = {
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
       importPdf: "导入 PDF 日报", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
       uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "预览", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型",
-      metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间",
+      metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
+      metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性",
       sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "Survey Data (Last 6)", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "Operations", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
       noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、BOP、泵压、扭矩和钩载", noteIncidents: "HSE 状态、同步作业和其他说明",
       completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "对应搬迁 PDF 顶部日报抬头、AFE 和井队信息", moveNoteRemarks: "其他现场备注原文",
       addSurvey: "新增测斜", addBha: "新增 BHA", addOperation: "新增作业行", addCost: "新增成本", addBulk: "新增库存", addInterval: "新增区间", rulesTitle: "基础条件限制规则", liveValidation: "实时校验",
+      uploadedDays: "已上传", daysUnit: "天", missingDate: "缺失日期",
+      prevMonth: "上一月", nextMonth: "下一月", savedWarnings: "保存时校验",
       noIssues: "当前没有校验问题。", pdfImporting: "正在解析 PDF 日报...", pdfImported: "PDF 日报已解析并填充到界面。", pdfImportFailed: "PDF 解析失败，请检查文件格式或模板。",
       thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments", thLocation: "Location", thEquipment: "Equipment", thPlate: "Plate", thEntryDate: "Entry Date", thEntryTime: "Entry Time", thGuide: "Guide", thCargo: "Cargo", thTrip: "Trip"
     },
@@ -80,11 +83,14 @@ const i18n = {
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
       importPdf: "Import PDF Report", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
       uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "Preview", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type",
-      metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals",
+      metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
+      metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness",
       sectionBasic: "Basic Info", sectionSummary: "Operations Summary", sectionWellControl: "Well Control & Hydraulics", sectionSurvey: "Survey Data (Last 6)", sectionMud: "Mud Data", sectionBitBha: "Bit & BHA", sectionOperations: "Operations", sectionCosts: "Costs & Bulks", sectionIncidents: "Incidents & Remarks", sectionPersonnel: "Personnel", sectionPerforationIntervals: "Perforated Intervals",
       noteBasic: "Header and well information from the PDF template", noteSummary: "Current operation, 24-hour summary, and next plan", noteWellControl: "Casing, BOP, pump pressure, torque, and hookload", noteIncidents: "HSE status, simultaneous operations, and remarks",
       completionNoteBasic: "Completion PDF header, AFP, and well information", completionNotePersonnel: "Supervisors, engineers, geologist, and total personnel", completionNoteRemarks: "Safety comments, solids control, and field remarks", workoverNoteBasic: "Workover PDF header, AFP, and well information", workoverNotePersonnel: "Supervisors, engineers, geologist, and total personnel", workoverNoteRemarks: "Safety comments, solids control, and field remarks",
       addSurvey: "Add Survey", addBha: "Add BHA", addOperation: "Add Operation", addCost: "Add Cost", addBulk: "Add Bulk", addInterval: "Add Interval", rulesTitle: "Basic Validation Rules", liveValidation: "Live Validation",
+      uploadedDays: "Uploaded", daysUnit: "days", missingDate: "Missing",
+      prevMonth: "Previous month", nextMonth: "Next month", savedWarnings: "Saved Checks",
       noIssues: "No validation issues.", pdfImporting: "Parsing PDF report...", pdfImported: "PDF report parsed and filled into the form.", pdfImportFailed: "PDF parsing failed. Check the file format or template.",
       thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments"
     },
@@ -147,11 +153,14 @@ const i18n = {
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
       importPdf: "Importar Reporte PDF", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
       uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Vista previa", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo",
-      metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos",
+      metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
+      metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte",
       sectionBasic: "Información Básica", sectionSummary: "Resumen Operacional", sectionWellControl: "Control de Pozo e Hidráulica", sectionSurvey: "Datos Direccionales (Últimos 6)", sectionMud: "Datos de Lodo", sectionBitBha: "Broca y BHA", sectionOperations: "Operaciones", sectionCosts: "Costos e Inventario", sectionIncidents: "Incidentes y Observaciones", sectionPersonnel: "Personal", sectionPerforationIntervals: "Intervalos Cañoneados",
       noteBasic: "Encabezado e información del pozo según la plantilla PDF", noteSummary: "Operación actual, resumen de 24 horas y plan siguiente", noteWellControl: "Casing, BOP, presión de bomba, torque y hookload", noteIncidents: "Estado HSE, operaciones simultáneas y observaciones",
       completionNoteBasic: "Encabezado PDF de completación, AFP e información del pozo", completionNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", completionNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo", workoverNoteBasic: "Encabezado PDF de workover, AFP e información del pozo", workoverNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", workoverNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo",
       addSurvey: "Agregar Survey", addBha: "Agregar BHA", addOperation: "Agregar Operación", addCost: "Agregar Costo", addBulk: "Agregar Inventario", addInterval: "Agregar Intervalo", rulesTitle: "Reglas Básicas de Validación", liveValidation: "Validación en Vivo",
+      uploadedDays: "Cargados", daysUnit: "días", missingDate: "Faltante",
+      prevMonth: "Mes anterior", nextMonth: "Mes siguiente", savedWarnings: "Validaciones guardadas",
       noIssues: "Sin alertas de validación.", pdfImporting: "Analizando reporte PDF...", pdfImported: "Reporte PDF analizado y cargado en el formulario.", pdfImportFailed: "No se pudo analizar el PDF. Revise el formato o la plantilla.",
       thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Componente", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Longitud (ft)", thFrom: "Desde (HH:MM)", thTo: "Hasta (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Código Op", thOpSub: "Sub Op", thType: "Tipo", thOperationDetails: "Detalle de Operación", thCostDescription: "Descripción de Costo", thVendor: "Proveedor", thAmount: "Monto (USD)", thBulk: "Inventario", thQtyStart: "Cant. Inicial", thQtyUsed: "Cant. Usada", thQtyEnd: "Cant. Final", thFormation: "Formación", thTopMd: "Tope MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Densidad (spf)", thCharges: "Cargas", thPhase: "Fase (deg)", thPenetration: "Penetración (in)", thDiameter: "Diámetro (in)", thDate: "Fecha", thStatus: "Estado", thComments: "Comentarios"
     },
@@ -238,10 +247,16 @@ let drillingSourceFileName = "";
 const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
 const recordState = {
-  drilling: { records: [], selectedWell: "", selectedDate: "", search: "" },
-  completion: { records: [], selectedWell: "", selectedDate: "", search: "" },
-  workover: { records: [], selectedWell: "", selectedDate: "", search: "" },
-  move: { records: [], selectedWell: "", selectedDate: "", search: "" }
+  drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" },
+  completion: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" },
+  workover: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" },
+  move: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" }
+};
+const serverWarnings = { drilling: [], completion: [], workover: [], move: [] };
+const wellStatsCache = {};
+const analyticsState = {
+  production: { payload: null },
+  npt: { payload: null }
 };
 const uploadJobs = [];
 const reportNames = {
@@ -326,7 +341,7 @@ function rememberRecord(reportType, payload = {}) {
 }
 
 function renderModulePlaceholder(link = activeMenuLink()) {
-  if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily") return;
+  if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "well-npt-confirm") return;
   document.querySelector("#placeholderTitle").textContent = ui(link.dataset.titleI18n);
   document.querySelector("#placeholderDescription").textContent = ui(link.dataset.descI18n);
 }
@@ -340,6 +355,8 @@ function setActiveMenu(target) {
   const isCompletionDaily = target === "completion-daily";
   const isWorkoverDaily = target === "workover-daily";
   const isMoveDaily = target === "move-daily";
+  const isProductionSummary = target === "rig-production-summary";
+  const isNptStats = target === "well-npt-confirm";
   document.querySelector("#drillingDailyPage").hidden = !isDrillingDaily;
   document.querySelector("#drillingDailyPage").classList.toggle("active", isDrillingDaily);
   document.querySelector("#completionDailyPage").hidden = !isCompletionDaily;
@@ -348,7 +365,11 @@ function setActiveMenu(target) {
   document.querySelector("#workoverDailyPage").classList.toggle("active", isWorkoverDaily);
   document.querySelector("#moveDailyPage").hidden = !isMoveDaily;
   document.querySelector("#moveDailyPage").classList.toggle("active", isMoveDaily);
-  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily;
+  document.querySelector("#productionSummaryPage").hidden = !isProductionSummary;
+  document.querySelector("#productionSummaryPage").classList.toggle("active", isProductionSummary);
+  document.querySelector("#nptStatsPage").hidden = !isNptStats;
+  document.querySelector("#nptStatsPage").classList.toggle("active", isNptStats);
+  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily && !isProductionSummary && !isNptStats;
   document.querySelector("#modulePlaceholder").hidden = !showPlaceholder;
   document.querySelector("#modulePlaceholder").classList.toggle("active", showPlaceholder);
   if (showPlaceholder) renderModulePlaceholder();
@@ -356,6 +377,8 @@ function setActiveMenu(target) {
   if (isCompletionDaily) showReportRecords("completion");
   if (isWorkoverDaily) showReportRecords("workover");
   if (isMoveDaily) showReportRecords("move");
+  if (isProductionSummary) loadAnalytics("production");
+  if (isNptStats) loadAnalytics("npt");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -468,6 +491,7 @@ function escapeHtml(value = "") {
 }
 
 async function refreshRecords(reportType) {
+  invalidateWellStats(reportType);
   try {
     const response = await fetch(`/api/records?report_type=${encodeURIComponent(reportType)}`);
     const payload = await response.json();
@@ -478,6 +502,12 @@ async function refreshRecords(reportType) {
     recordState[reportType].records = [];
   }
   renderRecordDashboard(reportType);
+}
+
+function invalidateWellStats(reportType) {
+  Object.keys(wellStatsCache).forEach((key) => {
+    if (key.startsWith(`${reportType}:`)) delete wellStatsCache[key];
+  });
 }
 
 function renderRecordDashboard(reportType) {
@@ -492,10 +522,17 @@ function renderRecordDashboard(reportType) {
   if (!state.selectedWell || !wellList.includes(state.selectedWell)) state.selectedWell = wellList[0] || "";
   const selectedRecords = records.filter((record) => !state.selectedWell || record.wellbore === state.selectedWell);
   const selectedJobs = jobs.filter((job) => !state.selectedWell || !job.wellbore || job.wellbore === state.selectedWell);
-  const monthBase = selectedRecords[0]?.reportDate || records[0]?.reportDate || new Date().toISOString().slice(0, 10);
+  const monthBase = state.calendarMonth || selectedRecords[0]?.reportDate || records[0]?.reportDate || new Date().toISOString().slice(0, 10);
   const monthRecords = recordsForMonth(selectedRecords, monthBase);
   const uploadedDays = new Set(monthRecords.map((record) => dayOfMonth(record.reportDate)));
-  const pendingDays = pendingCalendarDays(uploadedDays, monthBase);
+  const warningDays = new Set(monthRecords.filter((record) => record.validation_status === "warning").map((record) => dayOfMonth(record.reportDate)));
+  const wellSpan = reportSpan(selectedRecords);
+  const missingDays = missingCalendarDays(uploadedDays, monthBase, wellSpan);
+  const wellStats = cachedWellStats(reportType, state.selectedWell);
+  const nptShare = percentage(wellStats.npt_hours, wellStats.total_hours);
+  const pShare = percentage(wellStats.p_hours, wellStats.total_hours);
+  const scShare = percentage(wellStats.sc_hours, wellStats.total_hours);
+  const completeness = reportCompleteness(selectedRecords, missingDays);
   const tableRecords = sortedRecords(state.selectedDate ? selectedRecords.filter((record) => record.reportDate === state.selectedDate) : selectedRecords);
 
   host.innerHTML = `
@@ -506,31 +543,40 @@ function renderRecordDashboard(reportType) {
         </div>
         <input class="well-search" type="search" value="${escapeHtml(state.search)}" placeholder="${ui("searchWell")}" data-well-search="${reportType}" />
         <div class="well-list">
-          ${wellList.map((well, index) => `
+          ${wellList.map((well, index) => {
+            const wellRecords = records.filter((record) => record.wellbore === well);
+            const dotTone = wellStatusTone(wellRecords);
+            const uploadedCount = uniqueReportDays(wellRecords).size;
+            return `
             <button class="well-card ${well === state.selectedWell ? "active" : ""}" type="button" data-well="${escapeHtml(well)}" data-report-type="${reportType}">
               <span class="well-icon">${String(index + 1).padStart(2, "0")}</span>
-              <span><strong>${escapeHtml(well)}</strong><small>${well === state.selectedWell ? ui("selectedWell") : reportName(reportType)}</small></span>
-              <i></i>
+              <span><strong>${escapeHtml(well)}</strong><small>${ui("uploadedDays")} ${uploadedCount} ${ui("daysUnit")}</small></span>
+              ${dotTone ? `<i class="well-status-marker dot-${dotTone}" aria-hidden="true"></i>` : ""}
             </button>
-          `).join("")}
+            `;
+          }).join("")}
         </div>
         <button class="button secondary add-well-button" type="button">${ui("addWell")}</button>
       </aside>
       <section class="record-main">
         <div class="record-top-grid">
           <section class="panel calendar-panel">
-            <div class="panel-heading">
+            <div class="panel-heading calendar-heading">
               <h2>${ui("reportCalendar")}</h2>
-              <strong class="calendar-month">${calendarMonthLabel(monthBase)}</strong>
+              <div class="calendar-nav">
+                <button class="icon-button" type="button" data-report-type="${reportType}" data-month-nav="-1" aria-label="${ui("prevMonth")}">‹</button>
+                <strong class="calendar-month">${calendarMonthLabel(monthBase)}</strong>
+                <button class="icon-button" type="button" data-report-type="${reportType}" data-month-nav="1" aria-label="${ui("nextMonth")}">›</button>
+              </div>
             </div>
-            ${calendarMarkup(reportType, monthBase, uploadedDays, pendingDays)}
+            ${calendarMarkup(reportType, monthBase, uploadedDays, warningDays, missingDays)}
           </section>
           <section class="panel record-summary-panel">
             <div class="record-summary-grid">
-              ${summaryCard("monthlyUploaded", `${monthRecords.length}`, ui("recordsCount"), "blue")}
-              ${summaryCard("monthlyPending", `${pendingDays.size}`, "", "red")}
-              ${summaryCard("reportKinds", "1", reportName(reportType), "green")}
-              ${summaryCard("monthlyUploaders", `${new Set(monthRecords.map((record) => record.uploader || record.source_file || "local")).size}`, "", "violet")}
+              ${summaryCard("metricWorkDays", `${uniqueReportDays(selectedRecords).size}`, ui("daysUnit"), "blue")}
+              ${summaryCard("metricNptShare", `${formatHours(wellStats.npt_hours)} h`, `${nptShare}`, "red")}
+              ${summaryCard("metricPScShare", `P ${pShare}`, `SC ${scShare}`, "green")}
+              ${summaryCard("metricReportCompleteness", `${completeness.percent}%`, `${ui("missingDate")} ${missingDays.size} ${ui("daysUnit")} / ${ui("warningStatus")} ${completeness.warningDays} ${ui("daysUnit")}`, "violet")}
             </div>
             <div class="calendar-hint">${ui("calendarHint")}</div>
           </section>
@@ -549,16 +595,55 @@ function renderRecordDashboard(reportType) {
       </section>
     </div>
   `;
+  requestWellStats(reportType, state.selectedWell);
+}
+
+function shiftMonth(reportType, delta) {
+  const state = recordState[reportType];
+  const latest = (state.records.find((record) => !state.selectedWell || record.wellbore === state.selectedWell)?.reportDate)
+    || state.records[0]?.reportDate
+    || new Date().toISOString().slice(0, 10);
+  const current = (state.calendarMonth || latest).slice(0, 7);
+  const [year, month] = current.split("-").map(Number);
+  const next = new Date(year, (month - 1) + delta, 1);
+  state.calendarMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
+  renderRecordDashboard(reportType);
 }
 
 function summaryCard(labelKey, value, caption, tone) {
   return `
     <div class="record-summary-card ${tone}">
       <span>${ui(labelKey)}</span>
-      <strong>${escapeHtml(value)}</strong>
+      <strong>${metricValueHtml(value)}</strong>
       <small>${escapeHtml(caption)}</small>
     </div>
   `;
+}
+
+function cachedWellStats(reportType, wellbore) {
+  const key = wellStatsKey(reportType, wellbore);
+  return wellStatsCache[key]?.data || { days: 0, total_hours: 0, npt_hours: 0, p_hours: 0, sc_hours: 0 };
+}
+
+function wellStatsKey(reportType, wellbore) {
+  return `${reportType}:${wellbore || ""}`;
+}
+
+async function requestWellStats(reportType, wellbore) {
+  if (!wellbore) return;
+  const key = wellStatsKey(reportType, wellbore);
+  if (wellStatsCache[key]?.loading || wellStatsCache[key]?.loaded) return;
+  wellStatsCache[key] = { loading: true, data: cachedWellStats(reportType, wellbore) };
+  try {
+    const response = await fetch(`/api/well-stats?report_type=${encodeURIComponent(reportType)}&wellbore=${encodeURIComponent(wellbore)}`);
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Stats failed");
+    wellStatsCache[key] = { loaded: true, data: payload };
+    if (recordState[reportType]?.selectedWell === wellbore) renderRecordDashboard(reportType);
+  } catch (error) {
+    console.error(error);
+    wellStatsCache[key] = { loaded: true, data: cachedWellStats(reportType, wellbore) };
+  }
 }
 
 function recordsForMonth(records, dateValue) {
@@ -579,17 +664,95 @@ function dayOfMonth(dateValue) {
   return Number.isFinite(day) ? day : 0;
 }
 
-function pendingCalendarDays(uploadedDays, monthBase) {
+function uniqueReportDays(records) {
+  return new Set(records.map((record) => record.reportDate).filter(Boolean));
+}
+
+function reportSpan(records) {
+  const dates = records.map((record) => record.reportDate).filter(Boolean).sort();
+  if (!dates.length) return null;
+  return { start: dates[0], end: dates[dates.length - 1] };
+}
+
+function hasMissingInSpan(records, span) {
+  if (!span) return false;
+  const uploaded = new Set(records.map((record) => record.reportDate));
+  const cursor = new Date(`${span.start}T00:00:00Z`);
+  const end = new Date(`${span.end}T00:00:00Z`);
+  while (cursor <= end) {
+    const dateStr = cursor.toISOString().slice(0, 10);
+    if (!uploaded.has(dateStr)) return true;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return false;
+}
+
+function wellStatusTone(records) {
+  if (!records.length) return "";
+  if (hasMissingInSpan(records, reportSpan(records))) return "red";
+  if (records.some((record) => record.validation_status === "warning")) return "yellow";
+  return "upload";
+}
+
+function missingCalendarDays(uploadedDays, monthBase, span) {
   const days = new Set();
-  const date = new Date(`${(monthBase || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
-  const totalDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === date.getFullYear() && today.getMonth() === date.getMonth();
-  const upper = isCurrentMonth ? today.getDate() : totalDays;
-  for (let day = 1; day <= upper; day++) {
-    if (!uploadedDays.has(day)) days.add(day);
+  if (!span) return days;
+  const base = new Date(`${(monthBase || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  for (let day = 1; day <= totalDays; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (dateStr >= span.start && dateStr <= span.end && !uploadedDays.has(day)) days.add(day);
   }
   return days;
+}
+
+function reportCompleteness(records, missingDays) {
+  const uploadedCount = uniqueReportDays(records).size;
+  const warningDays = new Set(records.filter((record) => record.validation_status === "warning").map((record) => record.reportDate).filter(Boolean)).size;
+  const expected = uploadedCount + missingDays.size;
+  const percent = expected ? Math.max(0, Math.round(((uploadedCount - warningDays * 0.35) / expected) * 100)) : 0;
+  return { percent, warningDays };
+}
+
+function operationStats(rows) {
+  return (rows || []).reduce((stats, row) => {
+    const hours = toNumber(row.hours);
+    const value = Number.isFinite(hours) ? hours : 0;
+    const type = String(row.op_type || "").trim().toUpperCase();
+    stats.total += value;
+    if (type === "NPT") stats.npt += value;
+    if (type === "P") stats.p += value;
+    if (type === "SC") stats.sc += value;
+    return stats;
+  }, { total: 0, npt: 0, p: 0, sc: 0 });
+}
+
+function percentage(value, total) {
+  return total > 0 ? `${Math.round((value / total) * 100)}%` : "0%";
+}
+
+function formatHours(value) {
+  return (Number(value) || 0).toFixed(2);
+}
+
+function formatWellDate(data = {}) {
+  const well = String(data.wellbore || "").trim() || "-";
+  const date = String(data.reportDate || "").trim() || "-";
+  return `${well} / ${date}`;
+}
+
+function detailCompleteness(required, issues) {
+  const errorCount = issues.filter((issue) => issue.level === "error").length;
+  const warningCount = issues.length - errorCount;
+  const base = required.length ? Math.max(0, 100 - Math.round((errorCount * 18 + warningCount * 6) / Math.max(required.length, 1))) : 100;
+  return Math.max(0, Math.min(100, base));
+}
+
+function setText(selector, value) {
+  const element = document.querySelector(selector);
+  if (element) element.textContent = value;
 }
 
 function calendarMonthLabel(dateValue) {
@@ -598,7 +761,7 @@ function calendarMonthLabel(dateValue) {
   return date.toLocaleDateString(currentLanguage === "es" ? "es-ES" : "en-US", { year: "numeric", month: "long" });
 }
 
-function calendarMarkup(reportType, dateValue, uploadedDays, pendingDays) {
+function calendarMarkup(reportType, dateValue, uploadedDays, warningDays, missingDays) {
   const base = new Date(`${(dateValue || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
   const year = base.getFullYear();
   const month = base.getMonth();
@@ -615,11 +778,19 @@ function calendarMarkup(reportType, dateValue, uploadedDays, pendingDays) {
     </div>
     <div class="calendar-grid calendar-days">
       ${cells.map((cell) => {
-        const statusClass = cell.muted ? "muted" : uploadedDays.has(cell.day) ? "has-upload" : pendingDays.has(cell.day) ? "needs-upload" : "";
+        const statusClass = cell.muted
+          ? "muted"
+          : missingDays.has(cell.day)
+            ? "needs-upload"
+            : warningDays.has(cell.day)
+              ? "has-warning"
+              : uploadedDays.has(cell.day)
+                ? "has-upload"
+                : "";
         return `<button type="button" class="${statusClass}" data-calendar-date="${cell.date || ""}" data-report-type="${reportType}" ${cell.muted ? "disabled" : ""}><span>${cell.day}</span></button>`;
       }).join("")}
     </div>
-    <div class="calendar-legend"><span class="dot upload"></span>${ui("uploaded")}<span class="dot pending"></span>${ui("pending")}</div>
+    <div class="calendar-legend"><span class="dot upload"></span>${ui("uploadedDays")}<span class="dot warning"></span>${ui("warningStatus")}<span class="dot pending"></span>${ui("missingDate")}</div>
   `;
 }
 
@@ -685,6 +856,197 @@ function formatRecordTime(value = "") {
 function toNumber(value) {
   const parsed = Number(String(value || "").replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function analyticsEndpoint(kind) {
+  return kind === "npt" ? "/api/npt-stats" : "/api/production-summary";
+}
+
+function analyticsFilterValues(kind) {
+  const formEl = document.querySelector(`[data-analytics-filter="${kind}"]`);
+  const params = new URLSearchParams();
+  if (!formEl) return params;
+  formEl.querySelectorAll("input, select").forEach((control) => {
+    const value = control.value.trim();
+    if (value) params.set(control.name, value);
+  });
+  return params;
+}
+
+async function loadAnalytics(kind) {
+  const params = analyticsFilterValues(kind);
+  const response = await fetch(`${analyticsEndpoint(kind)}?${params.toString()}`);
+  const payload = await response.json();
+  if (!response.ok) {
+    showToast(payload.error || "统计数据加载失败");
+    return;
+  }
+  analyticsState[kind].payload = payload;
+  populateAnalyticsFilters(kind, payload.filters || {});
+  if (kind === "npt") renderNptAnalytics(payload);
+  else renderProductionAnalytics(payload);
+}
+
+function populateAnalyticsFilters(kind, filters) {
+  const formEl = document.querySelector(`[data-analytics-filter="${kind}"]`);
+  if (!formEl) return;
+  setSelectOptions(formEl.querySelector('[name="rig"]'), filters.rigs || [], "全部井队");
+  setSelectOptions(formEl.querySelector('[name="report_type"]'), (filters.report_types || []).map((item) => [item.value, item.label]), "全部类型");
+  setSelectOptions(formEl.querySelector('[name="reason"]'), filters.reasons || [], "全部分类");
+}
+
+function setSelectOptions(select, values, emptyLabel) {
+  if (!select) return;
+  const current = select.value;
+  const items = values.map((item) => Array.isArray(item) ? item : [item, item]);
+  select.innerHTML = `<option value="">${emptyLabel}</option>${items.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
+  select.value = items.some(([value]) => value === current) ? current : "";
+}
+
+function renderProductionAnalytics(payload) {
+  const kpis = payload.kpis || {};
+  const completeness = kpis.completeness || {};
+  document.querySelector('[data-analytics-note="production"]').textContent = payload.scope_note || "";
+  document.querySelector('[data-analytics-kpis="production"]').innerHTML = [
+    analyticsKpi("井队数", kpis.rig_count || 0, ""),
+    analyticsKpi("涉及井数", kpis.well_count || 0, ""),
+    analyticsKpi("总作业时长", `${formatHours(kpis.total_hours)} h`, ""),
+    analyticsKpi("总NPT", `${formatHours(kpis.npt_hours)} h`, ""),
+    analyticsKpi("日报完整性", `${completeness.percent || 0}%`, `缺失 ${completeness.missing_days || 0} 天 / 告警 ${completeness.warning_days || 0} 天`),
+  ].join("");
+  renderStackedBars('[data-chart="production-rig"]', payload.by_rig || [], Object.values(REPORT_TYPE_LABELS_JS));
+  renderDonut('[data-chart="production-type"]', (payload.by_type || []).map((item) => ({ label: item.label, value: item.hours })));
+  renderLineChart('[data-chart="production-monthly"]', payload.monthly || [], Object.values(REPORT_TYPE_LABELS_JS));
+  renderProductionTable(payload.details || []);
+}
+
+function renderNptAnalytics(payload) {
+  const kpis = payload.kpis || {};
+  document.querySelector('[data-analytics-note="npt"]').textContent = payload.scope_note || "";
+  document.querySelector('[data-analytics-kpis="npt"]').innerHTML = [
+    analyticsKpi("NPT井队数", kpis.rig_count || 0, ""),
+    analyticsKpi("涉及井数", kpis.well_count || 0, ""),
+    analyticsKpi("NPT事件数", kpis.event_count || 0, ""),
+    analyticsKpi("总NPT", `${formatHours(kpis.total_npt)} h`, "按 OP CODE / OP SUB 汇总"),
+  ].join("");
+  renderSimpleBars('[data-chart="npt-rig"]', payload.by_rig || []);
+  renderDonut('[data-chart="npt-reason"]', (payload.by_reason || []).map((item) => ({ label: `${item.label} ${item.share}%`, value: item.hours })));
+  renderSimpleBars('[data-chart="npt-well"]', payload.by_well || []);
+  renderTrendBars('[data-chart="npt-monthly"]', payload.monthly || []);
+  renderNptTable(payload.details || []);
+}
+
+const REPORT_TYPE_LABELS_JS = { drilling: "钻井", completion: "完井", workover: "修井", move: "搬迁/推井架" };
+const CHART_COLORS = ["#0b72e7", "#14b8a6", "#f59e0b", "#8b5cf6", "#94a3b8"];
+
+function analyticsKpi(label, value, caption) {
+  return `<div class="analytics-kpi"><span>${escapeHtml(label)}</span><strong>${metricValueHtml(value)}</strong><small>${escapeHtml(caption || "基于已入库日报")}</small></div>`;
+}
+
+function metricValueHtml(value) {
+  const text = String(value ?? "");
+  const match = text.match(/^(.+?)(?:\s+)?(h|%)$/);
+  if (!match) return escapeHtml(text);
+  return `${escapeHtml(match[1])}<small>${escapeHtml(match[2])}</small>`;
+}
+
+function renderStackedBars(selector, rows, keys) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  const max = Math.max(...rows.map((row) => keys.reduce((sum, key) => sum + Number(row[key] || 0), 0)), 1);
+  host.innerHTML = `<div class="bar-list">${rows.map((row) => {
+    const total = keys.reduce((sum, key) => sum + Number(row[key] || 0), 0);
+    return `<div class="bar-row"><span>${escapeHtml(row.rig || row.label)}</span><div class="stack-bar">${keys.map((key, index) => `<i style="width:${(Number(row[key] || 0) / max) * 100}%;background:${CHART_COLORS[index % CHART_COLORS.length]}"></i>`).join("")}</div><b>${formatHours(total)}</b></div>`;
+  }).join("")}</div>${legend(keys)}`;
+}
+
+function renderSimpleBars(selector, rows) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  const max = Math.max(...rows.map((row) => Number(row.hours || 0)), 1);
+  host.innerHTML = `<div class="bar-list">${rows.map((row) => `<div class="bar-row"><span>${escapeHtml(row.label)}</span><div class="single-bar"><i style="width:${(Number(row.hours || 0) / max) * 100}%"></i></div><b>${formatHours(row.hours)}</b></div>`).join("")}</div>`;
+}
+
+function renderTrendBars(selector, rows) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  const max = Math.max(...rows.map((row) => Number(row.hours || 0)), 1);
+  host.innerHTML = `<div class="trend-bars">${rows.map((row) => `<div><i style="height:${Math.max(4, (Number(row.hours || 0) / max) * 130)}px"></i><strong>${formatHours(row.hours)}</strong><span>${escapeHtml(row.month)}</span></div>`).join("")}</div>`;
+}
+
+function renderLineChart(selector, rows, keys) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  const max = Math.max(...rows.flatMap((row) => keys.map((key) => Number(row[key] || 0))), 1);
+  const width = 760, height = 180, pad = 28;
+  const step = rows.length > 1 ? (width - pad * 2) / (rows.length - 1) : 0;
+  const lines = keys.map((key, index) => {
+    const points = rows.map((row, rowIndex) => {
+      const x = pad + rowIndex * step;
+      const y = height - pad - (Number(row[key] || 0) / max) * (height - pad * 2);
+      return `${x},${y}`;
+    }).join(" ");
+    return `<polyline points="${points}" fill="none" stroke="${CHART_COLORS[index % CHART_COLORS.length]}" stroke-width="3" />`;
+  }).join("");
+  const labels = rows.map((row, index) => `<text x="${pad + index * step}" y="${height - 6}" text-anchor="middle">${escapeHtml(row.month)}</text>`).join("");
+  host.innerHTML = `<svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img">${lines}${labels}</svg>${legend(keys)}`;
+}
+
+function renderDonut(selector, rows) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  if (!rows.length || !rows.some((row) => Number(row.value || 0) > 0)) return host.innerHTML = emptyAnalytics();
+  const total = rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
+  let offset = 0;
+  const circles = rows.map((row, index) => {
+    const value = Number(row.value || 0);
+    const dash = (value / total) * 100;
+    const circle = `<circle r="15.9" cx="20" cy="20" fill="transparent" stroke="${CHART_COLORS[index % CHART_COLORS.length]}" stroke-width="8" stroke-dasharray="${dash} ${100 - dash}" stroke-dashoffset="${-offset}" />`;
+    offset += dash;
+    return circle;
+  }).join("");
+  host.innerHTML = `<div class="donut-wrap"><svg viewBox="0 0 40 40" class="donut">${circles}</svg><div class="donut-legend">${rows.map((row, index) => `<span><i style="background:${CHART_COLORS[index % CHART_COLORS.length]}"></i>${escapeHtml(row.label)} ${formatHours(row.value)}</span>`).join("")}</div></div>`;
+}
+
+function legend(keys) {
+  return `<div class="chart-legend">${keys.map((key, index) => `<span><i style="background:${CHART_COLORS[index % CHART_COLORS.length]}"></i>${escapeHtml(key)}</span>`).join("")}</div>`;
+}
+
+function emptyAnalytics() {
+  return `<div class="empty-records">暂无可统计数据</div>`;
+}
+
+function renderProductionTable(rows) {
+  const host = document.querySelector('[data-table-host="production"]');
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  host.innerHTML = `<table class="record-table analytics-table"><thead><tr><th>井队</th><th>井号</th><th>日报类型</th><th>开工时间</th><th>完工时间</th><th>钻井(h)</th><th>完井(h)</th><th>修井(h)</th><th>搬迁(h)</th><th>NPT(h)</th><th>备注</th></tr></thead><tbody>${rows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(row.report_type_label)}</td><td>${escapeHtml(row.start_date)}</td><td>${escapeHtml(row.end_date)}</td><td>${formatHours(row.drilling_hours)}</td><td>${formatHours(row.completion_hours)}</td><td>${formatHours(row.workover_hours)}</td><td>${formatHours(row.move_hours)}</td><td>${formatHours(row.npt_hours)}</td><td>${escapeHtml(row.status)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function renderNptTable(rows) {
+  const host = document.querySelector('[data-table-host="npt"]');
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  host.innerHTML = `<table class="record-table analytics-table"><thead><tr><th>井队</th><th>井号</th><th>日期</th><th>NPT(h)</th><th>OP CODE</th><th>OP SUB</th><th>分类</th><th>Operation Details</th></tr></thead><tbody>${rows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(row.reportDate)}</td><td>${formatHours(row.hours)}</td><td>${escapeHtml(row.op_code)}</td><td>${escapeHtml(row.op_sub)}</td><td>${escapeHtml(row.reason)}</td><td>${escapeHtml(row.operation_details).slice(0, 100)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function exportAnalytics(kind) {
+  const payload = analyticsState[kind].payload;
+  if (!payload) return;
+  const rows = kind === "npt" ? payload.details || [] : payload.details || [];
+  if (!rows.length) return showToast("暂无可导出数据");
+  const headers = Object.keys(rows[0]);
+  const csv = [headers.join(","), ...rows.map((row) => headers.map((key) => `"${String(row[key] ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
+  const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${kind}-analytics.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 function splitAt(value, marker = "@") {
@@ -878,6 +1240,12 @@ async function openRecordDetail(reportType, recordId) {
     if (reportType === "completion") applyImportedCompletionPayload(payload);
     if (reportType === "workover") applyImportedWorkoverPayload(payload);
     if (reportType === "move") applyImportedMovePayload(payload);
+    const record = recordState[reportType].records.find((item) => item.record_id === recordId) || {};
+    setServerWarnings(reportType, { metadata: record });
+    if (reportType === "drilling") validate();
+    if (reportType === "completion") validateCompletion();
+    if (reportType === "workover") validateWorkover();
+    if (reportType === "move") validateMove();
   } catch (error) {
     console.error(error);
     showToast(ui("databaseSaveFailed"));
@@ -1045,13 +1413,15 @@ function validate() {
   const prevMd = toNumber(data.prevMd);
   const progress = toNumber(data.progress);
   const computedProgress = Number.isFinite(todayMd) && Number.isFinite(prevMd) ? todayMd - prevMd : 0;
-  document.querySelector("#progressComputed").textContent = computedProgress.toFixed(2);
   if (Number.isFinite(todayMd) && Number.isFinite(prevMd) && todayMd < prevMd) issues.push({ level: "error", text: message("mdOrder"), field: "todayMd" });
   if (Number.isFinite(progress) && Math.abs(progress - computedProgress) > 0.5) issues.push({ level: "warning", text: message("progressMismatch", { value: computedProgress.toFixed(2) }), field: "progress" });
 
   const operations = readTable("operationsTable");
-  const operationHours = operations.reduce((sum, row) => sum + (toNumber(row.hours) || 0), 0);
-  document.querySelector("#operationHours").textContent = operationHours.toFixed(2);
+  const opStats = operationStats(operations);
+  const operationHours = opStats.total;
+  setText("#operationHours", formatHours(operationHours));
+  setText("#drillingNptHours", formatHours(opStats.npt));
+  setText("#drillingWellDate", formatWellDate(data));
   if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
   operations.forEach((row, index) => {
     ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
@@ -1098,7 +1468,7 @@ function validate() {
     if (issue.field && form.elements[issue.field]) form.elements[issue.field].classList.add("invalid");
   });
   renderIssues(issues);
-  updateCompletion(required, issues);
+  updateCompletion(required, issues, data);
   return issues;
 }
 
@@ -1124,8 +1494,11 @@ function validateCompletion() {
   }
 
   const operations = readTable("completionOperationsTable");
-  const operationHours = operations.reduce((sum, row) => sum + (toNumber(row.hours) || 0), 0);
-  document.querySelector("#completionOperationHours").textContent = operationHours.toFixed(2);
+  const opStats = operationStats(operations);
+  const operationHours = opStats.total;
+  setText("#completionOperationHours", formatHours(operationHours));
+  setText("#completionNptHours", formatHours(opStats.npt));
+  setText("#completionWellDate", formatWellDate(data));
   if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
   operations.forEach((row, index) => {
     ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
@@ -1152,7 +1525,6 @@ function validateCompletion() {
   });
 
   const intervals = readTable("perforationIntervalsTable");
-  document.querySelector("#completionIntervalCount").textContent = intervals.length;
   intervals.forEach((row, index) => {
     const topMd = toNumber(row.top_md);
     const baseMd = toNumber(row.base_md);
@@ -1165,7 +1537,7 @@ function validateCompletion() {
     if (issue.field && completionForm.elements[issue.field]) completionForm.elements[issue.field].classList.add("invalid");
   });
   renderCompletionIssues(issues);
-  updateCompletionProgress(required, issues);
+  updateCompletionProgress(required, issues, data);
   return issues;
 }
 
@@ -1191,8 +1563,11 @@ function validateWorkover() {
   }
 
   const operations = readTable("workoverOperationsTable");
-  const operationHours = operations.reduce((sum, row) => sum + (toNumber(row.hours) || 0), 0);
-  document.querySelector("#workoverOperationHours").textContent = operationHours.toFixed(2);
+  const opStats = operationStats(operations);
+  const operationHours = opStats.total;
+  setText("#workoverOperationHours", formatHours(operationHours));
+  setText("#workoverNptHours", formatHours(opStats.npt));
+  setText("#workoverWellDate", formatWellDate(data));
   if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
   operations.forEach((row, index) => {
     ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
@@ -1219,7 +1594,6 @@ function validateWorkover() {
   });
 
   const intervals = readTable("workoverIntervalsTable");
-  document.querySelector("#workoverIntervalCount").textContent = intervals.length;
   intervals.forEach((row, index) => {
     const topMd = toNumber(row.top_md);
     const baseMd = toNumber(row.base_md);
@@ -1232,7 +1606,7 @@ function validateWorkover() {
     if (issue.field && workoverForm.elements[issue.field]) workoverForm.elements[issue.field].classList.add("invalid");
   });
   renderWorkoverIssues(issues);
-  updateWorkoverProgress(required, issues);
+  updateWorkoverProgress(required, issues, data);
   return issues;
 }
 
@@ -1254,8 +1628,11 @@ function validateMove() {
   }
 
   const operations = readTable("moveOperationsTable");
-  const operationHours = operations.reduce((sum, row) => sum + (toNumber(row.hours) || 0), 0);
-  document.querySelector("#moveOperationHours").textContent = operationHours.toFixed(2);
+  const opStats = operationStats(operations);
+  const operationHours = opStats.total;
+  setText("#moveOperationHours", formatHours(operationHours));
+  setText("#moveNptHours", formatHours(opStats.npt));
+  setText("#moveWellDate", formatWellDate(data));
   if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
   operations.forEach((row, index) => {
     ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
@@ -1273,76 +1650,60 @@ function validateMove() {
     if (issue.field && moveForm.elements[issue.field]) moveForm.elements[issue.field].classList.add("invalid");
   });
   renderMoveIssues(issues);
-  updateMoveProgress(required, issues);
+  updateMoveProgress(required, issues, data);
   return issues;
 }
 
-function renderIssues(issues) {
-  document.querySelector("#issueCount").textContent = issues.length;
-  if (!issues.length) {
-    issuesEl.innerHTML = `<div class="issue ok">${ui("noIssues")}</div>`;
+function setServerWarnings(reportType, payload = {}) {
+  const text = String(payload?.metadata?.validation_warnings || "");
+  serverWarnings[reportType] = text ? text.split(";").map((part) => part.trim()).filter(Boolean) : [];
+}
+
+function renderIssuePanel(reportType, countSelector, container, issues) {
+  const saved = serverWarnings[reportType] || [];
+  const count = saved.length + issues.length;
+  setText(countSelector, count);
+  if (!count) {
+    container.innerHTML = `<div class="issue ok">${ui("noIssues")}</div>`;
     return;
   }
-  issuesEl.innerHTML = issues.map((issue) => `<div class="issue ${issue.level}">${issue.text}</div>`).join("");
+  const savedHtml = saved.length
+    ? `<div class="issue-group"><span class="issue-group-title">${ui("savedWarnings")}</span>${saved.map((text) => `<div class="issue warning">${escapeHtml(text)}</div>`).join("")}</div>`
+    : "";
+  const liveHtml = issues.map((issue) => `<div class="issue ${issue.level}">${issue.text}</div>`).join("");
+  container.innerHTML = savedHtml + liveHtml;
+}
+
+function renderIssues(issues) {
+  renderIssuePanel("drilling", "#issueCount", issuesEl, issues);
 }
 
 function renderCompletionIssues(issues) {
-  document.querySelector("#completionIssueCount").textContent = issues.length;
-  if (!issues.length) {
-    completionIssuesEl.innerHTML = `<div class="issue ok">${ui("noIssues")}</div>`;
-    return;
-  }
-  completionIssuesEl.innerHTML = issues.map((issue) => `<div class="issue ${issue.level}">${issue.text}</div>`).join("");
+  renderIssuePanel("completion", "#completionIssueCount", completionIssuesEl, issues);
 }
 
 function renderWorkoverIssues(issues) {
-  document.querySelector("#workoverIssueCount").textContent = issues.length;
-  if (!issues.length) {
-    workoverIssuesEl.innerHTML = `<div class="issue ok">${ui("noIssues")}</div>`;
-    return;
-  }
-  workoverIssuesEl.innerHTML = issues.map((issue) => `<div class="issue ${issue.level}">${issue.text}</div>`).join("");
+  renderIssuePanel("workover", "#workoverIssueCount", workoverIssuesEl, issues);
 }
 
 function renderMoveIssues(issues) {
-  document.querySelector("#moveIssueCount").textContent = issues.length;
-  if (!issues.length) {
-    moveIssuesEl.innerHTML = `<div class="issue ok">${ui("noIssues")}</div>`;
-    return;
-  }
-  moveIssuesEl.innerHTML = issues.map((issue) => `<div class="issue ${issue.level}">${issue.text}</div>`).join("");
+  renderIssuePanel("move", "#moveIssueCount", moveIssuesEl, issues);
 }
 
 function updateCompletion(required, issues) {
-  const data = formData();
-  const filledRequired = required.filter((name) => String(data[name] || "").trim()).length;
-  const hasFatal = issues.some((issue) => issue.level === "error");
-  const base = Math.round((filledRequired / required.length) * 100);
-  document.querySelector("#completionRate").textContent = `${hasFatal ? Math.min(base, 85) : base}%`;
+  setText("#completionRate", `${detailCompleteness(required, issues)}%`);
 }
 
 function updateCompletionProgress(required, issues) {
-  const data = formData(completionForm);
-  const filledRequired = required.filter((name) => String(data[name] || "").trim()).length;
-  const hasFatal = issues.some((issue) => issue.level === "error");
-  const base = Math.round((filledRequired / required.length) * 100);
-  document.querySelector("#completionCompletionRate").textContent = `${hasFatal ? Math.min(base, 85) : base}%`;
+  setText("#completionCompletionRate", `${detailCompleteness(required, issues)}%`);
 }
 
 function updateWorkoverProgress(required, issues) {
-  const data = formData(workoverForm);
-  const filledRequired = required.filter((name) => String(data[name] || "").trim()).length;
-  const hasFatal = issues.some((issue) => issue.level === "error");
-  const base = Math.round((filledRequired / required.length) * 100);
-  document.querySelector("#workoverCompletionRate").textContent = `${hasFatal ? Math.min(base, 85) : base}%`;
+  setText("#workoverCompletionRate", `${detailCompleteness(required, issues)}%`);
 }
 
 function updateMoveProgress(required, issues) {
-  const data = formData(moveForm);
-  const filledRequired = required.filter((name) => String(data[name] || "").trim()).length;
-  const hasFatal = issues.some((issue) => issue.level === "error");
-  const base = Math.round((filledRequired / required.length) * 100);
-  document.querySelector("#moveCompletionRate").textContent = `${hasFatal ? Math.min(base, 85) : base}%`;
+  setText("#moveCompletionRate", `${detailCompleteness(required, issues)}%`);
 }
 
 function showToast(text) {
@@ -1377,11 +1738,46 @@ document.querySelectorAll("[data-back-records]").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const analyticsSearch = event.target.closest("[data-analytics-search]");
+  if (analyticsSearch) {
+    loadAnalytics(analyticsSearch.dataset.analyticsSearch);
+    return;
+  }
+  const analyticsReset = event.target.closest("[data-analytics-reset]");
+  if (analyticsReset) {
+    const kind = analyticsReset.dataset.analyticsReset;
+    document.querySelector(`[data-analytics-filter="${kind}"]`)?.querySelectorAll("input, select").forEach((control) => {
+      control.value = "";
+    });
+    loadAnalytics(kind);
+    return;
+  }
+  const analyticsExport = event.target.closest("[data-analytics-export]");
+  if (analyticsExport) {
+    exportAnalytics(analyticsExport.dataset.analyticsExport);
+    return;
+  }
+  const openAnalyticsRecord = event.target.closest("[data-open-record]");
+  if (openAnalyticsRecord) {
+    const reportType = openAnalyticsRecord.dataset.reportType;
+    const recordId = openAnalyticsRecord.dataset.openRecord;
+    if (reportType && recordId) {
+      setActiveMenu(`${reportType}-daily`);
+      openRecordDetail(reportType, recordId);
+    }
+    return;
+  }
+  const monthNavButton = event.target.closest("[data-month-nav]");
+  if (monthNavButton) {
+    shiftMonth(monthNavButton.dataset.reportType, Number(monthNavButton.dataset.monthNav));
+    return;
+  }
   const wellButton = event.target.closest("[data-well]");
   if (wellButton) {
     const reportType = wellButton.dataset.reportType;
     recordState[reportType].selectedWell = wellButton.dataset.well;
     recordState[reportType].selectedDate = "";
+    recordState[reportType].calendarMonth = "";
     renderRecordDashboard(reportType);
     return;
   }

@@ -84,20 +84,20 @@
 
         <section class="status-strip" data-detail-view="drilling" aria-label="填报状态">
           <div class="status-card">
-            <span data-i18n="metricCompletion">完成度</span>
+            <span data-i18n="metricWellDate">井号 / 日期</span>
+            <strong id="drillingWellDate">-</strong>
+          </div>
+          <div class="status-card">
+            <span data-i18n="metricDailyHours">当日作业时长</span>
+            <strong class="metric-value"><span id="operationHours">0.00</span><small>h</small></strong>
+          </div>
+          <div class="status-card">
+            <span data-i18n="metricNptHours">NPT时长</span>
+            <strong class="metric-value"><span id="drillingNptHours">0.00</span><small>h</small></strong>
+          </div>
+          <div class="status-card">
+            <span data-i18n="metricDataCompleteness">数据完整性</span>
             <strong id="completionRate">0%</strong>
-          </div>
-          <div class="status-card">
-            <span data-i18n="metricIssues">校验问题</span>
-            <strong id="issueCount">0</strong>
-          </div>
-          <div class="status-card">
-            <span data-i18n="metricHours">作业合计</span>
-            <strong><span id="operationHours">0.00</span> h</strong>
-          </div>
-          <div class="status-card">
-            <span data-i18n="metricProgress">进尺</span>
-            <strong><span id="progressComputed">0.00</span> ft</strong>
           </div>
         </section>
 
@@ -327,20 +327,20 @@
 
           <section class="status-strip" data-detail-view="completion" aria-label="完井日报填报状态">
             <div class="status-card">
-              <span data-i18n="metricCompletion">完成度</span>
+              <span data-i18n="metricWellDate">井号 / 日期</span>
+              <strong id="completionWellDate">-</strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDailyHours">当日作业时长</span>
+              <strong class="metric-value"><span id="completionOperationHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricNptHours">NPT时长</span>
+              <strong class="metric-value"><span id="completionNptHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDataCompleteness">数据完整性</span>
               <strong id="completionCompletionRate">0%</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricIssues">校验问题</span>
-              <strong id="completionIssueCount">0</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricHours">作业合计</span>
-              <strong><span id="completionOperationHours">0.00</span> h</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricIntervals">射孔区间</span>
-              <strong><span id="completionIntervalCount">0</span></strong>
             </div>
           </section>
 
@@ -493,20 +493,20 @@
 
           <section class="status-strip" data-detail-view="workover" aria-label="修井日报填报状态">
             <div class="status-card">
-              <span data-i18n="metricCompletion">完成度</span>
+              <span data-i18n="metricWellDate">井号 / 日期</span>
+              <strong id="workoverWellDate">-</strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDailyHours">当日作业时长</span>
+              <strong class="metric-value"><span id="workoverOperationHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricNptHours">NPT时长</span>
+              <strong class="metric-value"><span id="workoverNptHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDataCompleteness">数据完整性</span>
               <strong id="workoverCompletionRate">0%</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricIssues">校验问题</span>
-              <strong id="workoverIssueCount">0</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricHours">作业合计</span>
-              <strong><span id="workoverOperationHours">0.00</span> h</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricIntervals">射孔区间</span>
-              <strong><span id="workoverIntervalCount">0</span></strong>
             </div>
           </section>
 
@@ -660,16 +660,20 @@
 
           <section class="status-strip" data-detail-view="move" aria-label="搬迁日报填报状态">
             <div class="status-card">
-              <span data-i18n="metricCompletion">完成度</span>
+              <span data-i18n="metricWellDate">井号 / 日期</span>
+              <strong id="moveWellDate">-</strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDailyHours">当日作业时长</span>
+              <strong class="metric-value"><span id="moveOperationHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricNptHours">NPT时长</span>
+              <strong class="metric-value"><span id="moveNptHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDataCompleteness">数据完整性</span>
               <strong id="moveCompletionRate">0%</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricIssues">校验问题</span>
-              <strong id="moveIssueCount">0</strong>
-            </div>
-            <div class="status-card">
-              <span data-i18n="metricHours">作业合计</span>
-              <strong><span id="moveOperationHours">0.00</span> h</strong>
             </div>
           </section>
 
@@ -743,6 +747,81 @@
               </div>
             </aside>
           </div>
+        </section>
+
+        <section id="productionSummaryPage" class="module-page analytics-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <p class="page-kicker">数据看板</p>
+              <h1 data-i18n="menuRigProductionSummary">生产汇总</h1>
+              <p class="source-file-name" data-analytics-note="production">基于已保存到 Excel 库的日报解析数据</p>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="panel analytics-filter" data-analytics-filter="production">
+            <label>日期起<input type="date" name="date_from" /></label>
+            <label>日期止<input type="date" name="date_to" /></label>
+            <label>井队<select name="rig"><option value="">全部井队</option></select></label>
+            <label>日报类型<select name="report_type"><option value="">全部类型</option></select></label>
+            <label>井号<input name="wellbore" placeholder="请输入井号" /></label>
+            <button class="button" type="button" data-analytics-search="production">查询</button>
+            <button class="button secondary" type="button" data-analytics-reset="production">重置</button>
+            <button class="button secondary" type="button" data-analytics-export="production">导出</button>
+          </section>
+          <section class="analytics-kpis" data-analytics-kpis="production"></section>
+          <section class="analytics-grid">
+            <div class="panel analytics-card"><div class="panel-heading"><h2>各井队作业时效对比 (h)</h2></div><div data-chart="production-rig"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2>作业时效构成</h2></div><div data-chart="production-type"></div></div>
+            <div class="panel analytics-card wide"><div class="panel-heading"><h2>月度作业趋势 (h)</h2></div><div data-chart="production-monthly"></div></div>
+          </section>
+          <section class="panel analytics-table-panel">
+            <div class="panel-heading"><h2>生产汇总明细</h2><span class="panel-note">点击行可打开日报详情</span></div>
+            <div class="table-wrap" data-table-host="production"></div>
+          </section>
+        </section>
+
+        <section id="nptStatsPage" class="module-page analytics-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <p class="page-kicker">数据看板</p>
+              <h1 data-i18n="menuWellNptConfirm">NPT统计</h1>
+              <p class="source-file-name" data-analytics-note="npt">基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总</p>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="panel analytics-filter" data-analytics-filter="npt">
+            <label>日期起<input type="date" name="date_from" /></label>
+            <label>日期止<input type="date" name="date_to" /></label>
+            <label>井队<select name="rig"><option value="">全部井队</option></select></label>
+            <label>OP CODE / OP SUB<select name="reason"><option value="">全部分类</option></select></label>
+            <label>井号<input name="wellbore" placeholder="请输入井号" /></label>
+            <button class="button" type="button" data-analytics-search="npt">查询</button>
+            <button class="button secondary" type="button" data-analytics-reset="npt">重置</button>
+            <button class="button secondary" type="button" data-analytics-export="npt">导出</button>
+          </section>
+          <section class="analytics-kpis" data-analytics-kpis="npt"></section>
+          <section class="analytics-grid">
+            <div class="panel analytics-card"><div class="panel-heading"><h2>各井队NPT对比 (h)</h2></div><div data-chart="npt-rig"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2>OP CODE / OP SUB分布</h2></div><div data-chart="npt-reason"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2>各井NPT排行</h2></div><div data-chart="npt-well"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2>月度NPT趋势 (h)</h2></div><div data-chart="npt-monthly"></div></div>
+          </section>
+          <section class="panel analytics-table-panel">
+            <div class="panel-heading"><h2>NPT统计明细</h2><span class="panel-note">按日报 OP CODE / OP SUB 原文汇总，点击行可追溯日报</span></div>
+            <div class="table-wrap" data-table-host="npt"></div>
+          </section>
         </section>
 
         <section id="modulePlaceholder" class="module-page module-placeholder" hidden>
