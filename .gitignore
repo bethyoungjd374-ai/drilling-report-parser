@@ -2,3 +2,8 @@
 __pycache__/
 *.pyc
 .venv/
+outputs/source_pdfs/
+outputs/backups/
+outputs/users.json
+outputs/system_config.json
+outputs/audit_logs.jsonl

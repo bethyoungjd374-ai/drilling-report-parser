@@ -849,7 +849,25 @@
             </div>
           </section>
         </section>
+
       </main>
+    </div>
+
+    <div class="pdf-modal" id="sourcePdfModal" hidden>
+      <div class="pdf-modal-backdrop" data-close-source-pdf></div>
+      <section class="pdf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="sourcePdfTitle">
+        <header class="pdf-modal-header">
+          <div>
+            <p class="page-kicker" data-i18n="sourcePdfTitle">源文件PDF</p>
+            <h2 id="sourcePdfTitle">源文件PDF</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-source-pdf aria-label="关闭">×</button>
+        </header>
+        <div class="pdf-modal-body">
+          <iframe id="sourcePdfFrame" title="Source PDF"></iframe>
+          <div class="empty-records pdf-modal-empty" id="sourcePdfEmpty" hidden></div>
+        </div>
+      </section>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -1,0 +1,50 @@
+[
+  {
+    "value": "admin",
+    "label": "管理员",
+    "permissions": {
+      "view": true,
+      "import": true,
+      "edit": true,
+      "save": true,
+      "export": true,
+      "admin": true
+    }
+  },
+  {
+    "value": "engineer",
+    "label": "工程师",
+    "permissions": {
+      "view": true,
+      "import": true,
+      "edit": true,
+      "save": true,
+      "export": true,
+      "admin": false
+    }
+  },
+  {
+    "value": "reviewer",
+    "label": "审阅者",
+    "permissions": {
+      "view": true,
+      "import": false,
+      "edit": true,
+      "save": true,
+      "export": true,
+      "admin": false
+    }
+  },
+  {
+    "value": "viewer",
+    "label": "查看者",
+    "permissions": {
+      "view": true,
+      "import": false,
+      "edit": false,
+      "save": false,
+      "export": false,
+      "admin": false
+    }
+  }
+]

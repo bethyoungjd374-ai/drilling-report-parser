@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import argparse
 import cgi
-import re
+import hashlib
+import hmac
 import json
 import mimetypes
+import re
+import secrets
+import shutil
+import uuid
 from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -20,6 +25,13 @@ from .workover_pdf_parser import parse_workover_pdf_daily_report
 ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = ROOT / "web_form"
 DATABASE_PATH = ROOT / "outputs" / "report_database.xlsx"
+SOURCE_PDF_DIR = ROOT / "outputs" / "source_pdfs"
+CONFIG_PATH = ROOT / "outputs" / "system_config.json"
+USERS_PATH = ROOT / "outputs" / "users.json"
+ROLES_PATH = ROOT / "outputs" / "roles.json"
+AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
+BACKUP_DIR = ROOT / "outputs" / "backups"
+SESSIONS: dict[str, dict[str, object]] = {}
 
 
 class FormHandler(BaseHTTPRequestHandler):
@@ -29,7 +41,12 @@ class FormHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path in {"/", ""}:
             self.send_response(302)
-            self.send_header("Location", "/web_form/")
+            self.send_header("Location", "/login/")
+            self.end_headers()
+            return
+        if parsed.path == "/login":
+            self.send_response(302)
+            self.send_header("Location", "/login/")
             self.end_headers()
             return
         if parsed.path == "/web_form":
@@ -37,43 +54,348 @@ class FormHandler(BaseHTTPRequestHandler):
             self.send_header("Location", "/web_form/")
             self.end_headers()
             return
+        if parsed.path == "/admin":
+            self.send_response(302)
+            self.send_header("Location", "/admin/")
+            self.end_headers()
+            return
+        if parsed.path == "/web_form/" and not self._current_user():
+            self._redirect_login("/web_form/")
+            return
+        if parsed.path == "/admin/":
+            user = self._current_user()
+            if not user:
+                self._redirect_login("/admin/")
+                return
+            if user.get("role") != "admin":
+                self._serve_static_file(WEB_ROOT / "admin.html")
+                return
         if parsed.path == "/api/records":
+            if not self._require_permission("view"):
+                return
             self._list_records(parsed.query)
             return
         if parsed.path == "/api/well-stats":
+            if not self._require_permission("view"):
+                return
             self._well_stats(parsed.query)
             return
         if parsed.path == "/api/production-summary":
+            if not self._require_permission("view"):
+                return
             self._production_summary(parsed.query)
             return
         if parsed.path == "/api/npt-stats":
+            if not self._require_permission("view"):
+                return
             self._npt_stats(parsed.query)
             return
         if parsed.path == "/api/download-database":
+            if not self._require_permission("export"):
+                return
             self._download_database()
+            return
+        if parsed.path == "/api/source-pdf":
+            if not self._require_permission("view"):
+                return
+            self._source_pdf(parsed.query)
+            return
+        if parsed.path == "/api/admin/session":
+            self._admin_session()
+            return
+        if parsed.path == "/api/admin/users":
+            self._admin_users()
+            return
+        if parsed.path == "/api/admin/config":
+            self._admin_config()
+            return
+        if parsed.path == "/api/admin/roles":
+            self._admin_roles()
+            return
+        if parsed.path == "/api/admin/data-status":
+            self._admin_data_status()
+            return
+        if parsed.path == "/api/admin/audit-logs":
+            self._admin_audit_logs()
             return
         self._serve_static()
 
     def do_POST(self) -> None:
+        if self.path == "/api/admin/login":
+            self._admin_login()
+            return
+        if self.path == "/api/admin/logout":
+            self._admin_logout()
+            return
+        if self.path == "/api/admin/change-password":
+            self._admin_change_password()
+            return
+        if self.path == "/api/admin/users":
+            self._admin_save_user()
+            return
+        if self.path == "/api/admin/config":
+            self._admin_save_config()
+            return
+        if self.path == "/api/admin/roles":
+            self._admin_save_roles()
+            return
+        if self.path == "/api/admin/backup":
+            self._admin_backup()
+            return
         if self.path == "/api/import-pdf":
+            if not self._require_permission("import"):
+                return
             self._import_pdf()
             return
         if self.path == "/api/import-completion-pdf":
+            if not self._require_permission("import"):
+                return
             self._import_completion_pdf()
             return
         if self.path == "/api/import-workover-pdf":
+            if not self._require_permission("import"):
+                return
             self._import_workover_pdf()
             return
         if self.path == "/api/import-move-pdf":
+            if not self._require_permission("import"):
+                return
             self._import_move_pdf()
             return
         if self.path == "/api/save-report":
+            if not self._require_permission("save"):
+                return
             self._save_report()
             return
         if self.path == "/api/load-report":
+            if not self._require_permission("view"):
+                return
             self._load_report()
             return
         self.send_error(404)
+
+    def _admin_session(self) -> None:
+        user = self._current_user()
+        self._send_json({"authenticated": bool(user), "user": _public_user(user) if user else None, "permissions": _role_permissions(user.get("role", "")) if user else {}})
+
+    def _admin_login(self) -> None:
+        payload = self._read_json_body()
+        username = str(payload.get("username", "")).strip()
+        password = str(payload.get("password", ""))
+        users = _load_users()
+        user = next((item for item in users if item.get("username") == username), None)
+        if not user or user.get("status") != "active" or not _verify_password(password, str(user.get("password_hash", ""))):
+            _write_audit(None, "login_failed", "system_admin", username, False, "invalid credentials")
+            self._send_json({"error": "用户名或密码错误。"}, status=401)
+            return
+        token = secrets.token_urlsafe(32)
+        user["last_login"] = datetime.now().isoformat(timespec="seconds")
+        _save_users(users)
+        SESSIONS[token] = {"username": username, "created_at": datetime.now().isoformat(timespec="seconds")}
+        _write_audit(user, "login", "system_admin", username, True, "")
+        self.send_response(200)
+        body = json.dumps({"ok": True, "user": _public_user(user), "permissions": _role_permissions(str(user.get("role", "")))}, ensure_ascii=False).encode("utf-8")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Set-Cookie", f"drp_session={token}; Path=/; HttpOnly; SameSite=Lax")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _admin_logout(self) -> None:
+        token = self._session_token()
+        user = self._current_user()
+        if token:
+            SESSIONS.pop(token, None)
+        _write_audit(user, "logout", "system_admin", user.get("username", "") if user else "", True, "")
+        self.send_response(200)
+        body = json.dumps({"ok": True}, ensure_ascii=False).encode("utf-8")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Set-Cookie", "drp_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _admin_change_password(self) -> None:
+        user = self._current_user()
+        if not user:
+            self._send_json({"error": "请先登录。"}, status=401)
+            return
+        payload = self._read_json_body()
+        old_password = str(payload.get("old_password", ""))
+        new_password = str(payload.get("new_password", ""))
+        if len(new_password) < 6:
+            self._send_json({"error": "新密码至少 6 位。"}, status=400)
+            return
+        users = _load_users()
+        target = next((item for item in users if item.get("username") == user.get("username")), None)
+        if not target or not _verify_password(old_password, str(target.get("password_hash", ""))):
+            self._send_json({"error": "原密码错误。"}, status=400)
+            return
+        target["password_hash"] = _hash_password(new_password)
+        target["must_change_password"] = False
+        _save_users(users)
+        _write_audit(target, "change_password", "system_admin", str(target.get("username", "")), True, "")
+        self._send_json({"ok": True, "user": _public_user(target)})
+
+    def _admin_users(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json({"users": [_public_user(item) for item in _load_users()], "roles": _role_definitions()})
+
+    def _admin_save_user(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        users = _load_users()
+        username = str(payload.get("username", "")).strip()
+        if not username:
+            self._send_json({"error": "用户名不能为空。"}, status=400)
+            return
+        existing = next((item for item in users if item.get("username") == username), None)
+        if existing is None:
+            existing = {"id": str(uuid.uuid4()), "username": username, "created_at": datetime.now().isoformat(timespec="seconds")}
+            users.append(existing)
+        new_role = str(payload.get("role", "viewer")).strip() or "viewer"
+        new_status = str(payload.get("status", "active")).strip() or "active"
+        if new_role not in {str(role.get("value", "")) for role in _role_definitions()}:
+            self._send_json({"error": "请选择有效角色。"}, status=400)
+            return
+        if existing.get("role") == "admin" and (new_role != "admin" or new_status != "active") and _active_admin_count(users) <= 1:
+            self._send_json({"error": "不能停用或降级最后一个管理员。"}, status=400)
+            return
+        existing["display_name"] = str(payload.get("display_name", "") or username).strip()
+        existing["email"] = str(payload.get("email", "")).strip()
+        existing["role"] = new_role
+        existing["status"] = new_status
+        password = str(payload.get("password", ""))
+        if password:
+            existing["password_hash"] = _hash_password(password)
+        elif not existing.get("password_hash"):
+            existing["password_hash"] = _hash_password("123456")
+        _save_users(users)
+        _write_audit(user, "save_user", "system_admin", username, True, str(existing.get("role", "")))
+        self._send_json({"ok": True, "users": [_public_user(item) for item in users]})
+
+    def _admin_config(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json({"config": _load_config()})
+
+    def _admin_save_config(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        current = _load_config()
+        current.update({key: value for key, value in payload.items() if key in _default_config()})
+        _save_config(current)
+        _write_audit(user, "save_config", "system_admin", "system_config", True, "")
+        self._send_json({"ok": True, "config": current})
+
+    def _admin_roles(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json({"roles": _role_definitions()})
+
+    def _admin_save_roles(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        roles = _normalize_roles(payload.get("roles", []))
+        active_admins = [item for item in _load_users() if item.get("role") == "admin" and item.get("status") == "active"]
+        if not active_admins:
+            self._send_json({"error": "至少需要保留一个启用的管理员账号。"}, status=400)
+            return
+        _save_roles(roles)
+        _write_audit(user, "save_roles", "system_admin", "roles", True, f"{len(roles)} roles")
+        self._send_json({"ok": True, "roles": roles})
+
+    def _admin_data_status(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        records = list_records(DATABASE_PATH)
+        by_type: dict[str, int] = {}
+        for record in records:
+            report_type = str(record.get("report_type", "") or "unknown")
+            by_type[report_type] = by_type.get(report_type, 0) + 1
+        source_pdf_count = len(list(SOURCE_PDF_DIR.glob("*.pdf"))) if SOURCE_PDF_DIR.exists() else 0
+        backups = sorted(BACKUP_DIR.glob("*.xlsx"), key=lambda item: item.stat().st_mtime, reverse=True)[:10] if BACKUP_DIR.exists() else []
+        self._send_json({
+            "records": len(records),
+            "by_type": by_type,
+            "database_path": str(DATABASE_PATH),
+            "database_size": DATABASE_PATH.stat().st_size if DATABASE_PATH.exists() else 0,
+            "database_updated_at": datetime.fromtimestamp(DATABASE_PATH.stat().st_mtime).isoformat(timespec="seconds") if DATABASE_PATH.exists() else "",
+            "source_pdf_count": source_pdf_count,
+            "backups": [{"name": item.name, "size": item.stat().st_size, "created_at": datetime.fromtimestamp(item.stat().st_mtime).isoformat(timespec="seconds")} for item in backups],
+        })
+
+    def _admin_backup(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        if not DATABASE_PATH.exists():
+            initialize_database(DATABASE_PATH)
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        target = BACKUP_DIR / f"report_database_{stamp}.xlsx"
+        shutil.copyfile(DATABASE_PATH, target)
+        _write_audit(user, "backup_database", "data_maintenance", target.name, True, "")
+        self._send_json({"ok": True, "backup": {"name": target.name, "size": target.stat().st_size}})
+
+    def _admin_audit_logs(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        logs = _read_audit_logs(limit=120)
+        self._send_json({"logs": logs})
+
+    def _session_token(self) -> str:
+        cookie = self.headers.get("Cookie", "")
+        for part in cookie.split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == "drp_session":
+                return value
+        return ""
+
+    def _current_user(self) -> dict[str, object] | None:
+        _ensure_admin_files()
+        session = SESSIONS.get(self._session_token())
+        if not session:
+            return None
+        username = str(session.get("username", ""))
+        return next((user for user in _load_users() if user.get("username") == username and user.get("status") == "active"), None)
+
+    def _require_admin(self) -> dict[str, object] | None:
+        user = self._current_user()
+        if not user:
+            self._send_json({"error": "请先登录后台。"}, status=401)
+            return None
+        if user.get("role") != "admin":
+            self._send_json({"error": "当前账号没有后台管理权限。"}, status=403)
+            return None
+        return user
+
+    def _require_permission(self, permission: str) -> dict[str, object] | None:
+        user = self._current_user()
+        if not user:
+            self._send_json({"error": "请先登录。"}, status=401)
+            return None
+        if not _role_permissions(str(user.get("role", ""))).get(permission):
+            self._send_json({"error": "当前账号没有该操作权限。"}, status=403)
+            return None
+        return user
+
+    def _redirect_login(self, next_path: str) -> None:
+        self.send_response(302)
+        self.send_header("Location", f"/login/?next={next_path}")
+        self.end_headers()
 
     def _import_pdf(self) -> None:
         try:
@@ -89,9 +411,11 @@ class FormHandler(BaseHTTPRequestHandler):
             if Path(upload.filename).suffix.lower() != ".pdf":
                 self._send_json({"error": "Only PDF files are supported."}, status=400)
                 return
-            payload = parse_pdf_daily_report(upload.file.read())
+            pdf_bytes = upload.file.read()
+            payload = parse_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "drilling")
+            self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
@@ -110,9 +434,11 @@ class FormHandler(BaseHTTPRequestHandler):
             if Path(upload.filename).suffix.lower() != ".pdf":
                 self._send_json({"error": "Only PDF files are supported."}, status=400)
                 return
-            payload = parse_completion_pdf_daily_report(upload.file.read())
+            pdf_bytes = upload.file.read()
+            payload = parse_completion_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "completion")
+            self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
@@ -131,9 +457,11 @@ class FormHandler(BaseHTTPRequestHandler):
             if Path(upload.filename).suffix.lower() != ".pdf":
                 self._send_json({"error": "Only PDF files are supported."}, status=400)
                 return
-            payload = parse_workover_pdf_daily_report(upload.file.read())
+            pdf_bytes = upload.file.read()
+            payload = parse_workover_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "workover")
+            self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
@@ -152,9 +480,11 @@ class FormHandler(BaseHTTPRequestHandler):
             if Path(upload.filename).suffix.lower() != ".pdf":
                 self._send_json({"error": "Only PDF files are supported."}, status=400)
                 return
-            payload = parse_move_pdf_daily_report(upload.file.read())
+            pdf_bytes = upload.file.read()
+            payload = parse_move_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "move")
+            self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
@@ -255,6 +585,23 @@ class FormHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _source_pdf(self, query: str) -> None:
+        record_id = (parse_qs(query).get("record_id") or [""])[0].strip()
+        if not record_id:
+            self.send_error(400, "record_id is required")
+            return
+        target = _source_pdf_path(record_id)
+        if not target.exists():
+            self.send_error(404, "Source PDF not found")
+            return
+        data = target.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", 'inline; filename="source-report.pdf"')
+        self.end_headers()
+        self.wfile.write(data)
+
     def _store_payload(self, payload: dict[str, object], report_type: str) -> None:
         metadata = payload.setdefault("metadata", {})
         warnings = _normalize_payload_values(payload) + _validation_warnings(payload, report_type)
@@ -270,6 +617,17 @@ class FormHandler(BaseHTTPRequestHandler):
         )
         if isinstance(metadata, dict):
             metadata.update(result)
+
+    def _store_source_pdf(self, payload: dict[str, object], pdf_bytes: bytes) -> None:
+        if not _load_config().get("save_source_pdf", True):
+            return
+        metadata = payload.get("metadata", {})
+        record_id = str(metadata.get("record_id", "") if isinstance(metadata, dict) else "").strip()
+        if not record_id or not pdf_bytes:
+            return
+        target = _source_pdf_path(record_id)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(pdf_bytes)
 
     def _read_json_body(self) -> dict[str, object]:
         length = int(self.headers.get("Content-Length", "0") or 0)
@@ -290,12 +648,22 @@ class FormHandler(BaseHTTPRequestHandler):
 
     def _serve_static(self) -> None:
         raw_path = unquote(self.path.split("?", 1)[0])
-        if raw_path.startswith("/web_form/"):
+        if raw_path.startswith("/login/"):
+            rel = raw_path.removeprefix("/login/")
+            target = WEB_ROOT / (rel or "login.html")
+        elif raw_path.startswith("/admin/"):
+            rel = raw_path.removeprefix("/admin/")
+            target = WEB_ROOT / (rel or "admin.html")
+        elif raw_path.startswith("/web_form/"):
             rel = raw_path.removeprefix("/web_form/")
             target = WEB_ROOT / (rel or "index.html")
         else:
             self.send_error(404)
             return
+
+        self._serve_static_file(target)
+
+    def _serve_static_file(self, target: Path) -> None:
 
         target = target.resolve()
         if not str(target).startswith(str(WEB_ROOT.resolve())) or not target.exists() or target.is_dir():
@@ -313,11 +681,244 @@ class FormHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def _source_pdf_path(record_id: str) -> Path:
+    safe_name = re.sub(r"[^A-Za-z0-9_.:-]+", "_", record_id).strip("._")
+    return SOURCE_PDF_DIR / f"{safe_name or 'record'}.pdf"
+
+
+def _default_config() -> dict[str, object]:
+    return {
+        "system_name": "钻完井日报分析系统",
+        "default_language": "zh",
+        "records_per_page": 10,
+        "excel_path": str(DATABASE_PATH),
+        "save_source_pdf": True,
+        "source_pdf_retention_days": 365,
+    }
+
+
+def _permission_keys() -> tuple[str, ...]:
+    return ("view", "import", "edit", "save", "export", "admin")
+
+
+def _default_roles() -> list[dict[str, object]]:
+    return [
+        {"value": "admin", "label": "管理员", "permissions": {key: True for key in _permission_keys()}},
+        {"value": "engineer", "label": "工程师", "permissions": {"view": True, "import": True, "edit": True, "save": True, "export": True, "admin": False}},
+        {"value": "reviewer", "label": "审阅者", "permissions": {"view": True, "import": False, "edit": True, "save": True, "export": True, "admin": False}},
+        {"value": "viewer", "label": "查看者", "permissions": {"view": True, "import": False, "edit": False, "save": False, "export": False, "admin": False}},
+    ]
+
+
+def _role_definitions() -> list[dict[str, object]]:
+    return _normalize_roles(_load_roles())
+
+
+def _role_permissions(role: str) -> dict[str, bool]:
+    base = {key: False for key in _permission_keys()}
+    target = next((item for item in _role_definitions() if item.get("value") == role), None)
+    if not target:
+        return base
+    permissions = target.get("permissions") if isinstance(target.get("permissions"), dict) else {}
+    return {key: bool(permissions.get(key)) for key in _permission_keys()}
+
+
+def _normalize_role_value(value: object) -> str:
+    return re.sub(r"[^a-zA-Z0-9_-]+", "_", str(value or "").strip().lower()).strip("_")[:40]
+
+
+def _normalize_roles(raw_roles: object) -> list[dict[str, object]]:
+    source = raw_roles if isinstance(raw_roles, list) else []
+    defaults = {str(role["value"]): role for role in _default_roles()}
+    roles: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for item in source:
+        if not isinstance(item, dict):
+            continue
+        value = _normalize_role_value(item.get("value"))
+        if not value or value in seen:
+            continue
+        label = str(item.get("label") or value).strip()[:40] or value
+        input_permissions = item.get("permissions") if isinstance(item.get("permissions"), dict) else {}
+        permissions = {key: bool(input_permissions.get(key)) for key in _permission_keys()}
+        if value == "admin":
+            label = label or "管理员"
+            permissions = {key: True for key in _permission_keys()}
+        roles.append({"value": value, "label": label, "permissions": permissions})
+        seen.add(value)
+    if "admin" not in seen:
+        roles.insert(0, defaults["admin"])
+        seen.add("admin")
+    for value in ("engineer", "reviewer", "viewer"):
+        if value not in seen:
+            roles.append(defaults[value])
+            seen.add(value)
+    return roles
+
+
+def _ensure_admin_files() -> None:
+    ROOT.joinpath("outputs").mkdir(parents=True, exist_ok=True)
+    if not CONFIG_PATH.exists():
+        _save_config(_default_config())
+    if not ROLES_PATH.exists():
+        _save_roles(_default_roles())
+    if not USERS_PATH.exists():
+        admin = {
+            "id": str(uuid.uuid4()),
+            "username": "admin",
+            "display_name": "系统管理员",
+            "email": "",
+            "role": "admin",
+            "status": "active",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "last_login": "",
+            "must_change_password": True,
+            "password_hash": _hash_password("admin123"),
+        }
+        _save_users([admin])
+        _write_audit(admin, "init_admin", "system_admin", "admin", True, "default password admin123")
+
+
+def _load_config() -> dict[str, object]:
+    _ensure_parent(CONFIG_PATH)
+    if not CONFIG_PATH.exists():
+        return _default_config()
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = {}
+    return {**_default_config(), **{key: data.get(key) for key in _default_config() if key in data}}
+
+
+def _save_config(config: dict[str, object]) -> None:
+    _ensure_parent(CONFIG_PATH)
+    CONFIG_PATH.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _load_roles() -> list[dict[str, object]]:
+    _ensure_parent(ROLES_PATH)
+    if not ROLES_PATH.exists():
+        return _default_roles()
+    try:
+        data = json.loads(ROLES_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = []
+    return data if isinstance(data, list) else _default_roles()
+
+
+def _save_roles(roles: list[dict[str, object]]) -> None:
+    _ensure_parent(ROLES_PATH)
+    ROLES_PATH.write_text(json.dumps(_normalize_roles(roles), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _load_users() -> list[dict[str, object]]:
+    if not USERS_PATH.exists():
+        _ensure_admin_files()
+    try:
+        data = json.loads(USERS_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = []
+    return data if isinstance(data, list) else []
+
+
+def _save_users(users: list[dict[str, object]]) -> None:
+    _ensure_parent(USERS_PATH)
+    USERS_PATH.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _public_user(user: dict[str, object]) -> dict[str, object]:
+    data = {key: user.get(key, "") for key in ("id", "username", "display_name", "email", "role", "status", "created_at", "last_login")}
+    data["must_change_password"] = bool(user.get("must_change_password"))
+    return data
+
+
+def _active_admin_count(users: list[dict[str, object]]) -> int:
+    return sum(1 for user in users if user.get("role") == "admin" and user.get("status") == "active")
+
+
+def _reset_admin_password(username: str, password: str) -> None:
+    users = _load_users()
+    target = next((item for item in users if item.get("username") == username), None)
+    if target is None:
+        target = {
+            "id": str(uuid.uuid4()),
+            "username": username,
+            "display_name": "系统管理员",
+            "email": "",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+        }
+        users.append(target)
+    target["role"] = "admin"
+    target["status"] = "active"
+    target["password_hash"] = _hash_password(password)
+    target["must_change_password"] = True
+    _save_users(users)
+    _write_audit(target, "reset_admin_password", "system_admin", username, True, "command line reset")
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 120_000).hex()
+    return f"pbkdf2_sha256${salt}${digest}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        scheme, salt, digest = stored.split("$", 2)
+    except ValueError:
+        return False
+    if scheme != "pbkdf2_sha256":
+        return False
+    expected = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 120_000).hex()
+    return hmac.compare_digest(expected, digest)
+
+
+def _write_audit(user: dict[str, object] | None, action: str, module: str, target: str, ok: bool, note: str = "") -> None:
+    _ensure_parent(AUDIT_LOG_PATH)
+    entry = {
+        "time": datetime.now().isoformat(timespec="seconds"),
+        "user": user.get("username", "") if user else "",
+        "display_name": user.get("display_name", "") if user else "",
+        "action": action,
+        "module": module,
+        "target": target,
+        "result": "success" if ok else "failed",
+        "note": note,
+    }
+    with AUDIT_LOG_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def _read_audit_logs(limit: int = 100) -> list[dict[str, object]]:
+    if not AUDIT_LOG_PATH.exists():
+        return []
+    lines = AUDIT_LOG_PATH.read_text(encoding="utf-8").splitlines()[-limit:]
+    logs = []
+    for line in reversed(lines):
+        try:
+            logs.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return logs
+
+
+def _ensure_parent(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the drilling report web form with PDF import.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8080, type=int)
+    parser.add_argument("--reset-admin", action="store_true", help="Reset or create an admin account, then exit.")
+    parser.add_argument("--admin-username", default="admin")
+    parser.add_argument("--admin-password", default="")
     args = parser.parse_args()
+    if args.reset_admin:
+        password = args.admin_password or secrets.token_urlsafe(10)
+        _reset_admin_password(args.admin_username, password)
+        print(f"Admin reset complete. username={args.admin_username} password={password}")
+        return
     server = ThreadingHTTPServer((args.host, args.port), FormHandler)
     print(f"Drilling report form: http://{args.host}:{args.port}/web_form/")
     server.serve_forever()

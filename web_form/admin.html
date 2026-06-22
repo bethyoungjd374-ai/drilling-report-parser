@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>系统后台 - 厄瓜油田 Report Platform</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/web_form/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar admin-sidebar" aria-label="系统后台菜单">
+        <div class="brand">
+          <div class="brand-mark">EC</div>
+          <div>
+            <strong>厄瓜油田</strong>
+            <span>Report Platform</span>
+          </div>
+        </div>
+        <nav class="system-nav admin-sidebar-nav">
+          <div class="menu-group open">
+            <button class="menu-group-toggle" type="button" aria-expanded="true">
+              <span class="admin-menu-icon icon-settings" aria-hidden="true"></span>
+              <span>系统管理</span>
+              <span class="menu-chevron">v</span>
+            </button>
+            <div class="menu-items">
+              <a href="#" class="menu-link admin-menu-link active" data-admin-tab="overview"><span class="admin-menu-icon icon-overview" aria-hidden="true"></span><span>后台概览</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="users"><span class="admin-menu-icon icon-users" aria-hidden="true"></span><span>账号管理</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="roles"><span class="admin-menu-icon icon-shield" aria-hidden="true"></span><span>角色权限</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="config"><span class="admin-menu-icon icon-sliders" aria-hidden="true"></span><span>系统配置</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="data"><span class="admin-menu-icon icon-database" aria-hidden="true"></span><span>数据维护</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="logs"><span class="admin-menu-icon icon-logs" aria-hidden="true"></span><span>操作日志</span></a>
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      <main class="workspace admin-standalone">
+        <header class="topbar placeholder-topbar">
+          <div>
+            <p class="page-kicker">SYSTEM ADMIN</p>
+            <h1>系统后台</h1>
+            <p class="source-file-name">账号权限、系统参数、数据维护与操作审计</p>
+          </div>
+          <div class="top-actions">
+            <a class="button secondary" href="/web_form/">进入前台</a>
+            <button class="button secondary" type="button" data-admin-logout>退出登录</button>
+          </div>
+        </header>
+
+        <section class="admin-console" data-admin-console>
+          <section class="admin-panel" data-admin-panel="overview"></section>
+          <section class="admin-panel" data-admin-panel="users" hidden></section>
+          <section class="admin-panel" data-admin-panel="roles" hidden></section>
+          <section class="admin-panel" data-admin-panel="config" hidden></section>
+          <section class="admin-panel" data-admin-panel="data" hidden></section>
+          <section class="admin-panel" data-admin-panel="logs" hidden></section>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/web_form/admin.js"></script>
+  </body>
+</html>

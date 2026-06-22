@@ -12,7 +12,7 @@ const i18n = {
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
       importPdf: "导入 PDF 日报", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
-      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "预览", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型",
+      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
       metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性",
       sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "Survey Data (Last 6)", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "Operations", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
@@ -82,7 +82,7 @@ const i18n = {
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
       importPdf: "Import PDF Report", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
-      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "Preview", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type",
+      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
       metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness",
       sectionBasic: "Basic Info", sectionSummary: "Operations Summary", sectionWellControl: "Well Control & Hydraulics", sectionSurvey: "Survey Data (Last 6)", sectionMud: "Mud Data", sectionBitBha: "Bit & BHA", sectionOperations: "Operations", sectionCosts: "Costs & Bulks", sectionIncidents: "Incidents & Remarks", sectionPersonnel: "Personnel", sectionPerforationIntervals: "Perforated Intervals",
@@ -152,7 +152,7 @@ const i18n = {
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
       importPdf: "Importar Reporte PDF", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
-      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Vista previa", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo",
+      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
       metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte",
       sectionBasic: "Información Básica", sectionSummary: "Resumen Operacional", sectionWellControl: "Control de Pozo e Hidráulica", sectionSurvey: "Datos Direccionales (Últimos 6)", sectionMud: "Datos de Lodo", sectionBitBha: "Broca y BHA", sectionOperations: "Operaciones", sectionCosts: "Costos e Inventario", sectionIncidents: "Incidentes y Observaciones", sectionPersonnel: "Personal", sectionPerforationIntervals: "Intervalos Cañoneados",
@@ -246,11 +246,12 @@ let activeMenuTarget = "drilling-daily";
 let drillingSourceFileName = "";
 const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
+const RECORDS_PER_PAGE = 10;
 const recordState = {
-  drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" },
-  completion: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" },
-  workover: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" },
-  move: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "" }
+  drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
+  completion: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
+  workover: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
+  move: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" }
 };
 const serverWarnings = { drilling: [], completion: [], workover: [], move: [] };
 const wellStatsCache = {};
@@ -258,7 +259,24 @@ const analyticsState = {
   production: { payload: null },
   npt: { payload: null }
 };
+const adminState = {
+  authenticated: false,
+  user: null,
+  permissions: {},
+  tab: "overview",
+  users: [],
+  roles: [],
+  config: {},
+  dataStatus: null,
+  logs: []
+};
+const frontSession = {
+  authenticated: false,
+  user: null,
+  permissions: {}
+};
 const uploadJobs = [];
+let sourcePdfObjectUrl = "";
 const reportNames = {
   drilling: "钻井日报",
   completion: "完井日报",
@@ -315,14 +333,90 @@ function setReportMode(reportType, mode) {
     el.hidden = mode !== "detail";
   });
   document.querySelectorAll(`[data-back-records="${reportType}"], [data-save-report="${reportType}"]`).forEach((el) => {
-    el.hidden = mode !== "detail";
+    el.hidden = mode !== "detail" || (el.matches("[data-save-report]") && !frontCan("save"));
   });
+  applyFrontPermissions();
 }
 
 function showReportRecords(reportType) {
   setReportMode(reportType, "records");
   refreshRecords(reportType);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function frontCan(permission) {
+  return Boolean(frontSession.permissions?.[permission]);
+}
+
+function frontRoleLabel(role) {
+  return ({ admin: "管理员", engineer: "工程师", reviewer: "审阅者", viewer: "查看者" }[role] || role || "-");
+}
+
+async function loadFrontSession() {
+  try {
+    const payload = await adminRequest("/api/admin/session");
+    frontSession.authenticated = Boolean(payload.authenticated);
+    frontSession.user = payload.user || null;
+    frontSession.permissions = payload.permissions || {};
+    if (!frontSession.authenticated) {
+      window.location.href = `/login/?next=${encodeURIComponent("/web_form/")}`;
+      return;
+    }
+    renderFrontUserBar();
+    applyFrontPermissions();
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || "登录状态读取失败");
+  }
+}
+
+function renderFrontUserBar() {
+  document.querySelectorAll(".front-userbar").forEach((bar) => bar.remove());
+  const user = frontSession.user || {};
+  const name = user.display_name || user.username || "-";
+  document.querySelectorAll(".module-page > .topbar .top-actions, .placeholder-topbar .top-actions").forEach((actions) => {
+    const bar = document.createElement("div");
+    bar.className = "front-userbar";
+    bar.innerHTML = `
+      <span class="front-user-name">${escapeHtml(name)}</span>
+      <small>${escapeHtml(frontRoleLabel(user.role))}</small>
+      ${frontCan("admin") ? `<a class="link-button" href="/admin/">后台</a>` : ""}
+      <button class="link-button" type="button" data-front-logout>退出</button>
+    `;
+    actions.appendChild(bar);
+  });
+}
+
+function applyFrontPermissions() {
+  const canImport = frontCan("import");
+  const canEdit = frontCan("edit");
+  const canSave = frontCan("save");
+  const canExport = frontCan("export");
+  document.body.dataset.userRole = frontSession.user?.role || "";
+  document.querySelectorAll("#importPdf,#importCompletionPdf,#importWorkoverPdf,#importMovePdf,[data-record-upload]").forEach((el) => {
+    el.hidden = !canImport;
+    el.disabled = !canImport;
+  });
+  document.querySelectorAll("[data-save-report]").forEach((el) => {
+    el.hidden = el.hidden || !canSave;
+    el.disabled = !canSave || el.disabled;
+  });
+  document.querySelectorAll(".download-link,[data-analytics-export]").forEach((el) => {
+    el.hidden = !canExport;
+    el.disabled = !canExport;
+  });
+  document.querySelectorAll(".report-form input,.report-form textarea,.report-form select,.report-form button").forEach((el) => {
+    el.disabled = !canEdit;
+  });
+  document.querySelectorAll("[data-add-row],.row-delete").forEach((el) => {
+    el.hidden = !canEdit;
+    el.disabled = !canEdit;
+  });
+}
+
+async function logoutFront() {
+  await adminRequest("/api/admin/logout", { method: "POST", body: "{}" }).catch(() => {});
+  window.location.href = "/login/";
 }
 
 function showReportDetail(reportType) {
@@ -402,6 +496,7 @@ function applyLanguage(language) {
     button.classList.toggle("active", button.dataset.lang === language);
   });
   document.querySelectorAll("label").forEach((label) => {
+    if (label.closest(".admin-page")) return;
     const control = label.querySelector("[name]");
     if (control) setLeadingLabelText(label, labelFor(control.name));
   });
@@ -461,6 +556,7 @@ function addRow(tableId, values = []) {
   action.appendChild(button);
   tr.appendChild(action);
   tbody.appendChild(tr);
+  applyFrontPermissions();
 }
 
 function loadRows(rows = {}, tableIds = drillingTableIds) {
@@ -518,7 +614,7 @@ function renderRecordDashboard(reportType) {
   const jobs = uploadJobs.filter((job) => job.reportType === reportType);
   const wells = [...new Set(records.map((record) => record.wellbore).filter(Boolean))];
   const sourceWells = wells.length ? wells : fallbackWells;
-  const wellList = sourceWells.filter((well) => !state.search || well.toLowerCase().includes(state.search.toLowerCase()));
+  const wellList = sortWells(sourceWells, records, state.sortBy).filter((well) => !state.search || well.toLowerCase().includes(state.search.toLowerCase()));
   if (!state.selectedWell || !wellList.includes(state.selectedWell)) state.selectedWell = wellList[0] || "";
   const selectedRecords = records.filter((record) => !state.selectedWell || record.wellbore === state.selectedWell);
   const selectedJobs = jobs.filter((job) => !state.selectedWell || !job.wellbore || job.wellbore === state.selectedWell);
@@ -534,6 +630,9 @@ function renderRecordDashboard(reportType) {
   const scShare = percentage(wellStats.sc_hours, wellStats.total_hours);
   const completeness = reportCompleteness(selectedRecords, missingDays);
   const tableRecords = sortedRecords(state.selectedDate ? selectedRecords.filter((record) => record.reportDate === state.selectedDate) : selectedRecords);
+  const totalTableRows = tableRecords.length + selectedJobs.length;
+  const totalPages = Math.max(1, Math.ceil(totalTableRows / RECORDS_PER_PAGE));
+  state.page = Math.min(Math.max(Number(state.page) || 1, 1), totalPages);
 
   host.innerHTML = `
     <div class="record-layout">
@@ -542,6 +641,11 @@ function renderRecordDashboard(reportType) {
           <h2>${ui("wellSelection")}</h2>
         </div>
         <input class="well-search" type="search" value="${escapeHtml(state.search)}" placeholder="${ui("searchWell")}" data-well-search="${reportType}" />
+        <div class="well-sort-toggle" role="group" aria-label="井排序">
+          ${wellSortButton(reportType, state.sortBy, "first", ui("sortFirstUpload"))}
+          ${wellSortButton(reportType, state.sortBy, "last", ui("sortLastUpload"))}
+          ${wellSortButton(reportType, state.sortBy, "name", ui("sortWellName"))}
+        </div>
         <div class="well-list">
           ${wellList.map((well, index) => {
             const wellRecords = records.filter((record) => record.wellbore === well);
@@ -589,13 +693,44 @@ function renderRecordDashboard(reportType) {
             </div>
           </div>
           <div class="table-wrap">
-            ${recordTableMarkup(reportType, tableRecords, selectedJobs)}
+            ${recordTableMarkup(reportType, tableRecords, selectedJobs, state.page)}
           </div>
         </section>
       </section>
     </div>
   `;
   requestWellStats(reportType, state.selectedWell);
+  applyFrontPermissions();
+}
+
+function wellSortButton(reportType, activeSort, sortValue, label) {
+  return `<button class="${activeSort === sortValue ? "active" : ""}" type="button" data-well-sort="${sortValue}" data-report-type="${reportType}">${escapeHtml(label)}</button>`;
+}
+
+function sortWells(wells, records, sortBy = "last") {
+  const metrics = wellDateMetrics(records);
+  return [...wells].sort((left, right) => {
+    const leftMetrics = metrics[left] || {};
+    const rightMetrics = metrics[right] || {};
+    if (sortBy === "name") return left.localeCompare(right, "zh-Hans-CN", { numeric: true, sensitivity: "base" });
+    const key = sortBy === "first" ? "first" : "last";
+    const dateCompare = String(rightMetrics[key] || "").localeCompare(String(leftMetrics[key] || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return left.localeCompare(right, "zh-Hans-CN", { numeric: true, sensitivity: "base" });
+  });
+}
+
+function wellDateMetrics(records) {
+  return records.reduce((metrics, record) => {
+    const well = record.wellbore;
+    const dateValue = record.reportDate || "";
+    if (!well || !dateValue) return metrics;
+    const item = metrics[well] || { first: dateValue, last: dateValue };
+    if (dateValue < item.first) item.first = dateValue;
+    if (dateValue > item.last) item.last = dateValue;
+    metrics[well] = item;
+    return metrics;
+  }, {});
 }
 
 function shiftMonth(reportType, delta) {
@@ -794,39 +929,121 @@ function calendarMarkup(reportType, dateValue, uploadedDays, warningDays, missin
   `;
 }
 
-function recordTableMarkup(reportType, records, jobs = []) {
-  if (!records.length && !jobs.length) return `<div class="empty-records">${ui("noRecords")}</div>`;
+function recordTableMarkup(reportType, records, jobs = [], page = 1) {
+  const rows = [
+    ...jobs.map((job) => ({ kind: "job", value: job })),
+    ...records.map((record) => ({ kind: "record", value: record })),
+  ];
+  if (!rows.length) return `<div class="empty-records">${ui("noRecords")}</div>`;
+  const totalPages = Math.max(1, Math.ceil(rows.length / RECORDS_PER_PAGE));
+  const currentPage = Math.min(Math.max(Number(page) || 1, 1), totalPages);
+  const pageRows = rows.slice((currentPage - 1) * RECORDS_PER_PAGE, currentPage * RECORDS_PER_PAGE);
   return `
     <table class="record-table">
       <thead><tr><th>${ui("date")}</th><th>${ui("well")}</th><th>${ui("reportType")}</th><th>${ui("fileName")}</th><th>${ui("uploadTime")}</th><th>${ui("uploader")}</th><th>${ui("status")}</th><th>${ui("operation")}</th></tr></thead>
       <tbody>
-        ${jobs.map((job) => `
-          <tr>
-            <td>${escapeHtml(job.reportDate || "-")}</td>
-            <td>${escapeHtml(job.wellbore || "识别中")}</td>
-            <td><span class="type-pill">${reportName(reportType)}</span></td>
-            <td>${escapeHtml(job.fileName)}</td>
-            <td>${escapeHtml(formatRecordTime(job.updated_at))}</td>
-            <td>${escapeHtml(job.uploader || "本地导入")}</td>
-            <td>${jobStatusMarkup(job)}</td>
-            <td>${job.recordId ? `<button class="link-button" type="button" data-record-preview="${escapeHtml(job.recordId)}" data-report-type="${reportType}">${ui("preview")}</button>` : "-"}</td>
-          </tr>
-        `).join("")}
-        ${records.map((record) => `
-          <tr>
-            <td>${escapeHtml(record.reportDate)}</td>
-            <td>${escapeHtml(record.wellbore)}</td>
-            <td><span class="type-pill">${reportName(reportType)}</span></td>
-            <td>${escapeHtml(record.source_file || `${record.wellbore || reportType}_${record.reportDate || "report"}.pdf`)}</td>
-            <td>${escapeHtml(formatRecordTime(record.updated_at || record.created_at))}</td>
-            <td>${escapeHtml(record.uploader || "本地导入")}</td>
-            <td>${recordStatusMarkup(record)}</td>
-            <td><button class="link-button" type="button" data-record-preview="${escapeHtml(record.record_id)}" data-report-type="${reportType}">${ui("preview")}</button></td>
-          </tr>
-        `).join("")}
+        ${pageRows.map((row) => row.kind === "job" ? jobRecordRowMarkup(reportType, row.value) : savedRecordRowMarkup(reportType, row.value)).join("")}
       </tbody>
     </table>
+    ${recordPaginationMarkup(reportType, currentPage, totalPages, rows.length)}
   `;
+}
+
+function jobRecordRowMarkup(reportType, job) {
+  return `
+    <tr>
+      <td>${escapeHtml(job.reportDate || "-")}</td>
+      <td>${escapeHtml(job.wellbore || "识别中")}</td>
+      <td><span class="type-pill">${reportName(reportType)}</span></td>
+      <td>${escapeHtml(job.fileName)}</td>
+      <td>${escapeHtml(formatRecordTime(job.updated_at))}</td>
+      <td>${escapeHtml(job.uploader || "本地导入")}</td>
+      <td>${jobStatusMarkup(job)}</td>
+      <td>${job.recordId ? `<button class="link-button" type="button" data-record-preview="${escapeHtml(job.recordId)}" data-report-type="${reportType}">${ui("preview")}</button>` : "-"}</td>
+    </tr>
+  `;
+}
+
+function savedRecordRowMarkup(reportType, record) {
+  const sourceName = record.source_file || `${record.wellbore || reportType}_${record.reportDate || "report"}.pdf`;
+  return `
+    <tr>
+      <td>${escapeHtml(record.reportDate)}</td>
+      <td>${escapeHtml(record.wellbore)}</td>
+      <td><span class="type-pill">${reportName(reportType)}</span></td>
+      <td><button class="source-file-button" type="button" data-source-pdf="${escapeHtml(record.record_id)}" data-source-name="${escapeHtml(sourceName)}">${escapeHtml(sourceName)}</button></td>
+      <td>${escapeHtml(formatRecordTime(record.updated_at || record.created_at))}</td>
+      <td>${escapeHtml(record.uploader || "本地导入")}</td>
+      <td>${recordStatusMarkup(record)}</td>
+      <td><button class="link-button" type="button" data-record-preview="${escapeHtml(record.record_id)}" data-report-type="${reportType}">${ui("preview")}</button></td>
+    </tr>
+  `;
+}
+
+function recordPaginationMarkup(reportType, currentPage, totalPages, totalRows) {
+  return `
+    <div class="record-pagination">
+      <span>${totalRows} ${ui("recordsCount")} / ${ui("page")} ${currentPage} / ${totalPages}</span>
+      <div class="record-page-buttons">
+        <button class="icon-button" type="button" data-record-page="${currentPage - 1}" data-report-type="${reportType}" ${currentPage <= 1 ? "disabled" : ""} aria-label="${ui("prevPage")}">‹</button>
+        <button class="icon-button" type="button" data-record-page="${currentPage + 1}" data-report-type="${reportType}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="${ui("nextPage")}">›</button>
+      </div>
+    </div>
+  `;
+}
+
+async function openSourcePdf(recordId, sourceName = "") {
+  const modal = document.querySelector("#sourcePdfModal");
+  const frame = document.querySelector("#sourcePdfFrame");
+  const empty = document.querySelector("#sourcePdfEmpty");
+  const title = document.querySelector("#sourcePdfTitle");
+  if (!modal || !frame || !empty || !title) return;
+  title.textContent = sourceName || ui("sourcePdfTitle");
+  empty.hidden = true;
+  frame.hidden = false;
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+  if (sourcePdfObjectUrl) URL.revokeObjectURL(sourcePdfObjectUrl);
+  sourcePdfObjectUrl = "";
+  try {
+    const response = await fetch(`/api/source-pdf?record_id=${encodeURIComponent(recordId)}`);
+    if (!response.ok) {
+      showSourcePdfMissing(sourceName);
+      return;
+    }
+    const blob = await response.blob();
+    sourcePdfObjectUrl = URL.createObjectURL(blob);
+    frame.src = `${sourcePdfObjectUrl}#toolbar=1&navpanes=0`;
+  } catch (error) {
+    console.error(error);
+    showSourcePdfMissing(sourceName);
+  }
+}
+
+function showSourcePdfMissing(sourceName = "") {
+  const modal = document.querySelector("#sourcePdfModal");
+  const frame = document.querySelector("#sourcePdfFrame");
+  const empty = document.querySelector("#sourcePdfEmpty");
+  const title = document.querySelector("#sourcePdfTitle");
+  if (!modal || !frame || !empty || !title) return;
+  title.textContent = sourceName || ui("sourcePdfTitle");
+  frame.hidden = true;
+  frame.removeAttribute("src");
+  empty.hidden = false;
+  empty.textContent = ui("sourcePdfMissing");
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+}
+
+function closeSourcePdf() {
+  const modal = document.querySelector("#sourcePdfModal");
+  const frame = document.querySelector("#sourcePdfFrame");
+  if (!modal || !frame) return;
+  modal.hidden = true;
+  frame.removeAttribute("src");
+  if (sourcePdfObjectUrl) URL.revokeObjectURL(sourcePdfObjectUrl);
+  sourcePdfObjectUrl = "";
+  document.body.classList.remove("modal-open");
 }
 
 function recordStatusMarkup(record) {
@@ -1047,6 +1264,323 @@ function exportAnalytics(kind) {
   link.download = `${kind}-analytics.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+async function adminRequest(path, options = {}) {
+  const response = await fetch(path, {
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "后台请求失败");
+  return payload;
+}
+
+async function loadAdminSession() {
+  try {
+    const payload = await adminRequest("/api/admin/session");
+    adminState.authenticated = payload.authenticated;
+    adminState.user = payload.user || null;
+    adminState.permissions = payload.permissions || {};
+    renderAdminShell();
+    if (adminState.authenticated && adminState.permissions.admin) await loadAdminData();
+  } catch (error) {
+    console.error(error);
+    renderAdminShell();
+  }
+}
+
+async function loadAdminData() {
+  try {
+    const [users, config, dataStatus, logs] = await Promise.all([
+      adminRequest("/api/admin/users"),
+      adminRequest("/api/admin/config"),
+      adminRequest("/api/admin/data-status"),
+      adminRequest("/api/admin/audit-logs"),
+    ]);
+    adminState.users = users.users || [];
+    adminState.roles = users.roles || [];
+    adminState.config = config.config || {};
+    adminState.dataStatus = dataStatus;
+    adminState.logs = logs.logs || [];
+    renderAdminPanels();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderAdminShell() {
+  const loginPanel = document.querySelector("[data-admin-login]");
+  const consolePanel = document.querySelector("[data-admin-console]");
+  const logoutButton = document.querySelector("[data-admin-logout]");
+  if (!loginPanel || !consolePanel || !logoutButton) return;
+  loginPanel.hidden = adminState.authenticated;
+  consolePanel.hidden = !adminState.authenticated;
+  logoutButton.hidden = !adminState.authenticated;
+  if (adminState.authenticated && !adminState.permissions.admin) {
+    consolePanel.querySelector(".admin-tabs")?.setAttribute("hidden", "");
+    consolePanel.querySelector('[data-admin-panel="overview"]').hidden = false;
+    consolePanel.querySelector('[data-admin-panel="overview"]').innerHTML = `<section class="panel"><div class="panel-heading"><h2>无后台权限</h2><span class="panel-note">当前账号可以登录，但没有系统后台管理权限。</span></div></section>`;
+    consolePanel.querySelectorAll('[data-admin-panel]:not([data-admin-panel="overview"])').forEach((panel) => panel.hidden = true);
+    return;
+  }
+  consolePanel.querySelector(".admin-tabs")?.removeAttribute("hidden");
+  if (adminState.authenticated) renderAdminPanels();
+}
+
+function renderAdminPanels() {
+  renderAdminOverview();
+  renderAdminUsers();
+  renderAdminRoles();
+  renderAdminConfig();
+  renderAdminData();
+  renderAdminLogs();
+  switchAdminTab(adminState.tab || "overview");
+}
+
+function renderAdminOverview() {
+  const host = document.querySelector('[data-admin-panel="overview"]');
+  if (!host) return;
+  const status = adminState.dataStatus || {};
+  const user = adminState.user || {};
+  host.innerHTML = `
+    <section class="admin-kpi-grid">
+      ${adminKpi("当前账号", user.display_name || user.username || "-", user.role || "")}
+      ${adminKpi("日报记录", status.records || 0, "Excel库记录数")}
+      ${adminKpi("源PDF", status.source_pdf_count || 0, "本地保存数量")}
+      ${adminKpi("库文件", fileSize(status.database_size || 0), status.database_updated_at || "未生成")}
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><h2>后台范围</h2><span class="panel-note">轻量 JSON 配置，适合单机或小团队部署</span></div>
+      <div class="admin-note-grid">
+        <span>账号与角色</span><span>配置项</span><span>Excel备份</span><span>操作日志</span>
+      </div>
+    </section>
+  `;
+}
+
+function adminKpi(label, value, caption) {
+  return `<div class="analytics-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(caption || "")}</small></div>`;
+}
+
+function renderAdminUsers() {
+  const host = document.querySelector('[data-admin-panel="users"]');
+  if (!host) return;
+  const roles = adminState.roles || [];
+  host.innerHTML = `
+    <section class="panel">
+      <div class="panel-heading"><h2>账号管理</h2><span class="panel-note">新增账号、分配角色、启停账号</span></div>
+      <div class="admin-user-form">
+        <label>用户名<input name="adminUserUsername" placeholder="username" /></label>
+        <label>姓名<input name="adminUserDisplay" placeholder="显示姓名" /></label>
+        <label>邮箱<input name="adminUserEmail" placeholder="name@company.com" /></label>
+        <label>角色<select name="adminUserRole">${roles.map((role) => `<option value="${escapeHtml(role.value)}">${escapeHtml(role.label)}</option>`).join("")}</select></label>
+        <label>状态<select name="adminUserStatus"><option value="active">启用</option><option value="disabled">停用</option></select></label>
+        <label>密码<input name="adminUserPassword" type="password" placeholder="新账号必填，留空不改" /></label>
+        <button class="button" type="button" data-admin-save-user>保存账号</button>
+      </div>
+      <div class="table-wrap">
+        <table class="record-table admin-table">
+          <thead><tr><th>用户名</th><th>姓名</th><th>邮箱</th><th>角色</th><th>状态</th><th>最后登录</th><th>操作</th></tr></thead>
+          <tbody>${(adminState.users || []).map((user) => `<tr><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.display_name)}</td><td>${escapeHtml(user.email)}</td><td>${escapeHtml(roleLabel(user.role))}</td><td>${escapeHtml(user.status)}</td><td>${escapeHtml(user.last_login)}</td><td><button class="link-button" type="button" data-admin-edit-user="${escapeHtml(user.username)}">填入</button></td></tr>`).join("")}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminRoles() {
+  const host = document.querySelector('[data-admin-panel="roles"]');
+  if (!host) return;
+  const actions = [["view", "查看"], ["import", "导入"], ["edit", "编辑"], ["save", "保存"], ["export", "导出"], ["admin", "后台"]];
+  host.innerHTML = `
+    <section class="panel">
+      <div class="panel-heading"><h2>角色权限</h2><span class="panel-note">第一版固定四类角色，减少维护复杂度</span></div>
+      <div class="table-wrap">
+        <table class="record-table admin-table">
+          <thead><tr><th>角色</th>${actions.map(([, label]) => `<th>${label}</th>`).join("")}</tr></thead>
+          <tbody>${(adminState.roles || []).map((role) => `<tr><td>${escapeHtml(role.label)}</td>${actions.map(([key]) => `<td>${role.permissions?.[key] ? "✓" : "—"}</td>`).join("")}</tr>`).join("")}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminConfig() {
+  const host = document.querySelector('[data-admin-panel="config"]');
+  if (!host) return;
+  const config = adminState.config || {};
+  host.innerHTML = `
+    <section class="panel">
+      <div class="panel-heading"><h2>系统配置</h2><span class="panel-note">保存基础配置和日报运行参数</span></div>
+      <div class="admin-config-grid">
+        <label>系统名称<input name="system_name" value="${escapeHtml(config.system_name)}" /></label>
+        <label>默认语言<select name="default_language"><option value="zh">中文</option><option value="en">EN</option><option value="es">ES</option></select></label>
+        <label>每页记录数<input name="records_per_page" type="number" min="5" max="100" value="${escapeHtml(config.records_per_page)}" /></label>
+        <label>Excel路径<input name="excel_path" value="${escapeHtml(config.excel_path)}" /></label>
+        <label>源PDF保存<select name="save_source_pdf"><option value="true">开启</option><option value="false">关闭</option></select></label>
+        <label>PDF保留天数<input name="source_pdf_retention_days" type="number" min="1" value="${escapeHtml(config.source_pdf_retention_days)}" /></label>
+      </div>
+      <div class="admin-actions"><button class="button" type="button" data-admin-save-config>保存配置</button></div>
+    </section>
+  `;
+  const form = host.querySelector(".admin-config-grid");
+  form.querySelector('[name="default_language"]').value = config.default_language || "zh";
+  form.querySelector('[name="save_source_pdf"]').value = String(config.save_source_pdf !== false);
+}
+
+function renderAdminData() {
+  const host = document.querySelector('[data-admin-panel="data"]');
+  if (!host) return;
+  const status = adminState.dataStatus || {};
+  const byType = status.by_type || {};
+  host.innerHTML = `
+    <section class="admin-kpi-grid">
+      ${adminKpi("总记录", status.records || 0, "全部日报")}
+      ${adminKpi("钻井", byType.drilling || 0, "drilling")}
+      ${adminKpi("完井", byType.completion || 0, "completion")}
+      ${adminKpi("修井/搬迁", `${byType.workover || 0} / ${byType.move || 0}`, "workover / move")}
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><h2>数据维护</h2><span class="panel-note">备份当前 Excel 库，查看最近备份</span></div>
+      <div class="admin-actions">
+        <a class="button secondary" href="/api/download-database">下载Excel库</a>
+        <button class="button" type="button" data-admin-backup>立即备份</button>
+      </div>
+      <div class="table-wrap">
+        <table class="record-table admin-table">
+          <thead><tr><th>备份文件</th><th>大小</th><th>时间</th></tr></thead>
+          <tbody>${(status.backups || []).map((item) => `<tr><td>${escapeHtml(item.name)}</td><td>${fileSize(item.size)}</td><td>${escapeHtml(item.created_at)}</td></tr>`).join("") || `<tr><td colspan="3">暂无备份</td></tr>`}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminLogs() {
+  const host = document.querySelector('[data-admin-panel="logs"]');
+  if (!host) return;
+  host.innerHTML = `
+    <section class="panel">
+      <div class="panel-heading"><h2>日志审计</h2><span class="panel-note">最近 120 条后台操作</span></div>
+      <div class="table-wrap">
+        <table class="record-table admin-table">
+          <thead><tr><th>时间</th><th>用户</th><th>动作</th><th>模块</th><th>对象</th><th>结果</th><th>备注</th></tr></thead>
+          <tbody>${(adminState.logs || []).map((log) => `<tr><td>${escapeHtml(log.time)}</td><td>${escapeHtml(log.user)}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.module)}</td><td>${escapeHtml(log.target)}</td><td>${escapeHtml(log.result)}</td><td>${escapeHtml(log.note)}</td></tr>`).join("") || `<tr><td colspan="7">暂无日志</td></tr>`}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function switchAdminTab(tab) {
+  adminState.tab = tab;
+  document.querySelectorAll("[data-admin-tab]").forEach((button) => button.classList.toggle("active", button.dataset.adminTab === tab));
+  document.querySelectorAll("[data-admin-panel]").forEach((panel) => panel.hidden = panel.dataset.adminPanel !== tab);
+}
+
+function roleLabel(value) {
+  return (adminState.roles || []).find((role) => role.value === value)?.label || value || "-";
+}
+
+function fileSize(value) {
+  const size = Number(value) || 0;
+  if (size > 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`;
+  if (size > 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${size} B`;
+}
+
+async function loginAdmin() {
+  const username = document.querySelector('[name="adminUsername"]')?.value.trim() || "";
+  const password = document.querySelector('[name="adminPassword"]')?.value || "";
+  try {
+    const payload = await adminRequest("/api/admin/login", { method: "POST", body: JSON.stringify({ username, password }) });
+    adminState.authenticated = true;
+    adminState.user = payload.user;
+    adminState.permissions = payload.permissions || {};
+    showToast("后台登录成功");
+    renderAdminShell();
+    if (adminState.permissions.admin) await loadAdminData();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function logoutAdmin() {
+  try {
+    await adminRequest("/api/admin/logout", { method: "POST", body: "{}" });
+  } catch (error) {
+    console.error(error);
+  }
+  adminState.authenticated = false;
+  adminState.user = null;
+  adminState.users = [];
+  showToast("已退出后台");
+  renderAdminShell();
+}
+
+function fillAdminUserForm(username) {
+  const user = (adminState.users || []).find((item) => item.username === username);
+  if (!user) return;
+  document.querySelector('[name="adminUserUsername"]').value = user.username || "";
+  document.querySelector('[name="adminUserDisplay"]').value = user.display_name || "";
+  document.querySelector('[name="adminUserEmail"]').value = user.email || "";
+  document.querySelector('[name="adminUserRole"]').value = user.role || "viewer";
+  document.querySelector('[name="adminUserStatus"]').value = user.status || "active";
+  document.querySelector('[name="adminUserPassword"]').value = "";
+}
+
+async function saveAdminUser() {
+  const payload = {
+    username: document.querySelector('[name="adminUserUsername"]')?.value.trim(),
+    display_name: document.querySelector('[name="adminUserDisplay"]')?.value.trim(),
+    email: document.querySelector('[name="adminUserEmail"]')?.value.trim(),
+    role: document.querySelector('[name="adminUserRole"]')?.value,
+    status: document.querySelector('[name="adminUserStatus"]')?.value,
+    password: document.querySelector('[name="adminUserPassword"]')?.value,
+  };
+  try {
+    const response = await adminRequest("/api/admin/users", { method: "POST", body: JSON.stringify(payload) });
+    adminState.users = response.users || [];
+    showToast("账号已保存");
+    renderAdminUsers();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function saveAdminConfig() {
+  const host = document.querySelector('[data-admin-panel="config"]');
+  if (!host) return;
+  const payload = {};
+  host.querySelectorAll("[name]").forEach((control) => {
+    let value = control.value;
+    if (control.type === "number") value = Number(value);
+    if (control.name === "save_source_pdf") value = value === "true";
+    payload[control.name] = value;
+  });
+  try {
+    const response = await adminRequest("/api/admin/config", { method: "POST", body: JSON.stringify(payload) });
+    adminState.config = response.config || {};
+    showToast("配置已保存");
+    renderAdminConfig();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function backupAdminDatabase() {
+  try {
+    await adminRequest("/api/admin/backup", { method: "POST", body: "{}" });
+    showToast("Excel库已备份");
+    const status = await adminRequest("/api/admin/data-status");
+    adminState.dataStatus = status;
+    renderAdminData();
+    renderAdminOverview();
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function splitAt(value, marker = "@") {
@@ -1727,6 +2261,7 @@ document.querySelectorAll("[data-add-row]").forEach((button) => {
 
 document.querySelectorAll("[data-save-report]").forEach((button) => {
   button.addEventListener("click", () => {
+    if (!frontCan("save")) return showToast("当前账号没有保存权限");
     saveCurrentReport(button.dataset.saveReport);
   });
 });
@@ -1738,6 +2273,46 @@ document.querySelectorAll("[data-back-records]").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const frontLogout = event.target.closest("[data-front-logout]");
+  if (frontLogout) {
+    logoutFront();
+    return;
+  }
+  const adminLogin = event.target.closest("[data-admin-login-button]");
+  if (adminLogin) {
+    loginAdmin();
+    return;
+  }
+  const adminLogout = event.target.closest("[data-admin-logout]");
+  if (adminLogout) {
+    logoutAdmin();
+    return;
+  }
+  const adminTab = event.target.closest("[data-admin-tab]");
+  if (adminTab) {
+    switchAdminTab(adminTab.dataset.adminTab);
+    return;
+  }
+  const adminEditUser = event.target.closest("[data-admin-edit-user]");
+  if (adminEditUser) {
+    fillAdminUserForm(adminEditUser.dataset.adminEditUser);
+    return;
+  }
+  const adminSaveUser = event.target.closest("[data-admin-save-user]");
+  if (adminSaveUser) {
+    saveAdminUser();
+    return;
+  }
+  const adminSaveConfig = event.target.closest("[data-admin-save-config]");
+  if (adminSaveConfig) {
+    saveAdminConfig();
+    return;
+  }
+  const adminBackup = event.target.closest("[data-admin-backup]");
+  if (adminBackup) {
+    backupAdminDatabase();
+    return;
+  }
   const analyticsSearch = event.target.closest("[data-analytics-search]");
   if (analyticsSearch) {
     loadAnalytics(analyticsSearch.dataset.analyticsSearch);
@@ -1754,6 +2329,7 @@ document.addEventListener("click", (event) => {
   }
   const analyticsExport = event.target.closest("[data-analytics-export]");
   if (analyticsExport) {
+    if (!frontCan("export")) return showToast("当前账号没有导出权限");
     exportAnalytics(analyticsExport.dataset.analyticsExport);
     return;
   }
@@ -1772,12 +2348,41 @@ document.addEventListener("click", (event) => {
     shiftMonth(monthNavButton.dataset.reportType, Number(monthNavButton.dataset.monthNav));
     return;
   }
+  const pageButton = event.target.closest("[data-record-page]");
+  if (pageButton) {
+    const reportType = pageButton.dataset.reportType;
+    if (recordState[reportType]) {
+      recordState[reportType].page = Number(pageButton.dataset.recordPage) || 1;
+      renderRecordDashboard(reportType);
+    }
+    return;
+  }
+  const sourceButton = event.target.closest("[data-source-pdf]");
+  if (sourceButton) {
+    openSourcePdf(sourceButton.dataset.sourcePdf, sourceButton.dataset.sourceName || sourceButton.textContent.trim());
+    return;
+  }
+  if (event.target.closest("[data-close-source-pdf]")) {
+    closeSourcePdf();
+    return;
+  }
+  const sortButton = event.target.closest("[data-well-sort]");
+  if (sortButton) {
+    const reportType = sortButton.dataset.reportType;
+    if (recordState[reportType]) {
+      recordState[reportType].sortBy = sortButton.dataset.wellSort || "last";
+      recordState[reportType].page = 1;
+      renderRecordDashboard(reportType);
+    }
+    return;
+  }
   const wellButton = event.target.closest("[data-well]");
   if (wellButton) {
     const reportType = wellButton.dataset.reportType;
     recordState[reportType].selectedWell = wellButton.dataset.well;
     recordState[reportType].selectedDate = "";
     recordState[reportType].calendarMonth = "";
+    recordState[reportType].page = 1;
     renderRecordDashboard(reportType);
     return;
   }
@@ -1795,11 +2400,13 @@ document.addEventListener("click", (event) => {
       return;
     }
     state.selectedDate = dateButton.dataset.calendarDate;
+    state.page = 1;
     renderRecordDashboard(reportType);
     return;
   }
   const uploadButton = event.target.closest("[data-record-upload]");
   if (uploadButton) {
+    if (!frontCan("import")) return showToast("当前账号没有导入权限");
     const input = recordUploadInput(uploadButton.dataset.recordUpload);
     if (input) {
       input.value = "";
@@ -1810,6 +2417,7 @@ document.addEventListener("click", (event) => {
   const previewButton = event.target.closest("[data-record-preview]");
   if (previewButton) {
     openRecordDetail(previewButton.dataset.reportType, previewButton.dataset.recordPreview);
+    return;
   }
   const addWellButton = event.target.closest(".add-well-button");
   if (addWellButton) {
@@ -1819,6 +2427,7 @@ document.addEventListener("click", (event) => {
       const wellName = prompt(ui("addWell") + " — " + ui("searchWell") + ":");
       if (wellName && wellName.trim()) {
         recordState[reportType].selectedWell = wellName.trim();
+        recordState[reportType].page = 1;
         renderRecordDashboard(reportType);
       }
     }
@@ -1831,9 +2440,16 @@ document.addEventListener("input", (event) => {
   const reportType = search.dataset.wellSearch;
   const term = search.value.trim().toLowerCase();
   recordState[reportType].search = search.value.trim();
+  recordState[reportType].page = 1;
   search.closest(".well-panel")?.querySelectorAll("[data-well]").forEach((button) => {
     button.hidden = term && !button.dataset.well.toLowerCase().includes(term);
   });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !document.querySelector("#sourcePdfModal")?.hidden) {
+    closeSourcePdf();
+  }
 });
 
 document.querySelectorAll(".menu-group-toggle").forEach((button) => {
@@ -1859,6 +2475,7 @@ document.querySelectorAll(".menu-link").forEach((link) => {
 });
 
 document.querySelector("#importPdf").addEventListener("click", () => {
+  if (!frontCan("import")) return showToast("当前账号没有导入权限");
   const input = document.querySelector("#pdfInput");
   input.value = "";
   input.click();
@@ -1867,6 +2484,7 @@ document.querySelector("#pdfInput").addEventListener("change", (event) => {
   importReportFiles("drilling", event.target.files);
 });
 document.querySelector("#importCompletionPdf").addEventListener("click", () => {
+  if (!frontCan("import")) return showToast("当前账号没有导入权限");
   const input = document.querySelector("#completionPdfInput");
   input.value = "";
   input.click();
@@ -1875,6 +2493,7 @@ document.querySelector("#completionPdfInput").addEventListener("change", (event)
   importReportFiles("completion", event.target.files);
 });
 document.querySelector("#importWorkoverPdf").addEventListener("click", () => {
+  if (!frontCan("import")) return showToast("当前账号没有导入权限");
   const input = document.querySelector("#workoverPdfInput");
   input.value = "";
   input.click();
@@ -1883,6 +2502,7 @@ document.querySelector("#workoverPdfInput").addEventListener("change", (event) =
   importReportFiles("workover", event.target.files);
 });
 document.querySelector("#importMovePdf").addEventListener("click", () => {
+  if (!frontCan("import")) return showToast("当前账号没有导入权限");
   const input = document.querySelector("#movePdfInput");
   input.value = "";
   input.click();
@@ -1910,3 +2530,4 @@ Object.keys(savedReportSignatures).forEach((reportType) => {
   savedReportSignatures[reportType] = reportSignature(reportType);
 });
 updateAllSaveButtons();
+loadFrontSession();
