@@ -63,6 +63,7 @@
         <section id="drillingDailyPage" class="module-page active">
         <header class="topbar">
           <div>
+            <p class="page-kicker" data-i18n="drillingPageKicker">DRILLING DAILY REPORT</p>
             <h1 data-i18n="pageTitle">钻井日报填报工作台</h1>
             <p class="source-file-name" id="drillingSourceFile">未上传文件</p>
           </div>
@@ -752,9 +753,9 @@
         <section id="productionSummaryPage" class="module-page analytics-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
-              <p class="page-kicker">数据看板</p>
+              <p class="page-kicker" data-i18n="analyticsKicker">数据看板</p>
               <h1 data-i18n="menuRigProductionSummary">生产汇总</h1>
-              <p class="source-file-name" data-analytics-note="production">基于已保存到 Excel 库的日报解析数据</p>
+              <p class="source-file-name" data-analytics-note="production" data-i18n="analyticsProductionScope">基于已保存到 Excel 库的日报解析数据</p>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -769,19 +770,19 @@
             <label>日期止<input type="date" name="date_to" /></label>
             <label>井队<select name="rig"><option value="">全部井队</option></select></label>
             <label>日报类型<select name="report_type"><option value="">全部类型</option></select></label>
-            <label>井号<input name="wellbore" placeholder="请输入井号" /></label>
-            <button class="button" type="button" data-analytics-search="production">查询</button>
-            <button class="button secondary" type="button" data-analytics-reset="production">重置</button>
-            <button class="button secondary" type="button" data-analytics-export="production">导出</button>
+            <label>井号<input name="wellbore" placeholder="请输入井号" data-i18n-placeholder="wellborePlaceholder" /></label>
+            <button class="button" type="button" data-analytics-search="production" data-i18n="search">查询</button>
+            <button class="button secondary" type="button" data-analytics-reset="production" data-i18n="reset">重置</button>
+            <button class="button secondary" type="button" data-analytics-export="production" data-i18n="exportList">导出</button>
           </section>
           <section class="analytics-kpis" data-analytics-kpis="production"></section>
           <section class="analytics-grid">
-            <div class="panel analytics-card"><div class="panel-heading"><h2>各井队作业时效对比 (h)</h2></div><div data-chart="production-rig"></div></div>
-            <div class="panel analytics-card"><div class="panel-heading"><h2>作业时效构成</h2></div><div data-chart="production-type"></div></div>
-            <div class="panel analytics-card wide"><div class="panel-heading"><h2>月度作业趋势 (h)</h2></div><div data-chart="production-monthly"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartRigHours">各井队作业时效对比 (h)</h2></div><div data-chart="production-rig"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartOperationMix">作业时效构成</h2></div><div data-chart="production-type"></div></div>
+            <div class="panel analytics-card wide"><div class="panel-heading"><h2 data-i18n="chartMonthlyHours">月度作业趋势 (h)</h2></div><div data-chart="production-monthly"></div></div>
           </section>
           <section class="panel analytics-table-panel">
-            <div class="panel-heading"><h2>生产汇总明细</h2><span class="panel-note">点击行可打开日报详情</span></div>
+            <div class="panel-heading"><h2 data-i18n="productionDetailTitle">生产汇总明细</h2><span class="panel-note" data-i18n="analyticsRowHint">点击行可打开日报详情</span></div>
             <div class="table-wrap" data-table-host="production"></div>
           </section>
         </section>
@@ -789,9 +790,9 @@
         <section id="nptStatsPage" class="module-page analytics-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
-              <p class="page-kicker">数据看板</p>
+              <p class="page-kicker" data-i18n="analyticsKicker">数据看板</p>
               <h1 data-i18n="menuWellNptConfirm">NPT统计</h1>
-              <p class="source-file-name" data-analytics-note="npt">基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总</p>
+              <p class="source-file-name" data-analytics-note="npt" data-i18n="analyticsNptScope">基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总</p>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -805,21 +806,21 @@
             <label>日期起<input type="date" name="date_from" /></label>
             <label>日期止<input type="date" name="date_to" /></label>
             <label>井队<select name="rig"><option value="">全部井队</option></select></label>
-            <label>OP CODE / OP SUB<select name="reason"><option value="">全部分类</option></select></label>
-            <label>井号<input name="wellbore" placeholder="请输入井号" /></label>
-            <button class="button" type="button" data-analytics-search="npt">查询</button>
-            <button class="button secondary" type="button" data-analytics-reset="npt">重置</button>
-            <button class="button secondary" type="button" data-analytics-export="npt">导出</button>
+            <label>作业代码 / 子项<select name="reason"><option value="">全部分类</option></select></label>
+            <label>井号<input name="wellbore" placeholder="请输入井号" data-i18n-placeholder="wellborePlaceholder" /></label>
+            <button class="button" type="button" data-analytics-search="npt" data-i18n="search">查询</button>
+            <button class="button secondary" type="button" data-analytics-reset="npt" data-i18n="reset">重置</button>
+            <button class="button secondary" type="button" data-analytics-export="npt" data-i18n="exportList">导出</button>
           </section>
           <section class="analytics-kpis" data-analytics-kpis="npt"></section>
           <section class="analytics-grid">
-            <div class="panel analytics-card"><div class="panel-heading"><h2>各井队NPT对比 (h)</h2></div><div data-chart="npt-rig"></div></div>
-            <div class="panel analytics-card"><div class="panel-heading"><h2>OP CODE / OP SUB分布</h2></div><div data-chart="npt-reason"></div></div>
-            <div class="panel analytics-card"><div class="panel-heading"><h2>各井NPT排行</h2></div><div data-chart="npt-well"></div></div>
-            <div class="panel analytics-card"><div class="panel-heading"><h2>月度NPT趋势 (h)</h2></div><div data-chart="npt-monthly"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptRig">各井队NPT对比 (h)</h2></div><div data-chart="npt-rig"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptReason">作业代码 / 子项分布</h2></div><div data-chart="npt-reason"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptWell">各井NPT排行</h2></div><div data-chart="npt-well"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptMonthly">月度NPT趋势 (h)</h2></div><div data-chart="npt-monthly"></div></div>
           </section>
           <section class="panel analytics-table-panel">
-            <div class="panel-heading"><h2>NPT统计明细</h2><span class="panel-note">按日报 OP CODE / OP SUB 原文汇总，点击行可追溯日报</span></div>
+            <div class="panel-heading"><h2 data-i18n="nptDetailTitle">NPT统计明细</h2><span class="panel-note" data-i18n="nptRowHint">按日报作业代码 / 子项原文汇总，点击行可追溯日报</span></div>
             <div class="table-wrap" data-table-host="npt"></div>
           </section>
         </section>
