@@ -14,6 +14,99 @@ from tests.test_pdf_report_parser import sample_pdf
 
 
 class FormServerImportTest(unittest.TestCase):
+    def test_drilling_validation_matches_detail_required_fields(self) -> None:
+        payload = {
+            "report_fields": {
+                "event": "DRILLING",
+                "reportDate": "2026-05-31",
+                "reportNo": "19",
+                "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248",
+                "todayMd": "1000",
+                "progress": "0",
+                "currentOps": "Drilling",
+                "summary24h": "Operations",
+                "forecast24h": "Continue",
+            },
+            "operations": [
+                {"from": "00:00", "to": "08:00", "hours": "8", "op_code": "BHA", "op_type": "P", "operation_details": "Trip"},
+            ],
+        }
+        warnings = form_server._validation_warnings(payload, "drilling")
+        self.assertIn("mudType missing", warnings)
+        self.assertIn("mudDensity missing", warnings)
+        self.assertIn("operation hours total 8.00", warnings)
+
+    def test_operation_duration_mismatch_is_flagged(self) -> None:
+        payload = {
+            "report_fields": {
+                "event": "DRILLING",
+                "reportDate": "2026-05-31",
+                "reportNo": "19",
+                "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248",
+                "todayMd": "1000",
+                "progress": "0",
+                "currentOps": "Drilling",
+                "summary24h": "Operations",
+                "forecast24h": "Continue",
+                "mudType": "WBM",
+                "mudDensity": "10.2",
+            },
+            "operations": [
+                {"from": "00:00", "to": "08:00", "hours": "7.5", "op_code": "DRILLING", "op_type": "P", "operation_details": "Drill ahead"},
+                {"from": "08:00", "to": "24:00", "hours": "16.5", "op_code": "BHA", "op_type": "P", "operation_details": "Trip"},
+            ],
+        }
+        warnings = form_server._validation_warnings(payload, "drilling")
+        self.assertIn("operations row 1 time duration mismatch", warnings)
+
+    def test_operation_same_clock_time_can_mean_next_day(self) -> None:
+        payload = {
+            "report_fields": {
+                "event": "DRILLING",
+                "reportDate": "2026-05-31",
+                "reportNo": "19",
+                "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248",
+                "todayMd": "1000",
+                "progress": "0",
+                "currentOps": "Drilling",
+                "summary24h": "Operations",
+                "forecast24h": "Continue",
+                "mudType": "WBM",
+                "mudDensity": "10.2",
+            },
+            "operations": [
+                {"from": "06:00", "to": "06:00", "hours": "24", "op_code": "DRILLING", "op_type": "P", "operation_details": "Drill ahead"},
+            ],
+        }
+        warnings = form_server._validation_warnings(payload, "drilling")
+        self.assertNotIn("operations row 1 time duration mismatch", warnings)
+
+    def test_cost_inventory_are_not_validated_but_intervals_still_are(self) -> None:
+        completion_payload = {
+            "report_fields": {
+                "event": "COMPLETION",
+                "reportDate": "2026-05-31",
+                "reportNo": "1",
+                "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248",
+                "currentOps": "Completion",
+                "summary24h": "Operations",
+                "forecast24h": "Continue",
+            },
+            "operations": [
+                {"from": "00:00", "to": "24:00", "hours": "24", "op_code": "COMPLETION", "op_type": "P", "operation_details": "Run completion"},
+            ],
+            "bulks": [{"qty_start": "10", "qty_used": "3", "qty_end": "8"}],
+            "perforation_intervals": [{"top_md": "1200", "base_md": "1100", "length": "10", "density": "-1"}],
+        }
+        warnings = form_server._validation_warnings(completion_payload, "completion")
+        self.assertNotIn("bulks row 1 ending quantity inconsistent", warnings)
+        self.assertIn("perforation_intervals row 1 base_md less than top_md", warnings)
+        self.assertIn("perforation_intervals row 1 density negative", warnings)
+
     def test_import_drilling_pdf_endpoint_parses_and_stores_record(self) -> None:
         pdf = sample_pdf("PCNC-040")
         if not pdf.exists():

@@ -11,7 +11,7 @@ const i18n = {
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成每日各队伍安全生产关键信息汇总。", descPeriodSafetyReport: "基于 HSSE 数据生成周度、月度安全生产统计报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
-      importPdf: "导入 PDF 日报", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
+      importPdf: "导入 PDF 日报", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
       uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
       metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性",
@@ -45,7 +45,7 @@ const i18n = {
       "<strong>泥浆：</strong>Density 推荐 6 到 20 ppg，Sand 推荐不超过 10%。",
       "<strong>设备：</strong>BHA 组件 OD、ID、Jts、Length 不能为负，OD 应大于等于 ID。",
       "<strong>HSE：</strong>Safety 或 Environmental Incident 为 Y 时，Incident Comments 必填。",
-      "<strong>金额：</strong>成本金额不能为负，空成本表允许保存但会提示。"
+      "<strong>成本与库存：</strong>仅结构化回显导入内容，不参与单元格校验。"
     ],
     completionRules: [
       "<strong>必填：</strong>Date、Report No、Wellbore、Rig、Current Ops、24-Hr Summary、24-Hr Forecast。",
@@ -53,7 +53,7 @@ const i18n = {
       "<strong>工时：</strong>Operations 明细 Hrs 合计必须为 24.00 小时，允许 0.05 小时误差。",
       "<strong>作业行：</strong>From、To、Hrs、Op Code、Type、Operation Details 建议完整填写；Type 只能是 P、SC 或 NPT。",
       "<strong>射孔区间：</strong>Base MD 应大于等于 Top MD，Length 不能为负。",
-      "<strong>库存和成本：</strong>库存数量、成本金额不能为负。"
+      "<strong>库存和成本：</strong>仅结构化回显导入内容，不参与单元格校验。"
     ],
     workoverRules: [
       "<strong>必填：</strong>Date、Report No、Wellbore、Rig、Current Ops、24-Hr Summary、24-Hr Forecast。",
@@ -61,7 +61,7 @@ const i18n = {
       "<strong>工时：</strong>Operations 明细 Hrs 合计必须为 24.00 小时，允许 0.05 小时误差。",
       "<strong>作业行：</strong>From、To、Hrs、Op Code、Type、Operation Details 建议完整填写；Type 只能是 P、SC 或 NPT。",
       "<strong>射孔区间：</strong>Base MD 应大于等于 Top MD，Length 不能为负。",
-      "<strong>库存和成本：</strong>库存数量、成本金额不能为负。"
+      "<strong>库存和成本：</strong>仅结构化回显导入内容，不参与单元格校验。"
     ],
     moveRules: [
       "<strong>必填：</strong>Date、Report No、Wellbore、Rig、Current Ops、24-Hr Summary、24-Hr Forecast。",
@@ -70,7 +70,7 @@ const i18n = {
       "<strong>备注：</strong>Other Remarks 可保留 PDF 末页原文，便于人工复核。"
     ],
     msg: {
-      required: "{field} 为必填项。", futureDate: "日报日期不能晚于当前日期。", operationStartDate: "Operation Start 不能晚于日报日期。", mdOrder: "Today's MD 必须大于等于 Prev MD。", progressMismatch: "Progress 与井深差值不一致，当前差值为 {value} ft。", operationHours: "Operations 工时合计应为 24.00 h，当前为 {value} h。", operationMissing: "作业明细第 {row} 行缺少 {field}。", operationType: "作业明细第 {row} 行 Type 为空或不是 P/NPT，请复核。", completionOperationType: "完井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", workoverOperationType: "修井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", moveOperationType: "搬迁作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", operationHourRange: "作业明细第 {row} 行 Hrs 必须在 0 到 24 之间。", intervalDepth: "射孔区间第 {row} 行 Base MD 应大于等于 Top MD。", intervalLength: "射孔区间第 {row} 行 Length 不能为负。", surveyMd: "测斜第 {row} 行 MD 不能大于 Today's MD。", surveyIncl: "测斜第 {row} 行 Incl 应在 0 到 180 之间。", surveyDls: "测斜第 {row} 行 DLS 不能为负。", mudDensity: "泥浆 Density 推荐范围为 6 到 20 ppg。", sand: "泥浆 Sand 超过 10%，请复核。", bhaOdId: "BHA 第 {row} 行 OD 应大于等于 ID。", bhaNegative: "BHA 第 {row} 行存在负数。", costNegative: "成本第 {row} 行金额不能为负。", incidentRequired: "发生 Safety 或 Environmental Incident 时，Incident Comments 必填。"
+      required: "{field} 为必填项。", futureDate: "日报日期不能晚于当前日期。", operationStartDate: "Operation Start 不能晚于日报日期。", mdOrder: "Today's MD 必须大于等于 Prev MD。", progressMismatch: "Progress 与井深差值不一致，当前差值为 {value} ft。", operationMissingTable: "作业明细不能为空。", operationHours: "Operations 工时合计应为 24.00 h，当前为 {value} h。", operationMissing: "作业明细第 {row} 行缺少 {field}。", operationTimeMismatch: "作业明细第 {row} 行 From/To 对应时长为 {value} h，与 Hrs 不一致。", operationType: "作业明细第 {row} 行 Type 为空或不是 P/NPT，请复核。", completionOperationType: "完井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", workoverOperationType: "修井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", moveOperationType: "搬迁作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", operationHourRange: "作业明细第 {row} 行 Hrs 必须在 0 到 24 之间。", intervalDepth: "射孔区间第 {row} 行 Base MD 应大于等于 Top MD。", intervalLength: "射孔区间第 {row} 行 Length 不能为负。", surveyMd: "测斜第 {row} 行 MD 不能大于 Today's MD。", surveyIncl: "测斜第 {row} 行 Incl 应在 0 到 180 之间。", surveyDls: "测斜第 {row} 行 DLS 不能为负。", mudDensity: "泥浆 Density 推荐范围为 6 到 20 ppg。", sand: "泥浆 Sand 超过 10%，请复核。", bhaOdId: "BHA 第 {row} 行 OD 应大于等于 ID。", bhaNegative: "BHA 第 {row} 行存在负数。", negativeValue: "第 {row} 行 {field} 不能为负。", incidentRequired: "发生 Safety 或 Environmental Incident 时，Incident Comments 必填。"
     }
   },
   en: {
@@ -85,7 +85,7 @@ const i18n = {
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate daily key safety production summaries from HSSE collection data.", descPeriodSafetyReport: "Generate weekly and monthly HSSE statistical reports for stage analysis and reporting.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
-      importPdf: "Import PDF Report", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
+      importPdf: "Import PDF Report", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
       uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
       metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness",
@@ -119,7 +119,7 @@ const i18n = {
       "<strong>Mud:</strong> Density should be 6 to 20 ppg; Sand should not exceed 10%.",
       "<strong>Equipment:</strong> BHA OD, ID, Jts, and Length cannot be negative; OD should be greater than or equal to ID.",
       "<strong>HSE:</strong> Incident Comments are required when Safety or Environmental Incident is Y.",
-      "<strong>Cost:</strong> cost amount cannot be negative; empty cost tables are allowed with a warning."
+      "<strong>Costs and bulks:</strong> parsed values are shown for review only and are not cell-validated."
     ],
     completionRules: [
       "<strong>Required:</strong> Date, Report No, Wellbore, Rig, Current Operations, 24-Hour Summary, and 24-Hour Forecast.",
@@ -127,7 +127,7 @@ const i18n = {
       "<strong>Hours:</strong> Operations Hrs must total 24.00 hours with 0.05 h tolerance.",
       "<strong>Operation rows:</strong> From, To, Hrs, Op Code, Type, and Operation Details should be complete; Type must be P, SC, or NPT.",
       "<strong>Perforated intervals:</strong> Base MD should be greater than or equal to Top MD; Length cannot be negative.",
-      "<strong>Bulks and costs:</strong> bulk quantities and cost amounts cannot be negative."
+      "<strong>Bulks and costs:</strong> parsed values are shown for review only and are not cell-validated."
     ],
     workoverRules: [
       "<strong>Required:</strong> Date, Report No, Wellbore, Rig, Current Operations, 24-Hour Summary, and 24-Hour Forecast.",
@@ -135,7 +135,7 @@ const i18n = {
       "<strong>Hours:</strong> Operations Hrs must total 24.00 hours with 0.05 h tolerance.",
       "<strong>Operation rows:</strong> From, To, Hrs, Op Code, Type, and Operation Details should be complete; Type must be P, SC, or NPT.",
       "<strong>Perforated intervals:</strong> Base MD should be greater than or equal to Top MD; Length cannot be negative.",
-      "<strong>Bulks and costs:</strong> bulk quantities and cost amounts cannot be negative."
+      "<strong>Bulks and costs:</strong> parsed values are shown for review only and are not cell-validated."
     ],
     moveRules: [
       "<strong>Required:</strong> Date, Report No, Wellbore, Rig, Current Operations, 24-Hour Summary, and 24-Hour Forecast.",
@@ -144,7 +144,7 @@ const i18n = {
       "<strong>Remarks:</strong> Other Remarks can keep the original final-page text for manual review."
     ],
     msg: {
-      required: "{field} is required.", futureDate: "Report date cannot be later than today.", operationStartDate: "Operation Start cannot be later than the report date.", mdOrder: "Today's MD must be greater than or equal to Previous MD.", progressMismatch: "Progress does not match the MD difference. Current difference is {value} ft.", operationHours: "Operations total must be 24.00 h. Current total is {value} h.", operationMissing: "Operations row {row} is missing {field}.", operationType: "Operations row {row} Type is empty or not P/NPT; please review.", completionOperationType: "Completion operation row {row} Type is empty or not P/SC/NPT; please review.", workoverOperationType: "Workover operation row {row} Type is empty or not P/SC/NPT; please review.", operationHourRange: "Operations row {row} Hrs must be between 0 and 24.", intervalDepth: "Perforated interval row {row} Base MD should be greater than or equal to Top MD.", intervalLength: "Perforated interval row {row} Length cannot be negative.", surveyMd: "Survey row {row} MD cannot exceed Today's MD.", surveyIncl: "Survey row {row} Incl must be between 0 and 180.", surveyDls: "Survey row {row} DLS cannot be negative.", mudDensity: "Mud density should be between 6 and 20 ppg.", sand: "Mud sand is above 10%; please review.", bhaOdId: "BHA row {row} OD should be greater than or equal to ID.", bhaNegative: "BHA row {row} contains a negative value.", costNegative: "Cost row {row} amount cannot be negative.", incidentRequired: "Incident Comments are required when Safety or Environmental Incident is Y."
+      required: "{field} is required.", futureDate: "Report date cannot be later than today.", operationStartDate: "Operation Start cannot be later than the report date.", mdOrder: "Today's MD must be greater than or equal to Previous MD.", progressMismatch: "Progress does not match the MD difference. Current difference is {value} ft.", operationMissingTable: "Operations cannot be empty.", operationHours: "Operations total must be 24.00 h. Current total is {value} h.", operationMissing: "Operations row {row} is missing {field}.", operationTimeMismatch: "Operations row {row} From/To duration is {value} h and does not match Hrs.", operationType: "Operations row {row} Type is empty or not P/NPT; please review.", completionOperationType: "Completion operation row {row} Type is empty or not P/SC/NPT; please review.", workoverOperationType: "Workover operation row {row} Type is empty or not P/SC/NPT; please review.", moveOperationType: "Move operation row {row} Type is empty or not P/SC/NPT; please review.", operationHourRange: "Operations row {row} Hrs must be between 0 and 24.", intervalDepth: "Perforated interval row {row} Base MD should be greater than or equal to Top MD.", intervalLength: "Perforated interval row {row} Length cannot be negative.", surveyMd: "Survey row {row} MD cannot exceed Today's MD.", surveyIncl: "Survey row {row} Incl must be between 0 and 180.", surveyDls: "Survey row {row} DLS cannot be negative.", mudDensity: "Mud density should be between 6 and 20 ppg.", sand: "Mud sand is above 10%; please review.", bhaOdId: "BHA row {row} OD should be greater than or equal to ID.", bhaNegative: "BHA row {row} contains a negative value.", negativeValue: "Row {row} {field} cannot be negative.", incidentRequired: "Incident Comments are required when Safety or Environmental Incident is Y."
     }
   },
   es: {
@@ -159,7 +159,7 @@ const i18n = {
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera resúmenes diarios de información clave de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Genera reportes estadísticos HSSE semanales y mensuales para análisis y presentación.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
-      importPdf: "Importar Reporte PDF", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
+      importPdf: "Importar Reporte PDF", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
       uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
       metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte",
@@ -218,7 +218,7 @@ const i18n = {
       "<strong>Observaciones:</strong> Other Remarks puede conservar el texto original de la última página para revisión manual."
     ],
     msg: {
-      required: "{field} es obligatorio.", futureDate: "La fecha del reporte no puede ser posterior a hoy.", operationStartDate: "Inicio OPR no puede ser posterior a la fecha del reporte.", mdOrder: "El MD de hoy debe ser mayor o igual al MD anterior.", progressMismatch: "El progreso no coincide con la diferencia de MD. La diferencia actual es {value} ft.", operationHours: "El total de operaciones debe ser 24.00 h. El total actual es {value} h.", operationMissing: "La fila de operaciones {row} no tiene {field}.", operationType: "El Tipo en la fila de operaciones {row} está vacío o no es P/NPT; revisar.", completionOperationType: "El Tipo en la fila de completación {row} está vacío o no es P/SC/NPT; revisar.", workoverOperationType: "El Tipo en la fila de workover {row} está vacío o no es P/SC/NPT; revisar.", operationHourRange: "Las Hrs de la fila {row} deben estar entre 0 y 24.", intervalDepth: "En intervalo cañoneado fila {row}, Base MD debe ser mayor o igual que Tope MD.", intervalLength: "La Longitud del intervalo cañoneado fila {row} no puede ser negativa.", surveyMd: "El MD de survey en la fila {row} no puede superar el MD de hoy.", surveyIncl: "La inclinación en la fila {row} debe estar entre 0 y 180.", surveyDls: "El DLS en la fila {row} no puede ser negativo.", mudDensity: "La densidad del lodo debe estar entre 6 y 20 ppg.", sand: "La arena del lodo supera 10%; revisar.", bhaOdId: "En BHA fila {row}, OD debe ser mayor o igual que ID.", bhaNegative: "La fila BHA {row} contiene un valor negativo.", costNegative: "El monto de costo en la fila {row} no puede ser negativo.", incidentRequired: "Los comentarios son obligatorios cuando Safety o Environmental Incident es Y."
+      required: "{field} es obligatorio.", futureDate: "La fecha del reporte no puede ser posterior a hoy.", operationStartDate: "Inicio OPR no puede ser posterior a la fecha del reporte.", mdOrder: "El MD de hoy debe ser mayor o igual al MD anterior.", progressMismatch: "El progreso no coincide con la diferencia de MD. La diferencia actual es {value} ft.", operationMissingTable: "Las operaciones no pueden estar vacías.", operationHours: "El total de operaciones debe ser 24.00 h. El total actual es {value} h.", operationMissing: "La fila de operaciones {row} no tiene {field}.", operationTimeMismatch: "La duración Desde/Hasta de la fila {row} es {value} h y no coincide con Hrs.", operationType: "El Tipo en la fila de operaciones {row} está vacío o no es P/NPT; revisar.", completionOperationType: "El Tipo en la fila de completación {row} está vacío o no es P/SC/NPT; revisar.", workoverOperationType: "El Tipo en la fila de workover {row} está vacío o no es P/SC/NPT; revisar.", moveOperationType: "El Tipo en la fila de traslado {row} está vacío o no es P/SC/NPT; revisar.", operationHourRange: "Las Hrs de la fila {row} deben estar entre 0 y 24.", intervalDepth: "En intervalo cañoneado fila {row}, Base MD debe ser mayor o igual que Tope MD.", intervalLength: "La Longitud del intervalo cañoneado fila {row} no puede ser negativa.", surveyMd: "El MD de survey en la fila {row} no puede superar el MD de hoy.", surveyIncl: "La inclinación en la fila {row} debe estar entre 0 y 180.", surveyDls: "El DLS en la fila {row} no puede ser negativo.", mudDensity: "La densidad del lodo debe estar entre 6 y 20 ppg.", sand: "La arena del lodo supera 10%; revisar.", bhaOdId: "En BHA fila {row}, OD debe ser mayor o igual que ID.", bhaNegative: "La fila BHA {row} contiene un valor negativo.", negativeValue: "Fila {row}: {field} no puede ser negativo.", incidentRequired: "Los comentarios son obligatorios cuando Safety o Environmental Incident es Y."
     }
   }
 };
@@ -259,6 +259,7 @@ let drillingSourceFileName = "";
 const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
 const RECORDS_PER_PAGE = 10;
+const ANALYTICS_DETAIL_PAGE_SIZE = 10;
 const recordState = {
   drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
   completion: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
@@ -268,8 +269,8 @@ const recordState = {
 const serverWarnings = { drilling: [], completion: [], workover: [], move: [] };
 const wellStatsCache = {};
 const analyticsState = {
-  production: { payload: null },
-  npt: { payload: null }
+  production: { payload: null, detailPage: 1, sortField: "", sortDir: "desc" },
+  npt: { payload: null, detailPage: 1, sortField: "", sortDir: "desc" }
 };
 const adminState = {
   authenticated: false,
@@ -1009,6 +1010,70 @@ function recordPaginationMarkup(reportType, currentPage, totalPages, totalRows) 
   `;
 }
 
+function analyticsPaginationMarkup(kind, currentPage, totalPages, totalRows) {
+  if (totalRows <= ANALYTICS_DETAIL_PAGE_SIZE) return "";
+  return `
+    <div class="record-pagination analytics-pagination">
+      <span>${totalRows} ${ui("recordsCount")} / ${ui("page")} ${currentPage} / ${totalPages}</span>
+      <div class="record-page-buttons">
+        <button class="icon-button" type="button" data-analytics-page="${currentPage - 1}" data-analytics-kind="${kind}" ${currentPage <= 1 ? "disabled" : ""} aria-label="${ui("prevPage")}">‹</button>
+        <button class="icon-button" type="button" data-analytics-page="${currentPage + 1}" data-analytics-kind="${kind}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="${ui("nextPage")}">›</button>
+      </div>
+    </div>
+  `;
+}
+
+function analyticsPageSlice(kind, rows) {
+  const state = analyticsState[kind];
+  const totalPages = Math.max(1, Math.ceil(rows.length / ANALYTICS_DETAIL_PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, Number(state.detailPage) || 1), totalPages);
+  state.detailPage = currentPage;
+  const start = (currentPage - 1) * ANALYTICS_DETAIL_PAGE_SIZE;
+  return {
+    pageRows: rows.slice(start, start + ANALYTICS_DETAIL_PAGE_SIZE),
+    currentPage,
+    totalPages
+  };
+}
+
+function analyticsSortHeader(kind, field, label) {
+  const state = analyticsState[kind];
+  const active = state.sortField === field;
+  const nextDir = active && state.sortDir === "asc" ? "desc" : "asc";
+  const icon = active ? (state.sortDir === "asc" ? "↑" : "↓") : "↕";
+  return `<th><button class="table-sort-button ${active ? "active" : ""}" type="button" data-analytics-sort="${escapeHtml(field)}" data-analytics-kind="${kind}" data-sort-dir="${nextDir}" aria-label="${escapeHtml(label)}">${escapeHtml(label)}<span>${icon}</span></button></th>`;
+}
+
+function analyticsSortedRows(kind, rows) {
+  const state = analyticsState[kind];
+  if (!state.sortField) return rows;
+  const direction = state.sortDir === "asc" ? 1 : -1;
+  return [...rows].sort((left, right) => analyticsCompare(left, right, state.sortField) * direction);
+}
+
+function analyticsCompare(left, right, field) {
+  const leftValue = analyticsSortValue(left, field);
+  const rightValue = analyticsSortValue(right, field);
+  const leftEmpty = leftValue === "" || leftValue === null || leftValue === undefined;
+  const rightEmpty = rightValue === "" || rightValue === null || rightValue === undefined;
+  if (leftEmpty && rightEmpty) return 0;
+  if (leftEmpty) return 1;
+  if (rightEmpty) return -1;
+  if (["hours", "drilling_hours", "completion_hours", "workover_hours", "move_hours", "npt_hours"].includes(field)) {
+    return Number(leftValue || 0) - Number(rightValue || 0);
+  }
+  if (["reportDate", "start_date", "end_date"].includes(field)) {
+    return String(leftValue).localeCompare(String(rightValue));
+  }
+  return String(leftValue).localeCompare(String(rightValue), currentLanguage === "zh" ? "zh-Hans" : currentLanguage, { numeric: true, sensitivity: "base" });
+}
+
+function analyticsSortValue(row, field) {
+  if (field === "report_type") return reportTypeLabel(row.report_type);
+  if (field === "reason") return reasonLabel(row.reason);
+  return row[field] ?? "";
+}
+
 async function openSourcePdf(recordId, sourceName = "") {
   const modal = document.querySelector("#sourcePdfModal");
   const frame = document.querySelector("#sourcePdfFrame");
@@ -1116,6 +1181,7 @@ async function loadAnalytics(kind) {
     return;
   }
   analyticsState[kind].payload = payload;
+  analyticsState[kind].detailPage = 1;
   populateAnalyticsFilters(kind, payload.filters || {});
   if (kind === "npt") renderNptAnalytics(payload);
   else renderProductionAnalytics(payload);
@@ -1282,14 +1348,41 @@ function renderProductionTable(rows) {
   const host = document.querySelector('[data-table-host="production"]');
   if (!host) return;
   if (!rows.length) return host.innerHTML = emptyAnalytics();
-  host.innerHTML = `<table class="record-table analytics-table"><thead><tr><th>${ui("tableRig")}</th><th>${ui("tableWell")}</th><th>${ui("tableReportType")}</th><th>${ui("tableStartDate")}</th><th>${ui("tableEndDate")}</th><th>${ui("tableDrillingHours")}</th><th>${ui("tableCompletionHours")}</th><th>${ui("tableWorkoverHours")}</th><th>${ui("tableMoveHours")}</th><th>${ui("tableNptHours")}</th><th>${ui("tableRemarks")}</th></tr></thead><tbody>${rows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(reportTypeLabel(row.report_type))}</td><td>${escapeHtml(row.start_date)}</td><td>${escapeHtml(row.end_date)}</td><td>${formatHours(row.drilling_hours)}</td><td>${formatHours(row.completion_hours)}</td><td>${formatHours(row.workover_hours)}</td><td>${formatHours(row.move_hours)}</td><td>${formatHours(row.npt_hours)}</td><td>${escapeHtml(statusLabel(row.status))}</td></tr>`).join("")}</tbody></table>`;
+  const sortedRows = analyticsSortedRows("production", rows);
+  const { pageRows, currentPage, totalPages } = analyticsPageSlice("production", sortedRows);
+  const headers = [
+    analyticsSortHeader("production", "rig", ui("tableRig")),
+    analyticsSortHeader("production", "wellbore", ui("tableWell")),
+    analyticsSortHeader("production", "report_type", ui("tableReportType")),
+    analyticsSortHeader("production", "start_date", ui("tableStartDate")),
+    analyticsSortHeader("production", "end_date", ui("tableEndDate")),
+    analyticsSortHeader("production", "drilling_hours", ui("tableDrillingHours")),
+    analyticsSortHeader("production", "completion_hours", ui("tableCompletionHours")),
+    analyticsSortHeader("production", "workover_hours", ui("tableWorkoverHours")),
+    analyticsSortHeader("production", "move_hours", ui("tableMoveHours")),
+    analyticsSortHeader("production", "npt_hours", ui("tableNptHours")),
+    `<th>${escapeHtml(ui("tableRemarks"))}</th>`
+  ].join("");
+  host.innerHTML = `<table class="record-table analytics-table"><thead><tr>${headers}</tr></thead><tbody>${pageRows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(reportTypeLabel(row.report_type))}</td><td>${escapeHtml(row.start_date)}</td><td>${escapeHtml(row.end_date)}</td><td>${formatHours(row.drilling_hours)}</td><td>${formatHours(row.completion_hours)}</td><td>${formatHours(row.workover_hours)}</td><td>${formatHours(row.move_hours)}</td><td>${formatHours(row.npt_hours)}</td><td>${escapeHtml(statusLabel(row.status))}</td></tr>`).join("")}</tbody></table>${analyticsPaginationMarkup("production", currentPage, totalPages, rows.length)}`;
 }
 
 function renderNptTable(rows) {
   const host = document.querySelector('[data-table-host="npt"]');
   if (!host) return;
   if (!rows.length) return host.innerHTML = emptyAnalytics();
-  host.innerHTML = `<table class="record-table analytics-table"><thead><tr><th>${ui("tableRig")}</th><th>${ui("tableWell")}</th><th>${ui("tableDate")}</th><th>${ui("tableNptHours")}</th><th>${ui("opCode")}</th><th>${ui("opSub")}</th><th>${ui("category")}</th><th>${ui("tableOperationDetails")}</th></tr></thead><tbody>${rows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(row.reportDate)}</td><td>${formatHours(row.hours)}</td><td>${escapeHtml(row.op_code)}</td><td>${escapeHtml(row.op_sub)}</td><td>${escapeHtml(reasonLabel(row.reason))}</td><td>${escapeHtml(row.operation_details).slice(0, 100)}</td></tr>`).join("")}</tbody></table>`;
+  const sortedRows = analyticsSortedRows("npt", rows);
+  const { pageRows, currentPage, totalPages } = analyticsPageSlice("npt", sortedRows);
+  const headers = [
+    analyticsSortHeader("npt", "rig", ui("tableRig")),
+    analyticsSortHeader("npt", "wellbore", ui("tableWell")),
+    analyticsSortHeader("npt", "reportDate", ui("tableDate")),
+    analyticsSortHeader("npt", "hours", ui("tableNptHours")),
+    analyticsSortHeader("npt", "op_code", ui("opCode")),
+    analyticsSortHeader("npt", "op_sub", ui("opSub")),
+    analyticsSortHeader("npt", "reason", ui("category")),
+    `<th>${escapeHtml(ui("tableOperationDetails"))}</th>`
+  ].join("");
+  host.innerHTML = `<table class="record-table analytics-table"><thead><tr>${headers}</tr></thead><tbody>${pageRows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(row.reportDate)}</td><td>${formatHours(row.hours)}</td><td>${escapeHtml(row.op_code)}</td><td>${escapeHtml(row.op_sub)}</td><td>${escapeHtml(reasonLabel(row.reason))}</td><td>${escapeHtml(row.operation_details).slice(0, 100)}</td></tr>`).join("")}</tbody></table>${analyticsPaginationMarkup("npt", currentPage, totalPages, rows.length)}`;
 }
 
 function exportAnalytics(kind) {
@@ -1706,6 +1799,148 @@ function readTable(tableId) {
   return rows;
 }
 
+function pushIssue(issues, issue) {
+  issues.push(issue);
+}
+
+function markIssues(formEl, issues) {
+  issues.forEach((issue) => {
+    const className = issue.level === "warning" ? "warning-cell" : "invalid";
+    if (issue.field && formEl?.elements?.[issue.field]) {
+      const controls = formEl.elements[issue.field];
+      if (controls.classList) {
+        controls.classList.add(className);
+      } else if (typeof controls.length === "number") {
+        Array.from(controls).forEach((control) => control.classList?.add(className));
+      }
+    }
+    if (issue.tableId && Number.isInteger(issue.rowIndex) && issue.field) {
+      const row = document.querySelectorAll(`#${issue.tableId} tbody tr`)[issue.rowIndex];
+      const control = row?.querySelector(`[name='${issue.field}']`);
+      if (control) control.classList.add(className);
+    }
+  });
+}
+
+function validateReportDate(issues, data) {
+  if (!data.reportDate) return;
+  const reportDate = new Date(`${data.reportDate}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (reportDate > today) pushIssue(issues, { level: "error", text: message("futureDate"), field: "reportDate" });
+}
+
+function validateOperationStartDate(issues, data) {
+  if (!data.reportDate || !data.operationStartDate) return;
+  const reportDate = new Date(`${data.reportDate}T00:00:00`);
+  const startDate = new Date(`${data.operationStartDate}T00:00:00`);
+  if (startDate > reportDate) pushIssue(issues, { level: "error", text: message("operationStartDate"), field: "operationStartDate" });
+}
+
+function validateMdProgress(issues, data, fields = { today: "todayMd", previous: "prevMd", progress: "progress" }) {
+  const todayMd = toNumber(data[fields.today]);
+  const prevMd = toNumber(data[fields.previous]);
+  const progress = toNumber(data[fields.progress]);
+  const computedProgress = Number.isFinite(todayMd) && Number.isFinite(prevMd) ? todayMd - prevMd : 0;
+  if (Number.isFinite(todayMd) && Number.isFinite(prevMd) && todayMd < prevMd) {
+    pushIssue(issues, { level: "error", text: message("mdOrder"), field: fields.today });
+  }
+  if (Number.isFinite(progress) && Number.isFinite(todayMd) && Number.isFinite(prevMd) && Math.abs(progress - computedProgress) > 0.5) {
+    pushIssue(issues, { level: "warning", text: message("progressMismatch", { value: computedProgress.toFixed(2) }), field: fields.progress });
+  }
+}
+
+function validateOperationsTable(issues, tableId, rows, validTypes, typeMessageKey) {
+  const stats = operationStats(rows);
+  if (!rows.length) {
+    pushIssue(issues, { level: "error", text: message("operationMissingTable") });
+    return stats;
+  }
+  const clockHoursByRow = operationClockHoursByRow(rows);
+  if (Math.abs(stats.total - 24) > 0.05) {
+    pushIssue(issues, { level: "error", text: message("operationHours", { value: stats.total.toFixed(2) }) });
+  }
+  rows.forEach((row, index) => {
+    ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
+      if (!row[field]) pushIssue(issues, { level: "warning", text: message("operationMissing", { row: index + 1, field }), tableId, rowIndex: index, field });
+    });
+    if (!validTypes.includes(row.op_type)) {
+      pushIssue(issues, { level: "warning", text: message(typeMessageKey, { row: index + 1 }), tableId, rowIndex: index, field: "op_type" });
+    }
+    const hours = toNumber(row.hours);
+    if (hours <= 0 || hours > 24) {
+      pushIssue(issues, { level: "error", text: message("operationHourRange", { row: index + 1 }), tableId, rowIndex: index, field: "hours" });
+    }
+    const clockHours = clockHoursByRow.get(index);
+    if (Number.isFinite(clockHours) && Number.isFinite(hours) && Math.abs(clockHours - hours) > 0.1) {
+      pushIssue(issues, { level: "warning", text: message("operationTimeMismatch", { row: index + 1, value: clockHours.toFixed(2) }), tableId, rowIndex: index, field: "hours" });
+    }
+  });
+  return stats;
+}
+
+function operationClockHoursByRow(rows) {
+  const durations = new Map();
+  let previousEnd = null;
+  rows.forEach((row, index) => {
+    const start = clockMinutes(row.from);
+    const end = clockMinutes(row.to);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+    let startAbs = start;
+    if (Number.isFinite(previousEnd)) {
+      while (startAbs < previousEnd) startAbs += 24 * 60;
+    }
+    const dayOffset = Math.floor(startAbs / (24 * 60));
+    let endAbs = end + dayOffset * 24 * 60;
+    while (endAbs < startAbs) endAbs += 24 * 60;
+    if (endAbs === startAbs && toNumber(row.hours) >= 23.9) endAbs += 24 * 60;
+    durations.set(index, (endAbs - startAbs) / 60);
+    previousEnd = endAbs;
+  });
+  return durations;
+}
+
+function clockMinutes(value) {
+  const match = String(value || "").trim().match(/^(\d{1,2})[:：](\d{2})$/);
+  if (!match) return NaN;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour === 24 && minute === 0) return 24 * 60;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return NaN;
+  return hour * 60 + minute;
+}
+
+function validateNonNegativeRows(issues, tableId, rows, fields) {
+  rows.forEach((row, index) => {
+    fields.forEach((field) => {
+      const value = toNumber(row[field]);
+      if (Number.isFinite(value) && value < 0) {
+        pushIssue(issues, { level: "error", text: message("negativeValue", { row: index + 1, field }), tableId, rowIndex: index, field });
+      }
+    });
+  });
+}
+
+function validateIntervalRows(issues, tableId, rows) {
+  rows.forEach((row, index) => {
+    const topMd = toNumber(row.top_md);
+    const baseMd = toNumber(row.base_md);
+    const length = toNumber(row.length);
+    if (Number.isFinite(topMd) && Number.isFinite(baseMd) && baseMd < topMd) {
+      pushIssue(issues, { level: "error", text: message("intervalDepth", { row: index + 1 }), tableId, rowIndex: index, field: "base_md" });
+    }
+    if (Number.isFinite(length) && length < 0) {
+      pushIssue(issues, { level: "error", text: message("intervalLength", { row: index + 1 }), tableId, rowIndex: index, field: "length" });
+    }
+    ["density", "phase", "penetration", "diameter"].forEach((field) => {
+      const value = toNumber(row[field]);
+      if (Number.isFinite(value) && value < 0) {
+        pushIssue(issues, { level: "error", text: message("negativeValue", { row: index + 1, field }), tableId, rowIndex: index, field });
+      }
+    });
+  });
+}
+
 function rowsFromPayload(rows, tableId) {
   return (rows || []).map((row) => tableSchemas[tableId].map((field) => row[field.name] ?? ""));
 }
@@ -1798,7 +2033,7 @@ async function saveCurrentReport(reportType) {
     showToast(ui("databaseSaved"));
   } catch (error) {
     console.error(error);
-    showToast(ui("databaseSaveFailed"));
+    showToast(ui("recordLoadFailed"));
   }
 }
 
@@ -1974,74 +2209,46 @@ function validate() {
   document.querySelectorAll("#drillingDailyPage .invalid, #drillingDailyPage .warning-cell").forEach((el) => el.classList.remove("invalid", "warning-cell"));
 
   required.forEach((name) => {
-    if (!String(data[name] || "").trim()) issues.push({ level: "error", text: message("required", { field: labelFor(name) }), field: name });
+    if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
   });
 
-  if (data.reportDate) {
-    const reportDate = new Date(`${data.reportDate}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (reportDate > today) issues.push({ level: "error", text: message("futureDate"), field: "reportDate" });
-  }
-
-  const todayMd = toNumber(data.todayMd);
-  const prevMd = toNumber(data.prevMd);
-  const progress = toNumber(data.progress);
-  const computedProgress = Number.isFinite(todayMd) && Number.isFinite(prevMd) ? todayMd - prevMd : 0;
-  if (Number.isFinite(todayMd) && Number.isFinite(prevMd) && todayMd < prevMd) issues.push({ level: "error", text: message("mdOrder"), field: "todayMd" });
-  if (Number.isFinite(progress) && Math.abs(progress - computedProgress) > 0.5) issues.push({ level: "warning", text: message("progressMismatch", { value: computedProgress.toFixed(2) }), field: "progress" });
+  validateReportDate(issues, data);
+  validateMdProgress(issues, data);
 
   const operations = readTable("operationsTable");
-  const opStats = operationStats(operations);
-  const operationHours = opStats.total;
-  setText("#operationHours", formatHours(operationHours));
+  const opStats = validateOperationsTable(issues, "operationsTable", operations, ["P", "NPT"], "operationType");
+  setText("#operationHours", formatHours(opStats.total));
   setText("#drillingNptHours", formatHours(opStats.npt));
   setText("#drillingWellDate", formatWellDate(data));
-  if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
-  operations.forEach((row, index) => {
-    ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
-      if (!row[field]) issues.push({ level: "warning", text: message("operationMissing", { row: index + 1, field }) });
-    });
-    if (!["P", "NPT"].includes(row.op_type)) {
-      issues.push({ level: "warning", text: message("operationType", { row: index + 1 }) });
-      const control = document.querySelectorAll("#operationsTable tbody tr")[index]?.querySelector("[name='op_type']");
-      if (control) control.classList.add("warning-cell");
-    }
-    if (toNumber(row.hours) <= 0 || toNumber(row.hours) > 24) issues.push({ level: "error", text: message("operationHourRange", { row: index + 1 }) });
-  });
 
+  const todayMd = toNumber(data.todayMd);
   readTable("surveyTable").forEach((row, index) => {
     const md = toNumber(row.md);
     const incl = toNumber(row.incl);
     const dls = toNumber(row.dls);
-    if (Number.isFinite(md) && Number.isFinite(todayMd) && md > todayMd) issues.push({ level: "error", text: message("surveyMd", { row: index + 1 }) });
-    if (Number.isFinite(incl) && (incl < 0 || incl > 180)) issues.push({ level: "error", text: message("surveyIncl", { row: index + 1 }) });
-    if (Number.isFinite(dls) && dls < 0) issues.push({ level: "error", text: message("surveyDls", { row: index + 1 }) });
+    if (Number.isFinite(md) && Number.isFinite(todayMd) && md > todayMd) pushIssue(issues, { level: "error", text: message("surveyMd", { row: index + 1 }), tableId: "surveyTable", rowIndex: index, field: "md" });
+    if (Number.isFinite(incl) && (incl < 0 || incl > 180)) pushIssue(issues, { level: "error", text: message("surveyIncl", { row: index + 1 }), tableId: "surveyTable", rowIndex: index, field: "incl" });
+    if (Number.isFinite(dls) && dls < 0) pushIssue(issues, { level: "error", text: message("surveyDls", { row: index + 1 }), tableId: "surveyTable", rowIndex: index, field: "dls" });
   });
 
   const density = toNumber(data.mudDensity);
-  if (Number.isFinite(density) && (density < 6 || density > 20)) issues.push({ level: "error", text: message("mudDensity"), field: "mudDensity" });
+  if (Number.isFinite(density) && (density < 6 || density > 20)) pushIssue(issues, { level: "error", text: message("mudDensity"), field: "mudDensity" });
   const sand = toNumber(data.sand);
-  if (Number.isFinite(sand) && sand > 10) issues.push({ level: "warning", text: message("sand"), field: "sand" });
+  if (Number.isFinite(sand) && sand > 10) pushIssue(issues, { level: "warning", text: message("sand"), field: "sand" });
 
   readTable("bhaTable").forEach((row, index) => {
     const values = [toNumber(row.od), toNumber(row.id), toNumber(row.joints), toNumber(row.length)];
-    if (Number.isFinite(values[0]) && Number.isFinite(values[1]) && values[0] < values[1]) issues.push({ level: "error", text: message("bhaOdId", { row: index + 1 }) });
-    if (values.some((value) => Number.isFinite(value) && value < 0)) issues.push({ level: "error", text: message("bhaNegative", { row: index + 1 }) });
-  });
-
-  readTable("costTable").forEach((row, index) => {
-    const amount = toNumber(row.amount);
-    if (Number.isFinite(amount) && amount < 0) issues.push({ level: "error", text: message("costNegative", { row: index + 1 }) });
+    if (Number.isFinite(values[0]) && Number.isFinite(values[1]) && values[0] < values[1]) pushIssue(issues, { level: "error", text: message("bhaOdId", { row: index + 1 }), tableId: "bhaTable", rowIndex: index, field: "od" });
+    ["od", "id", "joints", "length"].forEach((field, fieldIndex) => {
+      if (Number.isFinite(values[fieldIndex]) && values[fieldIndex] < 0) pushIssue(issues, { level: "error", text: message("bhaNegative", { row: index + 1 }), tableId: "bhaTable", rowIndex: index, field });
+    });
   });
 
   if ((data.safetyIncident === "Y" || data.environmentIncident === "Y") && !String(data.incidentComments || "").trim()) {
-    issues.push({ level: "error", text: message("incidentRequired"), field: "incidentComments" });
+    pushIssue(issues, { level: "error", text: message("incidentRequired"), field: "incidentComments" });
   }
 
-  issues.forEach((issue) => {
-    if (issue.field && form.elements[issue.field]) form.elements[issue.field].classList.add("invalid");
-  });
+  markIssues(form, issues);
   renderIssues(issues);
   updateCompletion(required, issues, data);
   return issues;
@@ -2054,63 +2261,21 @@ function validateCompletion() {
   document.querySelectorAll("#completionDailyPage .invalid, #completionDailyPage .warning-cell").forEach((el) => el.classList.remove("invalid", "warning-cell"));
 
   required.forEach((name) => {
-    if (!String(data[name] || "").trim()) issues.push({ level: "error", text: message("required", { field: labelFor(name) }), field: name });
+    if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
   });
 
-  if (data.reportDate) {
-    const reportDate = new Date(`${data.reportDate}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (reportDate > today) issues.push({ level: "error", text: message("futureDate"), field: "reportDate" });
-    if (data.operationStartDate) {
-      const startDate = new Date(`${data.operationStartDate}T00:00:00`);
-      if (startDate > reportDate) issues.push({ level: "error", text: message("operationStartDate"), field: "operationStartDate" });
-    }
-  }
+  validateReportDate(issues, data);
+  validateOperationStartDate(issues, data);
 
   const operations = readTable("completionOperationsTable");
-  const opStats = operationStats(operations);
-  const operationHours = opStats.total;
-  setText("#completionOperationHours", formatHours(operationHours));
+  const opStats = validateOperationsTable(issues, "completionOperationsTable", operations, ["P", "SC", "NPT"], "completionOperationType");
+  setText("#completionOperationHours", formatHours(opStats.total));
   setText("#completionNptHours", formatHours(opStats.npt));
   setText("#completionWellDate", formatWellDate(data));
-  if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
-  operations.forEach((row, index) => {
-    ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
-      if (!row[field]) issues.push({ level: "warning", text: message("operationMissing", { row: index + 1, field }) });
-    });
-    if (!["P", "SC", "NPT"].includes(row.op_type)) {
-      issues.push({ level: "warning", text: message("completionOperationType", { row: index + 1 }) });
-      const control = document.querySelectorAll("#completionOperationsTable tbody tr")[index]?.querySelector("[name='op_type']");
-      if (control) control.classList.add("warning-cell");
-    }
-    if (toNumber(row.hours) <= 0 || toNumber(row.hours) > 24) issues.push({ level: "error", text: message("operationHourRange", { row: index + 1 }) });
-  });
 
-  readTable("completionBulkTable").forEach((row, index) => {
-    ["qty_start", "qty_used", "qty_end"].forEach((field) => {
-      const value = toNumber(row[field]);
-      if (Number.isFinite(value) && value < 0) issues.push({ level: "error", text: message("costNegative", { row: index + 1 }) });
-    });
-  });
+  validateIntervalRows(issues, "perforationIntervalsTable", readTable("perforationIntervalsTable"));
 
-  readTable("completionCostTable").forEach((row, index) => {
-    const amount = toNumber(row.amount);
-    if (Number.isFinite(amount) && amount < 0) issues.push({ level: "error", text: message("costNegative", { row: index + 1 }) });
-  });
-
-  const intervals = readTable("perforationIntervalsTable");
-  intervals.forEach((row, index) => {
-    const topMd = toNumber(row.top_md);
-    const baseMd = toNumber(row.base_md);
-    const length = toNumber(row.length);
-    if (Number.isFinite(topMd) && Number.isFinite(baseMd) && baseMd < topMd) issues.push({ level: "error", text: message("intervalDepth", { row: index + 1 }) });
-    if (Number.isFinite(length) && length < 0) issues.push({ level: "error", text: message("intervalLength", { row: index + 1 }) });
-  });
-
-  issues.forEach((issue) => {
-    if (issue.field && completionForm.elements[issue.field]) completionForm.elements[issue.field].classList.add("invalid");
-  });
+  markIssues(completionForm, issues);
   renderCompletionIssues(issues);
   updateCompletionProgress(required, issues, data);
   return issues;
@@ -2123,63 +2288,21 @@ function validateWorkover() {
   document.querySelectorAll("#workoverDailyPage .invalid, #workoverDailyPage .warning-cell").forEach((el) => el.classList.remove("invalid", "warning-cell"));
 
   required.forEach((name) => {
-    if (!String(data[name] || "").trim()) issues.push({ level: "error", text: message("required", { field: labelFor(name) }), field: name });
+    if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
   });
 
-  if (data.reportDate) {
-    const reportDate = new Date(`${data.reportDate}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (reportDate > today) issues.push({ level: "error", text: message("futureDate"), field: "reportDate" });
-    if (data.operationStartDate) {
-      const startDate = new Date(`${data.operationStartDate}T00:00:00`);
-      if (startDate > reportDate) issues.push({ level: "error", text: message("operationStartDate"), field: "operationStartDate" });
-    }
-  }
+  validateReportDate(issues, data);
+  validateOperationStartDate(issues, data);
 
   const operations = readTable("workoverOperationsTable");
-  const opStats = operationStats(operations);
-  const operationHours = opStats.total;
-  setText("#workoverOperationHours", formatHours(operationHours));
+  const opStats = validateOperationsTable(issues, "workoverOperationsTable", operations, ["P", "SC", "NPT"], "workoverOperationType");
+  setText("#workoverOperationHours", formatHours(opStats.total));
   setText("#workoverNptHours", formatHours(opStats.npt));
   setText("#workoverWellDate", formatWellDate(data));
-  if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
-  operations.forEach((row, index) => {
-    ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
-      if (!row[field]) issues.push({ level: "warning", text: message("operationMissing", { row: index + 1, field }) });
-    });
-    if (!["P", "SC", "NPT"].includes(row.op_type)) {
-      issues.push({ level: "warning", text: message("workoverOperationType", { row: index + 1 }) });
-      const control = document.querySelectorAll("#workoverOperationsTable tbody tr")[index]?.querySelector("[name='op_type']");
-      if (control) control.classList.add("warning-cell");
-    }
-    if (toNumber(row.hours) <= 0 || toNumber(row.hours) > 24) issues.push({ level: "error", text: message("operationHourRange", { row: index + 1 }) });
-  });
 
-  readTable("workoverBulkTable").forEach((row, index) => {
-    ["qty_start", "qty_used", "qty_end"].forEach((field) => {
-      const value = toNumber(row[field]);
-      if (Number.isFinite(value) && value < 0) issues.push({ level: "error", text: message("costNegative", { row: index + 1 }) });
-    });
-  });
+  validateIntervalRows(issues, "workoverIntervalsTable", readTable("workoverIntervalsTable"));
 
-  readTable("workoverCostTable").forEach((row, index) => {
-    const amount = toNumber(row.amount);
-    if (Number.isFinite(amount) && amount < 0) issues.push({ level: "error", text: message("costNegative", { row: index + 1 }) });
-  });
-
-  const intervals = readTable("workoverIntervalsTable");
-  intervals.forEach((row, index) => {
-    const topMd = toNumber(row.top_md);
-    const baseMd = toNumber(row.base_md);
-    const length = toNumber(row.length);
-    if (Number.isFinite(topMd) && Number.isFinite(baseMd) && baseMd < topMd) issues.push({ level: "error", text: message("intervalDepth", { row: index + 1 }) });
-    if (Number.isFinite(length) && length < 0) issues.push({ level: "error", text: message("intervalLength", { row: index + 1 }) });
-  });
-
-  issues.forEach((issue) => {
-    if (issue.field && workoverForm.elements[issue.field]) workoverForm.elements[issue.field].classList.add("invalid");
-  });
+  markIssues(workoverForm, issues);
   renderWorkoverIssues(issues);
   updateWorkoverProgress(required, issues, data);
   return issues;
@@ -2192,38 +2315,19 @@ function validateMove() {
   document.querySelectorAll("#moveDailyPage .invalid, #moveDailyPage .warning-cell").forEach((el) => el.classList.remove("invalid", "warning-cell"));
 
   required.forEach((name) => {
-    if (!String(data[name] || "").trim()) issues.push({ level: "error", text: message("required", { field: labelFor(name) }), field: name });
+    if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
   });
 
-  if (data.reportDate) {
-    const reportDate = new Date(`${data.reportDate}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (reportDate > today) issues.push({ level: "error", text: message("futureDate"), field: "reportDate" });
-  }
+  validateReportDate(issues, data);
+  validateMdProgress(issues, data);
 
   const operations = readTable("moveOperationsTable");
-  const opStats = operationStats(operations);
-  const operationHours = opStats.total;
-  setText("#moveOperationHours", formatHours(operationHours));
+  const opStats = validateOperationsTable(issues, "moveOperationsTable", operations, ["P", "SC", "NPT"], "moveOperationType");
+  setText("#moveOperationHours", formatHours(opStats.total));
   setText("#moveNptHours", formatHours(opStats.npt));
   setText("#moveWellDate", formatWellDate(data));
-  if (Math.abs(operationHours - 24) > 0.05) issues.push({ level: "error", text: message("operationHours", { value: operationHours.toFixed(2) }) });
-  operations.forEach((row, index) => {
-    ["from", "to", "hours", "op_code", "operation_details"].forEach((field) => {
-      if (!row[field]) issues.push({ level: "warning", text: message("operationMissing", { row: index + 1, field }) });
-    });
-    if (!["P", "SC", "NPT"].includes(row.op_type)) {
-      issues.push({ level: "warning", text: message("moveOperationType", { row: index + 1 }) });
-      const control = document.querySelectorAll("#moveOperationsTable tbody tr")[index]?.querySelector("[name='op_type']");
-      if (control) control.classList.add("warning-cell");
-    }
-    if (toNumber(row.hours) <= 0 || toNumber(row.hours) > 24) issues.push({ level: "error", text: message("operationHourRange", { row: index + 1 }) });
-  });
 
-  issues.forEach((issue) => {
-    if (issue.field && moveForm.elements[issue.field]) moveForm.elements[issue.field].classList.add("invalid");
-  });
+  markIssues(moveForm, issues);
   renderMoveIssues(issues);
   updateMoveProgress(required, issues, data);
   return issues;
@@ -2374,6 +2478,18 @@ document.addEventListener("click", (event) => {
     exportAnalytics(analyticsExport.dataset.analyticsExport);
     return;
   }
+  const analyticsSortButton = event.target.closest("[data-analytics-sort]");
+  if (analyticsSortButton) {
+    const kind = analyticsSortButton.dataset.analyticsKind;
+    if (analyticsState[kind]) {
+      analyticsState[kind].sortField = analyticsSortButton.dataset.analyticsSort || "";
+      analyticsState[kind].sortDir = analyticsSortButton.dataset.sortDir === "desc" ? "desc" : "asc";
+      analyticsState[kind].detailPage = 1;
+      if (kind === "npt") renderNptTable(analyticsState.npt.payload?.details || []);
+      else renderProductionTable(analyticsState.production.payload?.details || []);
+    }
+    return;
+  }
   const openAnalyticsRecord = event.target.closest("[data-open-record]");
   if (openAnalyticsRecord) {
     const reportType = openAnalyticsRecord.dataset.reportType;
@@ -2395,6 +2511,16 @@ document.addEventListener("click", (event) => {
     if (recordState[reportType]) {
       recordState[reportType].page = Number(pageButton.dataset.recordPage) || 1;
       renderRecordDashboard(reportType);
+    }
+    return;
+  }
+  const analyticsPageButton = event.target.closest("[data-analytics-page]");
+  if (analyticsPageButton) {
+    const kind = analyticsPageButton.dataset.analyticsKind;
+    if (analyticsState[kind]) {
+      analyticsState[kind].detailPage = Number(analyticsPageButton.dataset.analyticsPage) || 1;
+      if (kind === "npt") renderNptTable(analyticsState.npt.payload?.details || []);
+      else renderProductionTable(analyticsState.production.payload?.details || []);
     }
     return;
   }

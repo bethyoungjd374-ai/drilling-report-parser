@@ -604,7 +604,7 @@ class FormHandler(BaseHTTPRequestHandler):
 
     def _store_payload(self, payload: dict[str, object], report_type: str) -> None:
         metadata = payload.setdefault("metadata", {})
-        warnings = _normalize_payload_values(payload) + _validation_warnings(payload, report_type)
+        warnings = list(dict.fromkeys(_normalize_payload_values(payload) + _validation_warnings(payload, report_type)))
         if isinstance(metadata, dict):
             metadata.setdefault("status", "parsed")
             metadata["validation_status"] = "warning" if warnings else "ok"
@@ -929,21 +929,31 @@ def _validation_warnings(payload: dict[str, object], report_type: str) -> list[s
     if not isinstance(fields, dict):
         return ["report_fields missing"]
     required_by_type = {
-        "drilling": ["reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
-        "completion": ["reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
-        "workover": ["reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
-        "move": ["reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
+        "drilling": ["event", "reportDate", "reportNo", "wellbore", "rig", "todayMd", "progress", "currentOps", "summary24h", "forecast24h", "mudType", "mudDensity"],
+        "completion": ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
+        "workover": ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
+        "move": ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
     }
     warnings: list[str] = []
     for field in required_by_type.get(report_type, []):
         if not str(fields.get(field, "") or "").strip():
             warnings.append(f"{field} missing")
+
+    if report_type in {"completion", "workover"}:
+        for field in ("afeCost", "dailyCost", "cumulativeCost", "totalPersonnel"):
+            if _has_value(fields.get(field)) and _safe_float(fields.get(field)) < 0:
+                warnings.append(f"{field} negative")
+
     operations = payload.get("operations", [])
     if isinstance(operations, list) and operations:
         total_hours = 0.0
+        clock_hours_by_row = _operation_clock_hours_by_row(operations)
         for index, row in enumerate(operations, start=1):
             if not isinstance(row, dict):
                 continue
+            for field in ("from", "to", "hours", "op_code", "operation_details"):
+                if not str(row.get(field, "") or "").strip():
+                    warnings.append(f"operations row {index} {field} missing")
             try:
                 total_hours += float(str(row.get("hours", "") or "0").replace(",", ""))
             except ValueError:
@@ -951,8 +961,90 @@ def _validation_warnings(payload: dict[str, object], report_type: str) -> list[s
             valid_types = {"P", "NPT"} if report_type == "drilling" else {"P", "SC", "NPT"}
             if str(row.get("op_type", "") or "").strip() not in valid_types:
                 warnings.append(f"operations row {index} type invalid")
+            hours = _safe_float(row.get("hours"))
+            if hours <= 0 or hours > 24:
+                warnings.append(f"operations row {index} hours out of range")
+            clock_hours = clock_hours_by_row.get(index - 1)
+            if clock_hours is not None and _has_value(row.get("hours")) and abs(clock_hours - hours) > 0.1:
+                warnings.append(f"operations row {index} time duration mismatch")
         if abs(total_hours - 24.0) > 0.05:
             warnings.append(f"operation hours total {total_hours:.2f}")
+    elif report_type in required_by_type:
+        warnings.append("operations missing")
+
+    if fields.get("reportDate"):
+        try:
+            if datetime.strptime(str(fields.get("reportDate")), "%Y-%m-%d").date() > date.today():
+                warnings.append("reportDate is in the future")
+        except ValueError:
+            warnings.append("reportDate invalid")
+    if report_type in {"completion", "workover"} and fields.get("reportDate") and fields.get("operationStartDate"):
+        try:
+            if datetime.strptime(str(fields.get("operationStartDate")), "%Y-%m-%d").date() > datetime.strptime(str(fields.get("reportDate")), "%Y-%m-%d").date():
+                warnings.append("operationStartDate later than reportDate")
+        except ValueError:
+            pass
+    if report_type in {"drilling", "move"}:
+        today_md = _safe_float(fields.get("todayMd"))
+        prev_md = _safe_float(fields.get("prevMd"))
+        progress = _safe_float(fields.get("progress"))
+        if str(fields.get("todayMd", "") or "").strip() and str(fields.get("prevMd", "") or "").strip() and today_md < prev_md:
+            warnings.append("todayMd less than prevMd")
+        if str(fields.get("progress", "") or "").strip() and str(fields.get("todayMd", "") or "").strip() and str(fields.get("prevMd", "") or "").strip() and abs(progress - (today_md - prev_md)) > 0.5:
+            warnings.append("progress mismatch")
+    if report_type == "drilling":
+        mud_density = _safe_float(fields.get("mudDensity"))
+        if str(fields.get("mudDensity", "") or "").strip() and (mud_density < 6 or mud_density > 20):
+            warnings.append("mudDensity out of range")
+        sand = _safe_float(fields.get("sand"))
+        if str(fields.get("sand", "") or "").strip() and sand > 10:
+            warnings.append("sand out of range")
+
+    if report_type == "drilling":
+        survey_rows = payload.get("survey_data", [])
+        if isinstance(survey_rows, list):
+            today_md = _safe_float(fields.get("todayMd"))
+            for index, row in enumerate(survey_rows, start=1):
+                if not isinstance(row, dict):
+                    continue
+                md = _safe_float(row.get("md"))
+                incl = _safe_float(row.get("incl"))
+                dls = _safe_float(row.get("dls"))
+                if str(row.get("md", "") or "").strip() and str(fields.get("todayMd", "") or "").strip() and md > today_md:
+                    warnings.append(f"survey_data row {index} md greater than todayMd")
+                if str(row.get("incl", "") or "").strip() and (incl < 0 or incl > 180):
+                    warnings.append(f"survey_data row {index} incl out of range")
+                if str(row.get("dls", "") or "").strip() and dls < 0:
+                    warnings.append(f"survey_data row {index} dls negative")
+        bha_rows = payload.get("bha_components", [])
+        if isinstance(bha_rows, list):
+            for index, row in enumerate(bha_rows, start=1):
+                if not isinstance(row, dict):
+                    continue
+                od = _safe_float(row.get("od"))
+                item_id = _safe_float(row.get("id"))
+                if str(row.get("od", "") or "").strip() and str(row.get("id", "") or "").strip() and od < item_id:
+                    warnings.append(f"bha_components row {index} od less than id")
+                for field in ("od", "id", "joints", "length"):
+                    if str(row.get(field, "") or "").strip() and _safe_float(row.get(field)) < 0:
+                        warnings.append(f"bha_components row {index} {field} negative")
+
+    interval_section = "perforation_intervals"
+    rows = payload.get(interval_section, [])
+    if report_type in {"completion", "workover"} and isinstance(rows, list):
+        for index, row in enumerate(rows, start=1):
+            if not isinstance(row, dict):
+                continue
+            top_md = _safe_float(row.get("top_md"))
+            base_md = _safe_float(row.get("base_md"))
+            length = _safe_float(row.get("length"))
+            if str(row.get("top_md", "") or "").strip() and str(row.get("base_md", "") or "").strip() and base_md < top_md:
+                warnings.append(f"{interval_section} row {index} base_md less than top_md")
+            if str(row.get("length", "") or "").strip() and length < 0:
+                warnings.append(f"{interval_section} row {index} length negative")
+            for field in ("density", "phase", "penetration", "diameter"):
+                if str(row.get(field, "") or "").strip() and _safe_float(row.get(field)) < 0:
+                    warnings.append(f"{interval_section} row {index} {field} negative")
     return warnings
 
 
@@ -999,13 +1091,13 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
         rig = row["rig"] or "未识别井队"
         report_type = row["report_type"]
         type_label = REPORT_TYPE_LABELS.get(report_type, report_type)
-        by_rig.setdefault(rig, {label: 0.0 for label in REPORT_TYPE_LABELS.values()})
-        by_rig[rig][type_label] = by_rig[rig].get(type_label, 0.0) + row["hours"]
+        by_rig.setdefault(rig, {key: 0.0 for key in REPORT_TYPE_LABELS})
+        by_rig[rig][report_type] = by_rig[rig].get(report_type, 0.0) + row["hours"]
         if report_type in by_type:
             by_type[report_type] += row["hours"]
         month = row["reportDate"][:7] or "未识别"
-        monthly.setdefault(month, {label: 0.0 for label in REPORT_TYPE_LABELS.values()})
-        monthly[month][type_label] = monthly[month].get(type_label, 0.0) + row["hours"]
+        monthly.setdefault(month, {key: 0.0 for key in REPORT_TYPE_LABELS})
+        monthly[month][report_type] = monthly[month].get(report_type, 0.0) + row["hours"]
         key = (rig, row["wellbore"], report_type)
         item = detail.setdefault(key, {
             "rig": rig,
@@ -1201,6 +1293,49 @@ def _safe_float(value: object) -> float:
         return float(str(value or "0").replace(",", ""))
     except ValueError:
         return 0.0
+
+
+def _has_value(value: object) -> bool:
+    return bool(str(value or "").strip())
+
+
+def _operation_clock_hours_by_row(rows: list[object]) -> dict[int, float]:
+    durations: dict[int, float] = {}
+    previous_end: int | None = None
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        start = _clock_minutes(row.get("from"))
+        end = _clock_minutes(row.get("to"))
+        if start is None or end is None:
+            continue
+        start_abs = start
+        if previous_end is not None:
+            while start_abs < previous_end:
+                start_abs += 24 * 60
+        day_offset = start_abs // (24 * 60)
+        end_abs = end + day_offset * 24 * 60
+        while end_abs < start_abs:
+            end_abs += 24 * 60
+        if end_abs == start_abs and _safe_float(row.get("hours")) >= 23.9:
+            end_abs += 24 * 60
+        durations[index] = (end_abs - start_abs) / 60
+        previous_end = end_abs
+    return durations
+
+
+def _clock_minutes(value: object) -> int | None:
+    text = str(value or "").strip()
+    match = re.fullmatch(r"(\d{1,2})[:：](\d{2})", text)
+    if not match:
+        return None
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    if hour == 24 and minute == 0:
+        return 24 * 60
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return hour * 60 + minute
 
 
 def _param(params: dict[str, list[str]], key: str) -> str:
