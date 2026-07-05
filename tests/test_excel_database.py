@@ -6,7 +6,13 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from drilling_report_parser.excel_database import load_report_payload, save_report_payload
+from drilling_report_parser.excel_database import (
+    list_npt_confirmation_wells,
+    load_npt_confirmation_detail,
+    load_report_payload,
+    save_npt_confirmation,
+    save_report_payload,
+)
 
 
 class ExcelDatabaseTest(unittest.TestCase):
@@ -108,6 +114,48 @@ class ExcelDatabaseTest(unittest.TestCase):
             self.assertEqual(latest["validation_status"], "warning")
             self.assertEqual(latest["validation_warnings"], "rig missing")
             self.assertTrue(str(latest["created_at"]).startswith("2026-") or "T" in str(latest["created_at"]))
+
+    def test_npt_confirmation_overwrites_operations_and_locks_record(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "report_database.xlsx"
+            result = save_report_payload(
+                database,
+                {
+                    "metadata": {"source_file": "daily.pdf"},
+                    "report_fields": {"reportDate": "2026-06-11", "reportNo": "11", "wellbore": "PCNC-040", "rig": "SINOPEC 248"},
+                    "operations": [
+                        {"from": "00:00", "to": "06:00", "hours": "6", "op_code": "DRILL", "op_type": "P", "operation_details": "Drill"},
+                        {"from": "06:00", "to": "08:00", "hours": "2", "op_code": "WAIT", "op_type": "NPT", "operation_details": "Wait pump"},
+                    ],
+                },
+                "drilling",
+            )
+
+            listing = list_npt_confirmation_wells(database)
+            self.assertEqual(len(listing["items"]), 1)
+            workbook = load_workbook(database)
+            worksheet = workbook["drilling_operations"]
+            old_note_col = worksheet.max_column + 1
+            worksheet.cell(row=1, column=old_note_col, value="confirmation_note")
+            worksheet.cell(row=3, column=old_note_col, value="old row note")
+            workbook.save(database)
+
+            detail = load_npt_confirmation_detail(database, "PCNC-040")
+            self.assertEqual(detail["operations"][1]["system_op_type"], "NPT")
+            self.assertNotIn("confirmation_note", detail["operations"][1])
+
+            rows = detail["operations"]
+            rows[1]["confirmed_op_type"] = "SC"
+            save_npt_confirmation(database, "PCNC-040", rows, rig="SINOPEC 248", note="confirmed", confirmed_by="admin", submit=True)
+
+            workbook = load_workbook(database)
+            self.assertNotIn("confirmation_note", [cell.value for cell in workbook["drilling_operations"][1]])
+            loaded = load_report_payload(database, result["record_id"])
+            self.assertEqual(loaded["operations"][1]["op_type"], "SC")
+            self.assertEqual(loaded["operations"][1]["system_op_type"], "NPT")
+            self.assertEqual(loaded["metadata"]["locked"], "yes")
+            with self.assertRaises(PermissionError):
+                save_report_payload(database, loaded, "drilling")
 
 
 if __name__ == "__main__":

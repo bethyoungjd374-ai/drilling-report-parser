@@ -1,0 +1,37 @@
+{
+  "teams": [
+    {
+      "id": "a1209acd-e2d2-47c0-85a3-2b61aefb900b",
+      "name": "00 SINOPEC 248",
+      "code": "",
+      "contractor": "",
+      "status": "active",
+      "created_at": "2026-07-04T16:48:44"
+    }
+  ],
+  "projects": [
+    {
+      "id": "d6744bc8-1e2a-43ab-9a7c-8bcee4b39515",
+      "contract_no": "EC-2026-001",
+      "project_name": "厄瓜多尔2026年钻井合同001",
+      "status": "active",
+      "start_date": "2026-01-01",
+      "end_date": "2026-08-01",
+      "note": "",
+      "rigs": [
+        {
+          "rig": "00 SINOPEC 248",
+          "start_date": "",
+          "end_date": "",
+          "wells": [
+            "PCNC-040"
+          ],
+          "note": ""
+        }
+      ],
+      "created_at": "2026-07-04T13:57:37",
+      "updated_at": "2026-07-04T13:57:37"
+    }
+  ],
+  "pending_wells": []
+}

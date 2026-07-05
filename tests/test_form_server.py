@@ -14,6 +14,28 @@ from tests.test_pdf_report_parser import sample_pdf
 
 
 class FormServerImportTest(unittest.TestCase):
+    def test_project_team_normalization_preserves_rig_binding_metadata(self) -> None:
+        normalized = form_server._normalize_project_team_config({
+            "teams": [{"name": "00 SINOPEC 248"}],
+            "projects": [{
+                "contract_no": "EC-2026-001",
+                "project_name": "Test Project",
+                "rigs": [{
+                    "rig": "00 SINOPEC 248",
+                    "start_date": "2026-07-04",
+                    "end_date": "2026-08-04",
+                    "wells": ["PCNC-040"],
+                    "note": "phase 1",
+                }],
+            }],
+        })
+
+        rig = normalized["projects"][0]["rigs"][0]
+        self.assertEqual(rig["start_date"], "2026-07-04")
+        self.assertEqual(rig["end_date"], "2026-08-04")
+        self.assertEqual(rig["note"], "phase 1")
+        self.assertEqual(rig["wells"], ["PCNC-040"])
+
     def test_drilling_validation_matches_detail_required_fields(self) -> None:
         payload = {
             "report_fields": {

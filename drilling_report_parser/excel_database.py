@@ -24,6 +24,11 @@ BASE_COLUMNS = [
     "status",
     "validation_status",
     "validation_warnings",
+    "locked",
+    "confirmation_status",
+    "confirmed_at",
+    "confirmed_by",
+    "confirmation_note",
     "created_at",
     "updated_at",
 ]
@@ -138,7 +143,7 @@ MOVE_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
 ]
 
 ROW_COLUMNS = {
-    "operations": ["from", "to", "hours", "op_code", "op_sub", "op_type", "operation_details"],
+    "operations": ["from", "to", "hours", "op_code", "op_sub", "op_type", "operation_details", "system_op_type", "confirmed_op_type"],
     "bulks": ["bulk", "qty_start", "qty_used", "qty_end"],
     "daily_costs": ["cost_description", "vendor", "amount"],
     "survey_data": ["md", "incl", "azi", "tvd", "vse", "ns", "dls", "build"],
@@ -158,6 +163,10 @@ ROW_COLUMNS = {
         "comments",
     ],
     "mud_products": ["product", "unit", "received", "used", "returned", "ending"],
+}
+
+DEPRECATED_ROW_COLUMNS = {
+    "operations": ["confirmation_note"],
 }
 
 REPORT_TABLES = {
@@ -235,6 +244,8 @@ def save_report_payload(
     source_file = source_file or str(metadata.get("source_file") or "")
 
     existing = _record_index(workbook["records"]).get(record_id, {})
+    if _truthy(existing.get("locked")):
+        raise PermissionError(f"Record is locked after NPT confirmation: {record_id}")
     created_at = existing.get("created_at") or now
     _replace_record_rows(workbook, report_type, record_id)
 
@@ -253,6 +264,11 @@ def save_report_payload(
             "status": metadata.get("status", "parsed"),
             "validation_status": metadata.get("validation_status", "ok"),
             "validation_warnings": metadata.get("validation_warnings", ""),
+            "locked": metadata.get("locked", existing.get("locked", "")),
+            "confirmation_status": metadata.get("confirmation_status", existing.get("confirmation_status", "")),
+            "confirmed_at": metadata.get("confirmed_at", existing.get("confirmed_at", "")),
+            "confirmed_by": metadata.get("confirmed_by", existing.get("confirmed_by", "")),
+            "confirmation_note": metadata.get("confirmation_note", existing.get("confirmation_note", "")),
             "created_at": created_at,
             "updated_at": now,
         },
@@ -287,6 +303,11 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
             "report_type": report_type,
             "source_file": record.get("source_file", ""),
             "parser": record.get("parser", ""),
+            "locked": record.get("locked", ""),
+            "confirmation_status": record.get("confirmation_status", ""),
+            "confirmed_at": record.get("confirmed_at", ""),
+            "confirmed_by": record.get("confirmed_by", ""),
+            "confirmation_note": record.get("confirmation_note", ""),
         },
         "report_fields": fields,
     }
@@ -305,6 +326,221 @@ def list_records(database_path: str | Path) -> list[dict[str, str]]:
     return records
 
 
+def list_npt_confirmation_wells(database_path: str | Path, *, rig: str = "", wellbore: str = "", status: str = "", scope_rig: str = "") -> dict[str, Any]:
+    path = Path(database_path)
+    if not path.exists():
+        return {"items": [], "filters": {"rigs": [], "statuses": _npt_statuses()}}
+    workbook = load_workbook(path)
+    _ensure_schema(workbook)
+    records = list(_record_index(workbook["records"]).values())
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    for record in records:
+        record_rig = str(record.get("rig", "") or "")
+        record_well = str(record.get("wellbore", "") or "")
+        if not record_well:
+            continue
+        if scope_rig and record_rig != scope_rig:
+            continue
+        if rig and record_rig != rig:
+            continue
+        if wellbore and wellbore.lower() not in record_well.lower():
+            continue
+        record_id = str(record.get("record_id", "") or "")
+        report_type = str(record.get("report_type", "") or "")
+        try:
+            operations = _operation_rows_for_record(workbook, report_type, record_id)
+        except (KeyError, ValueError):
+            continue
+        has_non_p = any(_system_type(row) in {"SC", "NPT"} for row in operations)
+        if not has_non_p:
+            continue
+        key = (record_rig, record_well)
+        item = groups.setdefault(key, {
+            "rig": record_rig,
+            "wellbore": record_well,
+            "start_date": record.get("reportDate", ""),
+            "end_date": record.get("reportDate", ""),
+            "record_ids": [],
+            "statuses": [],
+            "locked_count": 0,
+            "row_count": 0,
+            "sc_hours": 0.0,
+            "npt_hours": 0.0,
+        })
+        date_value = str(record.get("reportDate", "") or "")
+        if date_value:
+            item["start_date"] = min(str(item["start_date"] or date_value), date_value)
+            item["end_date"] = max(str(item["end_date"] or date_value), date_value)
+        item["record_ids"].append(record_id)
+        item["statuses"].append(str(record.get("confirmation_status", "") or "pending"))
+        if _truthy(record.get("locked")):
+            item["locked_count"] += 1
+        for row in operations:
+            op_type = _system_type(row)
+            hours = _safe_float(row.get("hours"))
+            item["row_count"] += 1
+            if op_type == "SC":
+                item["sc_hours"] += hours
+            elif op_type == "NPT":
+                item["npt_hours"] += hours
+    items = []
+    for item in groups.values():
+        item_status = _confirmation_group_status(item)
+        if status and item_status != status:
+            continue
+        items.append({
+            "wellbore": item["wellbore"],
+            "rig": item["rig"],
+            "start_date": item["start_date"],
+            "end_date": item["end_date"],
+            "status": item_status,
+            "record_count": len(item["record_ids"]),
+            "row_count": item["row_count"],
+            "sc_hours": round(float(item["sc_hours"]), 2),
+            "npt_hours": round(float(item["npt_hours"]), 2),
+        })
+    items.sort(key=lambda row: (str(row["status"] != "pending"), str(row["end_date"])), reverse=False)
+    rigs = sorted({str(record.get("rig", "") or "") for record in records if record.get("rig")})
+    return {"items": items, "filters": {"rigs": rigs, "statuses": _npt_statuses()}}
+
+
+def load_npt_confirmation_detail(database_path: str | Path, wellbore: str, *, rig: str = "", scope_rig: str = "") -> dict[str, Any]:
+    path = Path(database_path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+    workbook = load_workbook(path)
+    _ensure_schema(workbook)
+    records = [
+        record for record in _record_index(workbook["records"]).values()
+        if str(record.get("wellbore", "") or "") == wellbore
+        and (not rig or str(record.get("rig", "") or "") == rig)
+        and (not scope_rig or str(record.get("rig", "") or "") == scope_rig)
+    ]
+    if not records:
+        raise KeyError(wellbore)
+    relevant_ids = set()
+    for record in records:
+        operations = _operation_rows_for_record(workbook, str(record.get("report_type", "") or ""), str(record.get("record_id", "") or ""))
+        if any(_system_type(row) in {"SC", "NPT"} for row in operations):
+            relevant_ids.add(str(record.get("record_id", "") or ""))
+    records = [record for record in records if str(record.get("record_id", "") or "") in relevant_ids]
+    if not records:
+        raise KeyError(wellbore)
+    rows: list[dict[str, Any]] = []
+    for record in sorted(records, key=lambda item: str(item.get("reportDate", "") or "")):
+        operations = _operation_rows_for_record(workbook, str(record.get("report_type", "") or ""), str(record.get("record_id", "") or ""))
+        for row in operations:
+            system_type = _system_type(row)
+            confirmed_type = str(row.get("confirmed_op_type", "") or row.get("op_type", "") or system_type).strip().upper()
+            rows.append({
+                "record_id": record.get("record_id", ""),
+                "report_type": record.get("report_type", ""),
+                "reportDate": record.get("reportDate", ""),
+                "row_no": row.get("row_no", ""),
+                "from": row.get("from", ""),
+                "to": row.get("to", ""),
+                "hours": row.get("hours", ""),
+                "op_code": row.get("op_code", ""),
+                "op_sub": row.get("op_sub", ""),
+                "operation_details": row.get("operation_details", ""),
+                "system_op_type": system_type,
+                "confirmed_op_type": confirmed_type,
+            })
+    start_date = min(str(record.get("reportDate", "") or "") for record in records if record.get("reportDate"))
+    end_date = max(str(record.get("reportDate", "") or "") for record in records if record.get("reportDate"))
+    meta = {
+        "wellbore": wellbore,
+        "rig": rig or str(records[0].get("rig", "") or ""),
+        "start_date": start_date,
+        "end_date": end_date,
+        "status": _confirmation_group_status({
+            "record_ids": [record.get("record_id", "") for record in records],
+            "statuses": [str(record.get("confirmation_status", "") or "pending") for record in records],
+            "locked_count": sum(1 for record in records if _truthy(record.get("locked"))),
+        }),
+        "record_count": len(records),
+        "locked": all(_truthy(record.get("locked")) for record in records),
+        "confirmation_note": next((str(record.get("confirmation_note", "") or "") for record in records if record.get("confirmation_note")), ""),
+    }
+    return {"meta": meta, "operations": rows}
+
+
+def save_npt_confirmation(
+    database_path: str | Path,
+    wellbore: str,
+    operations: list[dict[str, Any]],
+    *,
+    rig: str = "",
+    note: str = "",
+    confirmed_by: str = "",
+    submit: bool = False,
+) -> dict[str, Any]:
+    path = Path(database_path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+    workbook = load_workbook(path)
+    _ensure_schema(workbook)
+    records_sheet = workbook["records"]
+    records = _record_index(records_sheet)
+    detail = load_npt_confirmation_detail(path, wellbore, rig=rig)
+    if detail["meta"].get("locked"):
+        raise PermissionError(f"Well is locked after NPT confirmation: {wellbore}")
+    allowed_record_ids = {str(row.get("record_id", "") or "") for row in detail["operations"]}
+    updates: dict[tuple[str, int], dict[str, str]] = {}
+    for row in operations:
+        record_id = str(row.get("record_id", "") or "")
+        if record_id not in allowed_record_ids:
+            continue
+        try:
+            row_no = int(str(row.get("row_no", "") or "0"))
+        except ValueError:
+            row_no = 0
+        confirmed_type = str(row.get("confirmed_op_type", "") or "").strip().upper()
+        if confirmed_type not in {"P", "SC", "NPT"} or row_no <= 0:
+            continue
+        updates[(record_id, row_no)] = {
+            "confirmed_op_type": confirmed_type,
+        }
+    if not updates:
+        raise ValueError("No valid NPT confirmation rows.")
+    touched_ids: set[str] = set()
+    for record_id, row_no in updates:
+        report_type = str(records.get(record_id, {}).get("report_type", "") or "")
+        sheet_name = REPORT_TABLES[_normalize_report_type(report_type)]["multi"]["operations"]
+        worksheet = workbook[sheet_name]
+        headers = _headers(worksheet)
+        for row_index in range(2, worksheet.max_row + 1):
+            if str(worksheet.cell(row=row_index, column=headers.index("record_id") + 1).value or "") != record_id:
+                continue
+            if int(str(worksheet.cell(row=row_index, column=headers.index("row_no") + 1).value or "0")) != row_no:
+                continue
+            current_type = str(worksheet.cell(row=row_index, column=headers.index("op_type") + 1).value or "").strip().upper()
+            system_col = headers.index("system_op_type") + 1
+            if not str(worksheet.cell(row=row_index, column=system_col).value or "").strip():
+                worksheet.cell(row=row_index, column=system_col, value=current_type)
+            worksheet.cell(row=row_index, column=headers.index("confirmed_op_type") + 1, value=updates[(record_id, row_no)]["confirmed_op_type"])
+            if submit:
+                worksheet.cell(row=row_index, column=headers.index("op_type") + 1, value=updates[(record_id, row_no)]["confirmed_op_type"])
+            touched_ids.add(record_id)
+            break
+    now = _now()
+    record_headers = _headers(records_sheet)
+    for row_index in range(2, records_sheet.max_row + 1):
+        record_id = str(records_sheet.cell(row=row_index, column=record_headers.index("record_id") + 1).value or "")
+        if record_id not in allowed_record_ids:
+            continue
+        records_sheet.cell(row=row_index, column=record_headers.index("confirmation_status") + 1, value="confirmed" if submit else "draft")
+        records_sheet.cell(row=row_index, column=record_headers.index("confirmation_note") + 1, value=note)
+        records_sheet.cell(row=row_index, column=record_headers.index("updated_at") + 1, value=now)
+        if submit:
+            records_sheet.cell(row=row_index, column=record_headers.index("locked") + 1, value="yes")
+            records_sheet.cell(row=row_index, column=record_headers.index("confirmed_at") + 1, value=now)
+            records_sheet.cell(row=row_index, column=record_headers.index("confirmed_by") + 1, value=confirmed_by)
+    _format_workbook(workbook)
+    workbook.save(path)
+    return {"wellbore": wellbore, "updated_records": len(touched_ids), "status": "confirmed" if submit else "draft", "locked": submit, "updated_at": now}
+
+
 def _load_or_create_workbook(path: Path) -> Workbook:
     if path.exists():
         return load_workbook(path)
@@ -313,12 +549,57 @@ def _load_or_create_workbook(path: Path) -> Workbook:
     return workbook
 
 
+def _operation_rows_for_record(workbook: Workbook, report_type: str, record_id: str) -> list[dict[str, str]]:
+    table_info = REPORT_TABLES[_normalize_report_type(report_type)]
+    sheet_name = table_info["multi"].get("operations")
+    if not sheet_name:
+        return []
+    return _matching_rows(workbook[sheet_name], record_id, keep_row_no=True)
+
+
+def _safe_float(value: Any) -> float:
+    try:
+        return float(str(value or "0").replace(",", ""))
+    except ValueError:
+        return 0.0
+
+
+def _truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "locked", "confirmed"}
+
+
+def _system_type(row: dict[str, Any]) -> str:
+    return str(row.get("system_op_type", "") or row.get("op_type", "") or "").strip().upper()
+
+
+def _npt_statuses() -> list[dict[str, str]]:
+    return [
+        {"value": "pending", "label": "待确认"},
+        {"value": "draft", "label": "确认中"},
+        {"value": "confirmed", "label": "已确认"},
+    ]
+
+
+def _confirmation_group_status(item: dict[str, Any]) -> str:
+    statuses = {str(value or "").strip().lower() for value in item.get("statuses", []) if str(value or "").strip()}
+    record_count = len(item.get("record_ids", []) or [])
+    locked_count = int(item.get("locked_count", 0) or 0)
+    if record_count and locked_count >= record_count:
+        return "confirmed"
+    if "confirmed" in statuses and record_count and locked_count >= record_count:
+        return "confirmed"
+    if "draft" in statuses or "confirmed" in statuses:
+        return "draft"
+    return "pending"
+
+
 def _ensure_schema(workbook: Workbook) -> None:
     _ensure_sheet(workbook, "records", BASE_COLUMNS)
     for report_type, table_info in REPORT_TABLES.items():
         _ensure_sheet(workbook, table_info["field_sheet"], table_info["field_columns"])
         for module_name, sheet_name in table_info["multi"].items():
-            _ensure_sheet(workbook, sheet_name, ["record_id", "row_no", *ROW_COLUMNS[module_name]])
+            worksheet = _ensure_sheet(workbook, sheet_name, ["record_id", "row_no", *ROW_COLUMNS[module_name]])
+            _drop_columns(worksheet, DEPRECATED_ROW_COLUMNS.get(module_name, []))
 
 
 def _ensure_sheet(workbook: Workbook, name: str, columns: list[str]) -> Worksheet:
@@ -333,6 +614,18 @@ def _ensure_sheet(workbook: Workbook, name: str, columns: list[str]) -> Workshee
                 worksheet.cell(row=1, column=len(existing) + 1, value=column)
                 existing.append(column)
     return worksheet
+
+
+def _drop_columns(worksheet: Worksheet, columns: list[str]) -> None:
+    if not columns:
+        return
+    while True:
+        headers = _headers(worksheet)
+        removable = [column for column in columns if column in headers]
+        if not removable:
+            break
+        column_index = headers.index(removable[0]) + 1
+        worksheet.delete_cols(column_index)
 
 
 def _replace_record_rows(workbook: Workbook, report_type: str, record_id: str) -> None:
@@ -378,7 +671,7 @@ def _first_matching_row(worksheet: Worksheet, record_id: str) -> dict[str, str]:
     return rows[0]
 
 
-def _matching_rows(worksheet: Worksheet, record_id: str) -> list[dict[str, str]]:
+def _matching_rows(worksheet: Worksheet, record_id: str, *, keep_row_no: bool = False) -> list[dict[str, str]]:
     headers = _headers(worksheet)
     rows: list[dict[str, str]] = []
     for raw in worksheet.iter_rows(min_row=2, values_only=True):
@@ -387,8 +680,9 @@ def _matching_rows(worksheet: Worksheet, record_id: str) -> list[dict[str, str]]
             row.pop("record_id", None)
             rows.append(row)
     rows.sort(key=lambda item: int(item.get("row_no") or 0))
-    for row in rows:
-        row.pop("row_no", None)
+    if not keep_row_no:
+        for row in rows:
+            row.pop("row_no", None)
     return rows
 
 

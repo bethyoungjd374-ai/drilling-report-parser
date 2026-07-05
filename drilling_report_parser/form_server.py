@@ -16,7 +16,15 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .completion_pdf_parser import parse_completion_pdf_daily_report
-from .excel_database import initialize_database, list_records, load_report_payload, save_report_payload
+from .excel_database import (
+    initialize_database,
+    list_npt_confirmation_wells,
+    list_records,
+    load_npt_confirmation_detail,
+    load_report_payload,
+    save_npt_confirmation,
+    save_report_payload,
+)
 from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_report_parser import parse_pdf_daily_report
 from .workover_pdf_parser import parse_workover_pdf_daily_report
@@ -29,6 +37,7 @@ SOURCE_PDF_DIR = ROOT / "outputs" / "source_pdfs"
 CONFIG_PATH = ROOT / "outputs" / "system_config.json"
 USERS_PATH = ROOT / "outputs" / "users.json"
 ROLES_PATH = ROOT / "outputs" / "roles.json"
+PROJECT_TEAM_PATH = ROOT / "outputs" / "project_team_config.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
@@ -90,6 +99,18 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._npt_stats(parsed.query)
             return
+        if parsed.path == "/api/npt-confirmations":
+            user = self._require_permission("view")
+            if not user:
+                return
+            self._npt_confirmations(parsed.query, user)
+            return
+        if parsed.path == "/api/npt-confirmation":
+            user = self._require_permission("view")
+            if not user:
+                return
+            self._npt_confirmation_detail(parsed.query, user)
+            return
         if parsed.path == "/api/download-database":
             if not self._require_permission("export"):
                 return
@@ -111,6 +132,9 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/admin/roles":
             self._admin_roles()
+            return
+        if parsed.path == "/api/admin/project-teams":
+            self._admin_project_teams()
             return
         if parsed.path == "/api/admin/data-status":
             self._admin_data_status()
@@ -138,6 +162,9 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/admin/roles":
             self._admin_save_roles()
+            return
+        if self.path == "/api/admin/project-teams":
+            self._admin_save_project_teams()
             return
         if self.path == "/api/admin/backup":
             self._admin_backup()
@@ -171,6 +198,12 @@ class FormHandler(BaseHTTPRequestHandler):
             if not self._require_permission("view"):
                 return
             self._load_report()
+            return
+        if self.path == "/api/npt-confirmation":
+            user = self._require_permission("save")
+            if not user:
+                return
+            self._save_npt_confirmation(user)
             return
         self.send_error(404)
 
@@ -314,6 +347,22 @@ class FormHandler(BaseHTTPRequestHandler):
         _save_roles(roles)
         _write_audit(user, "save_roles", "system_admin", "roles", True, f"{len(roles)} roles")
         self._send_json({"ok": True, "roles": roles})
+
+    def _admin_project_teams(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json(_load_project_team_config())
+
+    def _admin_save_project_teams(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        config = _normalize_project_team_config(payload)
+        _save_project_team_config(config)
+        _write_audit(user, "save_project_teams", "system_admin", "project_team_config", True, f"{len(config['projects'])} projects / {len(config['teams'])} teams")
+        self._send_json({"ok": True, **config})
 
     def _admin_data_status(self) -> None:
         user = self._require_admin()
@@ -499,6 +548,8 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._store_payload(report_payload, report_type)
             self._send_json({"ok": True, "metadata": report_payload.get("metadata", {})})
+        except PermissionError as exc:
+            self._send_json({"error": str(exc)}, status=409)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
@@ -574,6 +625,63 @@ class FormHandler(BaseHTTPRequestHandler):
     def _npt_stats(self, query: str) -> None:
         self._send_json(_npt_stats_payload(DATABASE_PATH, parse_qs(query)))
 
+    def _npt_confirmations(self, query: str, user: dict[str, object]) -> None:
+        params = parse_qs(query)
+        payload = list_npt_confirmation_wells(
+            DATABASE_PATH,
+            rig=(params.get("rig") or [""])[0],
+            wellbore=(params.get("wellbore") or [""])[0],
+            status=(params.get("status") or [""])[0],
+            scope_rig=_npt_scope_rig(user),
+        )
+        payload["scope"] = {"all_rigs": _can_view_all_rigs(user), "rig": _npt_scope_rig(user)}
+        self._send_json(payload)
+
+    def _npt_confirmation_detail(self, query: str, user: dict[str, object]) -> None:
+        params = parse_qs(query)
+        wellbore = (params.get("wellbore") or [""])[0].strip()
+        if not wellbore:
+            self._send_json({"error": "wellbore is required."}, status=400)
+            return
+        try:
+            self._send_json(load_npt_confirmation_detail(
+                DATABASE_PATH,
+                wellbore,
+                rig=(params.get("rig") or [""])[0],
+                scope_rig=_npt_scope_rig(user),
+            ))
+        except KeyError:
+            self._send_json({"error": "NPT confirmation well not found."}, status=404)
+        except Exception as exc:  # pragma: no cover - keeps local app useful.
+            self._send_json({"error": str(exc)}, status=500)
+
+    def _save_npt_confirmation(self, user: dict[str, object]) -> None:
+        try:
+            payload = self._read_json_body()
+            wellbore = str(payload.get("wellbore", "")).strip()
+            if not wellbore:
+                self._send_json({"error": "wellbore is required."}, status=400)
+                return
+            operations = payload.get("operations", [])
+            if not isinstance(operations, list):
+                self._send_json({"error": "operations must be a list."}, status=400)
+                return
+            result = save_npt_confirmation(
+                DATABASE_PATH,
+                wellbore,
+                operations,
+                rig=str(payload.get("rig", "") or ""),
+                note=str(payload.get("note", "") or ""),
+                confirmed_by=str(user.get("username", "") or ""),
+                submit=bool(payload.get("submit")),
+            )
+            _write_audit(user, "submit_npt_confirmation" if payload.get("submit") else "save_npt_confirmation", "npt_confirmation", wellbore, True, result.get("status", ""))
+            self._send_json({"ok": True, **result})
+        except PermissionError as exc:
+            self._send_json({"error": str(exc)}, status=409)
+        except Exception as exc:  # pragma: no cover - keeps local app useful.
+            self._send_json({"error": str(exc)}, status=500)
+
     def _download_database(self) -> None:
         if not DATABASE_PATH.exists():
             initialize_database(DATABASE_PATH)
@@ -615,6 +723,7 @@ class FormHandler(BaseHTTPRequestHandler):
             report_type,
             source_file=str(metadata.get("source_file", "")) if isinstance(metadata, dict) else "",
         )
+        _auto_register_project_well(payload, report_type)
         if isinstance(metadata, dict):
             metadata.update(result)
 
@@ -762,6 +871,8 @@ def _ensure_admin_files() -> None:
         _save_config(_default_config())
     if not ROLES_PATH.exists():
         _save_roles(_default_roles())
+    if not PROJECT_TEAM_PATH.exists():
+        _save_project_team_config(_default_project_team_config())
     if not USERS_PATH.exists():
         admin = {
             "id": str(uuid.uuid4()),
@@ -811,6 +922,140 @@ def _save_roles(roles: list[dict[str, object]]) -> None:
     ROLES_PATH.write_text(json.dumps(_normalize_roles(roles), ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _default_project_team_config() -> dict[str, object]:
+    return {"teams": [], "projects": [], "pending_wells": []}
+
+
+def _load_project_team_config() -> dict[str, object]:
+    _ensure_parent(PROJECT_TEAM_PATH)
+    if not PROJECT_TEAM_PATH.exists():
+        return _default_project_team_config()
+    try:
+        data = json.loads(PROJECT_TEAM_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = {}
+    return _normalize_project_team_config(data)
+
+
+def _save_project_team_config(config: dict[str, object]) -> None:
+    _ensure_parent(PROJECT_TEAM_PATH)
+    PROJECT_TEAM_PATH.write_text(json.dumps(_normalize_project_team_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _list_value(value: object) -> list[object]:
+    return value if isinstance(value, list) else []
+
+
+def _normalize_project_team_config(raw: object) -> dict[str, object]:
+    source = raw if isinstance(raw, dict) else {}
+    now = datetime.now().isoformat(timespec="seconds")
+    teams: list[dict[str, object]] = []
+    seen_teams: set[str] = set()
+    for item in _list_value(source.get("teams")):
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "") or item.get("rig", "") or "").strip()
+        if not name or name in seen_teams:
+            continue
+        teams.append({
+            "id": str(item.get("id") or uuid.uuid4()),
+            "name": name,
+            "code": str(item.get("code", "") or "").strip(),
+            "contractor": str(item.get("contractor", "") or "").strip(),
+            "status": str(item.get("status", "active") or "active").strip() or "active",
+            "created_at": str(item.get("created_at") or now),
+        })
+        seen_teams.add(name)
+
+    projects: list[dict[str, object]] = []
+    seen_projects: set[str] = set()
+    for item in _list_value(source.get("projects")):
+        if not isinstance(item, dict):
+            continue
+        contract_no = str(item.get("contract_no", "") or "").strip()
+        project_name = str(item.get("project_name", "") or item.get("name", "") or "").strip()
+        key = contract_no or project_name
+        if not key or key in seen_projects:
+            continue
+        rigs: list[dict[str, object]] = []
+        seen_rigs: set[str] = set()
+        for rig_item in _list_value(item.get("rigs")):
+            if not isinstance(rig_item, dict):
+                continue
+            rig_name = str(rig_item.get("rig", "") or rig_item.get("name", "") or "").strip()
+            if not rig_name or rig_name in seen_rigs:
+                continue
+            wells = sorted({str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()})
+            rigs.append({
+                "rig": rig_name,
+                "start_date": str(rig_item.get("start_date", "") or "").strip(),
+                "end_date": str(rig_item.get("end_date", "") or "").strip(),
+                "wells": wells,
+                "note": str(rig_item.get("note", "") or "").strip(),
+            })
+            seen_rigs.add(rig_name)
+        projects.append({
+            "id": str(item.get("id") or uuid.uuid4()),
+            "contract_no": contract_no,
+            "project_name": project_name,
+            "status": str(item.get("status", "active") or "active").strip() or "active",
+            "start_date": str(item.get("start_date", "") or "").strip(),
+            "end_date": str(item.get("end_date", "") or "").strip(),
+            "note": str(item.get("note", "") or "").strip(),
+            "rigs": rigs,
+            "created_at": str(item.get("created_at") or now),
+            "updated_at": str(item.get("updated_at") or now),
+        })
+        seen_projects.add(key)
+
+    pending: list[dict[str, object]] = []
+    seen_pending: set[tuple[str, str]] = set()
+    for item in _list_value(source.get("pending_wells")):
+        if not isinstance(item, dict):
+            continue
+        rig = str(item.get("rig", "") or "").strip()
+        wellbore = str(item.get("wellbore", "") or "").strip()
+        if not rig or not wellbore or (rig, wellbore) in seen_pending:
+            continue
+        pending.append({
+            "rig": rig,
+            "wellbore": wellbore,
+            "report_type": str(item.get("report_type", "") or "").strip(),
+            "source": str(item.get("source", "report") or "report").strip(),
+            "created_at": str(item.get("created_at") or now),
+        })
+        seen_pending.add((rig, wellbore))
+    return {"teams": teams, "projects": projects, "pending_wells": pending}
+
+
+def _auto_register_project_well(payload: dict[str, object], report_type: str) -> None:
+    fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
+    rig = str(fields.get("rig", "") or "").strip()
+    wellbore = str(fields.get("wellbore", "") or "").strip()
+    if not rig or not wellbore:
+        return
+    config = _load_project_team_config()
+    now = datetime.now().isoformat(timespec="seconds")
+    if not any(str(team.get("name", "")) == rig for team in config["teams"]):
+        config["teams"].append({"id": str(uuid.uuid4()), "name": rig, "code": "", "contractor": "", "status": "active", "created_at": now})
+    active_projects = [project for project in config["projects"] if str(project.get("status", "active")) == "active"]
+    if len(active_projects) == 1:
+        project = active_projects[0]
+        rigs = project.setdefault("rigs", [])
+        target = next((item for item in rigs if item.get("rig") == rig), None)
+        if target is None:
+            target = {"rig": rig, "start_date": "", "end_date": "", "wells": [], "note": ""}
+            rigs.append(target)
+        wells = target.setdefault("wells", [])
+        if wellbore not in wells:
+            wells.append(wellbore)
+            wells.sort()
+            project["updated_at"] = now
+    elif not any(item.get("rig") == rig and item.get("wellbore") == wellbore for item in config["pending_wells"]):
+        config["pending_wells"].append({"rig": rig, "wellbore": wellbore, "report_type": report_type, "source": "report", "created_at": now})
+    _save_project_team_config(config)
+
+
 def _load_users() -> list[dict[str, object]]:
     if not USERS_PATH.exists():
         _ensure_admin_files()
@@ -827,9 +1072,24 @@ def _save_users(users: list[dict[str, object]]) -> None:
 
 
 def _public_user(user: dict[str, object]) -> dict[str, object]:
-    data = {key: user.get(key, "") for key in ("id", "username", "display_name", "email", "role", "status", "created_at", "last_login")}
+    data = {key: user.get(key, "") for key in ("id", "username", "display_name", "email", "role", "status", "created_at", "last_login", "rig")}
+    if "rigs" in user:
+        data["rigs"] = user.get("rigs", [])
     data["must_change_password"] = bool(user.get("must_change_password"))
     return data
+
+
+def _can_view_all_rigs(user: dict[str, object]) -> bool:
+    return bool(_role_permissions(str(user.get("role", ""))).get("admin")) or str(user.get("role", "")) == "admin"
+
+
+def _npt_scope_rig(user: dict[str, object]) -> str:
+    if _can_view_all_rigs(user):
+        return ""
+    rigs = user.get("rigs")
+    if isinstance(rigs, list) and rigs:
+        return str(rigs[0] or "")
+    return str(user.get("rig", "") or "")
 
 
 def _active_admin_count(users: list[dict[str, object]]) -> int:
