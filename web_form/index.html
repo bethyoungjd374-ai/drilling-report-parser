@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>钻井日报填报工作台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=well-profile-modal-2" />
   </head>
   <body>
     <div class="app-shell">
@@ -55,15 +55,23 @@
             </div>
           </div>
         </nav>
+        <div class="sidebar-bottom-actions">
+          <a class="menu-link sidebar-system-link" href="/admin/" data-front-admin-entry hidden>
+            <span class="admin-menu-icon icon-settings" aria-hidden="true"></span>
+            <span data-i18n="systemAdmin">系统后台</span>
+          </a>
+        </div>
       </aside>
 
       <main class="workspace">
         <section id="drillingDailyPage" class="module-page active">
         <header class="topbar">
           <div>
-            <p class="page-kicker" data-i18n="drillingPageKicker">DRILLING DAILY REPORT</p>
-            <h1 data-i18n="pageTitle">钻井日报填报工作台</h1>
-            <p class="source-file-name" id="drillingSourceFile">未上传文件</p>
+            <nav class="page-breadcrumb" aria-label="页面路径">
+              <span data-i18n="menuDailyParsing">日报解析</span>
+              <span class="breadcrumb-separator">/</span>
+              <strong data-i18n="menuDrillingDaily">钻井日报</strong>
+            </nav>
           </div>
           <div class="top-actions">
             <div class="language-switch" role="group" aria-label="Language">
@@ -305,8 +313,11 @@
         <section id="completionDailyPage" class="module-page" hidden>
           <header class="topbar">
             <div>
-              <p class="page-kicker" data-i18n="completionPageKicker">COMPLETION DAILY REPORT</p>
-              <h1 data-i18n="completionPageTitle">完井日报填报工作台</h1>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuDailyParsing">日报解析</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuCompletionDaily">完井日报</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -471,8 +482,11 @@
         <section id="workoverDailyPage" class="module-page" hidden>
           <header class="topbar">
             <div>
-              <p class="page-kicker" data-i18n="workoverPageKicker">WORKOVER DAILY REPORT</p>
-              <h1 data-i18n="workoverPageTitle">修井日报填报工作台</h1>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuDailyParsing">日报解析</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuWorkoverDaily">修井日报</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -638,8 +652,11 @@
         <section id="moveDailyPage" class="module-page" hidden>
           <header class="topbar">
             <div>
-              <p class="page-kicker" data-i18n="movePageKicker">RIG MOVE DAILY REPORT</p>
-              <h1 data-i18n="movePageTitle">搬迁日报填报工作台</h1>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuDailyParsing">日报解析</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuMoveDaily">搬迁日报</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -751,9 +768,11 @@
         <section id="productionSummaryPage" class="module-page analytics-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
-              <p class="page-kicker" data-i18n="analyticsKicker">数据看板</p>
-              <h1 data-i18n="menuRigProductionSummary">生产汇总</h1>
-              <p class="source-file-name" data-analytics-note="production" data-i18n="analyticsProductionScope">基于已保存到 Excel 库的日报解析数据</p>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuProductionReport">生产报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuRigProductionSummary">生产汇总</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -788,8 +807,11 @@
         <section id="nptStatsPage" class="module-page analytics-page npt-stats-dashboard" hidden>
           <header class="topbar placeholder-topbar npt-stats-topbar">
             <div>
-              <h1>NPT统计与确认</h1>
-              <p class="source-file-name" data-analytics-note="npt" data-i18n="analyticsNptScope">基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总</p>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuProductionReport">生产报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuWellNptConfirm">NPT分析</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -824,9 +846,13 @@
         <section id="nptConfirmPage" class="module-page npt-confirm-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
-              <p class="page-kicker">NPT MANAGEMENT</p>
-              <h1 data-i18n="menuRigNptRanking">NPT确认</h1>
-              <p class="source-file-name">完井后对井时效进行确认，确认后锁定该井日报数据</p>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuProductionReport">生产报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <button class="breadcrumb-link" type="button" data-npt-back data-i18n="menuRigNptRanking">NPT确认</button>
+                <span class="breadcrumb-separator" data-npt-breadcrumb-separator hidden>/</span>
+                <strong data-npt-breadcrumb-current hidden>时效确认</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -868,13 +894,7 @@
           </section>
 
           <section class="npt-confirm-detail" data-npt-confirm-view="detail" hidden>
-            <header class="topbar placeholder-topbar npt-detail-titlebar">
-              <div>
-                <p class="page-kicker">NPT CONFIRMATION</p>
-                <h1><button class="icon-button" type="button" data-npt-back aria-label="返回">‹</button><span data-npt-detail-title>时效确认</span></h1>
-              </div>
-            </header>
-            <section class="panel npt-meta-grid" data-npt-detail-meta></section>
+            <section class="panel npt-meta-grid npt-detail-meta-card" data-npt-detail-meta></section>
             <section class="panel npt-detail-card">
               <div class="panel-heading">
                 <h2>时效明细列表</h2>
@@ -912,8 +932,11 @@
         <section id="modulePlaceholder" class="module-page module-placeholder" hidden>
           <header class="topbar placeholder-topbar">
             <div>
-              <p class="page-kicker" id="placeholderModule" data-i18n="moduleStatusPlanned">功能规划</p>
-              <h1 id="placeholderTitle">功能菜单</h1>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span id="placeholderModule" data-i18n="moduleStatusPlanned">功能规划</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong id="placeholderTitle">功能菜单</strong>
+              </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
@@ -957,6 +980,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
-    <script src="./app.js"></script>
+    <script src="./app.js?v=well-profile-modal-2"></script>
   </body>
 </html>

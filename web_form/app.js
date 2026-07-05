@@ -2,6 +2,7 @@ const i18n = {
   zh: {
     ui: {
       appTitleShort: "厄瓜油田", appSubtitle: "Report Platform", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
+      systemAdmin: "系统后台",
       menuDailyParsing: "日报解析", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
       menuProductionReport: "生产报表", menuRigProductionSummary: "生产汇总", menuWellNptConfirm: "NPT分析", menuRigNptRanking: "NPT确认",
       menuHsse: "HSSE管理", menuHsseCollection: "信息填报", menuHsseDashboard: "安全驾驶舱", menuDailySafetySummary: "安全报表", menuPeriodSafetyReport: "安全报表",
@@ -76,6 +77,7 @@ const i18n = {
   en: {
     ui: {
       appTitleShort: "Ecuador Field", appSubtitle: "Report Platform", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
+      systemAdmin: "System Admin",
       menuDailyParsing: "Daily Parsing", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
       menuProductionReport: "Production Reports", menuRigProductionSummary: "Production Summary", menuWellNptConfirm: "NPT Analysis", menuRigNptRanking: "NPT Confirmation",
       menuHsse: "HSSE Management", menuHsseCollection: "Information Entry", menuHsseDashboard: "Safety Cockpit", menuDailySafetySummary: "Safety Report", menuPeriodSafetyReport: "Safety Report",
@@ -150,6 +152,7 @@ const i18n = {
   es: {
     ui: {
       appTitleShort: "Campo Ecuador", appSubtitle: "Plataforma de Reportes", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
+      systemAdmin: "Administración",
       menuDailyParsing: "Análisis de Reportes", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
       menuProductionReport: "Reportes de Producción", menuRigProductionSummary: "Resumen de Producción", menuWellNptConfirm: "Análisis NPT", menuRigNptRanking: "Confirmación NPT",
       menuHsse: "Gestión HSSE", menuHsseCollection: "Registro de Información", menuHsseDashboard: "Cabina de Seguridad", menuDailySafetySummary: "Reporte de Seguridad", menuPeriodSafetyReport: "Reporte de Seguridad",
@@ -256,6 +259,7 @@ const toast = document.querySelector("#toast");
 let currentLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
 let activeMenuTarget = "drilling-daily";
 let drillingSourceFileName = "";
+const MANUAL_WELLS_STORAGE_KEY = "drillingReportManualWellProfiles";
 const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
 const lockedRecordIds = new Set();
@@ -311,6 +315,7 @@ const reportInputIds = {
   move: "movePdfInput"
 };
 const fallbackWells = ["SCHAO-611", "PCNC-040", "SCHAS-513", "LOBC-010", "ACAH-270H", "TCHA-006I"];
+let manualWellProfiles = loadManualWellProfiles();
 
 function ui(key) {
   return i18n[currentLanguage].ui[key] || i18n.zh.ui[key] || key;
@@ -328,13 +333,59 @@ function labelFor(name) {
   return i18n[currentLanguage].fields[name] || i18n.zh.fields[name] || name;
 }
 
+function loadManualWellProfiles() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MANUAL_WELLS_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.wellbore).map(normalizeManualWellProfile) : [];
+  } catch (error) {
+    console.warn("Manual well profiles reset after invalid storage.", error);
+    return [];
+  }
+}
+
+function saveManualWellProfiles() {
+  localStorage.setItem(MANUAL_WELLS_STORAGE_KEY, JSON.stringify(manualWellProfiles));
+}
+
+function normalizeManualWellProfile(profile = {}) {
+  const now = new Date().toISOString();
+  return {
+    wellbore: String(profile.wellbore || "").trim(),
+    rig: String(profile.rig || "").trim(),
+    report_type: String(profile.report_type || "").trim(),
+    afeNumber: String(profile.afeNumber || "").trim(),
+    refDatum: String(profile.refDatum || "").trim(),
+    wellType: String(profile.wellType || "").trim(),
+    block: String(profile.block || "").trim(),
+    note: String(profile.note || "").trim(),
+    created_at: String(profile.created_at || now),
+    updated_at: String(profile.updated_at || now),
+  };
+}
+
+function manualProfileForWell(wellbore) {
+  const normalized = String(wellbore || "").trim().toLowerCase();
+  return manualWellProfiles.find((profile) => profile.wellbore.toLowerCase() === normalized) || null;
+}
+
 function activeMenuLink() {
   return document.querySelector(`.menu-link[data-menu-target="${activeMenuTarget}"]`);
 }
 
 function setDrillingSourceFile(filename = "") {
   drillingSourceFileName = filename;
-  document.querySelector("#drillingSourceFile").textContent = filename || ui("sourceFileEmpty");
+  const sourceLabel = document.querySelector("#drillingSourceFile");
+  if (sourceLabel) sourceLabel.textContent = filename || ui("sourceFileEmpty");
+}
+
+function setNptConfirmBreadcrumb(current = "") {
+  const currentLabel = document.querySelector("[data-npt-breadcrumb-current]");
+  const separator = document.querySelector("[data-npt-breadcrumb-separator]");
+  if (!currentLabel || !separator) return;
+  const hasCurrent = Boolean(String(current || "").trim());
+  currentLabel.textContent = hasCurrent ? current : "";
+  currentLabel.hidden = !hasCurrent;
+  separator.hidden = !hasCurrent;
 }
 
 function reportName(reportType) {
@@ -384,6 +435,7 @@ async function loadFrontSession() {
       return;
     }
     renderFrontUserBar();
+    renderFrontAdminEntry();
     applyFrontPermissions();
   } catch (error) {
     console.error(error);
@@ -401,10 +453,15 @@ function renderFrontUserBar() {
     bar.innerHTML = `
       <span class="front-user-name">${escapeHtml(name)}</span>
       <small>${escapeHtml(frontRoleLabel(user.role))}</small>
-      ${frontCan("admin") ? `<a class="link-button" href="/admin/">后台</a>` : ""}
       <button class="link-button" type="button" data-front-logout>退出</button>
     `;
     actions.appendChild(bar);
+  });
+}
+
+function renderFrontAdminEntry() {
+  document.querySelectorAll("[data-front-admin-entry]").forEach((entry) => {
+    entry.hidden = !frontCan("admin");
   });
 }
 
@@ -452,7 +509,8 @@ function rememberRecord(reportType, payload = {}) {
   if (reportType === "drilling") {
     const source = payload.metadata?.source_file || drillingSourceFileName || "";
     const suffix = recordId ? ` · ${ui("databaseRecord")}: ${recordId}` : "";
-    document.querySelector("#drillingSourceFile").textContent = source ? `${source}${suffix}` : ui("sourceFileEmpty");
+    const sourceLabel = document.querySelector("#drillingSourceFile");
+    if (sourceLabel) sourceLabel.textContent = source ? `${source}${suffix}` : ui("sourceFileEmpty");
   }
 }
 
@@ -469,13 +527,19 @@ function isCurrentReportLocked(reportType) {
 
 function renderModulePlaceholder(link = activeMenuLink()) {
   if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "well-npt-confirm" || activeMenuTarget === "rig-npt-ranking") return;
+  const parentKey = link.closest(".menu-group")?.querySelector(".menu-group-toggle span[data-i18n]")?.dataset.i18n || "moduleStatusPlanned";
+  const parentLabel = document.querySelector("#placeholderModule");
+  if (parentLabel) {
+    parentLabel.dataset.i18n = parentKey;
+    parentLabel.textContent = ui(parentKey);
+  }
   document.querySelector("#placeholderTitle").textContent = ui(link.dataset.titleI18n);
   document.querySelector("#placeholderDescription").textContent = ui(link.dataset.descI18n);
 }
 
 function setActiveMenu(target) {
   activeMenuTarget = target;
-  document.querySelectorAll(".menu-link").forEach((link) => {
+  document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {
     link.classList.toggle("active", link.dataset.menuTarget === target);
   });
   const isDrillingDaily = target === "drilling-daily";
@@ -662,7 +726,8 @@ function renderRecordDashboard(reportType) {
   const records = state.records;
   const jobs = uploadJobs.filter((job) => job.reportType === reportType);
   const wells = [...new Set(records.map((record) => record.wellbore).filter(Boolean))];
-  const sourceWells = wells.length ? wells : fallbackWells;
+  const manualWells = manualWellProfiles.map((profile) => profile.wellbore).filter(Boolean);
+  const sourceWells = [...new Set([...(wells.length || manualWells.length ? [] : fallbackWells), ...manualWells, ...wells])];
   const wellList = sortWells(sourceWells, records, state.sortBy).filter((well) => !state.search || well.toLowerCase().includes(state.search.toLowerCase()));
   if (!state.selectedWell || !wellList.includes(state.selectedWell)) state.selectedWell = wellList[0] || "";
   const selectedRecords = records.filter((record) => !state.selectedWell || record.wellbore === state.selectedWell);
@@ -695,6 +760,7 @@ function renderRecordDashboard(reportType) {
           ${wellSortButton(reportType, state.sortBy, "last", ui("sortLastUpload"))}
           ${wellSortButton(reportType, state.sortBy, "name", ui("sortWellName"))}
         </div>
+        <button class="button secondary add-well-button" type="button">${ui("addWell")}</button>
         <div class="well-list">
           ${wellList.map((well, index) => {
             const wellRecords = records.filter((record) => record.wellbore === well);
@@ -709,7 +775,6 @@ function renderRecordDashboard(reportType) {
             `;
           }).join("")}
         </div>
-        <button class="button secondary add-well-button" type="button">${ui("addWell")}</button>
       </aside>
       <section class="record-main">
         <div class="record-top-grid">
@@ -725,6 +790,7 @@ function renderRecordDashboard(reportType) {
             ${calendarMarkup(reportType, monthBase, uploadedDays, warningDays, missingDays)}
           </section>
           <section class="panel record-summary-panel">
+            ${wellBasicInfoMarkup(reportType, state.selectedWell, selectedRecords)}
             <div class="record-summary-grid">
               ${summaryCard("metricWorkDays", `${uniqueReportDays(selectedRecords).size}`, ui("daysUnit"), "blue")}
               ${summaryCard("metricNptShare", `${formatHours(wellStats.npt_hours)} h`, `${nptShare}`, "red")}
@@ -792,6 +858,140 @@ function shiftMonth(reportType, delta) {
   const next = new Date(year, (month - 1) + delta, 1);
   state.calendarMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
   renderRecordDashboard(reportType);
+}
+
+function wellBasicInfoMarkup(reportType, wellbore, records = []) {
+  const manual = manualProfileForWell(wellbore) || {};
+  const latestRecord = sortedRecords(records)[0] || null;
+  const source = latestRecord ? "日报解析" : manual.wellbore ? "手动创建" : "待上传日报";
+  const items = [
+    ["井号", latestRecord?.wellbore || manual.wellbore || wellbore || "-"],
+    ["井队", latestRecord?.rig || manual.rig || "-"],
+    ["日报类型", latestRecord?.report_type ? reportName(latestRecord.report_type) : manual.report_type ? reportName(manual.report_type) : reportName(reportType)],
+    ["最近日报", latestRecord?.reportDate || "-"],
+    ["AFE", manual.afeNumber || "-"],
+    ["参考基准", manual.refDatum || "-"],
+    ["井型", manual.wellType || "-"],
+    ["区块", manual.block || "-"],
+  ];
+  return `
+    <section class="well-basic-card" aria-label="当前井基础信息">
+      <div class="well-basic-heading">
+        <div>
+          <span>当前井基础信息</span>
+          <strong>${escapeHtml(latestRecord?.wellbore || manual.wellbore || wellbore || "-")}</strong>
+        </div>
+        <small>${escapeHtml(source)}</small>
+      </div>
+      <div class="well-basic-grid">
+        ${items.map(([label, value]) => `<span><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></span>`).join("")}
+      </div>
+      ${manual.note ? `<p>${escapeHtml(manual.note)}</p>` : ""}
+    </section>
+  `;
+}
+
+function openAddWellModal(reportType) {
+  if (!frontCan("edit")) return showToast("当前账号没有编辑权限");
+  const currentWell = recordState[reportType]?.selectedWell || "";
+  const existing = manualProfileForWell(currentWell) || { report_type: reportType };
+  document.querySelector(".well-profile-modal")?.remove();
+  const modal = document.createElement("div");
+  modal.className = "admin-modal well-profile-modal";
+  modal.innerHTML = `
+    <div class="admin-modal-backdrop" data-well-modal-close></div>
+    <section class="admin-modal-panel well-profile-modal-panel" role="dialog" aria-modal="true" aria-label="添加新井">
+      <header class="admin-modal-header">
+        <div>
+          <p class="page-kicker">WELL PROFILE</p>
+          <h2>${ui("addWell")}</h2>
+        </div>
+        <button class="icon-button" type="button" data-well-modal-close aria-label="关闭">×</button>
+      </header>
+      <div class="admin-modal-body">
+        <div class="well-profile-note">手动资料用于未上传日报时的井档案展示；同井号上传日报后，展示信息以日报解析结果为准。</div>
+        <div class="well-profile-form">
+          <label>井号<input name="wellbore" required value="${escapeHtml(existing.wellbore || "")}" placeholder="例如 PCNC-040" /></label>
+          <label>井队<input name="rig" value="${escapeHtml(existing.rig || "")}" placeholder="例如 00 SINOPEC 248" /></label>
+          <label>日报类型<select name="report_type">${reportTypeOptions(existing.report_type || reportType)}</select></label>
+          <label>AFE<input name="afeNumber" value="${escapeHtml(existing.afeNumber || "")}" /></label>
+          <label>参考基准<input name="refDatum" value="${escapeHtml(existing.refDatum || "")}" /></label>
+          <label>井型<input name="wellType" value="${escapeHtml(existing.wellType || "")}" placeholder="例如 Development / Exploration" /></label>
+          <label>区块<input name="block" value="${escapeHtml(existing.block || "")}" /></label>
+          <label class="wide">备注<textarea name="note">${escapeHtml(existing.note || "")}</textarea></label>
+        </div>
+      </div>
+      <footer class="admin-modal-footer">
+        <div>
+          ${existing.wellbore ? `<button class="button secondary" type="button" data-delete-well-profile="${escapeHtml(reportType)}">删除手动井</button>` : ""}
+        </div>
+        <button class="button secondary" type="button" data-well-modal-close>取消</button>
+        <button class="button" type="button" data-save-well-profile="${escapeHtml(reportType)}">保存井信息</button>
+      </footer>
+    </section>
+  `;
+  document.body.appendChild(modal);
+  document.body.classList.add("modal-open");
+  modal.querySelector('[name="wellbore"]')?.focus();
+}
+
+function reportTypeOptions(selected) {
+  return Object.keys(reportNames).map((type) => `<option value="${type}" ${type === selected ? "selected" : ""}>${escapeHtml(reportName(type))}</option>`).join("");
+}
+
+function closeWellProfileModal() {
+  document.querySelector(".well-profile-modal")?.remove();
+  document.body.classList.remove("modal-open");
+}
+
+function saveWellProfileFromModal(reportType) {
+  const modal = document.querySelector(".well-profile-modal");
+  if (!modal) return;
+  const profile = normalizeManualWellProfile({
+    wellbore: modal.querySelector('[name="wellbore"]')?.value,
+    rig: modal.querySelector('[name="rig"]')?.value,
+    report_type: modal.querySelector('[name="report_type"]')?.value || reportType,
+    afeNumber: modal.querySelector('[name="afeNumber"]')?.value,
+    refDatum: modal.querySelector('[name="refDatum"]')?.value,
+    wellType: modal.querySelector('[name="wellType"]')?.value,
+    block: modal.querySelector('[name="block"]')?.value,
+    note: modal.querySelector('[name="note"]')?.value,
+  });
+  if (!profile.wellbore) {
+    showToast("请填写井号");
+    modal.querySelector('[name="wellbore"]')?.focus();
+    return;
+  }
+  const existingIndex = manualWellProfiles.findIndex((item) => item.wellbore.toLowerCase() === profile.wellbore.toLowerCase());
+  if (existingIndex >= 0) {
+    profile.created_at = manualWellProfiles[existingIndex].created_at;
+    manualWellProfiles[existingIndex] = profile;
+  } else {
+    manualWellProfiles.push(profile);
+  }
+  saveManualWellProfiles();
+  recordState[reportType].selectedWell = profile.wellbore;
+  recordState[reportType].selectedDate = "";
+  recordState[reportType].page = 1;
+  closeWellProfileModal();
+  renderRecordDashboard(reportType);
+  showToast("井信息已保存");
+}
+
+function deleteWellProfileFromModal(reportType) {
+  const modal = document.querySelector(".well-profile-modal");
+  const wellbore = modal?.querySelector('[name="wellbore"]')?.value.trim() || "";
+  if (!wellbore) return;
+  manualWellProfiles = manualWellProfiles.filter((item) => item.wellbore.toLowerCase() !== wellbore.toLowerCase());
+  saveManualWellProfiles();
+  if (recordState[reportType]?.selectedWell?.toLowerCase() === wellbore.toLowerCase()) {
+    recordState[reportType].selectedWell = "";
+    recordState[reportType].selectedDate = "";
+    recordState[reportType].page = 1;
+  }
+  closeWellProfileModal();
+  renderRecordDashboard(reportType);
+  showToast("手动井已删除");
 }
 
 function summaryCard(labelKey, value, caption, tone) {
@@ -1237,7 +1437,8 @@ function setSelectOptions(select, values, emptyLabel) {
 function renderProductionAnalytics(payload) {
   const kpis = payload.kpis || {};
   const completeness = kpis.completeness || {};
-  document.querySelector('[data-analytics-note="production"]').textContent = ui("analyticsProductionScope");
+  const note = document.querySelector('[data-analytics-note="production"]');
+  if (note) note.textContent = ui("analyticsProductionScope");
   document.querySelector('[data-analytics-kpis="production"]').innerHTML = [
     analyticsKpi(ui("kpiRigCount"), kpis.rig_count || 0, ""),
     analyticsKpi(ui("kpiWellCount"), kpis.well_count || 0, ""),
@@ -1261,7 +1462,8 @@ function renderNptAnalytics(payload) {
   const dailyAverage = totalNpt / activeDays;
   const dailyShare = (totalNpt / (activeDays * 24)) * 100;
   const delta = nptTrendDelta(dailyRows, "hours");
-  document.querySelector('[data-analytics-note="npt"]').textContent = ui("analyticsNptScope");
+  const note = document.querySelector('[data-analytics-note="npt"]');
+  if (note) note.textContent = ui("analyticsNptScope");
   document.querySelector('[data-analytics-kpis="npt"]').innerHTML = [
     nptKpiCard("总NPT时长", `${formatHours(totalNpt)} h`, nptDeltaCaption(delta, "h"), "clock", "orange"),
     nptKpiCard("日均NPT时长", `${formatHours(dailyAverage)} h/天`, `${activeDays} 个统计日`, "calendar", "green"),
@@ -1671,6 +1873,7 @@ function populateNptConfirmFilters(filters) {
 }
 
 function showNptConfirmList() {
+  setNptConfirmBreadcrumb("");
   document.querySelector('[data-npt-confirm-view="list"]').hidden = false;
   document.querySelector('[data-npt-confirm-view="detail"]').hidden = true;
   const tbody = document.querySelector("[data-npt-confirm-list]");
@@ -1730,7 +1933,7 @@ function renderNptConfirmationDetail(readonly = false) {
   const locked = readonly || Boolean(meta.locked);
   document.querySelector('[data-npt-confirm-view="list"]').hidden = true;
   document.querySelector('[data-npt-confirm-view="detail"]').hidden = false;
-  document.querySelector("[data-npt-detail-title]").textContent = `${meta.wellbore || ""} 时效确认`;
+  setNptConfirmBreadcrumb(meta.wellbore ? `${meta.wellbore}时效确认` : "时效确认");
   document.querySelector("[data-npt-detail-meta]").innerHTML = [
     nptMetaItem("井号", meta.wellbore || "-"),
     nptMetaItem("井队", meta.rig || "-"),
@@ -3116,14 +3319,22 @@ document.addEventListener("click", (event) => {
   if (addWellButton) {
     const dashboard = addWellButton.closest("[data-record-dashboard]");
     const reportType = dashboard?.dataset.recordDashboard;
-    if (reportType) {
-      const wellName = prompt(ui("addWell") + " — " + ui("searchWell") + ":");
-      if (wellName && wellName.trim()) {
-        recordState[reportType].selectedWell = wellName.trim();
-        recordState[reportType].page = 1;
-        renderRecordDashboard(reportType);
-      }
-    }
+    if (reportType) openAddWellModal(reportType);
+    return;
+  }
+  const saveWellProfile = event.target.closest("[data-save-well-profile]");
+  if (saveWellProfile) {
+    saveWellProfileFromModal(saveWellProfile.dataset.saveWellProfile);
+    return;
+  }
+  const deleteWellProfile = event.target.closest("[data-delete-well-profile]");
+  if (deleteWellProfile) {
+    deleteWellProfileFromModal(deleteWellProfile.dataset.deleteWellProfile);
+    return;
+  }
+  if (event.target.closest("[data-well-modal-close]")) {
+    closeWellProfileModal();
+    return;
   }
 });
 
@@ -3155,6 +3366,9 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !document.querySelector("#sourcePdfModal")?.hidden) {
     closeSourcePdf();
   }
+  if (event.key === "Escape" && document.querySelector(".well-profile-modal")) {
+    closeWellProfileModal();
+  }
 });
 
 window.addEventListener("scroll", () => document.querySelector(".npt-description-popover")?.remove(), true);
@@ -3172,7 +3386,7 @@ document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
   button.addEventListener("click", () => applyLanguage(button.dataset.lang));
 });
 
-document.querySelectorAll(".menu-link").forEach((link) => {
+document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
     link.closest(".menu-group")?.classList.add("open");

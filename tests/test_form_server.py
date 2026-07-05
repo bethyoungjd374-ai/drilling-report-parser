@@ -129,6 +129,26 @@ class FormServerImportTest(unittest.TestCase):
         self.assertIn("perforation_intervals row 1 base_md less than top_md", warnings)
         self.assertIn("perforation_intervals row 1 density negative", warnings)
 
+    def test_login_page_supports_head_health_check(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            original_users_path = form_server.USERS_PATH
+            form_server.USERS_PATH = Path(tmp) / "users.json"
+            form_server.SESSIONS.clear()
+            server = form_server.ThreadingHTTPServer(("127.0.0.1", 0), form_server.FormHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                response = _head(server.server_port, "/login/")
+                self.assertEqual(response["status"], 200)
+                self.assertEqual(response["body"], b"")
+                self.assertGreater(int(response["content_length"]), 0)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+                form_server.USERS_PATH = original_users_path
+                form_server.SESSIONS.clear()
+
     def test_import_drilling_pdf_endpoint_parses_and_stores_record(self) -> None:
         pdf = sample_pdf("PCNC-040")
         if not pdf.exists():
@@ -185,6 +205,20 @@ def _login(port: int, username: str, password: str) -> str:
         if response.status != 200:
             raise AssertionError(payload)
         return response.getheader("Set-Cookie", "").split(";", 1)[0]
+    finally:
+        connection.close()
+
+
+def _head(port: int, path: str) -> dict[str, Any]:
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=20)
+    try:
+        connection.request("HEAD", path)
+        response = connection.getresponse()
+        return {
+            "status": response.status,
+            "content_length": response.getheader("Content-Length", "0"),
+            "body": response.read(),
+        }
     finally:
         connection.close()
 

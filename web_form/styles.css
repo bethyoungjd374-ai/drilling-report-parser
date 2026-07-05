@@ -362,6 +362,8 @@ textarea {
   color: #ffffff;
   padding: 16px 10px;
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
 }
 
 .brand {
@@ -400,6 +402,27 @@ textarea {
   display: grid;
   gap: 10px;
   margin-top: 16px;
+}
+
+.sidebar-bottom-actions {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.sidebar-system-link {
+  min-height: 38px;
+  border: 1px solid rgba(105, 184, 255, 0.34);
+  background: rgba(105, 184, 255, 0.1);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.sidebar-system-link:hover,
+.sidebar-system-link:focus {
+  background: rgba(105, 184, 255, 0.18);
 }
 
 .menu-group {
@@ -560,6 +583,10 @@ textarea {
   align-items: center;
 }
 
+.topbar > div:first-child {
+  min-width: 0;
+}
+
 .placeholder-card {
   margin-top: 14px;
   min-height: 220px;
@@ -599,6 +626,47 @@ textarea {
   font-weight: 700;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.page-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  flex-wrap: wrap;
+}
+
+.page-breadcrumb strong {
+  min-width: 0;
+  color: var(--navy);
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.breadcrumb-separator {
+  color: #95a7bf;
+  font-weight: 800;
+}
+
+.breadcrumb-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 900;
+  padding: 0;
+  cursor: pointer;
+}
+
+.breadcrumb-link:hover {
+  color: var(--blue-dark);
 }
 
 h1,
@@ -1211,7 +1279,13 @@ td textarea {
 }
 
 .well-panel {
-  min-height: 620px;
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: min(620px, calc(100vh - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
 }
 
 .well-search {
@@ -1250,6 +1324,16 @@ td textarea {
 .well-list {
   display: grid;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.add-well-button {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-bottom: 10px;
 }
 
 .well-card {
@@ -1319,11 +1403,6 @@ td textarea {
 
 .well-status-marker.dot-red {
   background: #e84b5a;
-}
-
-.add-well-button {
-  width: 100%;
-  margin-top: 10px;
 }
 
 .record-main {
@@ -1474,6 +1553,98 @@ td textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.well-basic-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 13px;
+  border: 1px solid rgba(154, 187, 219, 0.58);
+  border-radius: 8px;
+  background: rgba(239, 248, 255, 0.72);
+}
+
+.well-basic-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.well-basic-heading span,
+.well-basic-heading small,
+.well-basic-grid small,
+.well-basic-card p {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.well-basic-heading strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--navy);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.well-basic-heading small {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(31, 111, 174, 0.1);
+  color: var(--blue);
+}
+
+.well-basic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.well-basic-grid span {
+  min-width: 0;
+}
+
+.well-basic-grid b {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.well-basic-card p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.well-profile-modal-panel {
+  width: min(760px, 94vw);
+}
+
+.well-profile-note {
+  padding: 10px 12px;
+  border: 1px solid #c6dbf3;
+  border-radius: 7px;
+  background: var(--blue-soft);
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.well-profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.well-profile-form .wide {
+  grid-column: 1 / -1;
 }
 
 .record-summary-card {
@@ -2528,28 +2699,33 @@ body:has(#nptStatsPage.active) .workspace {
   color: #6d44d9;
 }
 
-.npt-detail-titlebar {
-  margin-top: 0;
-}
-
-.npt-detail-titlebar h1 {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
+.npt-confirm-detail {
+  display: grid;
+  gap: 18px;
 }
 
 .npt-meta-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 0;
+  padding: 16px 18px;
+}
+
+.npt-detail-meta-card {
+  margin-top: 0;
 }
 
 .npt-meta-grid div {
   display: grid;
   gap: 3px;
-  padding: 4px 10px;
+  min-width: 0;
+  padding: 4px 18px;
   border-left: 2px solid #d7e5f4;
+}
+
+.npt-meta-grid div:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
 
 .npt-meta-grid span {
@@ -2562,6 +2738,9 @@ body:has(#nptStatsPage.active) .workspace {
   color: var(--navy);
   font-size: 14px;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .npt-detail-tools {
@@ -2827,7 +3006,7 @@ body.modal-open {
 
 .admin-console {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .admin-sidebar .menu-group-toggle,
@@ -2881,11 +3060,12 @@ body.modal-open {
 
 .admin-standalone .topbar {
   min-height: 82px;
+  margin-bottom: 16px;
 }
 
 .admin-panel {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .admin-kpi-grid {
@@ -3181,6 +3361,40 @@ body.modal-open {
   gap: 10px;
   flex-wrap: wrap;
   margin: 12px 0;
+}
+
+.admin-log-pagination {
+  align-items: center;
+}
+
+.admin-log-page-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-log-page-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.admin-log-page-controls select {
+  width: auto;
+  min-height: 28px;
+  padding: 0 28px 0 8px;
+  border-radius: 6px;
+}
+
+.record-page-buttons {
+  align-items: center;
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .admin-table th,
@@ -3481,6 +3695,10 @@ body.modal-open {
     padding: 12px;
   }
 
+  .npt-meta-grid div {
+    padding: 8px 0 8px 12px;
+  }
+
   .admin-modal-header,
   .admin-modal-footer {
     display: grid;
@@ -3671,6 +3889,11 @@ body.modal-open {
 .liquid-glass > :not(.liquid-glass-shine) {
   position: relative;
   z-index: 1;
+}
+
+.well-panel.liquid-glass {
+  position: sticky;
+  top: 12px;
 }
 
 .auth-body {

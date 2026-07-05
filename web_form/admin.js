@@ -9,7 +9,9 @@ const adminState = {
   config: {},
   projectTeams: { teams: [], projects: [], pending_wells: [] },
   dataStatus: null,
-  logs: []
+  logs: [],
+  logsPage: 1,
+  logsPageSize: 20
 };
 
 function escapeHtml(value = "") {
@@ -68,6 +70,7 @@ async function loadAdminData() {
     adminState.projectTeams = { teams: projectTeams.teams || [], projects: projectTeams.projects || [], pending_wells: projectTeams.pending_wells || [] };
     adminState.dataStatus = dataStatus;
     adminState.logs = logs.logs || [];
+    adminState.logsPage = 1;
     renderAdminPanels();
   } catch (error) {
     showToast(error.message);
@@ -77,7 +80,7 @@ async function loadAdminData() {
 function renderNoPermission() {
   document.querySelector(".admin-sidebar-nav")?.setAttribute("hidden", "");
   document.querySelector('[data-admin-panel="overview"]').hidden = false;
-  document.querySelector('[data-admin-panel="overview"]').innerHTML = `<section class="panel admin-empty-panel"><div><h2>无后台权限</h2><p>当前账号可以登录前台，但没有系统后台管理权限。</p></div><a class="button secondary" href="/web_form/">返回前台</a></section>`;
+  document.querySelector('[data-admin-panel="overview"]').innerHTML = `<section class="panel admin-empty-panel"><div><h2>无后台权限</h2><p>当前账号可以登录前台，但没有系统后台管理权限。</p></div></section>`;
   document.querySelectorAll('[data-admin-panel]:not([data-admin-panel="overview"])').forEach((panel) => panel.hidden = true);
 }
 
@@ -85,7 +88,8 @@ function renderAdminPanels() {
   renderAdminOverview();
   renderAdminUsers();
   renderAdminRoles();
-  renderAdminProjectTeams();
+  renderAdminProjects();
+  renderAdminTeams();
   renderAdminConfig();
   renderAdminData();
   renderAdminLogs();
@@ -182,7 +186,7 @@ function renderAdminRoles() {
     </section>`;
 }
 
-function renderAdminProjectTeams() {
+function renderAdminProjects() {
   const host = document.querySelector('[data-admin-panel="projects"]');
   const config = adminState.projectTeams || { teams: [], projects: [], pending_wells: [] };
   const teams = config.teams || [];
@@ -195,37 +199,50 @@ function renderAdminProjectTeams() {
       ${adminKpi("项目井号", projectWellCount(projects), "已归属井号", "overview")}
       ${adminKpi("待归集", (config.pending_wells || []).length, "日报自动发现", "logs")}
     </section>
-    <section class="admin-project-layout admin-project-maintenance">
-      <section class="panel">
-        <div class="panel-heading">
-          <div><h2>项目合同列表</h2><span class="panel-note">编辑项目时维护绑定队伍、日期和井号</span></div>
-          <button class="button small" type="button" data-admin-new-project>新增项目合同</button>
-        </div>
-        <div class="table-wrap"><table class="record-table admin-table project-table">
-          <thead><tr><th>合同号</th><th>项目名称</th><th>状态</th><th>队伍 / 井</th><th>日期</th><th>操作</th></tr></thead>
-          <tbody>${projects.map((project) => `<tr><td><strong>${escapeHtml(project.contract_no || "-")}</strong></td><td>${escapeHtml(project.project_name || "-")}</td><td><span class="status-pill ${project.status === "active" ? "uploaded" : "failed"}">${project.status === "active" ? "启用" : "关闭"}</span></td><td>${projectTeamSummary(project)}</td><td>${escapeHtml(project.start_date || "-")} 至 ${escapeHtml(project.end_date || "-")}</td><td><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="6">暂无项目合同</td></tr>`}</tbody>
-        </table></div>
-      </section>
-      <section class="panel">
-        <div class="panel-heading">
-          <div><h2>队伍列表</h2><span class="panel-note">全局队伍库，项目内可选择绑定</span></div>
-          <button class="button small" type="button" data-admin-new-team>新增队伍</button>
-        </div>
-        <div class="table-wrap"><table class="record-table admin-table">
-          <thead><tr><th>队伍</th><th>编号</th><th>承包商</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>${teams.map((team) => `<tr><td><strong>${escapeHtml(team.name)}</strong></td><td>${escapeHtml(team.code || "-")}</td><td>${escapeHtml(team.contractor || "-")}</td><td><span class="status-pill ${team.status === "active" ? "uploaded" : "failed"}">${team.status === "active" ? "启用" : "停用"}</span></td><td><button class="link-button" type="button" data-admin-edit-team="${escapeHtml(team.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="5">暂无队伍</td></tr>`}</tbody>
-        </table></div>
-      </section>
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>项目合同列表</h2><span class="panel-note">编辑项目时维护绑定队伍、日期和井号</span></div>
+        <button class="button small" type="button" data-admin-new-project>新增项目合同</button>
+      </div>
+      <div class="table-wrap"><table class="record-table admin-table project-table">
+        <thead><tr><th>合同号</th><th>项目名称</th><th>状态</th><th>队伍 / 井</th><th>日期</th><th>操作</th></tr></thead>
+        <tbody>${projects.map((project) => `<tr><td><strong>${escapeHtml(project.contract_no || "-")}</strong></td><td>${escapeHtml(project.project_name || "-")}</td><td><span class="status-pill ${project.status === "active" ? "uploaded" : "failed"}">${project.status === "active" ? "启用" : "关闭"}</span></td><td>${projectTeamSummary(project)}</td><td>${escapeHtml(project.start_date || "-")} 至 ${escapeHtml(project.end_date || "-")}</td><td><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="6">暂无项目合同</td></tr>`}</tbody>
+      </table></div>
     </section>
     <section class="panel">
       <div class="panel-heading"><h2>项目井号明细</h2><span class="panel-note">按项目展开队伍和井号</span></div>
-      <div class="admin-project-cards">${projects.map(projectCard).join("") || `<div class="empty-records">暂无项目队伍配置</div>`}</div>
+      <div class="admin-project-cards">${projects.map(projectCard).join("") || `<div class="empty-records">暂无项目配置</div>`}</div>
     </section>
     <section class="panel">
       <div class="panel-heading"><h2>待归集井号</h2><span class="panel-note">多个启用项目时，日报自动发现的井号先进入这里</span></div>
       <div class="table-wrap"><table class="record-table admin-table">
         <thead><tr><th>队伍</th><th>井号</th><th>日报类型</th><th>来源时间</th><th>归属项目</th><th>操作</th></tr></thead>
         <tbody>${(config.pending_wells || []).map((item, index) => `<tr><td>${escapeHtml(item.rig)}</td><td><strong>${escapeHtml(item.wellbore)}</strong></td><td>${escapeHtml(item.report_type || "-")}</td><td>${escapeHtml(item.created_at || "-")}</td><td><select class="admin-inline-select" data-pending-project="${index}">${projectSelectOptions(projects)}</select></td><td><button class="link-button" type="button" data-admin-assign-pending="${index}">归入项目</button></td></tr>`).join("") || `<tr><td colspan="6">暂无待归集井号</td></tr>`}</tbody>
+      </table></div>
+    </section>
+  `;
+}
+
+function renderAdminTeams() {
+  const host = document.querySelector('[data-admin-panel="teams"]');
+  const config = adminState.projectTeams || { teams: [], projects: [], pending_wells: [] };
+  const teams = config.teams || [];
+  const usedTeams = new Set((config.projects || []).flatMap((project) => (project.rigs || []).map((rig) => rig.rig).filter(Boolean)));
+  host.innerHTML = `
+    <section class="admin-kpi-grid compact">
+      ${adminKpi("队伍总数", teams.length, "全局队伍库", "users")}
+      ${adminKpi("已绑定队伍", usedTeams.size, "已用于项目合同", "database")}
+      ${adminKpi("启用队伍", teams.filter((team) => team.status !== "inactive").length, "可被项目选择", "overview")}
+      ${adminKpi("待归集", (config.pending_wells || []).length, "日报自动发现", "logs")}
+    </section>
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>队伍列表</h2><span class="panel-note">维护全局队伍库，项目配置中可选择绑定</span></div>
+        <button class="button small" type="button" data-admin-new-team>新增队伍</button>
+      </div>
+      <div class="table-wrap"><table class="record-table admin-table">
+        <thead><tr><th>队伍</th><th>编号</th><th>承包商</th><th>状态</th><th>项目绑定</th><th>操作</th></tr></thead>
+        <tbody>${teams.map((team) => `<tr><td><strong>${escapeHtml(team.name)}</strong></td><td>${escapeHtml(team.code || "-")}</td><td>${escapeHtml(team.contractor || "-")}</td><td><span class="status-pill ${team.status === "active" ? "uploaded" : "failed"}">${team.status === "active" ? "启用" : "停用"}</span></td><td>${usedTeams.has(team.name) ? "已绑定" : "未绑定"}</td><td><button class="link-button" type="button" data-admin-edit-team="${escapeHtml(team.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="6">暂无队伍</td></tr>`}</tbody>
       </table></div>
     </section>
   `;
@@ -391,7 +408,45 @@ function renderAdminData() {
 
 function renderAdminLogs() {
   const host = document.querySelector('[data-admin-panel="logs"]');
-  host.innerHTML = `<section class="panel"><div class="panel-heading"><h2>日志审计</h2><span class="panel-note">最近 120 条后台操作</span></div><div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>时间</th><th>用户</th><th>动作</th><th>模块</th><th>对象</th><th>结果</th><th>备注</th></tr></thead><tbody>${(adminState.logs || []).map((log) => `<tr><td>${escapeHtml(log.time)}</td><td>${escapeHtml(log.user)}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.module)}</td><td>${escapeHtml(log.target)}</td><td>${escapeHtml(log.result)}</td><td>${escapeHtml(log.note)}</td></tr>`).join("") || `<tr><td colspan="7">暂无日志</td></tr>`}</tbody></table></div></section>`;
+  const logs = adminState.logs || [];
+  const pageSize = Number(adminState.logsPageSize || 20);
+  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+  const currentPage = Math.min(Math.max(1, Number(adminState.logsPage || 1)), totalPages);
+  adminState.logsPage = currentPage;
+  const pageRows = logs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  host.innerHTML = `
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>日志审计</h2>
+        <span class="panel-note">最近 ${logs.length} 条后台操作</span>
+      </div>
+      <div class="table-wrap"><table class="record-table admin-table">
+        <thead><tr><th>时间</th><th>用户</th><th>动作</th><th>模块</th><th>对象</th><th>结果</th><th>备注</th></tr></thead>
+        <tbody>${pageRows.map((log) => `<tr><td>${escapeHtml(log.time)}</td><td>${escapeHtml(log.user)}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.module)}</td><td>${escapeHtml(log.target)}</td><td>${escapeHtml(log.result)}</td><td>${escapeHtml(log.note)}</td></tr>`).join("") || `<tr><td colspan="7">暂无日志</td></tr>`}</tbody>
+      </table></div>
+      ${adminLogPagination(logs.length, currentPage, totalPages, pageSize)}
+    </section>`;
+}
+
+function adminLogPagination(totalRows, currentPage, totalPages, pageSize) {
+  const start = totalRows ? (currentPage - 1) * pageSize + 1 : 0;
+  const end = Math.min(totalRows, currentPage * pageSize);
+  return `
+    <div class="record-pagination admin-log-pagination">
+      <span>共 ${totalRows} 条，显示 ${start}-${end}</span>
+      <div class="admin-log-page-controls">
+        <label>每页
+          <select data-admin-log-page-size>
+            ${[10, 20, 50].map((size) => `<option value="${size}" ${size === pageSize ? "selected" : ""}>${size} 条</option>`).join("")}
+          </select>
+        </label>
+        <div class="record-page-buttons">
+          <button class="icon-button" type="button" data-admin-log-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""} aria-label="上一页">‹</button>
+          <span>${currentPage} / ${totalPages}</span>
+          <button class="icon-button" type="button" data-admin-log-page="${currentPage + 1}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="下一页">›</button>
+        </div>
+      </div>
+    </div>`;
 }
 
 function switchAdminTab(tab) {
@@ -509,11 +564,12 @@ async function saveAdminConfig() {
   }
 }
 
-async function saveProjectTeamConfig(message = "项目队伍配置已保存") {
+async function saveProjectTeamConfig(message = "业务配置已保存") {
   const response = await adminRequest("/api/admin/project-teams", { method: "POST", body: JSON.stringify(adminState.projectTeams || {}) });
   adminState.projectTeams = { teams: response.teams || [], projects: response.projects || [], pending_wells: response.pending_wells || [] };
   showToast(message);
-  renderAdminProjectTeams();
+  renderAdminProjects();
+  renderAdminTeams();
   renderAdminOverview();
 }
 
@@ -636,6 +692,11 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     return switchAdminTab(tab.dataset.adminTab);
   }
+  const logPageButton = event.target.closest("[data-admin-log-page]");
+  if (logPageButton) {
+    adminState.logsPage = Number(logPageButton.dataset.adminLogPage || 1);
+    return renderAdminLogs();
+  }
   const edit = event.target.closest("[data-admin-edit-user]");
   if (edit) return fillAdminUserForm(edit.dataset.adminEditUser);
   if (event.target.closest("[data-admin-modal-close]")) return closeAdminModal();
@@ -668,6 +729,14 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-save-config]")) return saveAdminConfig();
   if (event.target.closest("[data-admin-backup]")) return backupAdminDatabase();
   if (event.target.closest("[data-admin-logout]")) return logoutAdmin();
+});
+
+document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-admin-log-page-size]")) {
+    adminState.logsPageSize = Number(event.target.value || 20);
+    adminState.logsPage = 1;
+    renderAdminLogs();
+  }
 });
 
 document.addEventListener("keydown", (event) => {

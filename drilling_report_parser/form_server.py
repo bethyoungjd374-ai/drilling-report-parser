@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import cgi
 import hashlib
 import hmac
 import json
@@ -10,7 +9,10 @@ import re
 import secrets
 import shutil
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime
+from email.parser import BytesParser
+from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -43,30 +45,52 @@ BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
 
 
+@dataclass(frozen=True)
+class UploadedFile:
+    filename: str
+    data: bytes
+
+
 class FormHandler(BaseHTTPRequestHandler):
     server_version = "DrillingReportForm/0.1"
+
+    def do_HEAD(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path in {"/", ""}:
+            self._redirect_to("/login/")
+            return
+        if parsed.path == "/login":
+            self._redirect_to("/login/")
+            return
+        if parsed.path == "/web_form":
+            self._redirect_to("/web_form/")
+            return
+        if parsed.path == "/admin":
+            self._redirect_to("/admin/")
+            return
+        if parsed.path == "/web_form/" and not self._current_user():
+            self._redirect_login("/web_form/")
+            return
+        if parsed.path == "/admin/":
+            user = self._current_user()
+            if not user:
+                self._redirect_login("/admin/")
+                return
+        self._serve_static(include_body=False)
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path in {"/", ""}:
-            self.send_response(302)
-            self.send_header("Location", "/login/")
-            self.end_headers()
+            self._redirect_to("/login/")
             return
         if parsed.path == "/login":
-            self.send_response(302)
-            self.send_header("Location", "/login/")
-            self.end_headers()
+            self._redirect_to("/login/")
             return
         if parsed.path == "/web_form":
-            self.send_response(302)
-            self.send_header("Location", "/web_form/")
-            self.end_headers()
+            self._redirect_to("/web_form/")
             return
         if parsed.path == "/admin":
-            self.send_response(302)
-            self.send_header("Location", "/admin/")
-            self.end_headers()
+            self._redirect_to("/admin/")
             return
         if parsed.path == "/web_form/" and not self._current_user():
             self._redirect_login("/web_form/")
@@ -442,99 +466,66 @@ class FormHandler(BaseHTTPRequestHandler):
         return user
 
     def _redirect_login(self, next_path: str) -> None:
+        self._redirect_to(f"/login/?next={next_path}")
+
+    def _redirect_to(self, location: str) -> None:
         self.send_response(302)
-        self.send_header("Location", f"/login/?next={next_path}")
+        self.send_header("Location", location)
         self.end_headers()
 
     def _import_pdf(self) -> None:
         try:
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
-            )
-            upload = form["report"] if "report" in form else None
-            if upload is None or not getattr(upload, "filename", ""):
-                self._send_json({"error": "No PDF file received."}, status=400)
-                return
-            if Path(upload.filename).suffix.lower() != ".pdf":
-                self._send_json({"error": "Only PDF files are supported."}, status=400)
-                return
-            pdf_bytes = upload.file.read()
+            upload = self._read_pdf_upload()
+            pdf_bytes = upload.data
             payload = parse_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "drilling")
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
     def _import_completion_pdf(self) -> None:
         try:
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
-            )
-            upload = form["report"] if "report" in form else None
-            if upload is None or not getattr(upload, "filename", ""):
-                self._send_json({"error": "No PDF file received."}, status=400)
-                return
-            if Path(upload.filename).suffix.lower() != ".pdf":
-                self._send_json({"error": "Only PDF files are supported."}, status=400)
-                return
-            pdf_bytes = upload.file.read()
+            upload = self._read_pdf_upload()
+            pdf_bytes = upload.data
             payload = parse_completion_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "completion")
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
     def _import_workover_pdf(self) -> None:
         try:
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
-            )
-            upload = form["report"] if "report" in form else None
-            if upload is None or not getattr(upload, "filename", ""):
-                self._send_json({"error": "No PDF file received."}, status=400)
-                return
-            if Path(upload.filename).suffix.lower() != ".pdf":
-                self._send_json({"error": "Only PDF files are supported."}, status=400)
-                return
-            pdf_bytes = upload.file.read()
+            upload = self._read_pdf_upload()
+            pdf_bytes = upload.data
             payload = parse_workover_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "workover")
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
     def _import_move_pdf(self) -> None:
         try:
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
-            )
-            upload = form["report"] if "report" in form else None
-            if upload is None or not getattr(upload, "filename", ""):
-                self._send_json({"error": "No PDF file received."}, status=400)
-                return
-            if Path(upload.filename).suffix.lower() != ".pdf":
-                self._send_json({"error": "Only PDF files are supported."}, status=400)
-                return
-            pdf_bytes = upload.file.read()
+            upload = self._read_pdf_upload()
+            pdf_bytes = upload.data
             payload = parse_move_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
             self._store_payload(payload, "move")
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
@@ -744,6 +735,40 @@ class FormHandler(BaseHTTPRequestHandler):
             return {}
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
+    def _read_pdf_upload(self) -> UploadedFile:
+        upload = self._read_multipart_file("report")
+        if not upload.filename:
+            raise ValueError("No PDF file received.")
+        if Path(upload.filename).suffix.lower() != ".pdf":
+            raise ValueError("Only PDF files are supported.")
+        return upload
+
+    def _read_multipart_file(self, field_name: str) -> UploadedFile:
+        content_type = self.headers.get("Content-Type", "")
+        if not content_type.lower().startswith("multipart/form-data"):
+            raise ValueError("Expected multipart form data.")
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        if length <= 0:
+            raise ValueError("No PDF file received.")
+
+        body = self.rfile.read(length)
+        message = BytesParser(policy=email_policy).parsebytes(
+            f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode("utf-8") + body
+        )
+        if not message.is_multipart():
+            raise ValueError("Invalid multipart form data.")
+
+        for part in message.iter_parts():
+            if part.get_content_disposition() != "form-data":
+                continue
+            if part.get_param("name", header="content-disposition") != field_name:
+                continue
+            filename = part.get_filename("")
+            if not filename:
+                break
+            return UploadedFile(filename=filename, data=part.get_payload(decode=True) or b"")
+        raise ValueError("No PDF file received.")
+
     def _send_json(self, payload: dict[str, object], status: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -755,7 +780,7 @@ class FormHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         print(f"{self.address_string()} - {fmt % args}")
 
-    def _serve_static(self) -> None:
+    def _serve_static(self, include_body: bool = True) -> None:
         raw_path = unquote(self.path.split("?", 1)[0])
         if raw_path.startswith("/login/"):
             rel = raw_path.removeprefix("/login/")
@@ -770,9 +795,9 @@ class FormHandler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
 
-        self._serve_static_file(target)
+        self._serve_static_file(target, include_body=include_body)
 
-    def _serve_static_file(self, target: Path) -> None:
+    def _serve_static_file(self, target: Path, include_body: bool = True) -> None:
 
         target = target.resolve()
         if not str(target).startswith(str(WEB_ROOT.resolve())) or not target.exists() or target.is_dir():
@@ -787,7 +812,8 @@ class FormHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(data)
+        if include_body:
+            self.wfile.write(data)
 
 
 def _source_pdf_path(record_id: str) -> Path:
