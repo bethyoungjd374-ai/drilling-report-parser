@@ -328,67 +328,6 @@ def build_workover_report_workbook(payload: dict[str, Any]) -> Workbook:
     return wb
 
 
-def build_move_report_workbook(payload: dict[str, Any]) -> Workbook:
-    fields = payload.get("report_fields", {})
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Move Report"
-    ws.sheet_view.showGridLines = False
-    ws.freeze_panes = "A6"
-    ws.page_setup.orientation = "landscape"
-    ws.page_setup.paperSize = ws.PAPERSIZE_A4
-    ws.page_margins.left = 0.25
-    ws.page_margins.right = 0.25
-    ws.page_margins.top = 0.35
-    ws.page_margins.bottom = 0.35
-    ws.print_options.horizontalCentered = True
-
-    widths = [12, 15, 12, 15, 12, 15, 12, 15, 12, 15, 12, 20]
-    for idx, width in enumerate(widths, 1):
-        ws.column_dimensions[get_column_letter(idx)].width = width
-
-    _title(ws, 1, "DAILY RIG MOVE OPERATIONS REPORT")
-    _subtitle(ws, 2, f"{_v(fields, 'wellbore')} / {_v(fields, 'rig')} / Report No. {_v(fields, 'reportNo')} / {_v(fields, 'reportDate')}")
-
-    row = 4
-    row = _key_value_grid(ws, row, [
-        ("Event", _v(fields, "event")),
-        ("Date", _v(fields, "reportDate")),
-        ("Report No", _v(fields, "reportNo")),
-        ("Wellbore", _v(fields, "wellbore")),
-        ("Rig", _v(fields, "rig")),
-        ("Primary Reason", _v(fields, "primaryReason")),
-        ("AFE Number", _v(fields, "afeNumber")),
-        ("Ref Datum", _v(fields, "refDatum")),
-        ("Ground Elev", _v(fields, "groundElev")),
-        ("AFE MD/Days", _v(fields, "afeMdDays")),
-    ])
-
-    row = _section(ws, row + 1, "CURRENT OPERATIONS / 24-HR SUMMARY")
-    row = _text_block(ws, row, "Current Operation", _v(fields, "currentOps"), "B", "L", height=34)
-    row = _two_text_blocks(ws, row, "24-Hr Summary", _v(fields, "summary24h"), "24-Hr Forecast", _v(fields, "forecast24h"))
-
-    row = _section(ws, row + 1, "OPERATIONS")
-    row = _table(
-        ws,
-        row,
-        ["From", "To", "Hrs", "Op Code", "Op Sub", "Type", "Operation Details"],
-        payload.get("operations", []),
-        ["from", "to", "hours", "op_code", "op_sub", "op_type", "operation_details"],
-        widths=[1, 1, 1, 1, 2, 1, 5],
-        row_height=52,
-        warning_keys={"op_type"},
-        warning_valid_values={"op_type": {"P", "SC", "NPT"}},
-    )
-
-    row = _section(ws, row + 1, "REMARKS")
-    row = _text_block(ws, row, "Other Remarks", _v(fields, "otherRemarks"), "B", "L", height=90)
-
-    ws.print_area = f"A1:L{row}"
-    _apply_global(ws, row)
-    return wb
-
-
 def workbook_bytes(workbook: Workbook) -> bytes:
     stream = BytesIO()
     workbook.save(stream)

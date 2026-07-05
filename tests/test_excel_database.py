@@ -73,6 +73,39 @@ class ExcelDatabaseTest(unittest.TestCase):
             self.assertEqual(loaded["operations"][0]["from"], "06:00")
             self.assertEqual(loaded["bulks"], [])
 
+    def test_move_report_type_is_saved_as_drilling(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "report_database.xlsx"
+            result = save_report_payload(
+                database,
+                {
+                    "metadata": {"source_file": "move.pdf", "parser": "move_pdf_parser_v1"},
+                    "report_fields": {
+                        "event": "MAJOR RIG MOVE",
+                        "reportDate": "2026-06-10",
+                        "reportNo": "5",
+                        "wellbore": "TCHA-006I",
+                        "rig": "00 SINOPEC 168",
+                        "currentOps": "MOVE",
+                    },
+                    "operations": [
+                        {"from": "00:00", "to": "24:00", "hours": "24.00", "op_code": "MOVE", "op_type": "P"},
+                    ],
+                },
+                "move",
+            )
+
+            workbook = load_workbook(database)
+            self.assertIn("drilling_fields", workbook.sheetnames)
+            self.assertNotIn("move_fields", workbook.sheetnames)
+            records = workbook["records"]
+            headers = [cell.value for cell in records[1]]
+            saved = {headers[index]: value for index, value in enumerate(next(records.iter_rows(min_row=2, max_row=2, values_only=True)))}
+            self.assertEqual(saved["report_type"], "drilling")
+            loaded = load_report_payload(database, result["record_id"])
+            self.assertEqual(loaded["metadata"]["report_type"], "drilling")
+            self.assertEqual(loaded["operations"][0]["op_code"], "MOVE")
+
     def test_save_to_existing_records_sheet_aligns_added_status_columns(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             database = Path(tmp) / "report_database.xlsx"

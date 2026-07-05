@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>钻井日报填报工作台</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="系统功能菜单">
+        <div class="brand">
+          <div class="brand-mark">EC</div>
+          <div>
+            <strong data-i18n="appTitleShort">厄瓜油田</strong>
+            <span data-i18n="appSubtitle">Report Platform</span>
+          </div>
+        </div>
+        <nav class="system-nav">
+          <div class="menu-group open">
+            <button class="menu-group-toggle" type="button" aria-expanded="true">
+              <img class="menu-group-icon" src="./icons/daily-parsing.png" alt="" />
+              <span data-i18n="menuDailyParsing">日报解析</span>
+              <span class="menu-chevron">v</span>
+            </button>
+            <div class="menu-items">
+              <a href="#" class="menu-link active" data-menu-target="drilling-daily" data-title-i18n="menuDrillingDaily" data-desc-i18n="descDrillingDaily"><img class="menu-item-icon" src="./icons/drilling-daily.png" alt="" /><span data-i18n="menuDrillingDaily">钻井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="completion-daily" data-title-i18n="menuCompletionDaily" data-desc-i18n="descCompletionDaily"><img class="menu-item-icon" src="./icons/completion-daily.png" alt="" /><span data-i18n="menuCompletionDaily">完井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="workover-daily" data-title-i18n="menuWorkoverDaily" data-desc-i18n="descWorkoverDaily"><img class="menu-item-icon" src="./icons/workover-daily.png" alt="" /><span data-i18n="menuWorkoverDaily">修井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="move-daily" data-title-i18n="menuMoveDaily" data-desc-i18n="descMoveDaily"><img class="menu-item-icon" src="./icons/move-daily.png" alt="" /><span data-i18n="menuMoveDaily">搬迁日报</span></a>
+            </div>
+          </div>
+          <div class="menu-group open">
+            <button class="menu-group-toggle" type="button" aria-expanded="true">
+              <img class="menu-group-icon" src="./icons/production-report.png" alt="" />
+              <span data-i18n="menuProductionReport">生产报表</span>
+              <span class="menu-chevron">v</span>
+            </button>
+            <div class="menu-items">
+              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/rig-production-summary.png" alt="" /><span data-i18n="menuRigProductionSummary">生产汇总</span></a>
+              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/well-npt-confirm.png" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计与确认</span></a>
+              <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/rig-npt-ranking.png" alt="" /><span data-i18n="menuRigNptRanking">NPT分析</span></a>
+            </div>
+          </div>
+          <div class="menu-group open">
+            <button class="menu-group-toggle" type="button" aria-expanded="true">
+              <img class="menu-group-icon" src="./icons/hsse.png" alt="" />
+              <span data-i18n="menuHsse">HSSE管理</span>
+              <span class="menu-chevron">v</span>
+            </button>
+            <div class="menu-items">
+              <a href="#" class="menu-link" data-menu-target="hsse-collection" data-title-i18n="menuHsseCollection" data-desc-i18n="descHsseCollection"><img class="menu-item-icon" src="./icons/hsse-collection.png" alt="" /><span data-i18n="menuHsseCollection">信息填报</span></a>
+              <a href="#" class="menu-link" data-menu-target="hsse-dashboard" data-title-i18n="menuHsseDashboard" data-desc-i18n="descHsseDashboard"><img class="menu-item-icon" src="./icons/hsse-dashboard.png" alt="" /><span data-i18n="menuHsseDashboard">安全驾驶舱</span></a>
+              <a href="#" class="menu-link" data-menu-target="daily-safety-summary" data-title-i18n="menuDailySafetySummary" data-desc-i18n="descDailySafetySummary"><img class="menu-item-icon" src="./icons/daily-safety-summary.png" alt="" /><span data-i18n="menuDailySafetySummary">日报统计</span></a>
+              <a href="#" class="menu-link" data-menu-target="period-safety-report" data-title-i18n="menuPeriodSafetyReport" data-desc-i18n="descPeriodSafetyReport"><img class="menu-item-icon" src="./icons/period-safety-report.png" alt="" /><span data-i18n="menuPeriodSafetyReport">安全周月报</span></a>
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <section id="drillingDailyPage" class="module-page active">
+        <header class="topbar">
+          <div>
+            <p class="page-kicker" data-i18n="drillingPageKicker">DRILLING DAILY REPORT</p>
+            <h1 data-i18n="pageTitle">钻井日报填报工作台</h1>
+            <p class="source-file-name" id="drillingSourceFile">未上传文件</p>
+          </div>
+          <div class="top-actions">
+            <div class="language-switch" role="group" aria-label="Language">
+              <button type="button" data-lang="zh" class="active">中</button>
+              <button type="button" data-lang="en">EN</button>
+              <button type="button" data-lang="es">ES</button>
+            </div>
+            <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
+            <button class="button secondary" type="button" id="importPdf" data-i18n="importPdf">导入 PDF 日报</button>
+            <button class="button secondary" type="button" data-back-records="drilling" data-i18n="backRecords">返回记录</button>
+            <button class="button" type="button" data-save-report="drilling" data-i18n="saveDatabase">保存</button>
+            <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
+          </div>
+        </header>
+
+        <div class="record-dashboard" data-record-dashboard="drilling"></div>
+
+        <section class="status-strip" data-detail-view="drilling" aria-label="填报状态">
+          <div class="status-card">
+            <span data-i18n="metricWellDate">井号 / 日期</span>
+            <strong id="drillingWellDate">-</strong>
+          </div>
+          <div class="status-card">
+            <span data-i18n="metricDailyHours">当日作业时长</span>
+            <strong class="metric-value"><span id="operationHours">0.00</span><small>h</small></strong>
+          </div>
+          <div class="status-card">
+            <span data-i18n="metricNptHours">NPT时长</span>
+            <strong class="metric-value"><span id="drillingNptHours">0.00</span><small>h</small></strong>
+          </div>
+          <div class="status-card">
+            <span data-i18n="metricDataCompleteness">数据完整性</span>
+            <strong id="completionRate">0%</strong>
+          </div>
+        </section>
+
+        <div class="content-grid" data-detail-view="drilling">
+          <form id="reportForm" class="report-form" novalidate>
+            <section class="panel" id="basic">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionBasic">基础信息</h2>
+                <span class="panel-note" data-i18n="noteBasic">对应 PDF 顶部日报抬头和井基本信息</span>
+              </div>
+              <div class="field-grid four">
+                <label>Event<input name="event" required /></label>
+                <label>Date<input name="reportDate" type="date" required /></label>
+                <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
+                <label>Wellbore<input name="wellbore" required /></label>
+                <label>Rig<input name="rig" required /></label>
+                <label>Primary Reason<input name="primaryReason" /></label>
+                <label>AFE Number<input name="afeNumber" /></label>
+                <label>Ref Datum<input name="refDatum" /></label>
+                <label>Today's MD (ft)<input name="todayMd" type="number" min="0" step="0.01" required /></label>
+                <label>Prev MD (ft)<input name="prevMd" type="number" min="0" step="0.01" required /></label>
+                <label>Progress (ft)<input name="progress" type="number" min="0" step="0.01" required /></label>
+                <label>Rot Hrs Today<input name="rotHrsToday" type="number" min="0" max="24" step="0.01" /></label>
+              </div>
+            </section>
+
+            <section class="panel" id="summary">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionSummary">作业摘要</h2>
+                <span class="panel-note" data-i18n="noteSummary">当前作业、24 小时总结、下一步计划</span>
+              </div>
+              <label class="wide">Current Ops<textarea name="currentOps" required></textarea></label>
+              <div class="split">
+                <label>24-Hr Summary<textarea name="summary24h" required></textarea></label>
+                <label>24-Hr Forecast<textarea name="forecast24h" required></textarea></label>
+              </div>
+            </section>
+
+            <section class="panel" id="well-control">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionWellControl">井控与液压</h2>
+                <span class="panel-note" data-i18n="noteWellControl">套管、BOP、泵压、扭矩和钩载</span>
+              </div>
+              <div class="field-grid four">
+                <label>Last Casing Size<input name="lastCasingSize" /></label>
+                <label>Last Casing Depth<input name="lastCasingDepth" /></label>
+                <label>Next Casing Size<input name="nextCasingSize" /></label>
+                <label>Next Casing Depth<input name="nextCasingDepth" /></label>
+                <label>Form Test/EMW<input name="formTestEmw" /></label>
+                <label>Last BOP Press Test<input name="lastBopPressTest" /></label>
+                <label>Pump Rate (gpm)<input name="pumpRate" type="number" min="0" step="0.1" /></label>
+                <label>Pump Press (psi)<input name="pumpPress" type="number" min="0" step="0.01" /></label>
+                <label>String Wt Up/Dn<input name="stringWeightUpDown" /></label>
+                <label>Torque On Btm<input name="torqueOnBottom" /></label>
+              </div>
+            </section>
+
+            <section class="panel table-panel" id="survey">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionSurvey">Survey Data (Last 6)</h2>
+                <button class="button small secondary" type="button" data-add-row="surveyTable" data-i18n="addSurvey">新增测斜</button>
+              </div>
+              <div class="table-wrap">
+                <table id="surveyTable" data-table="survey_data">
+                  <thead>
+                    <tr>
+                      <th data-i18n="thMd">MD</th><th data-i18n="thIncl">Incl</th><th data-i18n="thAzi">Azi</th><th data-i18n="thTvd">TVD</th><th data-i18n="thVse">VSE</th><th data-i18n="thNs">N/-S</th><th data-i18n="thDls">DLS</th><th data-i18n="thBuild">Build</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel" id="mud">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionMud">泥浆数据</h2>
+                <span class="panel-note">PRF-SINOPEC INTERNATIONAL PETROLEUM SERVICE ECU</span>
+              </div>
+              <div class="field-grid four">
+                <label>Mud Engineer<input name="mudEngineer" /></label>
+                <label>Sample From<input name="sampleFrom" /></label>
+                <label>Mud Type<input name="mudType" required /></label>
+                <label>Mud Time<input name="mudTime" /></label>
+                <label>Mud MD<input name="mudMd" /></label>
+                <label>Density (ppg)<input name="mudDensity" type="number" min="6" max="20" step="0.01" required /></label>
+                <label>Mud Temp<input name="mudTemperature" type="number" min="0" step="0.1" /></label>
+                <label>Rheology Temp<input name="rheologyTemp" type="number" min="0" step="0.1" /></label>
+                <label>Viscosity<input name="viscosity" type="number" min="0" step="0.1" /></label>
+                <label>PV<input name="pv" type="number" min="0" step="0.01" /></label>
+                <label>YP<input name="yp" type="number" min="0" step="0.01" /></label>
+                <label>Gel 10s<input name="gel10s" type="number" min="0" step="0.01" /></label>
+                <label>Gel 10m<input name="gel10m" type="number" min="0" step="0.01" /></label>
+                <label>Gel 30m<input name="gel30m" type="number" min="0" step="0.01" /></label>
+                <label>API WL<input name="apiWl" type="number" min="0" step="0.01" /></label>
+                <label>Oil (%)<input name="oilPercent" type="number" min="0" max="100" step="0.01" /></label>
+                <label>Water (%)<input name="waterPercent" type="number" min="0" max="100" step="0.01" /></label>
+                <label>Sand (%)<input name="sand" type="number" min="0" max="10" step="0.01" /></label>
+                <label>ECD<input name="ecd" type="number" min="0" step="0.01" /></label>
+              </div>
+              <label class="wide">Mud Comments<textarea name="mudComments"></textarea></label>
+            </section>
+
+            <section class="panel table-panel" id="bit-bha">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionBitBha">钻头与 BHA</h2>
+                <button class="button small secondary" type="button" data-add-row="bhaTable" data-i18n="addBha">新增 BHA 组件</button>
+              </div>
+              <div class="field-grid four compact">
+                <label>Bit No<input name="bitNo" /></label>
+                <label>Bit Size<input name="bitSize" /></label>
+                <label>Manufacturer<input name="bitManufacturer" /></label>
+                <label>Serial No<input name="bitSerial" /></label>
+                <label>BHA No<input name="bhaNo" /></label>
+                <label>MD In<input name="bhaMdIn" /></label>
+                <label>MD Out<input name="bhaMdOut" /></label>
+                <label>Total Length (ft)<input name="bhaTotalLength" type="number" min="0" step="0.01" /></label>
+              </div>
+              <div class="table-wrap">
+                <table id="bhaTable" data-table="bha_components">
+                  <thead>
+                    <tr>
+                      <th data-i18n="thComponent">Component</th><th data-i18n="thOd">OD</th><th data-i18n="thId">ID</th><th data-i18n="thJts">Jts</th><th data-i18n="thLength">Length</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel table-panel" id="operations">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionOperations">Operations</h2>
+                <button class="button small secondary" type="button" data-add-row="operationsTable" data-i18n="addOperation">新增作业行</button>
+              </div>
+              <div class="table-wrap">
+                <table id="operationsTable" data-table="operations">
+                  <thead>
+                    <tr>
+                      <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel table-panel" id="costs">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionCosts">成本与库存</h2>
+                <button class="button small secondary" type="button" data-add-row="costTable" data-i18n="addCost">新增成本</button>
+              </div>
+              <div class="table-wrap half">
+                <table id="costTable" data-table="daily_costs">
+                  <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th><th></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+                <table id="bulkTable" data-table="bulks">
+                  <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th><th></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel" id="incidents">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionIncidents">事故与备注</h2>
+                <span class="panel-note" data-i18n="noteIncidents">HSE 状态、同步作业和其他说明</span>
+              </div>
+              <div class="field-grid four">
+                <label>Safety Incident?
+                  <select name="safetyIncident" required>
+                    <option value="" selected>-</option>
+                    <option value="N">N</option>
+                    <option value="Y">Y</option>
+                  </select>
+                </label>
+                <label>Environ Incident?
+                  <select name="environmentIncident" required>
+                    <option value="" selected>-</option>
+                    <option value="N">N</option>
+                    <option value="Y">Y</option>
+                  </select>
+                </label>
+                <label>Days since Last RI<input name="daysSinceRi" type="number" min="0" step="1" /></label>
+                <label>Days since Last LTA<input name="daysSinceLta" type="number" min="0" step="1" /></label>
+              </div>
+              <label class="wide">Incident Comments<textarea name="incidentComments"></textarea></label>
+              <label class="wide">Other Remarks<textarea name="otherRemarks"></textarea></label>
+            </section>
+          </form>
+
+          <aside class="rules-panel" aria-label="基础条件限制规则">
+            <div class="rules-card">
+              <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
+              <ul id="rulesList"></ul>
+            </div>
+            <div class="rules-card issue-list">
+              <h2 data-i18n="liveValidation">实时校验</h2>
+              <div id="issues"></div>
+            </div>
+          </aside>
+        </div>
+        </section>
+
+        <section id="completionDailyPage" class="module-page" hidden>
+          <header class="topbar">
+            <div>
+              <p class="page-kicker" data-i18n="completionPageKicker">COMPLETION DAILY REPORT</p>
+              <h1 data-i18n="completionPageTitle">完井日报填报工作台</h1>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+              <input id="completionPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
+              <button class="button secondary" type="button" id="importCompletionPdf" data-i18n="importPdf">导入 PDF 日报</button>
+              <button class="button secondary" type="button" data-back-records="completion" data-i18n="backRecords">返回记录</button>
+              <button class="button" type="button" data-save-report="completion" data-i18n="saveDatabase">保存</button>
+              <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
+            </div>
+          </header>
+
+          <div class="record-dashboard" data-record-dashboard="completion"></div>
+
+          <section class="status-strip" data-detail-view="completion" aria-label="完井日报填报状态">
+            <div class="status-card">
+              <span data-i18n="metricWellDate">井号 / 日期</span>
+              <strong id="completionWellDate">-</strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDailyHours">当日作业时长</span>
+              <strong class="metric-value"><span id="completionOperationHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricNptHours">NPT时长</span>
+              <strong class="metric-value"><span id="completionNptHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDataCompleteness">数据完整性</span>
+              <strong id="completionCompletionRate">0%</strong>
+            </div>
+          </section>
+
+          <div class="content-grid" data-detail-view="completion">
+            <form id="completionReportForm" class="report-form" novalidate>
+              <section class="panel" id="completion-basic">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionBasic">基础信息</h2>
+                  <span class="panel-note" data-i18n="completionNoteBasic">对应完井 PDF 顶部日报抬头、AFP 和井基本信息</span>
+                </div>
+                <div class="field-grid four">
+                  <label>Event<input name="event" required /></label>
+                  <label>Date<input name="reportDate" type="date" required /></label>
+                  <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
+                  <label>Wellbore<input name="wellbore" required /></label>
+                  <label>Rig<input name="rig" required /></label>
+                  <label>Primary Reason<input name="primaryReason" /></label>
+                  <label>Description<input name="description" /></label>
+                  <label>Operation Start<input name="operationStartDate" type="date" /></label>
+                  <label>AFP Number<input name="afeNumber" /></label>
+                  <label>AFP Cost<input name="afeCost" /></label>
+                  <label>Ref Datum<input name="refDatum" /></label>
+                  <label>Daily Cost<input name="dailyCost" /></label>
+                  <label>Cumulative Cost<input name="cumulativeCost" /></label>
+                  <label>Total Personnel<input name="totalPersonnel" type="number" min="0" step="0.01" /></label>
+                </div>
+              </section>
+
+              <section class="panel" id="completion-summary">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionSummary">作业摘要</h2>
+                  <span class="panel-note" data-i18n="noteSummary">当前作业、24 小时总结、下一步计划</span>
+                </div>
+                <label class="wide">Current Ops<textarea name="currentOps" required></textarea></label>
+                <div class="split">
+                  <label>24-Hr Summary<textarea name="summary24h" required></textarea></label>
+                  <label>24-Hr Forecast<textarea name="forecast24h" required></textarea></label>
+                </div>
+              </section>
+
+              <section class="panel" id="completion-personnel">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionPersonnel">人员信息</h2>
+                  <span class="panel-note" data-i18n="completionNotePersonnel">Supervisor、Engineer、Geologist 与现场总人数</span>
+                </div>
+                <div class="field-grid four">
+                  <label>Supervisor 1<input name="supervisor1" /></label>
+                  <label>Supervisor 2<input name="supervisor2" /></label>
+                  <label>Engineer<input name="engineer" /></label>
+                  <label>PAM Engineer<input name="pamEngineer" /></label>
+                  <label>Geologist<input name="geologist" /></label>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="completion-operations">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionOperations">Operations</h2>
+                  <button class="button small secondary" type="button" data-add-row="completionOperationsTable" data-i18n="addOperation">新增作业行</button>
+                </div>
+                <div class="table-wrap">
+                  <table id="completionOperationsTable" data-table="completion_operations">
+                    <thead>
+                      <tr>
+                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="completion-costs">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionCosts">成本与库存</h2>
+                  <button class="button small secondary" type="button" data-add-row="completionBulkTable" data-i18n="addBulk">新增库存</button>
+                </div>
+                <div class="table-wrap half">
+                  <table id="completionBulkTable" data-table="completion_bulks">
+                    <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th><th></th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                  <table id="completionCostTable" data-table="completion_daily_costs">
+                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th><th></th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="completion-intervals">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionPerforationIntervals">射孔区间</h2>
+                  <button class="button small secondary" type="button" data-add-row="perforationIntervalsTable" data-i18n="addInterval">新增区间</button>
+                </div>
+                <div class="table-wrap">
+                  <table id="perforationIntervalsTable" data-table="perforation_intervals">
+                    <thead>
+                      <tr>
+                        <th data-i18n="thFormation">Formation</th><th data-i18n="thTopMd">Top MD</th><th data-i18n="thBaseMd">Base MD</th><th data-i18n="thLength">Length</th><th data-i18n="thDensity">Density</th><th data-i18n="thCharges">Charges</th><th data-i18n="thPhase">Phase</th><th data-i18n="thPenetration">Penetration</th><th data-i18n="thDiameter">Diameter</th><th data-i18n="thDate">Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thComments">Comments</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel" id="completion-remarks">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionIncidents">事故与备注</h2>
+                  <span class="panel-note" data-i18n="completionNoteRemarks">安全备注、固控说明和其他现场备注</span>
+                </div>
+                <label class="wide">Safety Comments<textarea name="safetyComments"></textarea></label>
+                <label class="wide">Other Remarks<textarea name="otherRemarks"></textarea></label>
+              </section>
+            </form>
+
+            <aside class="rules-panel" aria-label="完井日报基础条件限制规则">
+              <div class="rules-card">
+                <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
+                <ul id="completionRulesList"></ul>
+              </div>
+              <div class="rules-card issue-list">
+                <h2 data-i18n="liveValidation">实时校验</h2>
+                <div id="completionIssues"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="workoverDailyPage" class="module-page" hidden>
+          <header class="topbar">
+            <div>
+              <p class="page-kicker" data-i18n="workoverPageKicker">WORKOVER DAILY REPORT</p>
+              <h1 data-i18n="workoverPageTitle">修井日报填报工作台</h1>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+              <input id="workoverPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
+              <button class="button secondary" type="button" id="importWorkoverPdf" data-i18n="importPdf">导入 PDF 日报</button>
+              <button class="button secondary" type="button" data-back-records="workover" data-i18n="backRecords">返回记录</button>
+              <button class="button" type="button" data-save-report="workover" data-i18n="saveDatabase">保存</button>
+              <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
+            </div>
+          </header>
+
+          <div class="record-dashboard" data-record-dashboard="workover"></div>
+
+          <section class="status-strip" data-detail-view="workover" aria-label="修井日报填报状态">
+            <div class="status-card">
+              <span data-i18n="metricWellDate">井号 / 日期</span>
+              <strong id="workoverWellDate">-</strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDailyHours">当日作业时长</span>
+              <strong class="metric-value"><span id="workoverOperationHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricNptHours">NPT时长</span>
+              <strong class="metric-value"><span id="workoverNptHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDataCompleteness">数据完整性</span>
+              <strong id="workoverCompletionRate">0%</strong>
+            </div>
+          </section>
+
+          <div class="content-grid" data-detail-view="workover">
+            <form id="workoverReportForm" class="report-form" novalidate>
+              <section class="panel" id="workover-basic">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionBasic">基础信息</h2>
+                  <span class="panel-note" data-i18n="workoverNoteBasic">对应修井 PDF 顶部日报抬头、AFP 和井基本信息</span>
+                </div>
+                <div class="field-grid four">
+                  <label>Event<input name="event" required /></label>
+                  <label>Date<input name="reportDate" type="date" required /></label>
+                  <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
+                  <label>WO No<input name="workoverNo" /></label>
+                  <label>Wellbore<input name="wellbore" required /></label>
+                  <label>Rig<input name="rig" required /></label>
+                  <label>Primary Reason<input name="primaryReason" /></label>
+                  <label>Description<input name="description" /></label>
+                  <label>Operation Start<input name="operationStartDate" type="date" /></label>
+                  <label>AFP Number<input name="afeNumber" /></label>
+                  <label>AFP Cost<input name="afeCost" /></label>
+                  <label>Ref Datum<input name="refDatum" /></label>
+                  <label>Daily Cost<input name="dailyCost" /></label>
+                  <label>Cumulative Cost<input name="cumulativeCost" /></label>
+                  <label>Total Personnel<input name="totalPersonnel" type="number" min="0" step="0.01" /></label>
+                </div>
+              </section>
+
+              <section class="panel" id="workover-summary">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionSummary">作业摘要</h2>
+                  <span class="panel-note" data-i18n="noteSummary">当前作业、24 小时总结、下一步计划</span>
+                </div>
+                <label class="wide">Current Ops<textarea name="currentOps" required></textarea></label>
+                <div class="split">
+                  <label>24-Hr Summary<textarea name="summary24h" required></textarea></label>
+                  <label>24-Hr Forecast<textarea name="forecast24h" required></textarea></label>
+                </div>
+              </section>
+
+              <section class="panel" id="workover-personnel">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionPersonnel">人员信息</h2>
+                  <span class="panel-note" data-i18n="workoverNotePersonnel">Supervisor、Engineer、Geologist 与现场总人数</span>
+                </div>
+                <div class="field-grid four">
+                  <label>Supervisor 1<input name="supervisor1" /></label>
+                  <label>Supervisor 2<input name="supervisor2" /></label>
+                  <label>Engineer<input name="engineer" /></label>
+                  <label>PAM Engineer<input name="pamEngineer" /></label>
+                  <label>Geologist<input name="geologist" /></label>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="workover-operations">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionOperations">Operations</h2>
+                  <button class="button small secondary" type="button" data-add-row="workoverOperationsTable" data-i18n="addOperation">新增作业行</button>
+                </div>
+                <div class="table-wrap">
+                  <table id="workoverOperationsTable" data-table="workover_operations">
+                    <thead>
+                      <tr>
+                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="workover-costs">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionCosts">成本与库存</h2>
+                  <button class="button small secondary" type="button" data-add-row="workoverBulkTable" data-i18n="addBulk">新增库存</button>
+                </div>
+                <div class="table-wrap half">
+                  <table id="workoverBulkTable" data-table="workover_bulks">
+                    <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th><th></th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                  <table id="workoverCostTable" data-table="workover_daily_costs">
+                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th><th></th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="workover-intervals">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionPerforationIntervals">射孔区间</h2>
+                  <button class="button small secondary" type="button" data-add-row="workoverIntervalsTable" data-i18n="addInterval">新增区间</button>
+                </div>
+                <div class="table-wrap">
+                  <table id="workoverIntervalsTable" data-table="workover_intervals">
+                    <thead>
+                      <tr>
+                        <th data-i18n="thFormation">Formation</th><th data-i18n="thTopMd">Top MD</th><th data-i18n="thBaseMd">Base MD</th><th data-i18n="thLength">Length</th><th data-i18n="thDensity">Density</th><th data-i18n="thCharges">Charges</th><th data-i18n="thPhase">Phase</th><th data-i18n="thPenetration">Penetration</th><th data-i18n="thDiameter">Diameter</th><th data-i18n="thDate">Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thComments">Comments</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel" id="workover-remarks">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionIncidents">事故与备注</h2>
+                  <span class="panel-note" data-i18n="workoverNoteRemarks">安全备注、固控说明和其他现场备注</span>
+                </div>
+                <label class="wide">Safety Comments<textarea name="safetyComments"></textarea></label>
+                <label class="wide">Other Remarks<textarea name="otherRemarks"></textarea></label>
+              </section>
+            </form>
+
+            <aside class="rules-panel" aria-label="修井日报基础条件限制规则">
+              <div class="rules-card">
+                <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
+                <ul id="workoverRulesList"></ul>
+              </div>
+              <div class="rules-card issue-list">
+                <h2 data-i18n="liveValidation">实时校验</h2>
+                <div id="workoverIssues"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="moveDailyPage" class="module-page" hidden>
+          <header class="topbar">
+            <div>
+              <p class="page-kicker" data-i18n="movePageKicker">RIG MOVE DAILY REPORT</p>
+              <h1 data-i18n="movePageTitle">搬迁日报填报工作台</h1>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+              <input id="movePdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
+              <button class="button secondary" type="button" id="importMovePdf" data-i18n="importPdf">导入 PDF 日报</button>
+              <button class="button secondary" type="button" data-back-records="move" data-i18n="backRecords">返回记录</button>
+              <button class="button" type="button" data-save-report="move" data-i18n="saveDatabase">保存</button>
+              <a class="button secondary download-link" href="/api/download-database" data-i18n="downloadDatabase">下载Excel库</a>
+            </div>
+          </header>
+
+          <div class="record-dashboard" data-record-dashboard="move"></div>
+
+          <section class="status-strip" data-detail-view="move" aria-label="搬迁日报填报状态">
+            <div class="status-card">
+              <span data-i18n="metricWellDate">井号 / 日期</span>
+              <strong id="moveWellDate">-</strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDailyHours">当日作业时长</span>
+              <strong class="metric-value"><span id="moveOperationHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricNptHours">NPT时长</span>
+              <strong class="metric-value"><span id="moveNptHours">0.00</span><small>h</small></strong>
+            </div>
+            <div class="status-card">
+              <span data-i18n="metricDataCompleteness">数据完整性</span>
+              <strong id="moveCompletionRate">0%</strong>
+            </div>
+          </section>
+
+          <div class="content-grid" data-detail-view="move">
+            <form id="moveReportForm" class="report-form" novalidate>
+              <section class="panel" id="move-basic">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionBasic">基础信息</h2>
+                  <span class="panel-note" data-i18n="moveNoteBasic">对应搬迁 PDF 顶部日报抬头、AFE 和井队信息</span>
+                </div>
+                <div class="field-grid four">
+                  <label>Event<input name="event" required /></label>
+                  <label>Date<input name="reportDate" type="date" required /></label>
+                  <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
+                  <label>Wellbore<input name="wellbore" required /></label>
+                  <label>Rig<input name="rig" required /></label>
+                  <label>Primary Reason<input name="primaryReason" /></label>
+                  <label>AFE Number<input name="afeNumber" /></label>
+                  <label>Ref Datum<input name="refDatum" /></label>
+                  <label>Ground Elev<input name="groundElev" /></label>
+                  <label>AFE MD/Days<input name="afeMdDays" /></label>
+                </div>
+              </section>
+
+              <section class="panel" id="move-summary">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionSummary">作业摘要</h2>
+                  <span class="panel-note" data-i18n="noteSummary">当前作业、24 小时总结、下一步计划</span>
+                </div>
+                <label class="wide">Current Ops<textarea name="currentOps" required></textarea></label>
+                <div class="split">
+                  <label>24-Hr Summary<textarea name="summary24h" required></textarea></label>
+                  <label>24-Hr Forecast<textarea name="forecast24h" required></textarea></label>
+                </div>
+              </section>
+
+              <section class="panel table-panel" id="move-operations">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionOperations">Operations</h2>
+                  <button class="button small secondary" type="button" data-add-row="moveOperationsTable" data-i18n="addOperation">新增作业行</button>
+                </div>
+                <div class="table-wrap">
+                  <table id="moveOperationsTable" data-table="move_operations">
+                    <thead>
+                      <tr>
+                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel" id="move-remarks">
+                <div class="panel-heading">
+                  <h2 data-i18n="sectionIncidents">事故与备注</h2>
+                  <span class="panel-note" data-i18n="moveNoteRemarks">其他现场备注原文</span>
+                </div>
+                <label class="wide">Other Remarks<textarea name="otherRemarks"></textarea></label>
+              </section>
+            </form>
+
+            <aside class="rules-panel" aria-label="搬迁日报基础条件限制规则">
+              <div class="rules-card">
+                <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
+                <ul id="moveRulesList"></ul>
+              </div>
+              <div class="rules-card issue-list">
+                <h2 data-i18n="liveValidation">实时校验</h2>
+                <div id="moveIssues"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="productionSummaryPage" class="module-page analytics-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <p class="page-kicker" data-i18n="analyticsKicker">数据看板</p>
+              <h1 data-i18n="menuRigProductionSummary">生产汇总</h1>
+              <p class="source-file-name" data-analytics-note="production" data-i18n="analyticsProductionScope">基于已保存到 Excel 库的日报解析数据</p>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="panel analytics-filter" data-analytics-filter="production">
+            <label>日期起<input type="date" name="date_from" /></label>
+            <label>日期止<input type="date" name="date_to" /></label>
+            <label>井队<select name="rig"><option value="">全部井队</option></select></label>
+            <label>日报类型<select name="report_type"><option value="">全部类型</option></select></label>
+            <label>井号<input name="wellbore" placeholder="请输入井号" data-i18n-placeholder="wellborePlaceholder" /></label>
+            <button class="button" type="button" data-analytics-search="production" data-i18n="search">查询</button>
+            <button class="button secondary" type="button" data-analytics-reset="production" data-i18n="reset">重置</button>
+            <button class="button secondary" type="button" data-analytics-export="production" data-i18n="exportList">导出</button>
+          </section>
+          <section class="analytics-kpis" data-analytics-kpis="production"></section>
+          <section class="analytics-grid">
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartRigHours">各井队作业时效对比 (h)</h2></div><div data-chart="production-rig"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartOperationMix">作业时效构成</h2></div><div data-chart="production-type"></div></div>
+            <div class="panel analytics-card wide"><div class="panel-heading"><h2 data-i18n="chartMonthlyHours">月度作业趋势 (h)</h2></div><div data-chart="production-monthly"></div></div>
+          </section>
+          <section class="panel analytics-table-panel">
+            <div class="panel-heading"><h2 data-i18n="productionDetailTitle">生产汇总明细</h2><span class="panel-note" data-i18n="analyticsRowHint">点击行可打开日报详情</span></div>
+            <div class="table-wrap" data-table-host="production"></div>
+          </section>
+        </section>
+
+        <section id="nptStatsPage" class="module-page analytics-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <p class="page-kicker" data-i18n="analyticsKicker">数据看板</p>
+              <h1 data-i18n="menuWellNptConfirm">NPT统计</h1>
+              <p class="source-file-name" data-analytics-note="npt" data-i18n="analyticsNptScope">基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总</p>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="panel analytics-filter" data-analytics-filter="npt">
+            <label>日期起<input type="date" name="date_from" /></label>
+            <label>日期止<input type="date" name="date_to" /></label>
+            <label>井队<select name="rig"><option value="">全部井队</option></select></label>
+            <label>作业代码 / 子项<select name="reason"><option value="">全部分类</option></select></label>
+            <label>井号<input name="wellbore" placeholder="请输入井号" data-i18n-placeholder="wellborePlaceholder" /></label>
+            <button class="button" type="button" data-analytics-search="npt" data-i18n="search">查询</button>
+            <button class="button secondary" type="button" data-analytics-reset="npt" data-i18n="reset">重置</button>
+            <button class="button secondary" type="button" data-analytics-export="npt" data-i18n="exportList">导出</button>
+          </section>
+          <section class="analytics-kpis" data-analytics-kpis="npt"></section>
+          <section class="analytics-grid">
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptRig">各井队NPT对比 (h)</h2></div><div data-chart="npt-rig"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptReason">作业代码 / 子项分布</h2></div><div data-chart="npt-reason"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptWell">各井NPT排行</h2></div><div data-chart="npt-well"></div></div>
+            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartNptMonthly">月度NPT趋势 (h)</h2></div><div data-chart="npt-monthly"></div></div>
+          </section>
+          <section class="panel analytics-table-panel">
+            <div class="panel-heading"><h2 data-i18n="nptDetailTitle">NPT统计明细</h2><span class="panel-note" data-i18n="nptRowHint">按日报作业代码 / 子项原文汇总，点击行可追溯日报</span></div>
+            <div class="table-wrap" data-table-host="npt"></div>
+          </section>
+        </section>
+
+        <section id="modulePlaceholder" class="module-page module-placeholder" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <p class="page-kicker" id="placeholderModule" data-i18n="moduleStatusPlanned">功能规划</p>
+              <h1 id="placeholderTitle">功能菜单</h1>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="panel placeholder-card">
+            <div class="panel-heading">
+              <h2 data-i18n="moduleComingSoon">功能待开发</h2>
+              <span class="panel-note" data-i18n="moduleCurrent">当前菜单</span>
+            </div>
+            <p id="placeholderDescription"></p>
+            <div class="placeholder-actions">
+              <span data-i18n="moduleComingSoonDesc">该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。</span>
+            </div>
+          </section>
+        </section>
+
+      </main>
+    </div>
+
+    <div class="pdf-modal" id="sourcePdfModal" hidden>
+      <div class="pdf-modal-backdrop" data-close-source-pdf></div>
+      <section class="pdf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="sourcePdfTitle">
+        <header class="pdf-modal-header">
+          <div>
+            <p class="page-kicker" data-i18n="sourcePdfTitle">源文件PDF</p>
+            <h2 id="sourcePdfTitle">源文件PDF</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-source-pdf aria-label="关闭">×</button>
+        </header>
+        <div class="pdf-modal-body">
+          <iframe id="sourcePdfFrame" title="Source PDF"></iframe>
+          <div class="empty-records pdf-modal-empty" id="sourcePdfEmpty" hidden></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./liquid-glass.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

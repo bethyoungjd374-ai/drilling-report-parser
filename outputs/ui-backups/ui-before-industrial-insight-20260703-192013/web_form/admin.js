@@ -203,7 +203,7 @@ function renderAdminData() {
   const status = adminState.dataStatus || {};
   const byType = status.by_type || {};
   host.innerHTML = `
-    <section class="admin-kpi-grid">${adminKpi("总记录", status.records || 0, "全部日报", "database")}${adminKpi("钻井日报", byType.drilling || 0, "drilling", "overview")}${adminKpi("完井日报", byType.completion || 0, "completion", "shield")}${adminKpi("修井日报", byType.workover || 0, "workover", "logs")}</section>
+    <section class="admin-kpi-grid">${adminKpi("总记录", status.records || 0, "全部日报", "database")}${adminKpi("钻井日报", byType.drilling || 0, "drilling", "overview")}${adminKpi("完井日报", byType.completion || 0, "completion", "shield")}${adminKpi("修井 / 搬迁", `${byType.workover || 0} / ${byType.move || 0}`, "workover / move", "logs")}</section>
     <section class="panel"><div class="panel-heading"><h2>数据维护</h2><span class="panel-note">备份当前 Excel 库，查看最近备份</span></div><div class="admin-actions"><a class="button secondary" href="/api/download-database">下载Excel库</a><button class="button" type="button" data-admin-backup>立即备份</button></div><div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>备份文件</th><th>大小</th><th>时间</th></tr></thead><tbody>${(status.backups || []).map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong></td><td>${fileSize(item.size)}</td><td>${escapeHtml(item.created_at)}</td></tr>`).join("") || `<tr><td colspan="3">暂无备份</td></tr>`}</tbody></table></div></section>`;
 }
 

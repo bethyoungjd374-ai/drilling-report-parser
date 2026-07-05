@@ -15,6 +15,7 @@ class MovePdfParserTest(unittest.TestCase):
         if not pdf.exists():
             self.skipTest(f"Sample PDF not found: {pdf}")
         payload = parse_move_pdf_daily_report(pdf)
+        self.assertEqual(payload["metadata"]["report_type"], "drilling")
         fields = payload["report_fields"]
         self.assertEqual(fields["event"], "MAJOR RIG MOVE")
         self.assertEqual(fields["wellbore"], "TCHA-006I")

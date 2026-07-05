@@ -33,7 +33,7 @@ def parse_move_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[s
     fields = _parse_report_fields(page1_lines, layout_text, plain_text)
 
     return {
-        "metadata": {"source": "pdf_import", "parser": "move_pdf_parser_v1", "report_type": "move"},
+        "metadata": {"source": "pdf_import", "parser": "move_pdf_parser_v1", "report_type": "drilling"},
         "report_fields": fields,
         "operations": operations,
     }

@@ -17,7 +17,6 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from .completion_pdf_parser import parse_completion_pdf_daily_report
 from .excel_database import initialize_database, list_records, load_report_payload, save_report_payload
-from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_report_parser import parse_pdf_daily_report
 from .workover_pdf_parser import parse_workover_pdf_daily_report
 
@@ -160,7 +159,7 @@ class FormHandler(BaseHTTPRequestHandler):
         if self.path == "/api/import-move-pdf":
             if not self._require_permission("import"):
                 return
-            self._import_move_pdf()
+            self._import_pdf()
             return
         if self.path == "/api/save-report":
             if not self._require_permission("save"):
@@ -466,29 +465,6 @@ class FormHandler(BaseHTTPRequestHandler):
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
-    def _import_move_pdf(self) -> None:
-        try:
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
-            )
-            upload = form["report"] if "report" in form else None
-            if upload is None or not getattr(upload, "filename", ""):
-                self._send_json({"error": "No PDF file received."}, status=400)
-                return
-            if Path(upload.filename).suffix.lower() != ".pdf":
-                self._send_json({"error": "Only PDF files are supported."}, status=400)
-                return
-            pdf_bytes = upload.file.read()
-            payload = parse_move_pdf_daily_report(pdf_bytes)
-            payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "move")
-            self._store_source_pdf(payload, pdf_bytes)
-            self._send_json(payload)
-        except Exception as exc:  # pragma: no cover - keeps the local app useful.
-            self._send_json({"error": str(exc)}, status=500)
-
     def _save_report(self) -> None:
         try:
             payload = self._read_json_body()
@@ -603,10 +579,12 @@ class FormHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def _store_payload(self, payload: dict[str, object], report_type: str) -> None:
+        report_type = _canonical_report_type(report_type)
         metadata = payload.setdefault("metadata", {})
         warnings = list(dict.fromkeys(_normalize_payload_values(payload) + _validation_warnings(payload, report_type)))
         if isinstance(metadata, dict):
             metadata.setdefault("status", "parsed")
+            metadata["report_type"] = report_type
             metadata["validation_status"] = "warning" if warnings else "ok"
             metadata["validation_warnings"] = "; ".join(warnings)
         result = save_report_payload(
@@ -925,6 +903,7 @@ def main() -> None:
 
 
 def _validation_warnings(payload: dict[str, object], report_type: str) -> list[str]:
+    report_type = _canonical_report_type(report_type)
     fields = payload.get("report_fields", {})
     if not isinstance(fields, dict):
         return ["report_fields missing"]
@@ -932,7 +911,6 @@ def _validation_warnings(payload: dict[str, object], report_type: str) -> list[s
         "drilling": ["event", "reportDate", "reportNo", "wellbore", "rig", "todayMd", "progress", "currentOps", "summary24h", "forecast24h", "mudType", "mudDensity"],
         "completion": ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
         "workover": ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
-        "move": ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"],
     }
     warnings: list[str] = []
     for field in required_by_type.get(report_type, []):
@@ -984,7 +962,7 @@ def _validation_warnings(payload: dict[str, object], report_type: str) -> list[s
                 warnings.append("operationStartDate later than reportDate")
         except ValueError:
             pass
-    if report_type in {"drilling", "move"}:
+    if report_type == "drilling":
         today_md = _safe_float(fields.get("todayMd"))
         prev_md = _safe_float(fields.get("prevMd"))
         progress = _safe_float(fields.get("progress"))
@@ -1068,8 +1046,11 @@ REPORT_TYPE_LABELS = {
     "drilling": "钻井",
     "completion": "完井",
     "workover": "修井",
-    "move": "搬迁/推井架",
 }
+
+
+def _canonical_report_type(report_type: str) -> str:
+    return {"move": "drilling"}.get((report_type or "").strip().lower(), (report_type or "").strip().lower())
 
 
 def _production_summary_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
@@ -1109,7 +1090,6 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
             "drilling_hours": 0.0,
             "completion_hours": 0.0,
             "workover_hours": 0.0,
-            "move_hours": 0.0,
             "npt_hours": 0.0,
             "record_id": row["record_id"],
             "status": "",
@@ -1137,7 +1117,7 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
         "by_rig": [{"rig": rig, **{key: round(value, 2) for key, value in values.items()}} for rig, values in sorted(by_rig.items())],
         "by_type": [{"report_type": key, "label": REPORT_TYPE_LABELS[key], "hours": round(value, 2)} for key, value in by_type.items()],
         "monthly": [{"month": month, **{key: round(value, 2) for key, value in values.items()}} for month, values in sorted(monthly.items())],
-        "details": [{**item, **{k: round(float(item.get(k, 0.0)), 2) for k in ("drilling_hours", "completion_hours", "workover_hours", "move_hours", "npt_hours")}} for item in detail.values()],
+        "details": [{**item, **{k: round(float(item.get(k, 0.0)), 2) for k in ("drilling_hours", "completion_hours", "workover_hours", "npt_hours")}} for item in detail.values()],
         "scope_note": "基于已保存到 Excel 库的日报解析数据",
     }
 

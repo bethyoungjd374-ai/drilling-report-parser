@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>登录 - 钻完井日报分析系统</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/web_form/styles.css" />
+  </head>
+  <body class="auth-body">
+    <main class="auth-shell">
+      <section class="auth-brand">
+        <div class="auth-brand-content">
+          <div class="auth-logo">DR</div>
+          <p class="auth-kicker">DAILY REPORT PLATFORM</p>
+          <h1 data-auth-i18n="systemName">钻完井日报分析系统</h1>
+          <p data-auth-i18n="systemSubtitle">面向钻井、完井、修井业务的日报智能解析、生产统计与运营分析统一入口</p>
+        </div>
+        <div class="auth-feature-strip" aria-label="系统能力">
+          <span><i class="auth-feature-icon icon-logs" aria-hidden="true"></i><em data-auth-i18n="featureParse">日报智能解析</em></span>
+          <span><i class="auth-feature-icon icon-overview" aria-hidden="true"></i><em data-auth-i18n="featureStats">生产数据统计</em></span>
+          <span><i class="auth-feature-icon icon-sliders" aria-hidden="true"></i><em data-auth-i18n="featureNpt">NPT分析与趋势跟踪</em></span>
+        </div>
+      </section>
+      <section class="auth-card">
+        <div class="language-switch auth-language-switch" role="group" aria-label="Language">
+          <button type="button" data-auth-lang="zh">中</button>
+          <button type="button" data-auth-lang="en">EN</button>
+          <button type="button" data-auth-lang="es">ES</button>
+        </div>
+        <div class="auth-card-heading">
+          <h2 data-auth-i18n="loginTitle">账号登录</h2>
+          <span data-auth-i18n="loginSubtitle">请输入系统账号密码</span>
+        </div>
+        <label class="auth-field"><span data-auth-i18n="username">用户名</span><span class="auth-input-wrap"><i class="auth-input-icon icon-users" aria-hidden="true"></i><input name="username" autocomplete="username" value="admin" /></span></label>
+        <label class="auth-field"><span data-auth-i18n="password">密码</span><span class="auth-input-wrap"><i class="auth-input-icon icon-shield" aria-hidden="true"></i><input name="password" type="password" autocomplete="current-password" value="admin123" /></span></label>
+        <div class="auth-options">
+          <label class="auth-check"><input type="checkbox" checked /><span data-auth-i18n="remember">记住我</span></label>
+          <span data-auth-i18n="forgot">忘记密码？</span>
+        </div>
+        <button class="button auth-submit" type="button" data-login-submit data-auth-i18n="loginButton">登录</button>
+        <p class="auth-hint"><span class="auth-input-icon icon-shield" aria-hidden="true"></span><span data-auth-i18n="passwordHint">首次登录请及时修改初始密码</span></p>
+      </section>
+      <section class="auth-card auth-password-card" data-password-panel hidden>
+        <div class="language-switch auth-language-switch" role="group" aria-label="Language">
+          <button type="button" data-auth-lang="zh">中</button>
+          <button type="button" data-auth-lang="en">EN</button>
+          <button type="button" data-auth-lang="es">ES</button>
+        </div>
+        <div class="auth-card-heading">
+          <h2 data-auth-i18n="changeTitle">修改初始密码</h2>
+          <span data-auth-i18n="changeSubtitle">默认密码不可长期使用</span>
+        </div>
+        <label class="auth-field"><span data-auth-i18n="oldPassword">原密码</span><span class="auth-input-wrap"><i class="auth-input-icon icon-shield" aria-hidden="true"></i><input name="oldPassword" type="password" autocomplete="current-password" /></span></label>
+        <label class="auth-field"><span data-auth-i18n="newPassword">新密码</span><span class="auth-input-wrap"><i class="auth-input-icon icon-settings" aria-hidden="true"></i><input name="newPassword" type="password" autocomplete="new-password" /></span></label>
+        <button class="button auth-submit" type="button" data-change-password data-auth-i18n="saveEnter">保存并进入</button>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/web_form/liquid-glass.js"></script>
+    <script src="/web_form/login.js"></script>
+  </body>
+</html>

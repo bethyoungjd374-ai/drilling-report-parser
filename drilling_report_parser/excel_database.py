@@ -10,7 +10,8 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
 
-REPORT_TYPES = {"drilling", "completion", "workover", "move"}
+REPORT_TYPES = {"drilling", "completion", "workover"}
+REPORT_TYPE_ALIASES = {"move": "drilling"}
 
 BASE_COLUMNS = [
     "record_id",
@@ -194,6 +195,9 @@ REPORT_TABLES = {
             "perforation_intervals": "workover_intervals",
         },
     },
+}
+
+LEGACY_REPORT_TABLES = {
     "move": {
         "field_sheet": "move_fields",
         "field_columns": MOVE_FIELD_COLUMNS,
@@ -278,8 +282,9 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
     record = _record_index(workbook["records"]).get(record_id)
     if not record:
         raise KeyError(record_id)
-    report_type = _normalize_report_type(str(record.get("report_type", "")))
-    table_info = REPORT_TABLES[report_type]
+    stored_report_type = str(record.get("report_type", ""))
+    report_type = _normalize_report_type(stored_report_type)
+    table_info = _table_info_for_loaded_record(workbook, stored_report_type)
     fields = _first_matching_row(workbook[table_info["field_sheet"]], record_id)
     payload: dict[str, Any] = {
         "metadata": {
@@ -300,7 +305,10 @@ def list_records(database_path: str | Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
     workbook = load_workbook(path, read_only=True, data_only=True)
-    records = list(_record_index(workbook["records"]).values())
+    records = []
+    for record in _record_index(workbook["records"]).values():
+        normalized = _normalize_report_type(str(record.get("report_type", "")))
+        records.append({**record, "report_type": normalized})
     records.sort(key=lambda record: (record.get("reportDate", ""), record.get("updated_at", "")), reverse=True)
     return records
 
@@ -336,8 +344,12 @@ def _ensure_sheet(workbook: Workbook, name: str, columns: list[str]) -> Workshee
 
 
 def _replace_record_rows(workbook: Workbook, report_type: str, record_id: str) -> None:
-    sheets = ["records", REPORT_TABLES[report_type]["field_sheet"], *REPORT_TABLES[report_type]["multi"].values()]
-    for sheet_name in sheets:
+    sheets = ["records"]
+    for table_info in [*REPORT_TABLES.values(), *LEGACY_REPORT_TABLES.values()]:
+        sheets.extend([table_info["field_sheet"], *table_info["multi"].values()])
+    for sheet_name in set(sheets):
+        if sheet_name not in workbook.sheetnames:
+            continue
         worksheet = workbook[sheet_name]
         for row_number in range(worksheet.max_row, 1, -1):
             if str(worksheet.cell(row=row_number, column=1).value or "") == record_id:
@@ -418,9 +430,18 @@ def _now() -> str:
 
 def _normalize_report_type(report_type: str) -> str:
     normalized = (report_type or "").strip().lower()
+    normalized = REPORT_TYPE_ALIASES.get(normalized, normalized)
     if normalized not in REPORT_TYPES:
         raise ValueError(f"Unsupported report_type: {report_type}")
     return normalized
+
+
+def _table_info_for_loaded_record(workbook: Workbook, report_type: str) -> dict[str, Any]:
+    normalized = (report_type or "").strip().lower()
+    legacy_info = LEGACY_REPORT_TABLES.get(normalized)
+    if legacy_info and legacy_info["field_sheet"] in workbook.sheetnames:
+        return legacy_info
+    return REPORT_TABLES[_normalize_report_type(report_type)]
 
 
 def _format_workbook(workbook: Workbook) -> None:
