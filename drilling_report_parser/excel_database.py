@@ -322,6 +322,13 @@ def list_records(database_path: str | Path) -> list[dict[str, str]]:
         return []
     workbook = load_workbook(path, read_only=True, data_only=True)
     records = list(_record_index(workbook["records"]).values())
+    for record in records:
+        report_type = str(record.get("report_type", "") or "")
+        record_id = str(record.get("record_id", "") or "")
+        if not report_type or report_type not in REPORT_TABLES or not record_id:
+            continue
+        fields = _first_matching_row(workbook[REPORT_TABLES[report_type]["field_sheet"]], record_id)
+        record["afeNumber"] = fields.get("afeNumber", "")
     records.sort(key=lambda record: (record.get("reportDate", ""), record.get("updated_at", "")), reverse=True)
     return records
 

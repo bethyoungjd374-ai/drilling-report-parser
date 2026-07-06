@@ -352,11 +352,7 @@ function normalizeManualWellProfile(profile = {}) {
   return {
     wellbore: String(profile.wellbore || "").trim(),
     rig: String(profile.rig || "").trim(),
-    report_type: String(profile.report_type || "").trim(),
     afeNumber: String(profile.afeNumber || "").trim(),
-    refDatum: String(profile.refDatum || "").trim(),
-    wellType: String(profile.wellType || "").trim(),
-    block: String(profile.block || "").trim(),
     note: String(profile.note || "").trim(),
     created_at: String(profile.created_at || now),
     updated_at: String(profile.updated_at || now),
@@ -867,12 +863,7 @@ function wellBasicInfoMarkup(reportType, wellbore, records = []) {
   const items = [
     ["井号", latestRecord?.wellbore || manual.wellbore || wellbore || "-"],
     ["井队", latestRecord?.rig || manual.rig || "-"],
-    ["日报类型", latestRecord?.report_type ? reportName(latestRecord.report_type) : manual.report_type ? reportName(manual.report_type) : reportName(reportType)],
-    ["最近日报", latestRecord?.reportDate || "-"],
-    ["AFE", manual.afeNumber || "-"],
-    ["参考基准", manual.refDatum || "-"],
-    ["井型", manual.wellType || "-"],
-    ["区块", manual.block || "-"],
+    ["AFE", latestRecord?.afeNumber || manual.afeNumber || "-"],
   ];
   return `
     <section class="well-basic-card" aria-label="当前井基础信息">
@@ -894,7 +885,7 @@ function wellBasicInfoMarkup(reportType, wellbore, records = []) {
 function openAddWellModal(reportType) {
   if (!frontCan("edit")) return showToast("当前账号没有编辑权限");
   const currentWell = recordState[reportType]?.selectedWell || "";
-  const existing = manualProfileForWell(currentWell) || { report_type: reportType };
+  const existing = manualProfileForWell(currentWell) || {};
   document.querySelector(".well-profile-modal")?.remove();
   const modal = document.createElement("div");
   modal.className = "admin-modal well-profile-modal";
@@ -913,11 +904,7 @@ function openAddWellModal(reportType) {
         <div class="well-profile-form">
           <label>井号<input name="wellbore" required value="${escapeHtml(existing.wellbore || "")}" placeholder="例如 PCNC-040" /></label>
           <label>井队<input name="rig" value="${escapeHtml(existing.rig || "")}" placeholder="例如 00 SINOPEC 248" /></label>
-          <label>日报类型<select name="report_type">${reportTypeOptions(existing.report_type || reportType)}</select></label>
           <label>AFE<input name="afeNumber" value="${escapeHtml(existing.afeNumber || "")}" /></label>
-          <label>参考基准<input name="refDatum" value="${escapeHtml(existing.refDatum || "")}" /></label>
-          <label>井型<input name="wellType" value="${escapeHtml(existing.wellType || "")}" placeholder="例如 Development / Exploration" /></label>
-          <label>区块<input name="block" value="${escapeHtml(existing.block || "")}" /></label>
           <label class="wide">备注<textarea name="note">${escapeHtml(existing.note || "")}</textarea></label>
         </div>
       </div>
@@ -935,10 +922,6 @@ function openAddWellModal(reportType) {
   modal.querySelector('[name="wellbore"]')?.focus();
 }
 
-function reportTypeOptions(selected) {
-  return Object.keys(reportNames).map((type) => `<option value="${type}" ${type === selected ? "selected" : ""}>${escapeHtml(reportName(type))}</option>`).join("");
-}
-
 function closeWellProfileModal() {
   document.querySelector(".well-profile-modal")?.remove();
   document.body.classList.remove("modal-open");
@@ -950,11 +933,7 @@ function saveWellProfileFromModal(reportType) {
   const profile = normalizeManualWellProfile({
     wellbore: modal.querySelector('[name="wellbore"]')?.value,
     rig: modal.querySelector('[name="rig"]')?.value,
-    report_type: modal.querySelector('[name="report_type"]')?.value || reportType,
     afeNumber: modal.querySelector('[name="afeNumber"]')?.value,
-    refDatum: modal.querySelector('[name="refDatum"]')?.value,
-    wellType: modal.querySelector('[name="wellType"]')?.value,
-    block: modal.querySelector('[name="block"]')?.value,
     note: modal.querySelector('[name="note"]')?.value,
   });
   if (!profile.wellbore) {

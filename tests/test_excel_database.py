@@ -7,6 +7,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from drilling_report_parser.excel_database import (
+    list_records,
     list_npt_confirmation_wells,
     load_npt_confirmation_detail,
     load_report_payload,
@@ -56,6 +57,27 @@ class ExcelDatabaseTest(unittest.TestCase):
             self.assertEqual(len(loaded["operations"]), 2)
             self.assertEqual(loaded["operations"][1]["op_type"], "NPT")
             self.assertEqual(loaded["survey_data"][0]["md"], "1000")
+
+    def test_list_records_includes_well_profile_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "report_database.xlsx"
+            save_report_payload(
+                database,
+                {
+                    "report_fields": {
+                        "event": "DRILLING",
+                        "reportDate": "2026-06-11",
+                        "reportNo": "11",
+                        "wellbore": "PCNC-040",
+                        "rig": "00 SINOPEC 248",
+                        "afeNumber": "AFE-248-11",
+                    },
+                },
+                "drilling",
+            )
+
+            records = list_records(database)
+            self.assertEqual(records[0]["afeNumber"], "AFE-248-11")
 
     def test_save_same_completion_record_replaces_old_detail_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
