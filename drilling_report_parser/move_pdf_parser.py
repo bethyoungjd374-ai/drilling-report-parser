@@ -20,6 +20,13 @@ from .completion_pdf_parser import (
 )
 
 
+def _clean_rig(value: str) -> str:
+    value = _clean(value)
+    value = re.sub(r"^00\s+(SINOPEC\b)", r"\1", value, flags=re.I)
+    value = re.sub(r"\bSINOPEC[-\s]*(\d+)\b", r"SINOPEC \1", value, flags=re.I)
+    return value
+
+
 def parse_move_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, Any]:
     payload_source = _source_payload(source)
     reader = _reader(payload_source)
@@ -71,10 +78,10 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     rig_match = re.search(r"Wellbore:\s*(.*?)\s+Rig:\s*(.*?)\s+Ref Datum:", header_line)
     if rig_match:
         fields["wellborePrefix"] = _clean(rig_match.group(1))
-        fields["rig"] = _clean(rig_match.group(2))
+        fields["rig"] = _clean_rig(rig_match.group(2))
     else:
         rig_plain = re.search(r"Current Ops:.*?\n(00\s+SINOPEC\s+\d+)", plain_text, re.S)
-        fields["rig"] = _clean(rig_plain.group(1)) if rig_plain else ""
+        fields["rig"] = _clean_rig(rig_plain.group(1)) if rig_plain else ""
 
     ref_match = re.search(r"Ref Datum:\s*(.*?)\s+DFS:", header_line)
     if ref_match:

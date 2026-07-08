@@ -1,0 +1,1012 @@
+{
+  "metadata": {
+    "source": "drilling_report_translation",
+    "engine": "noop",
+    "target_language": "zh",
+    "generated_at": "2026-07-06T17:59:37",
+    "item_count": 45,
+    "translated_count": 0,
+    "warning_count": 45
+  },
+  "items": [
+    {
+      "path": "report_fields.event",
+      "original_text": "DEV DRILLING",
+      "language": "en",
+      "translated_text": "DEV 钻进",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [
+        {
+          "term_id": "term-drilling",
+          "source": "DRILLING",
+          "original": "DRILLING",
+          "target": "zh",
+          "replacement": "钻进"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.reportDate",
+      "original_text": "2026-07-06",
+      "language": "und",
+      "translated_text": "2026-07-06",
+      "translated": false,
+      "untranslated_tokens": [
+        "2026-07-06"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "report_fields.reportNo",
+      "original_text": "21",
+      "language": "und",
+      "translated_text": "21",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "report_fields.wellbore",
+      "original_text": "EB-D-12",
+      "language": "en",
+      "translated_text": "EB-D-12",
+      "translated": false,
+      "untranslated_tokens": [
+        "EB-D-12"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "report_fields.rig",
+      "original_text": "00 SINOPEC 248",
+      "language": "en",
+      "translated_text": "00 SINOPEC 248",
+      "translated": false,
+      "untranslated_tokens": [
+        "SINOPEC"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.currentOps#0",
+      "original_text": "Drilling 8-1/2\" hole from 2450m to 2510m.",
+      "language": "en",
+      "translated_text": "钻进 8-1/2\" hole from 2450m to 2510m.",
+      "translated": false,
+      "untranslated_tokens": [
+        "2450m",
+        "2510m"
+      ],
+      "term_replacements": [
+        {
+          "term_id": "term-drilling",
+          "source": "Drilling",
+          "original": "Drilling",
+          "target": "zh",
+          "replacement": "钻进"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.currentOps#1",
+      "original_text": "Circuló fondo arriba con MW 10.2 ppg.",
+      "language": "es",
+      "translated_text": "Circuló fondo arriba con 泥浆密度 10.2 ppg.",
+      "translated": false,
+      "untranslated_tokens": [
+        "10.2 ppg"
+      ],
+      "term_replacements": [
+        {
+          "term_id": "term-mw",
+          "source": "MW",
+          "original": "MW",
+          "target": "zh",
+          "replacement": "泥浆密度"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.summary24h#0",
+      "original_text": "Tripping out BHA #5 after lost circulation.",
+      "language": "en",
+      "translated_text": "起钻 底部钻具组合 #5 after 井漏.",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [
+        {
+          "term_id": "term-lost-circulation",
+          "source": "lost circulation",
+          "original": "lost circulation",
+          "target": "zh",
+          "replacement": "井漏"
+        },
+        {
+          "term_id": "term-tripping-out",
+          "source": "Tripping out",
+          "original": "Tripping out",
+          "target": "zh",
+          "replacement": "起钻"
+        },
+        {
+          "term_id": "term-bha",
+          "source": "BHA",
+          "original": "BHA",
+          "target": "zh",
+          "replacement": "底部钻具组合"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.summary24h#1",
+      "original_text": "Se observó pérdida parcial de circulación;",
+      "language": "es",
+      "translated_text": "Se observó pérdida parcial de circulación;",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.summary24h#2",
+      "original_text": "no kick.",
+      "language": "en",
+      "translated_text": "no 井涌.",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [
+        {
+          "term_id": "term-kick",
+          "source": "kick",
+          "original": "kick",
+          "target": "zh",
+          "replacement": "井涌"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "report_fields.forecast24h",
+      "original_text": "Continue drilling and monitor SPP, ROP and ECD.",
+      "language": "en",
+      "translated_text": "Continue 钻进 and monitor 立管压力, 机械钻速 and ECD.",
+      "translated": false,
+      "untranslated_tokens": [
+        "ECD"
+      ],
+      "term_replacements": [
+        {
+          "term_id": "term-drilling",
+          "source": "drilling",
+          "original": "drilling",
+          "target": "zh",
+          "replacement": "钻进"
+        },
+        {
+          "term_id": "term-rop",
+          "source": "ROP",
+          "original": "ROP",
+          "target": "zh",
+          "replacement": "机械钻速"
+        },
+        {
+          "term_id": "term-spp",
+          "source": "SPP",
+          "original": "SPP",
+          "target": "zh",
+          "replacement": "立管压力"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[0].from",
+      "original_text": "00:00",
+      "language": "und",
+      "translated_text": "00:00",
+      "translated": false,
+      "untranslated_tokens": [
+        "00:00"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[0].to",
+      "original_text": "06:00",
+      "language": "und",
+      "translated_text": "06:00",
+      "translated": false,
+      "untranslated_tokens": [
+        "06:00"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[0].hours",
+      "original_text": "6",
+      "language": "und",
+      "translated_text": "6",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[0].op_code",
+      "original_text": "DRLG",
+      "language": "en",
+      "translated_text": "DRLG",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[0].op_sub",
+      "original_text": "Rotary",
+      "language": "en",
+      "translated_text": "Rotary",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[0].op_type",
+      "original_text": "P",
+      "language": "en",
+      "translated_text": "P",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[0].operation_details",
+      "original_text": "Drilled 8-1/2\" section from 2450m to 2510m, ROP 18 m/hr, WOB 22 klb.",
+      "language": "en",
+      "translated_text": "Drilled 8-1/2\" section from 2450m to 2510m, 机械钻速 18 m/hr, 钻压 22 klb.",
+      "translated": false,
+      "untranslated_tokens": [
+        "2450m",
+        "2510m",
+        "18 m/hr",
+        "22 klb"
+      ],
+      "term_replacements": [
+        {
+          "term_id": "term-rop",
+          "source": "ROP",
+          "original": "ROP",
+          "target": "zh",
+          "replacement": "机械钻速"
+        },
+        {
+          "term_id": "term-wob",
+          "source": "WOB",
+          "original": "WOB",
+          "target": "zh",
+          "replacement": "钻压"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[1].from",
+      "original_text": "06:00",
+      "language": "und",
+      "translated_text": "06:00",
+      "translated": false,
+      "untranslated_tokens": [
+        "06:00"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[1].to",
+      "original_text": "12:00",
+      "language": "und",
+      "translated_text": "12:00",
+      "translated": false,
+      "untranslated_tokens": [
+        "12:00"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[1].hours",
+      "original_text": "6",
+      "language": "und",
+      "translated_text": "6",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[1].op_code",
+      "original_text": "CIRC",
+      "language": "en",
+      "translated_text": "CIRC",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[1].op_sub",
+      "original_text": "Condition hole",
+      "language": "en",
+      "translated_text": "Condition hole",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[1].op_type",
+      "original_text": "P",
+      "language": "en",
+      "translated_text": "P",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[1].operation_details",
+      "original_text": "Circuló fondo arriba con 400 gpm y SPP 2800 psi.",
+      "language": "es",
+      "translated_text": "Circuló fondo arriba con 400 gpm y 立管压力 2800 psi.",
+      "translated": false,
+      "untranslated_tokens": [
+        "400 gpm",
+        "2800 psi"
+      ],
+      "term_replacements": [
+        {
+          "term_id": "term-spp",
+          "source": "SPP",
+          "original": "SPP",
+          "target": "zh",
+          "replacement": "立管压力"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[2].from",
+      "original_text": "12:00",
+      "language": "und",
+      "translated_text": "12:00",
+      "translated": false,
+      "untranslated_tokens": [
+        "12:00"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[2].to",
+      "original_text": "18:00",
+      "language": "und",
+      "translated_text": "18:00",
+      "translated": false,
+      "untranslated_tokens": [
+        "18:00"
+      ],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[2].hours",
+      "original_text": "6",
+      "language": "und",
+      "translated_text": "6",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "operations[2].op_code",
+      "original_text": "TRIP",
+      "language": "en",
+      "translated_text": "TRIP",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[2].op_sub",
+      "original_text": "POOH",
+      "language": "en",
+      "translated_text": "POOH",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[2].op_type",
+      "original_text": "P",
+      "language": "en",
+      "translated_text": "P",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "operations[2].operation_details",
+      "original_text": "Tripping out to inspect BHA and check BOP pressure test records.",
+      "language": "en",
+      "translated_text": "起钻 to inspect 底部钻具组合 and check 防喷器 pressure test records.",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [
+        {
+          "term_id": "term-tripping-out",
+          "source": "Tripping out",
+          "original": "Tripping out",
+          "target": "zh",
+          "replacement": "起钻"
+        },
+        {
+          "term_id": "term-bha",
+          "source": "BHA",
+          "original": "BHA",
+          "target": "zh",
+          "replacement": "底部钻具组合"
+        },
+        {
+          "term_id": "term-bop",
+          "source": "BOP",
+          "original": "BOP",
+          "target": "zh",
+          "replacement": "防喷器"
+        }
+      ],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "bha_components[0].component",
+      "original_text": "PDC Bit",
+      "language": "en",
+      "translated_text": "PDC Bit",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "bha_components[0].od",
+      "original_text": "8.500",
+      "language": "und",
+      "translated_text": "8.500",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bha_components[0].joints",
+      "original_text": "1",
+      "language": "und",
+      "translated_text": "1",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bha_components[0].length",
+      "original_text": "0.95",
+      "language": "und",
+      "translated_text": "0.95",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bha_components[1].component",
+      "original_text": "Power Drive 900 AA",
+      "language": "en",
+      "translated_text": "Power Drive 900 AA",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "bha_components[1].od",
+      "original_text": "6.750",
+      "language": "und",
+      "translated_text": "6.750",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bha_components[1].id",
+      "original_text": "3.250",
+      "language": "und",
+      "translated_text": "3.250",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bha_components[1].joints",
+      "original_text": "1",
+      "language": "und",
+      "translated_text": "1",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bha_components[1].length",
+      "original_text": "12.35",
+      "language": "und",
+      "translated_text": "12.35",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bulks[0].bulk",
+      "original_text": "BARITE",
+      "language": "en",
+      "translated_text": "BARITE",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "noop_engine; returned terminology-protected source text"
+      ]
+    },
+    {
+      "path": "bulks[0].qty_start",
+      "original_text": "120",
+      "language": "und",
+      "translated_text": "120",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bulks[0].qty_used",
+      "original_text": "10",
+      "language": "und",
+      "translated_text": "10",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    },
+    {
+      "path": "bulks[0].qty_end",
+      "original_text": "110",
+      "language": "und",
+      "translated_text": "110",
+      "translated": false,
+      "untranslated_tokens": [],
+      "term_replacements": [],
+      "warnings": [
+        "non_translatable"
+      ]
+    }
+  ],
+  "translated_payload": {
+    "metadata": {
+      "source": "example",
+      "source_file": "mixed-en-es-drilling-report.pdf",
+      "parser": "manual_sample"
+    },
+    "report_fields": {
+      "event": "DEV 钻进",
+      "reportDate": "2026-07-06",
+      "reportNo": "21",
+      "wellbore": "EB-D-12",
+      "rig": "00 SINOPEC 248",
+      "currentOps": "钻进 8-1/2\" hole from 2450m to 2510m. Circuló fondo arriba con 泥浆密度 10.2 ppg.",
+      "summary24h": "起钻 底部钻具组合 #5 after 井漏. Se observó pérdida parcial de circulación; no 井涌.",
+      "forecast24h": "Continue 钻进 and monitor 立管压力, 机械钻速 and ECD."
+    },
+    "operations": [
+      {
+        "from": "00:00",
+        "to": "06:00",
+        "hours": "6",
+        "op_code": "DRLG",
+        "op_sub": "Rotary",
+        "op_type": "P",
+        "operation_details": "Drilled 8-1/2\" section from 2450m to 2510m, 机械钻速 18 m/hr, 钻压 22 klb."
+      },
+      {
+        "from": "06:00",
+        "to": "12:00",
+        "hours": "6",
+        "op_code": "CIRC",
+        "op_sub": "Condition hole",
+        "op_type": "P",
+        "operation_details": "Circuló fondo arriba con 400 gpm y 立管压力 2800 psi."
+      },
+      {
+        "from": "12:00",
+        "to": "18:00",
+        "hours": "6",
+        "op_code": "TRIP",
+        "op_sub": "POOH",
+        "op_type": "P",
+        "operation_details": "起钻 to inspect 底部钻具组合 and check 防喷器 pressure test records."
+      }
+    ],
+    "bha_components": [
+      {
+        "component": "PDC Bit",
+        "od": "8.500",
+        "id": "",
+        "joints": "1",
+        "length": "0.95"
+      },
+      {
+        "component": "Power Drive 900 AA",
+        "od": "6.750",
+        "id": "3.250",
+        "joints": "1",
+        "length": "12.35"
+      }
+    ],
+    "bulks": [
+      {
+        "bulk": "BARITE",
+        "qty_start": "120",
+        "qty_used": "10",
+        "qty_end": "110"
+      }
+    ]
+  },
+  "untranslated_fields": [
+    {
+      "path": "report_fields.reportDate",
+      "tokens": "2026-07-06"
+    },
+    {
+      "path": "report_fields.wellbore",
+      "tokens": "EB-D-12"
+    },
+    {
+      "path": "report_fields.rig",
+      "tokens": "SINOPEC"
+    },
+    {
+      "path": "report_fields.currentOps#0",
+      "tokens": "2450m, 2510m"
+    },
+    {
+      "path": "report_fields.currentOps#1",
+      "tokens": "10.2 ppg"
+    },
+    {
+      "path": "report_fields.forecast24h",
+      "tokens": "ECD"
+    },
+    {
+      "path": "operations[0].from",
+      "tokens": "00:00"
+    },
+    {
+      "path": "operations[0].to",
+      "tokens": "06:00"
+    },
+    {
+      "path": "operations[0].operation_details",
+      "tokens": "2450m, 2510m, 18 m/hr, 22 klb"
+    },
+    {
+      "path": "operations[1].from",
+      "tokens": "06:00"
+    },
+    {
+      "path": "operations[1].to",
+      "tokens": "12:00"
+    },
+    {
+      "path": "operations[1].operation_details",
+      "tokens": "400 gpm, 2800 psi"
+    },
+    {
+      "path": "operations[2].from",
+      "tokens": "12:00"
+    },
+    {
+      "path": "operations[2].to",
+      "tokens": "18:00"
+    }
+  ],
+  "term_replacement_records": [
+    {
+      "path": "report_fields.event",
+      "term_id": "term-drilling",
+      "source": "DRILLING",
+      "original": "DRILLING",
+      "target": "zh",
+      "replacement": "钻进"
+    },
+    {
+      "path": "report_fields.currentOps#0",
+      "term_id": "term-drilling",
+      "source": "Drilling",
+      "original": "Drilling",
+      "target": "zh",
+      "replacement": "钻进"
+    },
+    {
+      "path": "report_fields.currentOps#1",
+      "term_id": "term-mw",
+      "source": "MW",
+      "original": "MW",
+      "target": "zh",
+      "replacement": "泥浆密度"
+    },
+    {
+      "path": "report_fields.summary24h#0",
+      "term_id": "term-lost-circulation",
+      "source": "lost circulation",
+      "original": "lost circulation",
+      "target": "zh",
+      "replacement": "井漏"
+    },
+    {
+      "path": "report_fields.summary24h#0",
+      "term_id": "term-tripping-out",
+      "source": "Tripping out",
+      "original": "Tripping out",
+      "target": "zh",
+      "replacement": "起钻"
+    },
+    {
+      "path": "report_fields.summary24h#0",
+      "term_id": "term-bha",
+      "source": "BHA",
+      "original": "BHA",
+      "target": "zh",
+      "replacement": "底部钻具组合"
+    },
+    {
+      "path": "report_fields.summary24h#2",
+      "term_id": "term-kick",
+      "source": "kick",
+      "original": "kick",
+      "target": "zh",
+      "replacement": "井涌"
+    },
+    {
+      "path": "report_fields.forecast24h",
+      "term_id": "term-drilling",
+      "source": "drilling",
+      "original": "drilling",
+      "target": "zh",
+      "replacement": "钻进"
+    },
+    {
+      "path": "report_fields.forecast24h",
+      "term_id": "term-rop",
+      "source": "ROP",
+      "original": "ROP",
+      "target": "zh",
+      "replacement": "机械钻速"
+    },
+    {
+      "path": "report_fields.forecast24h",
+      "term_id": "term-spp",
+      "source": "SPP",
+      "original": "SPP",
+      "target": "zh",
+      "replacement": "立管压力"
+    },
+    {
+      "path": "operations[0].operation_details",
+      "term_id": "term-rop",
+      "source": "ROP",
+      "original": "ROP",
+      "target": "zh",
+      "replacement": "机械钻速"
+    },
+    {
+      "path": "operations[0].operation_details",
+      "term_id": "term-wob",
+      "source": "WOB",
+      "original": "WOB",
+      "target": "zh",
+      "replacement": "钻压"
+    },
+    {
+      "path": "operations[1].operation_details",
+      "term_id": "term-spp",
+      "source": "SPP",
+      "original": "SPP",
+      "target": "zh",
+      "replacement": "立管压力"
+    },
+    {
+      "path": "operations[2].operation_details",
+      "term_id": "term-tripping-out",
+      "source": "Tripping out",
+      "original": "Tripping out",
+      "target": "zh",
+      "replacement": "起钻"
+    },
+    {
+      "path": "operations[2].operation_details",
+      "term_id": "term-bha",
+      "source": "BHA",
+      "original": "BHA",
+      "target": "zh",
+      "replacement": "底部钻具组合"
+    },
+    {
+      "path": "operations[2].operation_details",
+      "term_id": "term-bop",
+      "source": "BOP",
+      "original": "BOP",
+      "target": "zh",
+      "replacement": "防喷器"
+    }
+  ],
+  "warnings": [
+    "report_fields.event: noop_engine; returned terminology-protected source text",
+    "report_fields.reportDate: non_translatable",
+    "report_fields.reportNo: non_translatable",
+    "report_fields.wellbore: non_translatable",
+    "report_fields.rig: noop_engine; returned terminology-protected source text",
+    "report_fields.currentOps#0: noop_engine; returned terminology-protected source text",
+    "report_fields.currentOps#1: noop_engine; returned terminology-protected source text",
+    "report_fields.summary24h#0: noop_engine; returned terminology-protected source text",
+    "report_fields.summary24h#1: noop_engine; returned terminology-protected source text",
+    "report_fields.summary24h#2: noop_engine; returned terminology-protected source text",
+    "report_fields.forecast24h: noop_engine; returned terminology-protected source text",
+    "operations[0].from: non_translatable",
+    "operations[0].to: non_translatable",
+    "operations[0].hours: non_translatable",
+    "operations[0].op_code: noop_engine; returned terminology-protected source text",
+    "operations[0].op_sub: noop_engine; returned terminology-protected source text",
+    "operations[0].op_type: noop_engine; returned terminology-protected source text",
+    "operations[0].operation_details: noop_engine; returned terminology-protected source text",
+    "operations[1].from: non_translatable",
+    "operations[1].to: non_translatable",
+    "operations[1].hours: non_translatable",
+    "operations[1].op_code: noop_engine; returned terminology-protected source text",
+    "operations[1].op_sub: noop_engine; returned terminology-protected source text",
+    "operations[1].op_type: noop_engine; returned terminology-protected source text",
+    "operations[1].operation_details: noop_engine; returned terminology-protected source text",
+    "operations[2].from: non_translatable",
+    "operations[2].to: non_translatable",
+    "operations[2].hours: non_translatable",
+    "operations[2].op_code: noop_engine; returned terminology-protected source text",
+    "operations[2].op_sub: noop_engine; returned terminology-protected source text",
+    "operations[2].op_type: noop_engine; returned terminology-protected source text",
+    "operations[2].operation_details: noop_engine; returned terminology-protected source text",
+    "bha_components[0].component: noop_engine; returned terminology-protected source text",
+    "bha_components[0].od: non_translatable",
+    "bha_components[0].joints: non_translatable",
+    "bha_components[0].length: non_translatable",
+    "bha_components[1].component: noop_engine; returned terminology-protected source text",
+    "bha_components[1].od: non_translatable",
+    "bha_components[1].id: non_translatable",
+    "bha_components[1].joints: non_translatable",
+    "bha_components[1].length: non_translatable",
+    "bulks[0].bulk: noop_engine; returned terminology-protected source text",
+    "bulks[0].qty_start: non_translatable",
+    "bulks[0].qty_used: non_translatable",
+    "bulks[0].qty_end: non_translatable"
+  ]
+}

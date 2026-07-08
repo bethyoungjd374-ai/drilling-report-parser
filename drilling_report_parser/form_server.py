@@ -14,21 +14,23 @@ from datetime import date, datetime
 from email.parser import BytesParser
 from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
 
 from .completion_pdf_parser import parse_completion_pdf_daily_report
 from .excel_database import (
-    initialize_database,
     list_npt_confirmation_wells,
-    list_records,
     load_npt_confirmation_detail,
-    load_report_payload,
     save_npt_confirmation,
-    save_report_payload,
 )
+from .storage import initialize_database, list_records, load_report_payload, mysql_status, save_report_payload
 from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_report_parser import parse_pdf_daily_report
+from .translation import TermsConfig, build_translator
 from .workover_pdf_parser import parse_workover_pdf_daily_report
 
 
@@ -40,6 +42,9 @@ CONFIG_PATH = ROOT / "outputs" / "system_config.json"
 USERS_PATH = ROOT / "outputs" / "users.json"
 ROLES_PATH = ROOT / "outputs" / "roles.json"
 PROJECT_TEAM_PATH = ROOT / "outputs" / "project_team_config.json"
+TRANSLATION_TERMS_PATH = ROOT / "outputs" / "translation_terms.json"
+DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation" / "drilling_terms.json"
+PRODUCTION_REPORT_REMARKS_PATH = ROOT / "outputs" / "production_report_remarks.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
@@ -118,10 +123,20 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._production_summary(parsed.query)
             return
+        if parsed.path == "/api/production-summary-export":
+            if not self._require_permission("export"):
+                return
+            self._production_summary_export(parsed.query)
+            return
         if parsed.path == "/api/npt-stats":
             if not self._require_permission("view"):
                 return
             self._npt_stats(parsed.query)
+            return
+        if parsed.path == "/api/npt-stats-export":
+            if not self._require_permission("export"):
+                return
+            self._npt_stats_export(parsed.query)
             return
         if parsed.path == "/api/npt-confirmations":
             user = self._require_permission("view")
@@ -160,6 +175,9 @@ class FormHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/project-teams":
             self._admin_project_teams()
             return
+        if parsed.path == "/api/admin/translation-terms":
+            self._admin_translation_terms()
+            return
         if parsed.path == "/api/admin/data-status":
             self._admin_data_status()
             return
@@ -189,6 +207,9 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/admin/project-teams":
             self._admin_save_project_teams()
+            return
+        if self.path == "/api/admin/translation-terms":
+            self._admin_save_translation_terms()
             return
         if self.path == "/api/admin/backup":
             self._admin_backup()
@@ -222,6 +243,17 @@ class FormHandler(BaseHTTPRequestHandler):
             if not self._require_permission("view"):
                 return
             self._load_report()
+            return
+        if self.path == "/api/production-report-remarks":
+            user = self._require_permission("save")
+            if not user:
+                return
+            self._save_production_report_remark(user)
+            return
+        if self.path == "/api/translate-report":
+            if not self._require_permission("view"):
+                return
+            self._translate_report()
             return
         if self.path == "/api/npt-confirmation":
             user = self._require_permission("save")
@@ -376,7 +408,7 @@ class FormHandler(BaseHTTPRequestHandler):
         user = self._require_admin()
         if not user:
             return
-        self._send_json(_load_project_team_config())
+        self._send_json(_sync_project_wells_from_database(DATABASE_PATH))
 
     def _admin_save_project_teams(self) -> None:
         user = self._require_admin()
@@ -385,7 +417,24 @@ class FormHandler(BaseHTTPRequestHandler):
         payload = self._read_json_body()
         config = _normalize_project_team_config(payload)
         _save_project_team_config(config)
+        config = _sync_project_wells_from_database(DATABASE_PATH)
         _write_audit(user, "save_project_teams", "system_admin", "project_team_config", True, f"{len(config['projects'])} projects / {len(config['teams'])} teams")
+        self._send_json({"ok": True, **config})
+
+    def _admin_translation_terms(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json(_load_translation_terms_config())
+
+    def _admin_save_translation_terms(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        config = _normalize_translation_terms_config(payload)
+        _save_translation_terms_config(config)
+        _write_audit(user, "save_translation_terms", "business_config", "translation_terms", True, f"{len(config['terms'])} terms")
         self._send_json({"ok": True, **config})
 
     def _admin_data_status(self) -> None:
@@ -405,6 +454,7 @@ class FormHandler(BaseHTTPRequestHandler):
             "database_path": str(DATABASE_PATH),
             "database_size": DATABASE_PATH.stat().st_size if DATABASE_PATH.exists() else 0,
             "database_updated_at": datetime.fromtimestamp(DATABASE_PATH.stat().st_mtime).isoformat(timespec="seconds") if DATABASE_PATH.exists() else "",
+            "mysql": mysql_status(),
             "source_pdf_count": source_pdf_count,
             "backups": [{"name": item.name, "size": item.stat().st_size, "created_at": datetime.fromtimestamp(item.stat().st_mtime).isoformat(timespec="seconds")} for item in backups],
         })
@@ -557,12 +607,50 @@ class FormHandler(BaseHTTPRequestHandler):
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
+    def _translate_report(self) -> None:
+        try:
+            request_payload = self._read_json_body()
+            target_language = str(request_payload.get("target_language", "zh") or "zh").strip().lower()
+            if target_language not in {"zh", "en", "es"}:
+                self._send_json({"error": "target_language must be zh, en or es."}, status=400)
+                return
+            report_payload = request_payload.get("payload", {})
+            if not isinstance(report_payload, dict):
+                self._send_json({"error": "Invalid report payload."}, status=400)
+                return
+            terms = TermsConfig.from_data(_load_translation_terms_config())
+            result = build_translator(terms=terms, target_language=target_language).translate_report_payload(report_payload)
+            self._send_json(result)
+        except Exception as exc:  # pragma: no cover - keeps the local app useful.
+            self._send_json({"error": str(exc)}, status=500)
+
+    def _save_production_report_remark(self, user: dict[str, object]) -> None:
+        payload = self._read_json_body()
+        remark_key = str(payload.get("remark_key", "") or "").strip()
+        remark = str(payload.get("remarks", "") or "").strip()[:500]
+        if not remark_key:
+            self._send_json({"error": "缺少备注行标识。"}, status=400)
+            return
+        remarks = _load_production_report_remarks()
+        if remark:
+            remarks[remark_key] = remark
+        else:
+            remarks.pop(remark_key, None)
+        _save_production_report_remarks(remarks)
+        _write_audit(user, "save_production_report_remark", "production_report", remark_key, True, "")
+        self._send_json({"ok": True, "remark_key": remark_key, "remarks": remark})
+
     def _list_records(self, query: str) -> None:
         params = parse_qs(query)
         report_type = (params.get("report_type") or [""])[0]
-        records = list_records(DATABASE_PATH)
-        if report_type:
-            records = [record for record in records if record.get("report_type") == report_type]
+        records = list_records(
+            DATABASE_PATH,
+            report_type=report_type,
+            wellbore=(params.get("wellbore") or [""])[0],
+            date=(params.get("date") or [""])[0],
+            date_from=(params.get("date_from") or [""])[0],
+            date_to=(params.get("date_to") or [""])[0],
+        )
         self._send_json({"records": records})
 
     def _well_stats(self, query: str) -> None:
@@ -581,6 +669,12 @@ class FormHandler(BaseHTTPRequestHandler):
             "npt_hours": 0.0,
             "p_hours": 0.0,
             "sc_hours": 0.0,
+            "rig": "",
+            "afe_number": "",
+            "move_date": "",
+            "drilling_start_date": "",
+            "completion_date": "",
+            "workover_date": "",
         }
         for record in matched:
             record_id = str(record.get("record_id") or "")
@@ -590,6 +684,14 @@ class FormHandler(BaseHTTPRequestHandler):
                 payload = load_report_payload(DATABASE_PATH, record_id)
             except KeyError:
                 continue
+            fields = payload.get("report_fields", {}) if isinstance(payload.get("report_fields", {}), dict) else {}
+            if not stats["rig"] and fields.get("rig"):
+                stats["rig"] = _normalize_rig_name(str(fields.get("rig", "") or ""))
+            if not stats["afe_number"] and fields.get("afeNumber"):
+                stats["afe_number"] = str(fields.get("afeNumber", "") or "")
+            report_date = str(fields.get("reportDate", "") or record.get("reportDate", "") or "")
+            event = str(fields.get("event", "") or record.get("event", "") or "")
+            _apply_well_stat_dates(stats, event, report_date, str(record.get("report_type", "") or ""))
             operations = payload.get("operations", [])
             if not isinstance(operations, list):
                 continue
@@ -613,8 +715,50 @@ class FormHandler(BaseHTTPRequestHandler):
     def _production_summary(self, query: str) -> None:
         self._send_json(_production_summary_payload(DATABASE_PATH, parse_qs(query)))
 
+    def _production_summary_export(self, query: str) -> None:
+        params = parse_qs(query)
+        params["project_mode"] = ["1"]
+        payload = _production_summary_payload(DATABASE_PATH, params)
+        rows = payload.get("details", [])
+        if not isinstance(rows, list):
+            rows = []
+        rows = _sort_production_export_rows(
+            rows,
+            _param(params, "sort_field"),
+            _param(params, "sort_dir"),
+        )
+        data = _production_report_workbook_bytes(rows, show_rig=_param(params, "view") == "project")
+        filename = f"生产报表-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f"attachment; filename=\"production-report.xlsx\"; filename*=UTF-8''{quote(filename)}")
+        self.end_headers()
+        self.wfile.write(data)
+
     def _npt_stats(self, query: str) -> None:
         self._send_json(_npt_stats_payload(DATABASE_PATH, parse_qs(query)))
+
+    def _npt_stats_export(self, query: str) -> None:
+        params = parse_qs(query)
+        params["project_mode"] = ["1"]
+        payload = _npt_stats_payload(DATABASE_PATH, params)
+        rows = payload.get("details", [])
+        if not isinstance(rows, list):
+            rows = []
+        rows = _sort_production_export_rows(
+            rows,
+            _param(params, "sort_field"),
+            _param(params, "sort_dir"),
+        )
+        data = _npt_report_workbook_bytes(rows, show_rig=_param(params, "view") == "project")
+        filename = f"NPT统计-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f"attachment; filename=\"npt-stats.xlsx\"; filename*=UTF-8''{quote(filename)}")
+        self.end_headers()
+        self.wfile.write(data)
 
     def _npt_confirmations(self, query: str, user: dict[str, object]) -> None:
         params = parse_qs(query)
@@ -899,6 +1043,8 @@ def _ensure_admin_files() -> None:
         _save_roles(_default_roles())
     if not PROJECT_TEAM_PATH.exists():
         _save_project_team_config(_default_project_team_config())
+    if not TRANSLATION_TERMS_PATH.exists():
+        _save_translation_terms_config(_default_translation_terms_config())
     if not USERS_PATH.exists():
         admin = {
             "id": str(uuid.uuid4()),
@@ -968,6 +1114,127 @@ def _save_project_team_config(config: dict[str, object]) -> None:
     PROJECT_TEAM_PATH.write_text(json.dumps(_normalize_project_team_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _load_production_report_remarks() -> dict[str, str]:
+    _ensure_parent(PRODUCTION_REPORT_REMARKS_PATH)
+    if not PRODUCTION_REPORT_REMARKS_PATH.exists():
+        return {}
+    try:
+        data = json.loads(PRODUCTION_REPORT_REMARKS_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = {}
+    if not isinstance(data, dict):
+        return {}
+    return {str(key): str(value or "")[:500] for key, value in data.items() if str(key).strip()}
+
+
+def _save_production_report_remarks(remarks: dict[str, str]) -> None:
+    _ensure_parent(PRODUCTION_REPORT_REMARKS_PATH)
+    clean = {str(key): str(value or "")[:500] for key, value in remarks.items() if str(key).strip() and str(value or "").strip()}
+    PRODUCTION_REPORT_REMARKS_PATH.write_text(json.dumps(clean, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _default_translation_terms_config() -> dict[str, object]:
+    try:
+        data = json.loads(DEFAULT_TRANSLATION_TERMS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {"terms": [], "protected_terms": _default_protected_terms()}
+    return _normalize_translation_terms_config(data)
+
+
+def _load_translation_terms_config() -> dict[str, object]:
+    _ensure_parent(TRANSLATION_TERMS_PATH)
+    if not TRANSLATION_TERMS_PATH.exists():
+        return _default_translation_terms_config()
+    try:
+        data = json.loads(TRANSLATION_TERMS_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = {}
+    return _normalize_translation_terms_config(data)
+
+
+def _save_translation_terms_config(config: dict[str, object]) -> None:
+    _ensure_parent(TRANSLATION_TERMS_PATH)
+    TRANSLATION_TERMS_PATH.write_text(json.dumps(_normalize_translation_terms_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _normalize_translation_terms_config(raw: object) -> dict[str, object]:
+    source = raw if isinstance(raw, dict) else {}
+    now = datetime.now().isoformat(timespec="seconds")
+    terms: list[dict[str, object]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in _list_value(source.get("terms")):
+        if not isinstance(item, dict):
+            continue
+        zh = str(item.get("zh", "") or "").strip()
+        en = str(item.get("en", "") or "").strip()
+        es = str(item.get("es", "") or "").strip()
+        if not (zh or en or es):
+            continue
+        key = (zh.lower(), en.lower(), es.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        aliases_source = item.get("aliases") if isinstance(item.get("aliases"), dict) else {}
+        aliases = {
+            language: _normalized_string_list(aliases_source.get(language))
+            for language in ("zh", "en", "es")
+        }
+        terms.append({
+            "id": str(item.get("id") or uuid.uuid4()).strip(),
+            "category": str(item.get("category", "drilling") or "drilling").strip()[:60],
+            "zh": zh,
+            "en": en,
+            "es": es,
+            "aliases": aliases,
+            "protected": bool(item.get("protected", True)),
+            "enabled": bool(item.get("enabled", True)),
+            "updated_at": str(item.get("updated_at") or now),
+        })
+
+    protected_source = source.get("protected_terms") if isinstance(source.get("protected_terms"), dict) else {}
+    protected_defaults = _default_protected_terms()
+    protected_terms = {
+        "acronyms": _normalized_string_list(protected_source.get("acronyms", protected_defaults["acronyms"])),
+        "units": _normalized_string_list(protected_source.get("units", protected_defaults["units"])),
+        "proper_nouns": _normalized_string_list(protected_source.get("proper_nouns", protected_defaults["proper_nouns"])),
+    }
+    return {"terms": terms, "protected_terms": protected_terms}
+
+
+def _default_protected_terms() -> dict[str, list[str]]:
+    return {
+        "acronyms": [
+            "ROP", "WOB", "RPM", "SPP", "TVD", "MD", "BHA", "BOP", "MW", "ECD", "NPT", "WOC",
+            "AFE", "HSE", "HSSE", "LTA", "RI", "API", "HTHP", "PV", "YP", "EMW", "WBM", "OBM",
+        ],
+        "units": ["m", "ft", "in", "ppg", "psi", "bbl", "gpm", "klb", "lb", "hr", "hrs", "deg", "deg/100ft", "spf"],
+        "proper_nouns": [
+            "SINOPEC", "PETROECUADOR", "HALLIBURTON", "SCHLUMBERGER", "BAKER HUGHES",
+            "WEATHERFORD", "NABORS", "Napo", "Hollin", "Tena", "Basal Tena", "Orteguaza",
+        ],
+    }
+
+
+def _normalized_string_list(value: object) -> list[str]:
+    raw = value if isinstance(value, list) else []
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        text = str(item or "").strip()
+        key = text.lower()
+        if text and key not in seen:
+            result.append(text)
+            seen.add(key)
+    return result
+
+
+def _normalize_rig_name(value: str) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    text = re.sub(r"^00\s+(SINOPEC\b)", r"\1", text, flags=re.I)
+    text = re.sub(r"\bSINOPEC[-\s]*(\d+)\b", r"SINOPEC \1", text, flags=re.I)
+    return text
+
+
 def _list_value(value: object) -> list[object]:
     return value if isinstance(value, list) else []
 
@@ -980,14 +1247,19 @@ def _normalize_project_team_config(raw: object) -> dict[str, object]:
     for item in _list_value(source.get("teams")):
         if not isinstance(item, dict):
             continue
-        name = str(item.get("name", "") or item.get("rig", "") or "").strip()
+        raw_name = str(item.get("name", "") or item.get("rig", "") or "").strip()
+        name = _normalize_rig_name(raw_name)
         if not name or name in seen_teams:
             continue
+        aliases = _normalized_string_list(item.get("aliases"))
+        if raw_name and raw_name != name and raw_name not in aliases:
+            aliases.insert(0, raw_name)
         teams.append({
             "id": str(item.get("id") or uuid.uuid4()),
             "name": name,
             "code": str(item.get("code", "") or "").strip(),
             "contractor": str(item.get("contractor", "") or "").strip(),
+            "aliases": aliases,
             "status": str(item.get("status", "active") or "active").strip() or "active",
             "created_at": str(item.get("created_at") or now),
         })
@@ -1008,7 +1280,7 @@ def _normalize_project_team_config(raw: object) -> dict[str, object]:
         for rig_item in _list_value(item.get("rigs")):
             if not isinstance(rig_item, dict):
                 continue
-            rig_name = str(rig_item.get("rig", "") or rig_item.get("name", "") or "").strip()
+            rig_name = _normalize_rig_name(str(rig_item.get("rig", "") or rig_item.get("name", "") or "").strip())
             if not rig_name or rig_name in seen_rigs:
                 continue
             wells = sorted({str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()})
@@ -1039,7 +1311,7 @@ def _normalize_project_team_config(raw: object) -> dict[str, object]:
     for item in _list_value(source.get("pending_wells")):
         if not isinstance(item, dict):
             continue
-        rig = str(item.get("rig", "") or "").strip()
+        rig = _normalize_rig_name(str(item.get("rig", "") or "").strip())
         wellbore = str(item.get("wellbore", "") or "").strip()
         if not rig or not wellbore or (rig, wellbore) in seen_pending:
             continue
@@ -1056,30 +1328,168 @@ def _normalize_project_team_config(raw: object) -> dict[str, object]:
 
 def _auto_register_project_well(payload: dict[str, object], report_type: str) -> None:
     fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
-    rig = str(fields.get("rig", "") or "").strip()
+    rig = _normalize_rig_name(str(fields.get("rig", "") or "").strip())
     wellbore = str(fields.get("wellbore", "") or "").strip()
     if not rig or not wellbore:
         return
     config = _load_project_team_config()
     now = datetime.now().isoformat(timespec="seconds")
-    if not any(str(team.get("name", "")) == rig for team in config["teams"]):
-        config["teams"].append({"id": str(uuid.uuid4()), "name": rig, "code": "", "contractor": "", "status": "active", "created_at": now})
+    if not any(_team_name_matches(team, rig) for team in config["teams"]):
+        config["teams"].append({"id": str(uuid.uuid4()), "name": rig, "code": "", "contractor": "", "aliases": [], "status": "active", "created_at": now})
     active_projects = [project for project in config["projects"] if str(project.get("status", "active")) == "active"]
-    if len(active_projects) == 1:
-        project = active_projects[0]
-        rigs = project.setdefault("rigs", [])
-        target = next((item for item in rigs if item.get("rig") == rig), None)
-        if target is None:
-            target = {"rig": rig, "start_date": "", "end_date": "", "wells": [], "note": ""}
-            rigs.append(target)
+    report_date = str(fields.get("reportDate", "") or "").strip()
+    project_matches = _project_rig_matches(config, rig, report_date)
+    if len(project_matches) == 1:
+        project, target = project_matches[0]
         wells = target.setdefault("wells", [])
         if wellbore not in wells:
             wells.append(wellbore)
             wells.sort()
             project["updated_at"] = now
-    elif not any(item.get("rig") == rig and item.get("wellbore") == wellbore for item in config["pending_wells"]):
-        config["pending_wells"].append({"rig": rig, "wellbore": wellbore, "report_type": report_type, "source": "report", "created_at": now})
+    elif len(active_projects) == 1:
+        _add_pending_or_single_project_well(config, active_projects[0], rig, wellbore, now)
+    else:
+        pending_item = _find_pending_well(config, rig, wellbore)
+        if pending_item is not None:
+            if not str(pending_item.get("report_type", "") or "").strip():
+                pending_item["report_type"] = report_type
+        else:
+            config["pending_wells"].append({"rig": rig, "wellbore": wellbore, "report_type": report_type, "source": "report", "created_at": now})
     _save_project_team_config(config)
+
+
+def _sync_project_wells_from_database(database_path: Path = DATABASE_PATH) -> dict[str, object]:
+    config = _load_project_team_config()
+    if not database_path.exists():
+        return config
+
+    changed = False
+    now = datetime.now().isoformat(timespec="seconds")
+    for record in list_records(database_path):
+        report_type = str(record.get("report_type", "") or "").strip()
+        if report_type not in {"drilling", "completion", "workover"}:
+            continue
+        rig = _normalize_rig_name(str(record.get("rig", "") or "").strip())
+        wellbore = str(record.get("wellbore", "") or "").strip()
+        if not rig or not wellbore:
+            continue
+        if not any(_team_name_matches(team, rig) for team in config["teams"]):
+            config["teams"].append({
+                "id": str(uuid.uuid4()),
+                "name": rig,
+                "code": "",
+                "contractor": "",
+                "aliases": [],
+                "status": "active",
+                "created_at": now,
+            })
+            changed = True
+
+        report_date = str(record.get("reportDate", "") or "").strip()
+        project_matches = _project_rig_matches(config, rig, report_date)
+        if len(project_matches) == 1:
+            project, target = project_matches[0]
+            wells = target.setdefault("wells", [])
+            if wellbore not in wells:
+                wells.append(wellbore)
+                wells.sort()
+                project["updated_at"] = now
+                changed = True
+            if _remove_pending_well(config, rig, wellbore):
+                changed = True
+            continue
+
+        active_projects = [project for project in config["projects"] if str(project.get("status", "active")) == "active"]
+        if len(active_projects) == 1:
+            before = json.dumps(config, ensure_ascii=False, sort_keys=True)
+            _add_pending_or_single_project_well(config, active_projects[0], rig, wellbore, now)
+            changed = changed or before != json.dumps(config, ensure_ascii=False, sort_keys=True)
+            continue
+
+        if _project_has_well(config, rig, wellbore):
+            continue
+        pending_item = _find_pending_well(config, rig, wellbore)
+        if pending_item is not None:
+            if not str(pending_item.get("report_type", "") or "").strip():
+                pending_item["report_type"] = report_type
+                changed = True
+            continue
+        if not _pending_has_well(config, rig, wellbore):
+            config["pending_wells"].append({
+                "rig": rig,
+                "wellbore": wellbore,
+                "report_type": report_type,
+                "source": "report",
+                "created_at": now,
+            })
+            changed = True
+
+    if changed:
+        _save_project_team_config(config)
+        config = _load_project_team_config()
+    return config
+
+
+def _project_has_well(config: dict[str, object], rig: str, wellbore: str) -> bool:
+    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
+        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
+            if not _rig_name_matches(config, str(rig_item.get("rig", "") or "").strip(), rig):
+                continue
+            wells = {str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()}
+            if wellbore in wells:
+                return True
+    return False
+
+
+def _pending_has_well(config: dict[str, object], rig: str, wellbore: str) -> bool:
+    return any(item.get("rig") == rig and item.get("wellbore") == wellbore for item in _list_value(config.get("pending_wells")))
+
+
+def _find_pending_well(config: dict[str, object], rig: str, wellbore: str) -> dict[str, object] | None:
+    for item in _list_value(config.get("pending_wells")):
+        if item.get("rig") == rig and item.get("wellbore") == wellbore:
+            return item
+    return None
+
+
+def _remove_pending_well(config: dict[str, object], rig: str, wellbore: str) -> bool:
+    current = _list_value(config.get("pending_wells"))
+    next_items = [item for item in current if not (item.get("rig") == rig and item.get("wellbore") == wellbore)]
+    if len(next_items) == len(current):
+        return False
+    config["pending_wells"] = next_items
+    return True
+
+
+def _project_rig_matches(config: dict[str, object], rig: str, report_date: str = "") -> list[tuple[dict[str, object], dict[str, object]]]:
+    matches = []
+    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
+        if str(project.get("status", "active") or "active") != "active":
+            continue
+        if not _date_in_range(report_date, str(project.get("start_date", "") or ""), str(project.get("end_date", "") or "")):
+            continue
+        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
+            if _rig_name_matches(config, str(rig_item.get("rig", "") or "").strip(), rig):
+                matches.append((project, rig_item))
+                break
+    return matches
+
+
+def _add_pending_or_single_project_well(config: dict[str, object], project: dict[str, object], rig: str, wellbore: str, now: str) -> None:
+    rigs = project.setdefault("rigs", [])
+    target = next((item for item in rigs if item.get("rig") == rig), None)
+    if target is None:
+        target = {"rig": rig, "start_date": "", "end_date": "", "wells": [], "note": ""}
+        rigs.append(target)
+    wells = target.setdefault("wells", [])
+    if wellbore not in wells:
+        wells.append(wellbore)
+        wells.sort()
+        project["updated_at"] = now
+    config["pending_wells"] = [
+        item for item in _list_value(config.get("pending_wells"))
+        if not (item.get("rig") == rig and item.get("wellbore") == wellbore)
+    ]
 
 
 def _load_users() -> list[dict[str, object]]:
@@ -1356,9 +1766,12 @@ REPORT_TYPE_LABELS = {
     "workover": "修井",
     "move": "搬迁/推井架",
 }
+UNASSIGNED_PROJECT_ID = "__unassigned__"
 
 
 def _production_summary_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    if _truthy(_param(params, "project_mode")) or _param_values(params, "project") or _param_values(params, "rig"):
+        _sync_project_wells_from_database(database_path)
     rows = _filtered_fact_rows(database_path, params)
     records = rows["records"]
     operations = rows["operations"]
@@ -1369,50 +1782,28 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
     completeness = _completeness(records)
 
     by_rig: dict[str, dict[str, float]] = {}
+    npt_by_rig: dict[str, float] = {}
     by_type = {key: 0.0 for key in REPORT_TYPE_LABELS}
     monthly: dict[str, dict[str, float]] = {}
-    detail: dict[tuple[str, str, str], dict[str, object]] = {}
 
     for row in operations:
         rig = row["rig"] or "未识别井队"
         report_type = row["report_type"]
-        type_label = REPORT_TYPE_LABELS.get(report_type, report_type)
         by_rig.setdefault(rig, {key: 0.0 for key in REPORT_TYPE_LABELS})
         by_rig[rig][report_type] = by_rig[rig].get(report_type, 0.0) + row["hours"]
+        if row["op_type"] == "NPT":
+            npt_by_rig[rig] = npt_by_rig.get(rig, 0.0) + row["hours"]
         if report_type in by_type:
             by_type[report_type] += row["hours"]
         month = row["reportDate"][:7] or "未识别"
         monthly.setdefault(month, {key: 0.0 for key in REPORT_TYPE_LABELS})
         monthly[month][report_type] = monthly[month].get(report_type, 0.0) + row["hours"]
-        key = (rig, row["wellbore"], report_type)
-        item = detail.setdefault(key, {
-            "rig": rig,
-            "wellbore": row["wellbore"],
-            "report_type": report_type,
-            "report_type_label": type_label,
-            "start_date": row["reportDate"],
-            "end_date": row["reportDate"],
-            "drilling_hours": 0.0,
-            "completion_hours": 0.0,
-            "workover_hours": 0.0,
-            "move_hours": 0.0,
-            "npt_hours": 0.0,
-            "record_id": row["record_id"],
-            "status": "",
-        })
-        item["start_date"] = min(str(item["start_date"] or row["reportDate"]), row["reportDate"])
-        item["end_date"] = max(str(item["end_date"] or row["reportDate"]), row["reportDate"])
-        item[f"{report_type}_hours"] = float(item.get(f"{report_type}_hours", 0.0)) + row["hours"]
-        if row["op_type"] == "NPT":
-            item["npt_hours"] = float(item["npt_hours"]) + row["hours"]
 
-    record_index = {(record["rig"], record["wellbore"], record["report_type"]): record for record in records}
-    for key, item in detail.items():
-        record = record_index.get(key, {})
-        item["status"] = "有告警" if record.get("validation_status") == "warning" else "正常"
+    project_mode = _truthy(_param(params, "project_mode")) or bool(_param_values(params, "project"))
+    details = _production_report_details(records, operations) if project_mode else _production_summary_details(records, operations)
 
     return {
-        "filters": _filter_options(records),
+        "filters": _filter_options(records, database_path),
         "kpis": {
             "rig_count": len(unique_rigs),
             "well_count": len(unique_wells),
@@ -1421,11 +1812,321 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
             "completeness": completeness,
         },
         "by_rig": [{"rig": rig, **{key: round(value, 2) for key, value in values.items()}} for rig, values in sorted(by_rig.items())],
+        "npt_by_rig": [{"label": rig, "hours": round(hours, 2)} for rig, hours in sorted(npt_by_rig.items(), key=lambda item: (-item[1], item[0]))],
         "by_type": [{"report_type": key, "label": REPORT_TYPE_LABELS[key], "hours": round(value, 2)} for key, value in by_type.items()],
         "monthly": [{"month": month, **{key: round(value, 2) for key, value in values.items()}} for month, values in sorted(monthly.items())],
-        "details": [{**item, **{k: round(float(item.get(k, 0.0)), 2) for k in ("drilling_hours", "completion_hours", "workover_hours", "move_hours", "npt_hours")}} for item in detail.values()],
+        "details": details,
         "scope_note": "基于已保存到 Excel 库的日报解析数据",
     }
+
+
+def _production_summary_details(records: list[dict[str, object]], operations: list[dict[str, object]]) -> list[dict[str, object]]:
+    detail: dict[tuple[str, str, str, str], dict[str, object]] = {}
+    for row in operations:
+        rig = str(row.get("rig", "") or "") or "未识别井队"
+        report_type = str(row.get("report_type", "") or "")
+        type_label = REPORT_TYPE_LABELS.get(report_type, report_type)
+        report_date = str(row.get("reportDate", "") or "")
+        key = (str(row.get("project_id", "") or ""), rig, str(row.get("wellbore", "") or ""), report_type)
+        item = detail.setdefault(key, {
+            "project_id": row.get("project_id", ""),
+            "project_name": row.get("project_name", ""),
+            "project_contract": row.get("project_contract", ""),
+            "rig": rig,
+            "wellbore": row.get("wellbore", ""),
+            "report_type": report_type,
+            "report_type_label": type_label,
+            "start_date": report_date,
+            "end_date": report_date,
+            "drilling_hours": 0.0,
+            "completion_hours": 0.0,
+            "workover_hours": 0.0,
+            "move_hours": 0.0,
+            "npt_hours": 0.0,
+            "record_id": row.get("record_id", ""),
+            "status": "",
+        })
+        item["start_date"] = min(str(item["start_date"] or report_date), report_date)
+        item["end_date"] = max(str(item["end_date"] or report_date), report_date)
+        item[f"{report_type}_hours"] = float(item.get(f"{report_type}_hours", 0.0)) + float(row.get("hours", 0.0) or 0.0)
+        if row.get("op_type") == "NPT":
+            item["npt_hours"] = float(item["npt_hours"]) + float(row.get("hours", 0.0) or 0.0)
+
+    record_index = {(str(record.get("project_id", "") or ""), record.get("rig", ""), record.get("wellbore", ""), record.get("report_type", "")): record for record in records}
+    for key, item in detail.items():
+        record = record_index.get(key, {})
+        item["status"] = "有告警" if record.get("validation_status") == "warning" else "正常"
+
+    return [_round_hour_fields(item) for item in detail.values()]
+
+
+def _production_report_details(records: list[dict[str, object]], operations: list[dict[str, object]]) -> list[dict[str, object]]:
+    detail: dict[tuple[str, str, str], dict[str, object]] = {}
+    saved_remarks = _load_production_report_remarks()
+    for record in records:
+        rig = str(record.get("rig", "") or "") or "未识别井队"
+        wellbore = str(record.get("wellbore", "") or "")
+        project_id = str(record.get("project_id", "") or "")
+        key = (project_id, rig, wellbore)
+        remark_key = _production_report_remark_key(project_id, rig, wellbore)
+        item = detail.setdefault(key, {
+            "project_id": project_id,
+            "project_name": record.get("project_name", ""),
+            "project_contract": record.get("project_contract", ""),
+            "contract_project": _contract_project_label(record),
+            "rig": rig,
+            "wellbore": wellbore,
+            "move_date": "",
+            "drilling_start_date": "",
+            "drilling_finish_date": "",
+            "completion_date": "",
+            "workover_date": "",
+            "move_hours": 0.0,
+            "drilling_hours": 0.0,
+            "completion_hours": 0.0,
+            "workover_hours": 0.0,
+            "npt_hours": 0.0,
+            "record_id": record.get("record_id", ""),
+            "report_type": record.get("report_type", ""),
+            "status": "正常",
+            "remark_key": remark_key,
+            "remarks": saved_remarks.get(remark_key, ""),
+        })
+        if not item.get("record_id"):
+            item["record_id"] = record.get("record_id", "")
+            item["report_type"] = record.get("report_type", "")
+        if record.get("validation_status") == "warning":
+            item["status"] = "有告警"
+        _apply_event_dates(item, str(record.get("event", "") or ""), str(record.get("reportDate", "") or ""), str(record.get("report_type", "") or ""))
+
+    for row in operations:
+        rig = str(row.get("rig", "") or "") or "未识别井队"
+        wellbore = str(row.get("wellbore", "") or "")
+        project_id = str(row.get("project_id", "") or "")
+        key = (project_id, rig, wellbore)
+        remark_key = _production_report_remark_key(project_id, rig, wellbore)
+        item = detail.setdefault(key, {
+            "project_id": project_id,
+            "project_name": row.get("project_name", ""),
+            "project_contract": row.get("project_contract", ""),
+            "contract_project": _contract_project_label(row),
+            "rig": rig,
+            "wellbore": wellbore,
+            "move_date": "",
+            "drilling_start_date": "",
+            "drilling_finish_date": "",
+            "completion_date": "",
+            "workover_date": "",
+            "move_hours": 0.0,
+            "drilling_hours": 0.0,
+            "completion_hours": 0.0,
+            "workover_hours": 0.0,
+            "npt_hours": 0.0,
+            "record_id": row.get("record_id", ""),
+            "report_type": row.get("report_type", ""),
+            "status": "正常",
+            "remark_key": remark_key,
+            "remarks": saved_remarks.get(remark_key, ""),
+        })
+        report_type = str(row.get("report_type", "") or "")
+        if report_type in REPORT_TYPE_LABELS:
+            item[f"{report_type}_hours"] = float(item.get(f"{report_type}_hours", 0.0)) + float(row.get("hours", 0.0) or 0.0)
+        if row.get("op_type") == "NPT":
+            item["npt_hours"] = float(item["npt_hours"]) + float(row.get("hours", 0.0) or 0.0)
+        if row.get("validation_status") == "warning":
+            item["status"] = "有告警"
+
+    return [_round_hour_fields(item) for item in detail.values()]
+
+
+def _sort_production_export_rows(rows: list[object], sort_field: str, sort_dir: str) -> list[dict[str, object]]:
+    clean_rows = [row for row in rows if isinstance(row, dict)]
+    if not sort_field:
+        return clean_rows
+    reverse = str(sort_dir or "").lower() != "asc"
+    numeric_fields = {"move_hours", "drilling_hours", "completion_hours", "workover_hours", "npt_hours", "hours"}
+
+    def key(row: dict[str, object]) -> tuple[int, object]:
+        value = row.get(sort_field)
+        if value in (None, ""):
+            return (1, "")
+        if sort_field in numeric_fields:
+            return (0, _safe_float(value))
+        return (0, str(value))
+
+    return sorted(clean_rows, key=key, reverse=reverse)
+
+
+def _default_sort_npt_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    return sorted(
+        rows,
+        key=lambda row: (
+            str(row.get("wellbore") or ""),
+            str(row.get("reportDate") or ""),
+            str(row.get("project_name") or row.get("contract_project") or ""),
+            str(row.get("rig") or ""),
+        ),
+    )
+
+
+def _production_report_workbook_bytes(rows: list[dict[str, object]], show_rig: bool = False) -> bytes:
+    columns: list[tuple[str, str]] = [
+        ("wellbore", "井号"),
+        *([("rig", "井队")] if show_rig else []),
+        ("contract_project", "合同(项目)"),
+        ("move_date", "搬迁日期"),
+        ("drilling_start_date", "开钻日期"),
+        ("drilling_finish_date", "完钻日期"),
+        ("completion_date", "完井日期"),
+        ("workover_date", "修井日期"),
+        ("move_hours", "搬迁(h)"),
+        ("drilling_hours", "钻井(h)"),
+        ("completion_hours", "完井(h)"),
+        ("workover_hours", "修井(h)"),
+        ("npt_hours", "NPT(h)"),
+        ("remarks", "备注"),
+    ]
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "生产报表"
+    header_fill = PatternFill("solid", fgColor="0B4D7A")
+    header_font = Font(color="FFFFFF", bold=True)
+    for col_index, (_, label) in enumerate(columns, start=1):
+        cell = worksheet.cell(row=1, column=col_index, value=label)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    for row_index, row in enumerate(rows, start=2):
+        for col_index, (key, _) in enumerate(columns, start=1):
+            value = row.get(key)
+            if key == "contract_project":
+                value = row.get("contract_project") or row.get("project_name") or ""
+            elif key.endswith("_hours") or key == "npt_hours":
+                value = _safe_float(value)
+            worksheet.cell(row=row_index, column=col_index, value=value if value not in (None, "") else "-")
+    for col_index, (key, label) in enumerate(columns, start=1):
+        width = max(len(label) + 4, 12)
+        if key == "contract_project":
+            width = 30
+        elif key == "remarks":
+            width = 14
+        elif key == "wellbore":
+            width = 16
+        worksheet.column_dimensions[worksheet.cell(row=1, column=col_index).column_letter].width = width
+    worksheet.freeze_panes = "A2"
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def _npt_report_workbook_bytes(rows: list[dict[str, object]], show_rig: bool = False) -> bytes:
+    columns: list[tuple[str, str]] = [
+        ("wellbore", "井号"),
+        *([("rig", "井队")] if show_rig else []),
+        ("project_name", "项目"),
+        ("reportDate", "NPT日期"),
+        ("hours", "NPT(h)"),
+        ("npt_keyword", "NPT描述关键词"),
+        ("operation_details", "备注（NPT描述）"),
+    ]
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "NPT统计"
+    header_fill = PatternFill("solid", fgColor="0B4D7A")
+    header_font = Font(color="FFFFFF", bold=True)
+    for col_index, (_, label) in enumerate(columns, start=1):
+        cell = worksheet.cell(row=1, column=col_index, value=label)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    for row_index, row in enumerate(rows, start=2):
+        for col_index, (key, _) in enumerate(columns, start=1):
+            if key == "project_name":
+                value = row.get("project_name") or row.get("contract_project") or ""
+            elif key == "hours":
+                value = _safe_float(row.get("hours"))
+            elif key == "npt_keyword":
+                value = row.get("op_sub") or row.get("op_code") or row.get("reason") or ""
+            else:
+                value = row.get(key)
+            worksheet.cell(row=row_index, column=col_index, value=value if value not in (None, "") else "-")
+    for col_index, (key, label) in enumerate(columns, start=1):
+        width = max(len(label) + 4, 12)
+        if key == "project_name":
+            width = 26
+        elif key == "operation_details":
+            width = 64
+        elif key == "wellbore":
+            width = 16
+        worksheet.column_dimensions[worksheet.cell(row=1, column=col_index).column_letter].width = width
+    worksheet.freeze_panes = "A2"
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def _safe_float(value: object) -> float:
+    try:
+        return round(float(value or 0), 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _production_report_remark_key(project_id: str, rig: str, wellbore: str) -> str:
+    return "|".join([str(project_id or "").strip(), _normalize_rig_name(str(rig or "").strip()), str(wellbore or "").strip()])
+
+
+def _contract_project_label(row: dict[str, object]) -> str:
+    contract = str(row.get("project_contract", "") or "").strip()
+    project = str(row.get("project_name", "") or "").strip()
+    if contract and project and contract != project:
+        return f"{contract} / {project}"
+    return contract or project or "-"
+
+
+def _apply_event_dates(item: dict[str, object], event: str, report_date: str, report_type: str) -> None:
+    if not report_date:
+        return
+    event_text = event.lower()
+    if report_type == "drilling" and "rig move" in event_text:
+        item["move_date"] = _earliest_date(str(item.get("move_date", "") or ""), report_date)
+    if report_type == "drilling" and "drilling" in event_text:
+        item["drilling_start_date"] = _earliest_date(str(item.get("drilling_start_date", "") or ""), report_date)
+        item["drilling_finish_date"] = _latest_date(str(item.get("drilling_finish_date", "") or ""), report_date)
+    if report_type == "completion":
+        item["completion_date"] = _latest_date(str(item.get("completion_date", "") or ""), report_date)
+    if report_type == "workover" and "workover" in event_text:
+        item["workover_date"] = _earliest_date(str(item.get("workover_date", "") or ""), report_date)
+
+
+def _apply_well_stat_dates(item: dict[str, object], event: str, report_date: str, report_type: str) -> None:
+    if not report_date:
+        return
+    event_text = event.lower()
+    if report_type == "drilling" and "rig move" in event_text:
+        item["move_date"] = _earliest_date(str(item.get("move_date", "") or ""), report_date)
+    if report_type == "drilling" and "drilling" in event_text:
+        item["drilling_start_date"] = _earliest_date(str(item.get("drilling_start_date", "") or ""), report_date)
+    if report_type == "completion":
+        item["completion_date"] = _latest_date(str(item.get("completion_date", "") or ""), report_date)
+    if report_type == "workover" and "workover" in event_text:
+        item["workover_date"] = _earliest_date(str(item.get("workover_date", "") or ""), report_date)
+
+
+def _earliest_date(current: str, candidate: str) -> str:
+    if not current:
+        return candidate
+    return min(current, candidate)
+
+
+def _latest_date(current: str, candidate: str) -> str:
+    if not current:
+        return candidate
+    return max(current, candidate)
+
+
+def _round_hour_fields(item: dict[str, object]) -> dict[str, object]:
+    return {**item, **{key: round(float(item.get(key, 0.0) or 0.0), 2) for key in ("drilling_hours", "completion_hours", "workover_hours", "move_hours", "npt_hours")}}
 
 
 def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
@@ -1445,7 +2146,7 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
     by_month = _sum_by(npt_rows, "month")
 
     return {
-        "filters": {**_filter_options(records), "reasons": sorted({row["reason"] for row in rows["operations"] if row["op_type"] == "NPT"})},
+        "filters": {**_filter_options(records, database_path), "reasons": sorted({row["reason"] for row in rows["operations"] if row["op_type"] == "NPT"})},
         "kpis": {
             "rig_count": len(rigs),
             "well_count": len(wells),
@@ -1461,13 +2162,17 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
             "report_type": row["report_type"],
             "rig": row["rig"],
             "wellbore": row["wellbore"],
+            "project_id": row.get("project_id", ""),
+            "project_name": row.get("project_name", ""),
+            "project_contract": row.get("project_contract", ""),
+            "contract_project": _contract_project_label(row),
             "reportDate": row["reportDate"],
             "hours": round(row["hours"], 2),
             "reason": row["reason"],
             "op_code": row["op_code"],
             "op_sub": row["op_sub"],
             "operation_details": row["operation_details"],
-        } for row in npt_rows],
+        } for row in _default_sort_npt_rows(npt_rows)],
         "scope_note": "基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总",
     }
 
@@ -1475,58 +2180,192 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
 def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> dict[str, list[dict[str, object]]]:
     date_from = _param(params, "date_from")
     date_to = _param(params, "date_to")
-    rig_filter = _param(params, "rig")
+    rig_filter = {_normalize_rig_name(value) for value in _param_values(params, "rig")}
     type_filter = _param(params, "report_type")
     well_filter = _param(params, "wellbore")
+    project_filter = set(_param_values(params, "project"))
+    project_mode = _truthy(_param(params, "project_mode")) or bool(project_filter)
     records = []
     operations = []
-    for record in list_records(database_path):
+    for raw_record in list_records(database_path):
+        record = {**raw_record, "rig": _normalize_rig_name(str(raw_record.get("rig", "") or ""))}
         report_date = record.get("reportDate", "")
         if date_from and report_date < date_from:
             continue
         if date_to and report_date > date_to:
             continue
-        if rig_filter and record.get("rig") != rig_filter:
+        if rig_filter and record.get("rig") not in rig_filter:
             continue
         if type_filter and record.get("report_type") != type_filter:
             continue
-        if well_filter and record.get("wellbore") != well_filter:
+        if well_filter and well_filter.lower() not in str(record.get("wellbore", "") or "").lower():
             continue
-        records.append(record)
+        project_matches = _project_assignments_for_record(record, project_filter)
+        if project_filter and not project_matches:
+            continue
+        if project_mode and not project_matches:
+            project_matches = [_unassigned_project_assignment()]
+        matched_records = [{**record, **project} for project in project_matches] if project_matches else [record]
         try:
             payload = load_report_payload(database_path, str(record.get("record_id") or ""))
         except (KeyError, FileNotFoundError, ValueError):
             continue
-        for row in payload.get("operations", []) if isinstance(payload.get("operations", []), list) else []:
-            if not isinstance(row, dict):
-                continue
-            hours = _safe_float(row.get("hours"))
-            op_type = str(row.get("op_type", "") or "").strip().upper()
-            fact = {
-                "record_id": record.get("record_id", ""),
-                "report_type": record.get("report_type", ""),
-                "reportDate": report_date,
-                "month": report_date[:7],
-                "wellbore": record.get("wellbore", ""),
-                "rig": record.get("rig", ""),
-                "validation_status": record.get("validation_status", ""),
-                "hours": hours,
-                "op_type": op_type,
-                "op_code": str(row.get("op_code", "") or ""),
-                "op_sub": str(row.get("op_sub", "") or ""),
-                "operation_details": str(row.get("operation_details", "") or ""),
-            }
-            fact["reason"] = _operation_category(fact)
-            operations.append(fact)
+        fields = payload.get("report_fields", {}) if isinstance(payload.get("report_fields", {}), dict) else {}
+        event = str(fields.get("event", "") or record.get("event", "") or "")
+        payload_report_date = str(fields.get("reportDate", "") or report_date)
+        enriched_records = [{**matched_record, "event": event, "reportDate": payload_report_date} for matched_record in matched_records]
+        records.extend(enriched_records)
+        for matched_record in enriched_records:
+            for row in payload.get("operations", []) if isinstance(payload.get("operations", []), list) else []:
+                if not isinstance(row, dict):
+                    continue
+                hours = _safe_float(row.get("hours"))
+                op_type = str(row.get("op_type", "") or "").strip().upper()
+                fact = {
+                    "record_id": matched_record.get("record_id", ""),
+                    "report_type": matched_record.get("report_type", ""),
+                    "reportDate": payload_report_date,
+                    "month": payload_report_date[:7],
+                    "wellbore": matched_record.get("wellbore", ""),
+                    "rig": matched_record.get("rig", ""),
+                    "project_id": matched_record.get("project_id", ""),
+                    "project_name": matched_record.get("project_name", ""),
+                    "project_contract": matched_record.get("project_contract", ""),
+                    "validation_status": matched_record.get("validation_status", ""),
+                    "event": event,
+                    "hours": hours,
+                    "op_type": op_type,
+                    "op_code": str(row.get("op_code", "") or ""),
+                    "op_sub": str(row.get("op_sub", "") or ""),
+                    "operation_details": str(row.get("operation_details", "") or ""),
+                }
+                fact["reason"] = _operation_category(fact)
+                operations.append(fact)
     return {"records": records, "operations": operations}
 
 
-def _filter_options(records: list[dict[str, str]]) -> dict[str, object]:
+def _filter_options(records: list[dict[str, str]], database_path: Path = DATABASE_PATH) -> dict[str, object]:
     return {
-        "rigs": sorted({record.get("rig", "") for record in records if record.get("rig")}),
+        "rigs": _production_filter_rigs(records, database_path),
         "wells": sorted({record.get("wellbore", "") for record in records if record.get("wellbore")}),
         "report_types": [{"value": key, "label": REPORT_TYPE_LABELS[key]} for key in REPORT_TYPE_LABELS],
+        "projects": _project_filter_options(),
     }
+
+
+def _production_filter_rigs(records: list[dict[str, str]], database_path: Path = DATABASE_PATH) -> list[str]:
+    rigs = {_normalize_rig_name(str(record.get("rig", "") or "")) for record in records if record.get("rig")}
+    config = _load_project_team_config()
+    for team in config.get("teams", []) if isinstance(config.get("teams"), list) else []:
+        name = _normalize_rig_name(str(team.get("name", "") or ""))
+        if name:
+            rigs.add(name)
+    if database_path.exists():
+        for record in list_records(database_path):
+            name = _normalize_rig_name(str(record.get("rig", "") or ""))
+            if name:
+                rigs.add(name)
+    return sorted(rigs, key=lambda value: value.lower())
+
+
+def _param_values(params: dict[str, list[str]], name: str) -> list[str]:
+    values: list[str] = []
+    for raw in params.get(name, []):
+        values.extend(part.strip() for part in str(raw or "").split(","))
+    return [value for value in values if value]
+
+
+def _project_filter_options() -> list[dict[str, str]]:
+    projects = _load_project_team_config().get("projects", [])
+    options = []
+    for project in projects if isinstance(projects, list) else []:
+        if str(project.get("status", "active") or "active") != "active":
+            continue
+        project_id = str(project.get("id", "") or "").strip()
+        label = str(project.get("project_name", "") or project.get("contract_no", "") or project_id).strip()
+        if not project_id or not label:
+            continue
+        options.append({
+            "value": project_id,
+            "label": label,
+            "contract_no": str(project.get("contract_no", "") or ""),
+            "start_date": str(project.get("start_date", "") or ""),
+            "end_date": str(project.get("end_date", "") or ""),
+        })
+    return options
+
+
+def _project_assignments_for_record(record: dict[str, str], selected_projects: set[str] | None = None) -> list[dict[str, str]]:
+    rig = _normalize_rig_name(str(record.get("rig", "") or "").strip())
+    wellbore = str(record.get("wellbore", "") or "").strip()
+    report_date = str(record.get("reportDate", "") or "").strip()
+    if not rig:
+        return []
+    config = _load_project_team_config()
+    matches: list[dict[str, str]] = []
+    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
+        project_id = str(project.get("id", "") or "").strip()
+        if selected_projects and project_id not in selected_projects:
+            continue
+        if str(project.get("status", "active") or "active") != "active":
+            continue
+        if not _date_in_range(report_date, str(project.get("start_date", "") or ""), str(project.get("end_date", "") or "")):
+            continue
+        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
+            if not _rig_name_matches(config, str(rig_item.get("rig", "") or "").strip(), rig):
+                continue
+            if not _date_in_range(report_date, str(rig_item.get("start_date", "") or ""), str(rig_item.get("end_date", "") or "")):
+                continue
+            wells = {str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()}
+            if wells and wellbore not in wells:
+                continue
+            matches.append({
+                "project_id": project_id,
+                "project_name": str(project.get("project_name", "") or project.get("contract_no", "") or project_id),
+                "project_contract": str(project.get("contract_no", "") or ""),
+            })
+            break
+    return matches
+
+
+def _unassigned_project_assignment() -> dict[str, str]:
+    return {
+        "project_id": UNASSIGNED_PROJECT_ID,
+        "project_name": "未归属项目",
+        "project_contract": "",
+    }
+
+
+def _rig_name_matches(config: dict[str, object], configured_name: str, report_name: str) -> bool:
+    if configured_name == report_name:
+        return True
+    for team in config.get("teams", []) if isinstance(config.get("teams"), list) else []:
+        if not _team_name_matches(team, configured_name):
+            continue
+        return _team_name_matches(team, report_name)
+    return False
+
+
+def _team_name_matches(team: object, value: str) -> bool:
+    if not isinstance(team, dict):
+        return False
+    target = str(value or "").strip()
+    if not target:
+        return False
+    names = {str(team.get("name", "") or "").strip(), *{str(alias or "").strip() for alias in _list_value(team.get("aliases"))}}
+    return target in names
+
+
+def _date_in_range(value: str, start: str, end: str) -> bool:
+    if not start and not end:
+        return True
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value or ""):
+        return False
+    if start and value < start:
+        return False
+    if end and value > end:
+        return False
+    return True
 
 
 def _completeness(records: list[dict[str, str]]) -> dict[str, object]:
@@ -1579,6 +2418,10 @@ def _safe_float(value: object) -> float:
         return float(str(value or "0").replace(",", ""))
     except ValueError:
         return 0.0
+
+
+def _truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def _has_value(value: object) -> bool:

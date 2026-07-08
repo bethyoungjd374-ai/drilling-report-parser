@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>钻井日报填报工作台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=well-profile-modal-3" />
+    <link rel="stylesheet" href="./styles.css?v=well-calendar-month-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -37,8 +37,9 @@
               <span class="menu-chevron">v</span>
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/rig-production-summary.png" alt="" /><span data-i18n="menuRigProductionSummary">生产汇总</span></a>
-              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/well-npt-confirm.png" alt="" /><span data-i18n="menuWellNptConfirm">NPT分析</span></a>
+              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/rig-production-summary.png" alt="" /><span data-i18n="menuRigProductionSummary">生产时效</span></a>
+              <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><img class="menu-item-icon" src="./icons/production-report.png" alt="" /><span data-i18n="menuProductionDetailReport">生产报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/well-npt-confirm.png" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
               <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/rig-npt-ranking.png" alt="" /><span data-i18n="menuRigNptRanking">NPT确认</span></a>
             </div>
           </div>
@@ -75,6 +76,7 @@
           </div>
           <div class="top-actions">
             <div class="language-switch" role="group" aria-label="Language">
+              <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
               <button type="button" data-lang="zh" class="active">中</button>
               <button type="button" data-lang="en">EN</button>
               <button type="button" data-lang="es">ES</button>
@@ -321,6 +323,7 @@
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
@@ -490,6 +493,7 @@
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
@@ -660,6 +664,7 @@
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
@@ -765,81 +770,108 @@
           </div>
         </section>
 
-        <section id="productionSummaryPage" class="module-page analytics-page" hidden>
+        <section id="productionSummaryPage" class="module-page analytics-page production-time-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuProductionReport">生产报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <strong data-i18n="menuRigProductionSummary">生产汇总</strong>
+                <strong data-i18n="menuRigProductionSummary">生产时效</strong>
               </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
           </header>
-          <section class="panel analytics-filter" data-analytics-filter="production">
+          <section class="panel analytics-filter production-time-filter" data-analytics-filter="production">
             <label>日期起<input type="date" name="date_from" /></label>
             <label>日期止<input type="date" name="date_to" /></label>
-            <label>井队<select name="rig"><option value="">全部井队</option></select></label>
-            <label>日报类型<select name="report_type"><option value="">全部类型</option></select></label>
-            <label>井号<input name="wellbore" placeholder="请输入井号" data-i18n-placeholder="wellborePlaceholder" /></label>
+            <label>筛选方式<select name="scope_type" data-production-scope-type><option value="rig">按井队</option><option value="project">按项目</option></select></label>
+            <label data-production-scope-field><span data-production-scope-label>井队</span><select name="scope_value" data-production-scope-value><option value="">全部井队</option></select></label>
             <button class="button" type="button" data-analytics-search="production" data-i18n="search">查询</button>
             <button class="button secondary" type="button" data-analytics-reset="production" data-i18n="reset">重置</button>
             <button class="button secondary" type="button" data-analytics-export="production" data-i18n="exportList">导出</button>
           </section>
-          <section class="analytics-kpis" data-analytics-kpis="production"></section>
-          <section class="analytics-grid">
-            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartRigHours">各井队作业时效对比 (h)</h2></div><div data-chart="production-rig"></div></div>
-            <div class="panel analytics-card"><div class="panel-heading"><h2 data-i18n="chartOperationMix">作业时效构成</h2></div><div data-chart="production-type"></div></div>
-            <div class="panel analytics-card wide"><div class="panel-heading"><h2 data-i18n="chartMonthlyHours">月度作业趋势 (h)</h2></div><div data-chart="production-monthly"></div></div>
-          </section>
-          <section class="panel analytics-table-panel">
-            <div class="panel-heading"><h2 data-i18n="productionDetailTitle">生产汇总明细</h2><span class="panel-note" data-i18n="analyticsRowHint">点击行可打开日报详情</span></div>
-            <div class="table-wrap" data-table-host="production"></div>
+          <section class="analytics-kpis production-time-kpis" data-analytics-kpis="production"></section>
+          <section class="analytics-grid production-time-grid">
+            <div class="panel analytics-card production-time-card production-time-card-bars"><div class="panel-heading"><h2 data-i18n="chartRigHours">各井队累计NPT排名</h2></div><div data-chart="production-rig"></div></div>
+            <div class="panel analytics-card production-time-card production-time-card-mix"><div class="panel-heading"><h2 data-i18n="chartOperationMix">作业时效构成</h2></div><div data-chart="production-type"></div></div>
+            <div class="panel analytics-card wide production-time-card production-time-card-trend"><div class="panel-heading"><h2 data-i18n="chartMonthlyHours">单井作业甘特图</h2></div><div data-chart="production-monthly"></div></div>
           </section>
         </section>
 
-        <section id="nptStatsPage" class="module-page analytics-page npt-stats-dashboard" hidden>
-          <header class="topbar placeholder-topbar npt-stats-topbar">
+        <section id="productionReportPage" class="module-page analytics-page" hidden>
+          <header class="topbar placeholder-topbar">
             <div>
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuProductionReport">生产报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <strong data-i18n="menuWellNptConfirm">NPT分析</strong>
+                <strong data-i18n="menuProductionDetailReport">生产报表</strong>
               </nav>
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
           </header>
-          <section class="panel analytics-filter npt-stats-filter" data-analytics-filter="npt">
-            <label class="npt-date-range">日期起止<span><input type="date" name="date_from" /><em>~</em><input type="date" name="date_to" /></span></label>
-            <label>井队<select name="rig"><option value="">全部井队</option></select></label>
-            <div class="npt-filter-actions">
-              <button class="button" type="button" data-analytics-search="npt" data-i18n="search">查询</button>
-              <button class="button secondary" type="button" data-analytics-reset="npt" data-i18n="reset">重置</button>
+          <section class="production-report-shell" data-analytics-filter="productionReport">
+            <input type="hidden" name="project_mode" value="1" />
+            <div class="production-report-tabs" role="tablist" aria-label="生产报表视图">
+              <button class="active" type="button" data-production-report-tab="rig">按钻井队</button>
+              <button type="button" data-production-report-tab="project">按项目</button>
+            </div>
+            <div class="production-report-layout">
+              <aside class="panel production-report-side" data-production-report-side></aside>
+              <section class="panel analytics-table-panel production-report-main">
+                <div class="panel-heading"><h2 data-i18n="productionDetailTitle">生产报表明细</h2><span class="panel-note" data-i18n="productionReportRowHint">点击井号新开日报首页</span></div>
+                <div class="production-report-inline-filter" data-production-report-filters></div>
+                <div class="table-wrap" data-table-host="productionReport"></div>
+              </section>
             </div>
           </section>
-          <section class="analytics-kpis" data-analytics-kpis="npt"></section>
-          <section class="npt-dashboard-grid">
-            <div class="panel analytics-card npt-card npt-card-wide"><div class="panel-heading"><h2>各井队NPT时长对比（h）</h2></div><div data-chart="npt-rig"></div></div>
-            <div class="panel analytics-card npt-card"><div class="panel-heading"><h2>各井NPT时长排名</h2></div><div data-chart="npt-well"></div></div>
-            <div class="panel analytics-card npt-card npt-card-donut"><div class="panel-heading"><h2>NPT原因分布 <small>按时长占比</small></h2></div><div data-chart="npt-reason"></div></div>
-            <div class="panel analytics-card npt-card"><div class="panel-heading"><h2>NPT时长趋势（h）</h2></div><div data-chart="npt-monthly"></div></div>
-            <div class="panel analytics-card npt-card npt-pending-card"><div class="panel-heading"><h2>待确认井列表 <span class="npt-count-badge" data-npt-pending-count>0</span></h2></div><div data-chart="npt-pending"></div></div>
-          </section>
-          <section class="panel analytics-table-panel npt-detail-panel">
-            <div class="panel-heading"><h2 data-i18n="nptDetailTitle">NPT统计明细</h2><span class="panel-note" data-i18n="nptRowHint">按日报作业代码 / 子项原文汇总，点击行可追溯日报</span></div>
-            <div class="table-wrap" data-table-host="npt"></div>
+        </section>
+
+        <section id="nptStatsPage" class="module-page analytics-page npt-stats-dashboard" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuProductionReport">生产报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuWellNptConfirm">NPT统计</strong>
+              </nav>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh" class="active">中</button>
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="production-report-shell npt-report-shell" data-analytics-filter="npt">
+            <input type="hidden" name="project_mode" value="1" />
+            <div class="production-report-tabs" role="tablist" aria-label="NPT分析视图">
+              <button class="active" type="button" data-npt-report-tab="rig">按钻井队</button>
+              <button type="button" data-npt-report-tab="project">按项目</button>
+            </div>
+            <div class="production-report-layout">
+              <aside class="panel production-report-side" data-npt-report-side></aside>
+              <section class="panel analytics-table-panel production-report-main npt-detail-panel">
+                <div class="panel-heading"><h2 data-i18n="nptDetailTitle">NPT统计明细</h2><span class="panel-note" data-i18n="nptRowHint">点击行可追溯日报</span></div>
+                <div class="production-report-inline-filter" data-npt-report-filters></div>
+                <div class="table-wrap" data-table-host="npt"></div>
+              </section>
+            </div>
           </section>
         </section>
 
@@ -856,6 +888,7 @@
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
@@ -940,6 +973,7 @@
             </div>
             <div class="top-actions">
               <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
                 <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
@@ -980,6 +1014,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
-    <script src="./app.js?v=well-profile-modal-3"></script>
+    <script src="./app.js?v=well-calendar-month-1"></script>
   </body>
 </html>

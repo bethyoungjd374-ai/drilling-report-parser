@@ -1,0 +1,406 @@
+{
+  "terms": [
+    {
+      "id": "term-rop",
+      "category": "drilling_metric",
+      "zh": "机械钻速",
+      "en": "ROP",
+      "es": "ROP",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "rate of penetration"
+        ],
+        "es": [
+          "tasa de penetración"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-wob",
+      "category": "drilling_metric",
+      "zh": "钻压",
+      "en": "WOB",
+      "es": "WOB",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "weight on bit"
+        ],
+        "es": [
+          "peso sobre la broca"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-rpm",
+      "category": "drilling_metric",
+      "zh": "转速",
+      "en": "RPM",
+      "es": "RPM",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-spp",
+      "category": "drilling_metric",
+      "zh": "立管压力",
+      "en": "SPP",
+      "es": "SPP",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "standpipe pressure"
+        ],
+        "es": [
+          "presión de standpipe"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-mw",
+      "category": "mud",
+      "zh": "泥浆密度",
+      "en": "MW",
+      "es": "MW",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "mud weight"
+        ],
+        "es": [
+          "peso de lodo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-tvd",
+      "category": "well_depth",
+      "zh": "垂深",
+      "en": "TVD",
+      "es": "TVD",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "true vertical depth"
+        ],
+        "es": [
+          "profundidad vertical verdadera"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-md",
+      "category": "well_depth",
+      "zh": "测深",
+      "en": "MD",
+      "es": "MD",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "measured depth"
+        ],
+        "es": [
+          "profundidad medida"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-bha",
+      "category": "equipment",
+      "zh": "底部钻具组合",
+      "en": "BHA",
+      "es": "BHA",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "bottom hole assembly"
+        ],
+        "es": [
+          "ensamblaje de fondo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-bop",
+      "category": "equipment",
+      "zh": "防喷器",
+      "en": "BOP",
+      "es": "BOP",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "blowout preventer"
+        ],
+        "es": [
+          "preventor de reventones"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-casing",
+      "category": "operation",
+      "zh": "套管",
+      "en": "casing",
+      "es": "revestimiento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-cementing",
+      "category": "operation",
+      "zh": "固井",
+      "en": "cementing",
+      "es": "cementación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "cementacion"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-tripping-in",
+      "category": "operation",
+      "zh": "下钻",
+      "en": "tripping in",
+      "es": "bajando tubería",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "trip in"
+        ],
+        "es": [
+          "bajando sarta"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-tripping-out",
+      "category": "operation",
+      "zh": "起钻",
+      "en": "tripping out",
+      "es": "sacando tubería",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "trip out"
+        ],
+        "es": [
+          "sacando sarta"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-lost-circulation",
+      "category": "event",
+      "zh": "井漏",
+      "en": "lost circulation",
+      "es": "pérdida de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "perdida de circulacion"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-kick",
+      "category": "event",
+      "zh": "井涌",
+      "en": "kick",
+      "es": "amago",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "influjo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-stuck-pipe",
+      "category": "event",
+      "zh": "卡钻",
+      "en": "stuck pipe",
+      "es": "tubería pegada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tuberia pegada"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-reaming",
+      "category": "operation",
+      "zh": "划眼/扩眼",
+      "en": "reaming",
+      "es": "rimado",
+      "aliases": {
+        "zh": [
+          "划眼",
+          "扩眼"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-circulate",
+      "category": "operation",
+      "zh": "循环",
+      "en": "circulate",
+      "es": "circular",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "circulating"
+        ],
+        "es": [
+          "circulando"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "term-drilling",
+      "category": "operation",
+      "zh": "钻进",
+      "en": "drilling",
+      "es": "perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "drill ahead"
+        ],
+        "es": [
+          "perforacion"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
+    }
+  ],
+  "protected_terms": {
+    "acronyms": [
+      "ROP",
+      "WOB",
+      "RPM",
+      "SPP",
+      "TVD",
+      "MD",
+      "BHA",
+      "BOP",
+      "MW",
+      "ECD",
+      "NPT",
+      "WOC",
+      "AFE",
+      "HSE",
+      "HSSE",
+      "LTA",
+      "RI",
+      "API",
+      "HTHP",
+      "PV",
+      "YP",
+      "EMW",
+      "WBM",
+      "OBM"
+    ],
+    "units": [
+      "m",
+      "ft",
+      "in",
+      "ppg",
+      "psi",
+      "bbl",
+      "gpm",
+      "klb",
+      "lb",
+      "hr",
+      "hrs",
+      "deg",
+      "deg/100ft",
+      "spf"
+    ],
+    "proper_nouns": [
+      "SINOPEC",
+      "PETROECUADOR",
+      "HALLIBURTON",
+      "SCHLUMBERGER",
+      "BAKER HUGHES",
+      "WEATHERFORD",
+      "NABORS",
+      "Napo",
+      "Hollin",
+      "Tena",
+      "Basal Tena",
+      "Orteguaza"
+    ]
+  }
+}

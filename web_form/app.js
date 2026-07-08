@@ -4,22 +4,22 @@ const i18n = {
       appTitleShort: "厄瓜油田", appSubtitle: "Report Platform", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
       systemAdmin: "系统后台",
       menuDailyParsing: "日报解析", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
-      menuProductionReport: "生产报表", menuRigProductionSummary: "生产汇总", menuWellNptConfirm: "NPT分析", menuRigNptRanking: "NPT确认",
+      menuProductionReport: "生产报表", menuRigProductionSummary: "生产时效", menuProductionDetailReport: "生产报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
       menuHsse: "HSSE管理", menuHsseCollection: "信息填报", menuHsseDashboard: "安全驾驶舱", menuDailySafetySummary: "安全报表", menuPeriodSafetyReport: "安全报表",
       descDrillingDaily: "支持上传钻井或搬迁 PDF 日报，解析井基础信息及 Operation 内容，并进入钻井日报填报页面。",
       descCompletionDaily: "上传完井日报 PDF，解析基础信息、Operation、库存和射孔区间，预览后可二次编辑。", descWorkoverDaily: "上传修井日报 PDF，解析 WO 信息、Operation、库存、安全备注和射孔区间，预览后可二次编辑。", descMoveDaily: "上传搬迁日报 PDF，解析 Operation、重型设备和载荷清单，预览后可二次编辑。",
-      descRigProductionSummary: "基于日报解析数据，按日汇总各井队生产作业情况，形成井队维度统计报表。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
+      descRigProductionSummary: "基于日报解析数据，按井队、日报类型和月份展示生产作业时效。", descProductionDetailReport: "按项目周期、井队和井号归属查询生产时效明细。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
-      importPdf: "导入 PDF 日报", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
+      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationReady: "译文预览已生成。", translationFailed: "翻译失败，请确认本地翻译服务已启动。", translationPreviewNotice: "译文仅供查看，切回原文后编辑保存。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
       uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
-      metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性",
+      metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性", metricMoveDrillingDays: "搬迁 / 钻井",
       analyticsKicker: "数据看板", analyticsProductionScope: "基于已保存到 Excel 库的日报解析数据", analyticsNptScope: "基于已保存到 Excel 库的日报解析数据；分类按日报作业代码 / 作业子项汇总", search: "查询", reset: "重置", wellborePlaceholder: "请输入井号",
-      chartRigHours: "各井队作业时效对比 (h)", chartOperationMix: "作业时效构成", chartMonthlyHours: "月度作业趋势 (h)", chartNptRig: "各井队NPT对比 (h)", chartNptReason: "作业代码 / 作业子项分布", chartNptWell: "各井NPT排行", chartNptMonthly: "月度NPT趋势 (h)", productionDetailTitle: "生产汇总明细", nptDetailTitle: "NPT统计明细", analyticsRowHint: "点击行可打开日报详情", nptRowHint: "按日报作业代码 / 作业子项原文汇总，点击行可追溯日报",
+      chartRigHours: "各井队累计NPT排名", chartOperationMix: "作业时效构成", chartMonthlyHours: "单井作业甘特图", chartNptRig: "各井队NPT对比 (h)", chartNptReason: "作业代码 / 作业子项分布", chartNptWell: "各井NPT排行", chartNptMonthly: "月度NPT趋势 (h)", productionDetailTitle: "生产报表明细", nptDetailTitle: "NPT统计明细", analyticsRowHint: "点击行可打开日报详情", productionReportRowHint: "点击井号新开日报首页并选中该井", nptRowHint: "按日报作业代码 / 作业子项原文汇总，点击行可追溯日报",
       kpiRigCount: "井队数", kpiNptRigCount: "NPT井队数", kpiWellCount: "涉及井数", kpiTotalHours: "总作业时长", kpiTotalNpt: "总NPT", kpiReportCompleteness: "日报完整性", kpiNptEvents: "NPT事件数", analyticsDefaultCaption: "基于已入库日报", analyticsNptCaption: "按作业代码 / 作业子项汇总", analyticsCompletenessCaption: "缺失 {missing} 天 / 告警 {warning} 天", noAnalyticsData: "暂无可统计数据", noExportData: "暂无可导出数据", normalStatus: "正常", reasonMissing: "未填写作业代码 / 作业子项",
-      allRigs: "全部井队", allReportTypes: "全部类型", allReasons: "全部分类", opCodeSub: "作业代码 / 子项", opCode: "作业代码", opSub: "作业子项", category: "分类", tableRig: "井队", tableWell: "井号", tableReportType: "日报类型", tableStartDate: "开工时间", tableEndDate: "完工时间", tableDrillingHours: "钻井(h)", tableCompletionHours: "完井(h)", tableWorkoverHours: "修井(h)", tableMoveHours: "搬迁(h)", tableNptHours: "NPT(h)", tableRemarks: "备注", tableDate: "日期", tableOperationDetails: "作业详情",
+      allRigs: "全部井队", allProjects: "全部项目", allReportTypes: "全部类型", allReasons: "全部分类", opCodeSub: "作业代码 / 子项", opCode: "作业代码", opSub: "作业子项", category: "分类", tableProject: "项目", tableContractProject: "合同(项目)", tableRig: "井队", tableWell: "井号", tableReportType: "日报类型", tableStartDate: "开工时间", tableEndDate: "完工时间", tableMoveDate: "搬迁日期", tableDrillingStartDate: "开钻日期", tableDrillingFinishDate: "完钻日期", tableCompletionDate: "完井日期", tableWorkoverDate: "修井日期", tableDrillingHours: "钻井(h)", tableCompletionHours: "完井(h)", tableWorkoverHours: "修井(h)", tableMoveHours: "搬迁(h)", tableNptHours: "NPT(h)", tableRemarks: "备注", tableDate: "日期", tableOperationDetails: "作业详情",
       sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "Survey Data (Last 6)", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "Operations", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
       noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、BOP、泵压、扭矩和钩载", noteIncidents: "HSE 状态、同步作业和其他说明",
       completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "对应搬迁 PDF 顶部日报抬头、AFE 和井队信息", moveNoteRemarks: "其他现场备注原文",
@@ -30,7 +30,7 @@ const i18n = {
       thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments", thLocation: "Location", thEquipment: "Equipment", thPlate: "Plate", thEntryDate: "Entry Date", thEntryTime: "Entry Time", thGuide: "Guide", thCargo: "Cargo", thTrip: "Trip"
     },
     fields: {
-      event: "事件", reportDate: "日期", date_from: "日期起", date_to: "日期止", report_type: "日报类型", reason: "作业代码 / 子项", nptWellbore: "井号", nptRig: "井队", nptStatus: "确认状态", reportNo: "报告编号", wellbore: "井号", rig: "井队", primaryReason: "主要原因", afeNumber: "AFE 编号", refDatum: "参考基准", todayMd: "当日 MD (ft)", prevMd: "前日 MD (ft)", progress: "进尺 (ft)", rotHrsToday: "当日旋转时长",
+      event: "事件", reportDate: "日期", project: "项目", date_from: "日期起", date_to: "日期止", report_type: "日报类型", reason: "作业代码 / 子项", nptWellbore: "井号", nptRig: "井队", nptStatus: "确认状态", reportNo: "报告编号", wellbore: "井号", rig: "井队", primaryReason: "主要原因", afeNumber: "AFE 编号", refDatum: "参考基准", todayMd: "当日 MD (ft)", prevMd: "前日 MD (ft)", progress: "进尺 (ft)", rotHrsToday: "当日旋转时长",
       currentOps: "Current Ops", summary24h: "24-Hr Summary", forecast24h: "24-Hr Forecast", lastCasing: "Last Casing", lastCasingSize: "Last Casing Size", lastCasingDepth: "Last Casing Depth", nextCasing: "Next Casing", nextCasingSize: "Next Casing Size", nextCasingDepth: "Next Casing Depth", formTestEmw: "Form Test/EMW", lastBopPressTest: "Last BOP Press Test", pumpRate: "Pump Rate (gpm)", pumpPress: "Pump Press (psi)", stringWeightUpDown: "String Wt Up/Dn", torqueOnBottom: "Torque On Btm",
       mudEngineer: "Mud Engineer", sampleFrom: "Sample From", mudType: "Mud Type", mudTimeMd: "Time / MD", mudTime: "Mud Time", mudMd: "Mud MD", mudDensity: "Density (ppg)", mudTemperature: "Mud Temp", rheologyTemp: "Rheology Temp", viscosity: "Viscosity", pvYp: "PV / YP", pv: "PV", yp: "YP", gels: "Gels 10s/10m/30m", gel10s: "Gel 10s", gel10m: "Gel 10m", gel30m: "Gel 30m", apiWl: "API WL", oilWater: "Oil / Water", oilPercent: "Oil (%)", waterPercent: "Water (%)", sand: "Sand (%)", ecd: "ECD", mudComments: "Mud Comments",
       bitNo: "Bit No", bitSize: "Bit Size", bitManufacturer: "Manufacturer", bitSerial: "Serial No", bhaNo: "BHA No", bhaMdIn: "MD In", bhaMdOut: "MD Out", bhaTotalLength: "Total Length (ft)", safetyIncident: "Safety Incident?", environmentIncident: "Environ Incident?", daysSinceRi: "Days since Last RI", daysSinceLta: "Days since Last LTA", incidentComments: "Incident Comments", otherRemarks: "Other Remarks",
@@ -79,22 +79,22 @@ const i18n = {
       appTitleShort: "Ecuador Field", appSubtitle: "Report Platform", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
       systemAdmin: "System Admin",
       menuDailyParsing: "Daily Parsing", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
-      menuProductionReport: "Production Reports", menuRigProductionSummary: "Production Summary", menuWellNptConfirm: "NPT Analysis", menuRigNptRanking: "NPT Confirmation",
+      menuProductionReport: "Production Reports", menuRigProductionSummary: "Production Time", menuProductionDetailReport: "Production Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
       menuHsse: "HSSE Management", menuHsseCollection: "Information Entry", menuHsseDashboard: "Safety Cockpit", menuDailySafetySummary: "Safety Report", menuPeriodSafetyReport: "Safety Report",
       descDrillingDaily: "Upload drilling or rig move PDF daily reports, parse well basics and Operation content, then edit the drilling daily report.",
       descCompletionDaily: "Upload completion daily PDFs, parse basics, operations, bulks, and perforated intervals, then preview and edit.", descWorkoverDaily: "Upload workover daily PDFs, parse WO information, operations, bulks, safety comments, and perforated intervals, then preview and edit.", descMoveDaily: "Reserved entry for rig move daily PDF parsing and structured entry.",
-      descRigProductionSummary: "Summarize daily rig production activity from parsed daily report data by rig/team.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
+      descRigProductionSummary: "Show production time by rig, report type, and month from parsed daily reports.", descProductionDetailReport: "Query production time details by project period, rig, and well assignment.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
-      importPdf: "Import PDF Report", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
+      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationReady: "Translation preview is ready.", translationFailed: "Translation failed. Check that the local translation service is running.", translationPreviewNotice: "Translation is view-only. Switch back to Original before editing or saving.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
       uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
-      metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness",
+      metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness", metricMoveDrillingDays: "Move / Drilling",
       analyticsKicker: "Analytics", analyticsProductionScope: "Based on daily report data saved in the Excel library", analyticsNptScope: "Based on daily report data saved in the Excel library; grouped by report OP Code / OP Sub", search: "Search", reset: "Reset", wellborePlaceholder: "Enter well",
-      chartRigHours: "Rig Operation Hours (h)", chartOperationMix: "Operation Mix", chartMonthlyHours: "Monthly Operation Trend (h)", chartNptRig: "Rig NPT Comparison (h)", chartNptReason: "OP Code / OP Sub Distribution", chartNptWell: "Well NPT Ranking", chartNptMonthly: "Monthly NPT Trend (h)", productionDetailTitle: "Production Summary Details", nptDetailTitle: "NPT Details", analyticsRowHint: "Click a row to open the report details", nptRowHint: "Grouped by original OP Code / OP Sub from reports; click a row to trace the report",
+      chartRigHours: "Rig Cumulative NPT Ranking", chartOperationMix: "Operation Mix", chartMonthlyHours: "Well Operation Gantt", chartNptRig: "Rig NPT Comparison (h)", chartNptReason: "OP Code / OP Sub Distribution", chartNptWell: "Well NPT Ranking", chartNptMonthly: "Monthly NPT Trend (h)", productionDetailTitle: "Production Report Details", nptDetailTitle: "NPT Details", analyticsRowHint: "Click a row to open the report details", productionReportRowHint: "Click a well to open its report homepage in a new tab", nptRowHint: "Grouped by original OP Code / OP Sub from reports; click a row to trace the report",
       kpiRigCount: "Rig Count", kpiNptRigCount: "NPT Rig Count", kpiWellCount: "Wells", kpiTotalHours: "Total Hours", kpiTotalNpt: "Total NPT", kpiReportCompleteness: "Report Completeness", kpiNptEvents: "NPT Events", analyticsDefaultCaption: "Based on saved reports", analyticsNptCaption: "Grouped by OP Code / OP Sub", analyticsCompletenessCaption: "Missing {missing} days / Warnings {warning} days", noAnalyticsData: "No data available", noExportData: "No data to export", normalStatus: "Normal", reasonMissing: "No OP Code / OP Sub",
-      allRigs: "All Rigs", allReportTypes: "All Types", allReasons: "All Categories", opCodeSub: "OP Code / OP Sub", opCode: "OP Code", opSub: "OP Sub", category: "Category", tableRig: "Rig", tableWell: "Well", tableReportType: "Report Type", tableStartDate: "Start Date", tableEndDate: "End Date", tableDrillingHours: "Drilling (h)", tableCompletionHours: "Completion (h)", tableWorkoverHours: "Workover (h)", tableMoveHours: "Move (h)", tableNptHours: "NPT (h)", tableRemarks: "Remarks", tableDate: "Date", tableOperationDetails: "Operation Details",
+      allRigs: "All Rigs", allProjects: "All Projects", allReportTypes: "All Types", allReasons: "All Categories", opCodeSub: "OP Code / OP Sub", opCode: "OP Code", opSub: "OP Sub", category: "Category", tableProject: "Project", tableContractProject: "Contract (Project)", tableRig: "Rig", tableWell: "Well", tableReportType: "Report Type", tableStartDate: "Start Date", tableEndDate: "End Date", tableMoveDate: "Move Date", tableDrillingStartDate: "Drilling Start", tableDrillingFinishDate: "Drilling Finish", tableCompletionDate: "Completion Date", tableWorkoverDate: "Workover Date", tableDrillingHours: "Drilling (h)", tableCompletionHours: "Completion (h)", tableWorkoverHours: "Workover (h)", tableMoveHours: "Move (h)", tableNptHours: "NPT (h)", tableRemarks: "Remarks", tableDate: "Date", tableOperationDetails: "Operation Details",
       sectionBasic: "Basic Info", sectionSummary: "Operations Summary", sectionWellControl: "Well Control & Hydraulics", sectionSurvey: "Survey Data (Last 6)", sectionMud: "Mud Data", sectionBitBha: "Bit & BHA", sectionOperations: "Operations", sectionCosts: "Costs & Bulks", sectionIncidents: "Incidents & Remarks", sectionPersonnel: "Personnel", sectionPerforationIntervals: "Perforated Intervals",
       noteBasic: "Header and well information from the PDF template", noteSummary: "Current operation, 24-hour summary, and next plan", noteWellControl: "Casing, BOP, pump pressure, torque, and hookload", noteIncidents: "HSE status, simultaneous operations, and remarks",
       completionNoteBasic: "Completion PDF header, AFP, and well information", completionNotePersonnel: "Supervisors, engineers, geologist, and total personnel", completionNoteRemarks: "Safety comments, solids control, and field remarks", workoverNoteBasic: "Workover PDF header, AFP, and well information", workoverNotePersonnel: "Supervisors, engineers, geologist, and total personnel", workoverNoteRemarks: "Safety comments, solids control, and field remarks",
@@ -105,7 +105,7 @@ const i18n = {
       thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments"
     },
     fields: {
-      event: "Event", reportDate: "Date", date_from: "Date From", date_to: "Date To", report_type: "Report Type", reason: "OP Code / OP Sub", nptWellbore: "Wellbore", nptRig: "Rig", nptStatus: "Confirmation Status", reportNo: "Report No", wellbore: "Wellbore", rig: "Rig", primaryReason: "Primary Reason", afeNumber: "AFE Number", refDatum: "Reference Datum", todayMd: "Today's MD (ft)", prevMd: "Previous MD (ft)", progress: "Progress (ft)", rotHrsToday: "Rotating Hours Today",
+      event: "Event", reportDate: "Date", project: "Project", date_from: "Date From", date_to: "Date To", report_type: "Report Type", reason: "OP Code / OP Sub", nptWellbore: "Wellbore", nptRig: "Rig", nptStatus: "Confirmation Status", reportNo: "Report No", wellbore: "Wellbore", rig: "Rig", primaryReason: "Primary Reason", afeNumber: "AFE Number", refDatum: "Reference Datum", todayMd: "Today's MD (ft)", prevMd: "Previous MD (ft)", progress: "Progress (ft)", rotHrsToday: "Rotating Hours Today",
       currentOps: "Current Operations", summary24h: "24-Hour Summary", forecast24h: "24-Hour Forecast", lastCasing: "Last Casing", lastCasingSize: "Last Casing Size", lastCasingDepth: "Last Casing Depth", nextCasing: "Next Casing", nextCasingSize: "Next Casing Size", nextCasingDepth: "Next Casing Depth", formTestEmw: "Formation Test / EMW", lastBopPressTest: "Last BOP Pressure Test", pumpRate: "Pump Rate (gpm)", pumpPress: "Pump Pressure (psi)", stringWeightUpDown: "String Weight Up/Down", torqueOnBottom: "Torque On Bottom",
       mudEngineer: "Mud Engineer", sampleFrom: "Sample From", mudType: "Mud Type", mudTimeMd: "Time / MD", mudTime: "Mud Time", mudMd: "Mud MD", mudDensity: "Density (ppg)", mudTemperature: "Mud Temp", rheologyTemp: "Rheology Temp", viscosity: "Viscosity", pvYp: "PV / YP", pv: "PV", yp: "YP", gels: "Gels 10s/10m/30m", gel10s: "Gel 10s", gel10m: "Gel 10m", gel30m: "Gel 30m", apiWl: "API WL", oilWater: "Oil / Water", oilPercent: "Oil (%)", waterPercent: "Water (%)", sand: "Sand (%)", ecd: "ECD", mudComments: "Mud Comments",
       bitNo: "Bit No", bitSize: "Bit Size", bitManufacturer: "Manufacturer", bitSerial: "Serial No", bhaNo: "BHA No", bhaMdIn: "MD In", bhaMdOut: "MD Out", bhaTotalLength: "Total Length (ft)", safetyIncident: "Safety Incident?", environmentIncident: "Environmental Incident?", daysSinceRi: "Days since Last RI", daysSinceLta: "Days since Last LTA", incidentComments: "Incident Comments", otherRemarks: "Other Remarks",
@@ -154,22 +154,22 @@ const i18n = {
       appTitleShort: "Campo Ecuador", appSubtitle: "Plataforma de Reportes", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
       systemAdmin: "Administración",
       menuDailyParsing: "Análisis de Reportes", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
-      menuProductionReport: "Reportes de Producción", menuRigProductionSummary: "Resumen de Producción", menuWellNptConfirm: "Análisis NPT", menuRigNptRanking: "Confirmación NPT",
+      menuProductionReport: "Reportes de Producción", menuRigProductionSummary: "Tiempo de Producción", menuProductionDetailReport: "Reporte de Producción", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
       menuHsse: "Gestión HSSE", menuHsseCollection: "Registro de Información", menuHsseDashboard: "Cabina de Seguridad", menuDailySafetySummary: "Reporte de Seguridad", menuPeriodSafetyReport: "Reporte de Seguridad",
       descDrillingDaily: "Carga reportes diarios PDF de perforación o movilización, extrae datos básicos y operaciones, y permite editar el reporte diario de perforación.",
       descCompletionDaily: "Carga PDFs diarios de completación, extrae datos básicos, operaciones, inventarios e intervalos cañoneados, y permite revisar y editar.", descWorkoverDaily: "Carga PDFs diarios de workover, extrae información WO, operaciones, inventarios, comentarios de seguridad e intervalos cañoneados, y permite revisar y editar.", descMoveDaily: "Entrada reservada para análisis PDF y captura estructurada de reportes diarios de movilización.",
-      descRigProductionSummary: "Resume la actividad diaria de producción por equipo a partir de los reportes diarios procesados.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
+      descRigProductionSummary: "Muestra tiempos de producción por equipo, tipo de reporte y mes desde reportes diarios procesados.", descProductionDetailReport: "Consulta detalles de producción por periodo de proyecto, equipo y asignación de pozo.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
-      importPdf: "Importar Reporte PDF", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
+      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationReady: "Vista traducida lista.", translationFailed: "Falló la traducción. Verifique que el servicio local esté iniciado.", translationPreviewNotice: "La traducción es solo lectura. Vuelva a Original para editar o guardar.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
       uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
-      metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte",
+      metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte", metricMoveDrillingDays: "Movilización / Perforación",
       analyticsKicker: "Panel de Datos", analyticsProductionScope: "Basado en reportes diarios guardados en la biblioteca Excel", analyticsNptScope: "Basado en reportes diarios guardados en la biblioteca Excel; agrupado por código y subcódigo de operación", search: "Consultar", reset: "Restablecer", wellborePlaceholder: "Ingrese pozo",
-      chartRigHours: "Comparación de Horas por Taladro (h)", chartOperationMix: "Composición Operativa", chartMonthlyHours: "Tendencia Mensual de Operaciones (h)", chartNptRig: "Comparación NPT por Taladro (h)", chartNptReason: "Distribución por Código / Subcódigo", chartNptWell: "Ranking NPT por Pozo", chartNptMonthly: "Tendencia Mensual NPT (h)", productionDetailTitle: "Detalle del Resumen de Producción", nptDetailTitle: "Detalle NPT", analyticsRowHint: "Haga clic en una fila para abrir el detalle del reporte", nptRowHint: "Agrupado por código / subcódigo original del reporte; haga clic en una fila para rastrear el reporte",
+      chartRigHours: "Ranking NPT acumulado por taladro", chartOperationMix: "Composición Operativa", chartMonthlyHours: "Gantt de Operaciones por Pozo", chartNptRig: "Comparación NPT por Taladro (h)", chartNptReason: "Distribución por Código / Subcódigo", chartNptWell: "Ranking NPT por Pozo", chartNptMonthly: "Tendencia Mensual NPT (h)", productionDetailTitle: "Detalle del Reporte de Producción", nptDetailTitle: "Detalle NPT", analyticsRowHint: "Haga clic en una fila para abrir el detalle del reporte", productionReportRowHint: "Haga clic en un pozo para abrir su página diaria en una pestaña nueva", nptRowHint: "Agrupado por código / subcódigo original del reporte; haga clic en una fila para rastrear el reporte",
       kpiRigCount: "Taladros", kpiNptRigCount: "Taladros con NPT", kpiWellCount: "Pozos", kpiTotalHours: "Horas Totales", kpiTotalNpt: "NPT Total", kpiReportCompleteness: "Integridad del Reporte", kpiNptEvents: "Eventos NPT", analyticsDefaultCaption: "Basado en reportes guardados", analyticsNptCaption: "Agrupado por código / subcódigo", analyticsCompletenessCaption: "Faltan {missing} días / Alertas {warning} días", noAnalyticsData: "No hay datos para estadística", noExportData: "No hay datos para exportar", normalStatus: "Normal", reasonMissing: "Sin código / subcódigo",
-      allRigs: "Todos los taladros", allReportTypes: "Todos los tipos", allReasons: "Todas las categorías", opCodeSub: "Código / Subcódigo", opCode: "Código Op", opSub: "Subcódigo Op", category: "Categoría", tableRig: "Taladro", tableWell: "Pozo", tableReportType: "Tipo de Reporte", tableStartDate: "Fecha Inicio", tableEndDate: "Fecha Fin", tableDrillingHours: "Perforación (h)", tableCompletionHours: "Completación (h)", tableWorkoverHours: "Workover (h)", tableMoveHours: "Movilización (h)", tableNptHours: "NPT (h)", tableRemarks: "Observaciones", tableDate: "Fecha", tableOperationDetails: "Detalle de Operación",
+      allRigs: "Todos los taladros", allProjects: "Todos los proyectos", allReportTypes: "Todos los tipos", allReasons: "Todas las categorías", opCodeSub: "Código / Subcódigo", opCode: "Código Op", opSub: "Subcódigo Op", category: "Categoría", tableProject: "Proyecto", tableContractProject: "Contrato (Proyecto)", tableRig: "Taladro", tableWell: "Pozo", tableReportType: "Tipo de Reporte", tableStartDate: "Fecha Inicio", tableEndDate: "Fecha Fin", tableMoveDate: "Fecha Movilización", tableDrillingStartDate: "Inicio Perforación", tableDrillingFinishDate: "Fin Perforación", tableCompletionDate: "Fecha Completación", tableWorkoverDate: "Fecha Workover", tableDrillingHours: "Perforación (h)", tableCompletionHours: "Completación (h)", tableWorkoverHours: "Workover (h)", tableMoveHours: "Movilización (h)", tableNptHours: "NPT (h)", tableRemarks: "Observaciones", tableDate: "Fecha", tableOperationDetails: "Detalle de Operación",
       sectionBasic: "Información Básica", sectionSummary: "Resumen Operacional", sectionWellControl: "Control de Pozo e Hidráulica", sectionSurvey: "Datos Direccionales (Últimos 6)", sectionMud: "Datos de Lodo", sectionBitBha: "Broca y BHA", sectionOperations: "Operaciones", sectionCosts: "Costos e Inventario", sectionIncidents: "Incidentes y Observaciones", sectionPersonnel: "Personal", sectionPerforationIntervals: "Intervalos Cañoneados",
       noteBasic: "Encabezado e información del pozo según la plantilla PDF", noteSummary: "Operación actual, resumen de 24 horas y plan siguiente", noteWellControl: "Casing, BOP, presión de bomba, torque y hookload", noteIncidents: "Estado HSE, operaciones simultáneas y observaciones",
       completionNoteBasic: "Encabezado PDF de completación, AFP e información del pozo", completionNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", completionNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo", workoverNoteBasic: "Encabezado PDF de workover, AFP e información del pozo", workoverNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", workoverNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo",
@@ -180,7 +180,7 @@ const i18n = {
       thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Componente", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Longitud (ft)", thFrom: "Desde (HH:MM)", thTo: "Hasta (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Código Op", thOpSub: "Sub Op", thType: "Tipo", thOperationDetails: "Detalle de Operación", thCostDescription: "Descripción de Costo", thVendor: "Proveedor", thAmount: "Monto (USD)", thBulk: "Inventario", thQtyStart: "Cant. Inicial", thQtyUsed: "Cant. Usada", thQtyEnd: "Cant. Final", thFormation: "Formación", thTopMd: "Tope MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Densidad (spf)", thCharges: "Cargas", thPhase: "Fase (deg)", thPenetration: "Penetración (in)", thDiameter: "Diámetro (in)", thDate: "Fecha", thStatus: "Estado", thComments: "Comentarios"
     },
     fields: {
-      event: "Evento", reportDate: "Fecha", date_from: "Fecha Inicio", date_to: "Fecha Fin", report_type: "Tipo de Reporte", reason: "Código / Subcódigo", nptWellbore: "Pozo", nptRig: "Taladro", nptStatus: "Estado de Confirmación", reportNo: "No. de Reporte", wellbore: "Pozo", rig: "Taladro", primaryReason: "Razón Principal", afeNumber: "Número AFE", refDatum: "Datum de Referencia", todayMd: "MD de Hoy (ft)", prevMd: "MD Anterior (ft)", progress: "Progreso (ft)", rotHrsToday: "Horas Rotando Hoy",
+      event: "Evento", reportDate: "Fecha", project: "Proyecto", date_from: "Fecha Inicio", date_to: "Fecha Fin", report_type: "Tipo de Reporte", reason: "Código / Subcódigo", nptWellbore: "Pozo", nptRig: "Taladro", nptStatus: "Estado de Confirmación", reportNo: "No. de Reporte", wellbore: "Pozo", rig: "Taladro", primaryReason: "Razón Principal", afeNumber: "Número AFE", refDatum: "Datum de Referencia", todayMd: "MD de Hoy (ft)", prevMd: "MD Anterior (ft)", progress: "Progreso (ft)", rotHrsToday: "Horas Rotando Hoy",
       currentOps: "Operación Actual", summary24h: "Resumen 24 h", forecast24h: "Pronóstico 24 h", lastCasing: "Último Casing", lastCasingSize: "Tamaño Último Casing", lastCasingDepth: "Profundidad Último Casing", nextCasing: "Próximo Casing", nextCasingSize: "Tamaño Próximo Casing", nextCasingDepth: "Profundidad Próximo Casing", formTestEmw: "Prueba Formación / EMW", lastBopPressTest: "Última Prueba BOP", pumpRate: "Caudal Bomba (gpm)", pumpPress: "Presión Bomba (psi)", stringWeightUpDown: "Peso Sarta Arriba/Abajo", torqueOnBottom: "Torque en Fondo",
       mudEngineer: "Ingeniero de Lodo", sampleFrom: "Muestra de", mudType: "Tipo de Lodo", mudTimeMd: "Hora / MD", mudTime: "Hora Lodo", mudMd: "MD Lodo", mudDensity: "Densidad (ppg)", mudTemperature: "Temp. Lodo", rheologyTemp: "Temp. Reología", viscosity: "Viscosidad", pvYp: "PV / YP", pv: "PV", yp: "YP", gels: "Geles 10s/10m/30m", gel10s: "Gel 10s", gel10m: "Gel 10m", gel30m: "Gel 30m", apiWl: "API WL", oilWater: "Aceite / Agua", oilPercent: "Aceite (%)", waterPercent: "Agua (%)", sand: "Arena (%)", ecd: "ECD", mudComments: "Comentarios de Lodo",
       bitNo: "No. Broca", bitSize: "Tamaño Broca", bitManufacturer: "Fabricante", bitSerial: "No. Serie", bhaNo: "No. BHA", bhaMdIn: "MD Entrada", bhaMdOut: "MD Salida", bhaTotalLength: "Longitud Total (ft)", safetyIncident: "¿Incidente de Seguridad?", environmentIncident: "¿Incidente Ambiental?", daysSinceRi: "Días desde Último RI", daysSinceLta: "Días desde Último LTA", incidentComments: "Comentarios de Incidente", otherRemarks: "Otras Observaciones",
@@ -256,13 +256,21 @@ const completionIssuesEl = document.querySelector("#completionIssues");
 const workoverIssuesEl = document.querySelector("#workoverIssues");
 const moveIssuesEl = document.querySelector("#moveIssues");
 const toast = document.querySelector("#toast");
-let currentLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
+const storedLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
+let currentLanguage = ["zh", "en", "es"].includes(storedLanguage) ? storedLanguage : "zh";
+let reportContentLanguageMode = "original";
 let activeMenuTarget = "drilling-daily";
 let drillingSourceFileName = "";
 const MANUAL_WELLS_STORAGE_KEY = "drillingReportManualWellProfiles";
 const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
 const lockedRecordIds = new Set();
+const reportContentState = {
+  drilling: { mode: "original", original: null, cache: {}, targetLanguage: "" },
+  completion: { mode: "original", original: null, cache: {}, targetLanguage: "" },
+  workover: { mode: "original", original: null, cache: {}, targetLanguage: "" },
+  move: { mode: "original", original: null, cache: {}, targetLanguage: "" }
+};
 const RECORDS_PER_PAGE = 10;
 const ANALYTICS_DETAIL_PAGE_SIZE = 10;
 const recordState = {
@@ -275,8 +283,46 @@ const serverWarnings = { drilling: [], completion: [], workover: [], move: [] };
 const wellStatsCache = {};
 const analyticsState = {
   production: { payload: null, detailPage: 1, sortField: "", sortDir: "desc" },
-  npt: { payload: null, detailPage: 1, sortField: "", sortDir: "desc" }
+  productionReport: {
+    payload: null,
+    detailPage: 1,
+    sortField: "",
+    sortDir: "desc",
+    activeTab: "rig",
+    availableRigs: [],
+    availableProjects: [],
+    selectedRigs: new Set(),
+    selectedProjects: new Set(),
+    rigTouched: false,
+    projectTouched: false,
+    selectionInitialized: false,
+    sideSearch: "",
+    wellQuery: ""
+  },
+  npt: {
+    payload: null,
+    detailPage: 1,
+    sortField: "",
+    sortDir: "desc",
+    activeTab: "rig",
+    availableRigs: [],
+    availableProjects: [],
+    selectedRigs: new Set(),
+    selectedProjects: new Set(),
+    rigTouched: false,
+    projectTouched: false,
+    selectionInitialized: false,
+    sideSearch: "",
+    keywordQuery: ""
+  }
 };
+const REPORT_HOME_TARGETS = {
+  drilling: "drilling-daily",
+  completion: "completion-daily",
+  workover: "workover-daily",
+  move: "move-daily"
+};
+const initialReportRoute = parseInitialReportRoute();
 const nptConfirmState = {
   items: [],
   filters: { wellbore: "", rig: "", status: "", scope: "all" },
@@ -486,6 +532,7 @@ function applyFrontPermissions() {
     el.hidden = !canEdit;
     el.disabled = !canEdit;
   });
+  applyTranslationPreviewState();
 }
 
 async function logoutFront() {
@@ -522,7 +569,7 @@ function isCurrentReportLocked(reportType) {
 }
 
 function renderModulePlaceholder(link = activeMenuLink()) {
-  if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "well-npt-confirm" || activeMenuTarget === "rig-npt-ranking") return;
+  if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "production-report" || activeMenuTarget === "well-npt-confirm" || activeMenuTarget === "rig-npt-ranking") return;
   const parentKey = link.closest(".menu-group")?.querySelector(".menu-group-toggle span[data-i18n]")?.dataset.i18n || "moduleStatusPlanned";
   const parentLabel = document.querySelector("#placeholderModule");
   if (parentLabel) {
@@ -543,6 +590,7 @@ function setActiveMenu(target) {
   const isWorkoverDaily = target === "workover-daily";
   const isMoveDaily = target === "move-daily";
   const isProductionSummary = target === "rig-production-summary";
+  const isProductionReport = target === "production-report";
   const isNptStats = target === "well-npt-confirm";
   const isNptConfirm = target === "rig-npt-ranking";
   document.querySelector("#drillingDailyPage").hidden = !isDrillingDaily;
@@ -555,11 +603,13 @@ function setActiveMenu(target) {
   document.querySelector("#moveDailyPage").classList.toggle("active", isMoveDaily);
   document.querySelector("#productionSummaryPage").hidden = !isProductionSummary;
   document.querySelector("#productionSummaryPage").classList.toggle("active", isProductionSummary);
+  document.querySelector("#productionReportPage").hidden = !isProductionReport;
+  document.querySelector("#productionReportPage").classList.toggle("active", isProductionReport);
   document.querySelector("#nptStatsPage").hidden = !isNptStats;
   document.querySelector("#nptStatsPage").classList.toggle("active", isNptStats);
   document.querySelector("#nptConfirmPage").hidden = !isNptConfirm;
   document.querySelector("#nptConfirmPage").classList.toggle("active", isNptConfirm);
-  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily && !isProductionSummary && !isNptStats && !isNptConfirm;
+  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily && !isProductionSummary && !isProductionReport && !isNptStats && !isNptConfirm;
   document.querySelector("#modulePlaceholder").hidden = !showPlaceholder;
   document.querySelector("#modulePlaceholder").classList.toggle("active", showPlaceholder);
   if (showPlaceholder) renderModulePlaceholder();
@@ -568,6 +618,7 @@ function setActiveMenu(target) {
   if (isWorkoverDaily) showReportRecords("workover");
   if (isMoveDaily) showReportRecords("move");
   if (isProductionSummary) loadAnalytics("production");
+  if (isProductionReport) loadAnalytics("productionReport");
   if (isNptStats) loadAnalytics("npt");
   if (isNptConfirm) loadNptConfirmations();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -583,6 +634,7 @@ function setLeadingLabelText(label, text) {
 }
 
 function applyLanguage(language) {
+  if (!["zh", "en", "es"].includes(language)) return;
   currentLanguage = language;
   localStorage.setItem("drillingReportLanguage", language);
   document.documentElement.lang = language === "zh" ? "zh-CN" : language;
@@ -592,9 +644,7 @@ function applyLanguage(language) {
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.placeholder = ui(el.dataset.i18nPlaceholder);
   });
-  document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.lang === language);
-  });
+  syncLanguageButtons();
   document.querySelectorAll("label").forEach((label) => {
     if (label.closest(".admin-page")) return;
     if (label.classList.contains("npt-date-range")) {
@@ -612,6 +662,7 @@ function applyLanguage(language) {
   document.querySelector("#moveRulesList").innerHTML = i18n[language].moveRules.map((rule) => `<li>${rule}</li>`).join("");
   Object.keys(recordState).forEach((reportType) => renderRecordDashboard(reportType));
   if (analyticsState.production.payload) renderProductionAnalytics(analyticsState.production.payload);
+  if (analyticsState.productionReport.payload) renderProductionReportAnalytics(analyticsState.productionReport.payload);
   if (analyticsState.npt.payload) renderNptAnalytics(analyticsState.npt.payload);
   renderModulePlaceholder();
   validate();
@@ -619,6 +670,211 @@ function applyLanguage(language) {
   validateWorkover();
   validateMove();
   updateAllSaveButtons();
+  applyTranslationPreviewState();
+}
+
+function syncLanguageButtons() {
+  document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.lang === reportContentLanguageMode);
+  });
+}
+
+async function handleLanguageChoice(language) {
+  if (language === "original") {
+    restoreActiveReportOriginal();
+    reportContentLanguageMode = "original";
+    syncLanguageButtons();
+    return;
+  }
+  if (!["zh", "en", "es"].includes(language)) return;
+  reportContentLanguageMode = language;
+  applyLanguage(language);
+  await translateVisibleReportContent(language);
+  syncLanguageButtons();
+}
+
+function activeReportType() {
+  return ["drilling", "completion", "workover", "move"].find((reportType) => {
+    const page = reportPage(reportType);
+    if (!page || page.hidden || !page.classList.contains("active")) return false;
+    return [...document.querySelectorAll(`[data-detail-view="${reportType}"]`)].some((el) => !el.hidden);
+  }) || "";
+}
+
+function reportPage(reportType) {
+  const ids = {
+    drilling: "drillingDailyPage",
+    completion: "completionDailyPage",
+    workover: "workoverDailyPage",
+    move: "moveDailyPage",
+  };
+  return document.querySelector(`#${ids[reportType]}`);
+}
+
+function clonePayload(payload) {
+  return JSON.parse(JSON.stringify(payload || {}));
+}
+
+function setReportOriginalPayload(reportType, payload) {
+  if (!reportContentState[reportType]) return;
+  reportContentState[reportType] = {
+    mode: "original",
+    original: clonePayload(payload),
+    cache: {},
+    targetLanguage: "",
+  };
+  reportContentLanguageMode = "original";
+  syncLanguageButtons();
+  applyTranslationPreviewState(reportType);
+}
+
+function captureOriginalReport(reportType) {
+  const state = reportContentState[reportType];
+  if (!state) return null;
+  if (state.mode === "original" || !state.original) {
+    state.original = clonePayload(reportPayload(reportType));
+    state.cache = {};
+  }
+  return clonePayload(state.original);
+}
+
+function markReportOriginalEdited(reportType) {
+  const state = reportContentState[reportType];
+  if (!state || state.mode !== "original") return;
+  state.original = null;
+  state.cache = {};
+}
+
+function restoreActiveReportOriginal() {
+  const reportType = activeReportType();
+  if (!reportType) return;
+  restoreReportOriginal(reportType);
+}
+
+function restoreReportOriginal(reportType) {
+  const state = reportContentState[reportType];
+  if (!state) return;
+  const payload = state.original ? clonePayload(state.original) : reportPayload(reportType);
+  state.mode = "original";
+  state.targetLanguage = "";
+  renderReportPayload(reportType, payload);
+  applyFrontPermissions();
+  updateSaveButton(reportType);
+}
+
+async function translateVisibleReportContent(targetLanguage) {
+  const reportType = activeReportType();
+  if (!reportType) return;
+  const sourcePayload = captureOriginalReport(reportType);
+  if (!sourcePayload) return;
+  const state = reportContentState[reportType];
+  const cacheKey = translationCacheKey(reportType, sourcePayload, targetLanguage);
+  try {
+    showToast(ui("translationRunning"));
+    let result = state.cache[cacheKey];
+    if (!result) {
+      const response = await fetch("/api/translate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_language: targetLanguage, payload: sourcePayload }),
+      });
+      result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Translation failed");
+      state.cache[cacheKey] = result;
+    }
+    renderReportPayload(reportType, result.translated_payload || sourcePayload);
+    state.mode = "translated";
+    state.targetLanguage = targetLanguage;
+    state.lastResult = result;
+    applyFrontPermissions();
+    showToast(ui("translationReady"));
+  } catch (error) {
+    console.error(error);
+    const detail = error?.message ? `：${error.message}` : "";
+    showToast(`${ui("translationFailed")}${detail}`);
+  }
+}
+
+function translationCacheKey(reportType, payload, targetLanguage) {
+  const metadata = payload?.metadata || {};
+  const identity = metadata.record_id || metadata.source_file || "";
+  return `${reportType}|${identity}|${targetLanguage}|${JSON.stringify(payload)}`;
+}
+
+function renderReportPayload(reportType, payload = {}) {
+  if (reportType === "drilling") {
+    applyReportFields(payload.report_fields || {});
+    setDrillingSourceFile(payload.metadata?.source_file || drillingSourceFileName || "");
+    loadRows({
+      surveyTable: rowsFromPayload(payload.survey_data, "surveyTable"),
+      bhaTable: rowsFromPayload(payload.bha_components, "bhaTable"),
+      operationsTable: rowsFromPayload(payload.operations, "operationsTable"),
+      costTable: rowsFromPayload(payload.daily_costs, "costTable"),
+      bulkTable: rowsFromPayload(payload.bulks, "bulkTable")
+    });
+  }
+  if (reportType === "completion") {
+    applyReportFields(payload.report_fields || {}, completionForm);
+    loadRows({
+      completionOperationsTable: rowsFromPayload(payload.operations, "completionOperationsTable"),
+      completionBulkTable: rowsFromPayload(payload.bulks, "completionBulkTable"),
+      completionCostTable: rowsFromPayload(payload.daily_costs, "completionCostTable"),
+      perforationIntervalsTable: rowsFromPayload(payload.perforation_intervals, "perforationIntervalsTable")
+    }, completionTableIds);
+  }
+  if (reportType === "workover") {
+    applyReportFields(payload.report_fields || {}, workoverForm);
+    loadRows({
+      workoverOperationsTable: rowsFromPayload(payload.operations, "workoverOperationsTable"),
+      workoverBulkTable: rowsFromPayload(payload.bulks, "workoverBulkTable"),
+      workoverCostTable: rowsFromPayload(payload.daily_costs, "workoverCostTable"),
+      workoverIntervalsTable: rowsFromPayload(payload.perforation_intervals, "workoverIntervalsTable")
+    }, workoverTableIds);
+  }
+  if (reportType === "move") {
+    applyReportFields(payload.report_fields || {}, moveForm);
+    loadRows({
+      moveOperationsTable: rowsFromPayload(payload.operations, "moveOperationsTable")
+    }, moveTableIds);
+  }
+}
+
+function applyTranslationPreviewState(reportType = "") {
+  const reportTypes = reportType ? [reportType] : Object.keys(reportContentState);
+  reportTypes.forEach((type) => {
+    const page = reportPage(type);
+    if (!page) return;
+    const preview = reportContentState[type]?.mode === "translated";
+    page.classList.toggle("translation-preview-mode", preview);
+    updateTranslationPreviewNotice(type, preview);
+    if (!preview) return;
+    page.querySelectorAll(".report-form input,.report-form textarea,.report-form select,.report-form button,[data-add-row],.row-delete").forEach((el) => {
+      el.disabled = true;
+      if (el.matches("[data-add-row],.row-delete")) el.hidden = true;
+    });
+    document.querySelectorAll(`[data-save-report="${type}"]`).forEach((el) => {
+      el.disabled = true;
+    });
+  });
+}
+
+function updateTranslationPreviewNotice(reportType, show) {
+  const page = reportPage(reportType);
+  if (!page) return;
+  let notice = page.querySelector(`[data-translation-preview-notice="${reportType}"]`);
+  if (!show) {
+    notice?.remove();
+    return;
+  }
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.className = "translation-preview-notice";
+    notice.dataset.translationPreviewNotice = reportType;
+    const statusStrip = page.querySelector(`[data-detail-view="${reportType}"].status-strip`);
+    if (statusStrip) statusStrip.insertAdjacentElement("afterend", notice);
+    else page.querySelector(`[data-detail-view="${reportType}"]`)?.insertAdjacentElement("beforebegin", notice);
+  }
+  notice.textContent = ui("translationPreviewNotice");
 }
 
 function makeInput(field, value = "") {
@@ -655,6 +911,7 @@ function addRow(tableId, values = []) {
   button.setAttribute("aria-label", "Delete row");
   button.textContent = "×";
   button.addEventListener("click", () => {
+    markReportOriginalEdited(tableReportType(tableId));
     tr.remove();
     validateForTable(tableId);
     updateSaveButton(tableReportType(tableId));
@@ -692,6 +949,65 @@ function escapeHtml(value = "") {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char]);
 }
 
+function todayIsoDate() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function latestReportDate(records = []) {
+  const dates = records
+    .map((record) => String(record.reportDate || "").slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  return dates[dates.length - 1] || "";
+}
+
+function normalizeReportType(value) {
+  const reportType = String(value || "").trim().toLowerCase();
+  return REPORT_HOME_TARGETS[reportType] ? reportType : "drilling";
+}
+
+function reportTypeFromMenuTarget(target) {
+  return Object.entries(REPORT_HOME_TARGETS).find(([, menuTarget]) => menuTarget === target)?.[0] || "";
+}
+
+function parseInitialReportRoute() {
+  const params = new URLSearchParams(window.location.search);
+  const target = params.get("page") || params.get("target") || "";
+  const reportType = reportTypeFromMenuTarget(target);
+  return {
+    target: reportType ? target : "drilling-daily",
+    reportType: reportType || "drilling",
+    well: (params.get("well") || params.get("wellbore") || "").trim(),
+    applied: false
+  };
+}
+
+function reportHomeUrl(reportType, wellbore) {
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams();
+  params.set("page", REPORT_HOME_TARGETS[normalizeReportType(reportType)] || REPORT_HOME_TARGETS.drilling);
+  if (wellbore) params.set("well", wellbore);
+  url.search = params.toString();
+  url.hash = "";
+  return url.toString();
+}
+
+function openReportHomeForWell(reportType, wellbore) {
+  if (!wellbore) return;
+  window.open(reportHomeUrl(reportType, wellbore), "_blank", "noopener");
+}
+
+function applyInitialWellSelection(reportType) {
+  if (initialReportRoute.applied || initialReportRoute.reportType !== reportType || !initialReportRoute.well) return;
+  const state = recordState[reportType];
+  state.selectedWell = initialReportRoute.well;
+  state.selectedDate = "";
+  state.calendarMonth = "";
+  state.page = 1;
+  initialReportRoute.applied = true;
+}
+
 async function refreshRecords(reportType) {
   invalidateWellStats(reportType);
   try {
@@ -706,6 +1022,7 @@ async function refreshRecords(reportType) {
     console.error(error);
     recordState[reportType].records = [];
   }
+  applyInitialWellSelection(reportType);
   renderRecordDashboard(reportType);
 }
 
@@ -728,17 +1045,17 @@ function renderRecordDashboard(reportType) {
   if (!state.selectedWell || !wellList.includes(state.selectedWell)) state.selectedWell = wellList[0] || "";
   const selectedRecords = records.filter((record) => !state.selectedWell || record.wellbore === state.selectedWell);
   const selectedJobs = jobs.filter((job) => !state.selectedWell || !job.wellbore || job.wellbore === state.selectedWell);
-  const monthBase = state.calendarMonth || selectedRecords[0]?.reportDate || records[0]?.reportDate || new Date().toISOString().slice(0, 10);
+  const monthBase = state.calendarMonth || latestReportDate(selectedRecords) || todayIsoDate();
   const monthRecords = recordsForMonth(selectedRecords, monthBase);
   const uploadedDays = new Set(monthRecords.map((record) => dayOfMonth(record.reportDate)));
-  const warningDays = new Set(monthRecords.filter((record) => record.validation_status === "warning").map((record) => dayOfMonth(record.reportDate)));
-  const wellSpan = reportSpan(selectedRecords);
-  const missingDays = missingCalendarDays(uploadedDays, monthBase, wellSpan);
+  const calendarStages = calendarStageDays(monthRecords);
   const wellStats = cachedWellStats(reportType, state.selectedWell);
   const nptShare = percentage(wellStats.npt_hours, wellStats.total_hours);
   const pShare = percentage(wellStats.p_hours, wellStats.total_hours);
   const scShare = percentage(wellStats.sc_hours, wellStats.total_hours);
-  const completeness = reportCompleteness(selectedRecords, missingDays);
+  const stageDays = calendarStageDays(selectedRecords);
+  const moveDayCount = stageDays.move.size;
+  const drillingDayCount = stageDays.drilling.size;
   const tableRecords = sortedRecords(state.selectedDate ? selectedRecords.filter((record) => record.reportDate === state.selectedDate) : selectedRecords);
   const totalTableRows = tableRecords.length + selectedJobs.length;
   const totalPages = Math.max(1, Math.ceil(totalTableRows / RECORDS_PER_PAGE));
@@ -783,7 +1100,7 @@ function renderRecordDashboard(reportType) {
                 <button class="icon-button" type="button" data-report-type="${reportType}" data-month-nav="1" aria-label="${ui("nextMonth")}">›</button>
               </div>
             </div>
-            ${calendarMarkup(reportType, monthBase, uploadedDays, warningDays, missingDays)}
+            ${calendarMarkup(reportType, monthBase, uploadedDays, calendarStages)}
           </section>
           <section class="panel record-summary-panel">
             ${wellBasicInfoMarkup(reportType, state.selectedWell, selectedRecords)}
@@ -791,7 +1108,7 @@ function renderRecordDashboard(reportType) {
               ${summaryCard("metricWorkDays", `${uniqueReportDays(selectedRecords).size}`, ui("daysUnit"), "blue")}
               ${summaryCard("metricNptShare", `${formatHours(wellStats.npt_hours)} h`, `${nptShare}`, "red")}
               ${summaryCard("metricPScShare", `P ${pShare}`, `SC ${scShare}`, "green")}
-              ${summaryCard("metricReportCompleteness", `${completeness.percent}%`, `${ui("missingDate")} ${missingDays.size} ${ui("daysUnit")} / ${ui("warningStatus")} ${completeness.warningDays} ${ui("daysUnit")}`, "violet")}
+              ${summaryCard("metricMoveDrillingDays", `${moveDayCount} / ${drillingDayCount}`, `搬迁 ${moveDayCount} ${ui("daysUnit")} / 钻井 ${drillingDayCount} ${ui("daysUnit")}`, "violet")}
             </div>
             <div class="calendar-hint">${ui("calendarHint")}</div>
           </section>
@@ -846,9 +1163,8 @@ function wellDateMetrics(records) {
 
 function shiftMonth(reportType, delta) {
   const state = recordState[reportType];
-  const latest = (state.records.find((record) => !state.selectedWell || record.wellbore === state.selectedWell)?.reportDate)
-    || state.records[0]?.reportDate
-    || new Date().toISOString().slice(0, 10);
+  const selectedRecords = state.records.filter((record) => !state.selectedWell || record.wellbore === state.selectedWell);
+  const latest = latestReportDate(selectedRecords) || todayIsoDate();
   const current = (state.calendarMonth || latest).slice(0, 7);
   const [year, month] = current.split("-").map(Number);
   const next = new Date(year, (month - 1) + delta, 1);
@@ -859,11 +1175,12 @@ function shiftMonth(reportType, delta) {
 function wellBasicInfoMarkup(reportType, wellbore, records = []) {
   const manual = manualProfileForWell(wellbore) || {};
   const latestRecord = sortedRecords(records)[0] || null;
+  const stats = cachedWellStats(reportType, wellbore);
   const source = latestRecord ? "日报解析" : manual.wellbore ? "手动创建" : "待上传日报";
   const items = [
-    ["井号", latestRecord?.wellbore || manual.wellbore || wellbore || "-"],
-    ["井队", latestRecord?.rig || manual.rig || "-"],
-    ["AFE", latestRecord?.afeNumber || manual.afeNumber || "-"],
+    ["井队", stats.rig || latestRecord?.rig || manual.rig || "-"],
+    ["AFE", stats.afe_number || latestRecord?.afeNumber || manual.afeNumber || "-"],
+    ...wellBasicDateItems(reportType, stats, records),
   ];
   return `
     <section class="well-basic-card" aria-label="当前井基础信息">
@@ -880,6 +1197,25 @@ function wellBasicInfoMarkup(reportType, wellbore, records = []) {
       ${manual.note ? `<p>${escapeHtml(manual.note)}</p>` : ""}
     </section>
   `;
+}
+
+function wellBasicDateItems(reportType, stats = {}, records = []) {
+  if (reportType === "drilling") {
+    return [
+      ["搬迁日期", stats.move_date || firstStageDate(records, "move") || "-"],
+      ["开钻日期", stats.drilling_start_date || firstStageDate(records, "drilling") || "-"],
+    ];
+  }
+  if (reportType === "completion") {
+    return [["完井日期", stats.completion_date || "-"]];
+  }
+  if (reportType === "workover") {
+    return [["修井日期", stats.workover_date || "-"]];
+  }
+  if (reportType === "move") {
+    return [["搬迁日期", stats.move_date || "-"]];
+  }
+  return [];
 }
 
 function openAddWellModal(reportType) {
@@ -903,7 +1239,7 @@ function openAddWellModal(reportType) {
         <div class="well-profile-note">手动资料用于未上传日报时的井档案展示；同井号上传日报后，展示信息以日报解析结果为准。</div>
         <div class="well-profile-form">
           <label>井号<input name="wellbore" required value="${escapeHtml(existing.wellbore || "")}" placeholder="例如 PCNC-040" /></label>
-          <label>井队<input name="rig" value="${escapeHtml(existing.rig || "")}" placeholder="例如 00 SINOPEC 248" /></label>
+          <label>井队<input name="rig" value="${escapeHtml(existing.rig || "")}" placeholder="例如 SINOPEC 248" /></label>
           <label>AFE<input name="afeNumber" value="${escapeHtml(existing.afeNumber || "")}" /></label>
           <label class="wide">备注<textarea name="note">${escapeHtml(existing.note || "")}</textarea></label>
         </div>
@@ -1071,6 +1407,32 @@ function missingCalendarDays(uploadedDays, monthBase, span) {
   return days;
 }
 
+function calendarStageDays(records) {
+  return (records || []).reduce((days, record) => {
+    const day = dayOfMonth(record.reportDate);
+    if (!day) return days;
+    const stage = recordStage(record);
+    if (stage === "move") days.move.add(day);
+    if (stage === "drilling") days.drilling.add(day);
+    return days;
+  }, { move: new Set(), drilling: new Set() });
+}
+
+function recordStage(record = {}) {
+  const eventText = String(record.event || "").toLowerCase();
+  if (String(record.report_type || "") === "drilling" && eventText.includes("rig move")) return "move";
+  if (String(record.report_type || "") === "drilling" && eventText.includes("drilling")) return "drilling";
+  return "";
+}
+
+function firstStageDate(records, stage) {
+  const dates = (records || [])
+    .filter((record) => recordStage(record) === stage && record.reportDate)
+    .map((record) => record.reportDate)
+    .sort();
+  return dates[0] || "";
+}
+
 function reportCompleteness(records, missingDays) {
   const uploadedCount = uniqueReportDays(records).size;
   const warningDays = new Set(records.filter((record) => record.validation_status === "warning").map((record) => record.reportDate).filter(Boolean)).size;
@@ -1124,7 +1486,7 @@ function calendarMonthLabel(dateValue) {
   return date.toLocaleDateString(currentLanguage === "es" ? "es-ES" : "en-US", { year: "numeric", month: "long" });
 }
 
-function calendarMarkup(reportType, dateValue, uploadedDays, warningDays, missingDays) {
+function calendarMarkup(reportType, dateValue, uploadedDays, stageDays) {
   const base = new Date(`${(dateValue || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
   const year = base.getFullYear();
   const month = base.getMonth();
@@ -1143,17 +1505,17 @@ function calendarMarkup(reportType, dateValue, uploadedDays, warningDays, missin
       ${cells.map((cell) => {
         const statusClass = cell.muted
           ? "muted"
-          : missingDays.has(cell.day)
-            ? "needs-upload"
-            : warningDays.has(cell.day)
-              ? "has-warning"
+          : stageDays.move.has(cell.day)
+            ? "has-move"
+            : stageDays.drilling.has(cell.day)
+              ? "has-drilling"
               : uploadedDays.has(cell.day)
                 ? "has-upload"
                 : "";
         return `<button type="button" class="${statusClass}" data-calendar-date="${cell.date || ""}" data-report-type="${reportType}" ${cell.muted ? "disabled" : ""}><span>${cell.day}</span></button>`;
       }).join("")}
     </div>
-    <div class="calendar-legend"><span class="dot upload"></span>${ui("uploadedDays")}<span class="dot warning"></span>${ui("warningStatus")}<span class="dot pending"></span>${ui("missingDate")}</div>
+    <div class="calendar-legend"><span class="dot move"></span>Rig Move<span class="dot drilling"></span>Drilling</div>
   `;
 }
 
@@ -1256,9 +1618,19 @@ function analyticsSortHeader(kind, field, label) {
 
 function analyticsSortedRows(kind, rows) {
   const state = analyticsState[kind];
+  if (kind === "npt" && !state.sortField) return nptDefaultSortedRows(rows);
   if (!state.sortField) return rows;
   const direction = state.sortDir === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => analyticsCompare(left, right, state.sortField) * direction);
+}
+
+function nptDefaultSortedRows(rows) {
+  return [...rows].sort((left, right) => (
+    analyticsCompare(left, right, "wellbore")
+    || analyticsCompare(left, right, "reportDate")
+    || analyticsCompare(left, right, "project_name")
+    || analyticsCompare(left, right, "rig")
+  ));
 }
 
 function analyticsCompare(left, right, field) {
@@ -1272,7 +1644,7 @@ function analyticsCompare(left, right, field) {
   if (["hours", "drilling_hours", "completion_hours", "workover_hours", "move_hours", "npt_hours"].includes(field)) {
     return Number(leftValue || 0) - Number(rightValue || 0);
   }
-  if (["reportDate", "start_date", "end_date"].includes(field)) {
+  if (["reportDate", "start_date", "end_date", "move_date", "drilling_start_date", "drilling_finish_date", "completion_date", "workover_date"].includes(field)) {
     return String(leftValue).localeCompare(String(rightValue));
   }
   return String(leftValue).localeCompare(String(rightValue), currentLanguage === "zh" ? "zh-Hans" : currentLanguage, { numeric: true, sensitivity: "base" });
@@ -1375,16 +1747,56 @@ function analyticsFilterValues(kind) {
   const formEl = document.querySelector(`[data-analytics-filter="${kind}"]`);
   const params = new URLSearchParams();
   if (!formEl) return params;
+  if (kind === "productionReport") {
+    const state = analyticsState.productionReport;
+    params.set("project_mode", "1");
+    appendProductionReportParams(params, "rig", state.selectedRigs, state.availableRigs, state.rigTouched);
+    appendProductionReportParams(params, "project", state.selectedProjects, state.availableProjects, state.projectTouched);
+    if (state.wellQuery.trim()) params.set("wellbore", state.wellQuery.trim());
+    return params;
+  }
+  if (kind === "npt") {
+    const state = analyticsState.npt;
+    params.set("project_mode", "1");
+    appendProductionReportParams(params, "rig", state.selectedRigs, state.availableRigs, state.rigTouched);
+    appendProductionReportParams(params, "project", state.selectedProjects, state.availableProjects, state.projectTouched);
+    if (state.keywordQuery.trim()) params.set("wellbore", state.keywordQuery.trim());
+    return params;
+  }
+  if (kind === "production") {
+    params.set("project_mode", "1");
+    const scopeType = formEl.querySelector("[data-production-scope-type]")?.value === "project" ? "project" : "rig";
+    const scopeValue = formEl.querySelector("[data-production-scope-value]")?.value || "";
+    if (scopeValue) params.set(scopeType, scopeValue);
+  }
   formEl.querySelectorAll("input, select").forEach((control) => {
+    if (!control.name) return;
+    if (kind === "production" && (control.name === "scope_type" || control.name === "scope_value")) return;
+    if (control.multiple) {
+      [...control.selectedOptions].forEach((option) => {
+        if (option.value) params.append(control.name, option.value);
+      });
+      return;
+    }
     const value = control.value.trim();
     if (value) params.set(control.name, value);
   });
   return params;
 }
 
-async function loadAnalytics(kind) {
+function appendProductionReportParams(params, name, selected, available, touched) {
+  if (!available.length) return;
+  if (!selected.size) {
+    if (touched) params.append(name, "__none__");
+    return;
+  }
+  [...selected].forEach((value) => params.append(name, value));
+}
+
+async function loadAnalytics(kind, options = {}) {
   const params = analyticsFilterValues(kind);
-  const response = await fetch(`${analyticsEndpoint(kind)}?${params.toString()}`);
+  if (options.force) params.set("_ts", String(Date.now()));
+  const response = await fetch(`${analyticsEndpoint(kind)}?${params.toString()}`, { cache: options.force ? "no-store" : "default" });
   const payload = await response.json();
   if (!response.ok) {
     showToast(payload.error || "统计数据加载失败");
@@ -1392,17 +1804,54 @@ async function loadAnalytics(kind) {
   }
   analyticsState[kind].payload = payload;
   analyticsState[kind].detailPage = 1;
-  populateAnalyticsFilters(kind, payload.filters || {});
+  const defaultSelectionApplied = populateAnalyticsFilters(kind, payload.filters || {});
+  if ((kind === "productionReport" || kind === "npt") && defaultSelectionApplied && !options.skipSelectionReload) {
+    await loadAnalytics(kind, { force: true, skipSelectionReload: true });
+    return;
+  }
   if (kind === "npt") renderNptAnalytics(payload);
+  else if (kind === "productionReport") renderProductionReportAnalytics(payload);
   else renderProductionAnalytics(payload);
 }
 
 function populateAnalyticsFilters(kind, filters) {
   const formEl = document.querySelector(`[data-analytics-filter="${kind}"]`);
-  if (!formEl) return;
-  setSelectOptions(formEl.querySelector('[name="rig"]'), filters.rigs || [], ui("allRigs"));
+  if (!formEl) return false;
+  if (kind === "productionReport") {
+    return initializeProductionReportSelections(filters);
+  }
+  if (kind === "npt") {
+    return initializeNptReportSelections(filters);
+  }
+  if (kind === "production") {
+    populateProductionSummaryScopeFilter(formEl, filters);
+    return false;
+  }
+  if (kind !== "productionReport") setSelectOptions(formEl.querySelector('[name="rig"]'), filters.rigs || [], ui("allRigs"));
+  const defaultProjectApplied = kind === "productionReport"
+    ? populateProductionRigFilter(formEl, filters.rigs || [])
+    : (setMultiSelectOptions(formEl.querySelector('[name="project"]'), (filters.projects || []).map((item) => [item.value, projectOptionLabel(item)])), false);
   setSelectOptions(formEl.querySelector('[name="report_type"]'), (filters.report_types || []).map((item) => [item.value, reportTypeLabel(item.value)]), ui("allReportTypes"));
   setSelectOptions(formEl.querySelector('[name="reason"]'), (filters.reasons || []).map((item) => [item, reasonLabel(item)]), ui("allReasons"));
+  return defaultProjectApplied;
+}
+
+function populateProductionSummaryScopeFilter(formEl, filters = {}) {
+  const scopeType = formEl.querySelector("[data-production-scope-type]");
+  const scopeValue = formEl.querySelector("[data-production-scope-value]");
+  const scopeLabel = formEl.querySelector("[data-production-scope-label]");
+  if (!scopeType || !scopeValue) return;
+  const mode = scopeType.value === "project" ? "project" : "rig";
+  const current = scopeValue.value;
+  if (mode === "project") {
+    if (scopeLabel) scopeLabel.textContent = "项目";
+    const projects = (filters.projects || []).map((item) => [item.value, item.label || item.value]);
+    setSelectOptions(scopeValue, projects, ui("allProjects"));
+  } else {
+    if (scopeLabel) scopeLabel.textContent = "井队";
+    setSelectOptions(scopeValue, filters.rigs || [], ui("allRigs"));
+  }
+  scopeValue.value = [...scopeValue.options].some((option) => option.value === current) ? current : "";
 }
 
 function setSelectOptions(select, values, emptyLabel) {
@@ -1411,6 +1860,225 @@ function setSelectOptions(select, values, emptyLabel) {
   const items = values.map((item) => Array.isArray(item) ? item : [item, item]);
   select.innerHTML = `<option value="">${emptyLabel}</option>${items.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
   select.value = items.some(([value]) => value === current) ? current : "";
+}
+
+function setMultiSelectOptions(select, values) {
+  if (!select) return;
+  const current = new Set([...select.selectedOptions].map((option) => option.value));
+  const items = values.map((item) => Array.isArray(item) ? item : [item, item]);
+  select.innerHTML = items.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("");
+  [...select.options].forEach((option) => {
+    option.selected = current.has(option.value);
+  });
+}
+
+function populateProductionProjectFilter(formEl, projects = []) {
+  const field = formEl.querySelector("[data-production-project-filter]");
+  if (!field) return false;
+  const items = productionProjectItems(projects);
+  field._productionProjectItems = items;
+  const existing = selectedProductionProjectValues(field);
+  const validValues = new Set(items.map((item) => item.value));
+  let selected = new Set([...existing].filter((value) => validValues.has(value)));
+  let defaultApplied = false;
+  if (!selected.size && !field.dataset.projectTouched) {
+    selected = new Set(items.filter((item) => projectStartYear(item) === String(new Date().getFullYear())).map((item) => item.value));
+    defaultApplied = selected.size > 0;
+  }
+  renderProductionProjectOptions(field, items, selected);
+  setProductionProjectSelection(field, selected);
+  filterProductionProjectOptions(field);
+  return defaultApplied && !existing.size;
+}
+
+function populateProductionRigFilter(formEl, rigs = []) {
+  const field = formEl.querySelector("[data-production-rig-filter]");
+  if (!field) return false;
+  const items = productionRigItems(rigs);
+  field._productionProjectItems = items;
+  field.dataset.valueName = "rig";
+  field.dataset.emptyLabel = ui("allRigs");
+  field.dataset.selectedUnit = "个井队";
+  const existing = selectedProductionProjectValues(field);
+  const validValues = new Set(items.map((item) => item.value));
+  let selected = new Set([...existing].filter((value) => validValues.has(value)));
+  let defaultApplied = false;
+  if (!selected.size && !field.dataset.projectTouched) {
+    selected = new Set(items.map((item) => item.value));
+    defaultApplied = selected.size > 0;
+  }
+  renderProductionProjectOptions(field, items, selected);
+  setProductionProjectSelection(field, selected);
+  filterProductionProjectOptions(field);
+  return defaultApplied && !existing.size;
+}
+
+function productionProjectItems(projects = []) {
+  return (projects || []).map((item) => {
+    const value = String(item.value || "").trim();
+    return {
+      value,
+      label: projectOptionLabel(item),
+      start_date: item.start_date || "",
+      end_date: item.end_date || "",
+      searchText: [item.label, item.contract_no, item.start_date, item.end_date, value].filter(Boolean).join(" ").toLowerCase(),
+    };
+  }).filter((item) => item.value).sort((left, right) => {
+    const byDate = String(right.start_date || "").localeCompare(String(left.start_date || ""));
+    return byDate || left.label.localeCompare(right.label, "zh-Hans-CN", { numeric: true });
+  });
+}
+
+function productionRigItems(rigs = []) {
+  return (rigs || []).map((rig) => String(rig || "").trim()).filter(Boolean).sort((left, right) => {
+    return left.localeCompare(right, "zh-Hans-CN", { numeric: true, sensitivity: "base" });
+  }).map((rig) => ({
+    value: rig,
+    label: rig,
+    searchText: rig.toLowerCase(),
+  }));
+}
+
+function initializeProductionReportSelections(filters = {}) {
+  const state = analyticsState.productionReport;
+  const rigs = productionRigItems(filters.rigs || []);
+  const projects = productionProjectItems(filters.projects || []);
+  const wasInitialized = state.selectionInitialized;
+  state.availableRigs = rigs;
+  state.availableProjects = projects;
+  const rigValues = rigs.map((item) => item.value);
+  const projectValues = projects.map((item) => item.value);
+
+  if (!state.rigTouched) state.selectedRigs = new Set(rigValues);
+  else state.selectedRigs = intersectSelection(state.selectedRigs, rigValues);
+  if (!state.projectTouched) state.selectedProjects = new Set(projectValues);
+  else state.selectedProjects = intersectSelection(state.selectedProjects, projectValues);
+
+  state.selectionInitialized = true;
+  return !wasInitialized && (rigValues.length > 0 || projectValues.length > 0);
+}
+
+function intersectSelection(selected, validValues) {
+  const valid = new Set(validValues);
+  return new Set([...selected].filter((value) => valid.has(value)));
+}
+
+function projectStartYear(item = {}) {
+  return String(item.start_date || "").slice(0, 4);
+}
+
+function selectedProductionProjectValues(field) {
+  return new Set([...field.querySelectorAll('input[type="hidden"][name="project"]')].map((input) => input.value).filter(Boolean));
+}
+
+function renderProductionProjectOptions(field, items, selected) {
+  const host = field.querySelector("[data-project-options]");
+  if (!host) return;
+  host.innerHTML = items.map((item) => `
+    <label class="project-multiselect-option" data-project-option data-project-search-text="${escapeHtml(item.searchText)}">
+      <input type="checkbox" value="${escapeHtml(item.value)}" ${selected.has(item.value) ? "checked" : ""} />
+      <span>${escapeHtml(item.label)}</span>
+    </label>
+  `).join("") || `<div class="project-multiselect-empty">暂无项目</div>`;
+}
+
+function setProductionProjectSelection(field, selected) {
+  const valuesHost = field.querySelector("[data-project-values]");
+  const items = field._productionProjectItems || [];
+  const valueName = field.dataset.valueName || "project";
+  const selectedValues = new Set([...selected].filter(Boolean));
+  if (valuesHost) {
+    valuesHost.innerHTML = [...selectedValues].map((value) => `<input type="hidden" name="${escapeHtml(valueName)}" value="${escapeHtml(value)}" />`).join("");
+  }
+  field.querySelectorAll('[data-project-option] input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = selectedValues.has(checkbox.value);
+  });
+  const summary = field.querySelector("[data-project-summary]");
+  if (summary) {
+    const labels = items.filter((item) => selectedValues.has(item.value)).map((item) => item.label);
+    summary.textContent = labels.length === 0 ? (field.dataset.emptyLabel || ui("allProjects")) : labels.length === 1 ? labels[0] : `已选 ${labels.length} ${field.dataset.selectedUnit || "个项目"}`;
+    summary.title = labels.join("\n");
+  }
+}
+
+function filterProductionProjectOptions(field) {
+  const term = (field.querySelector("[data-project-search]")?.value || "").trim().toLowerCase();
+  field.querySelectorAll("[data-project-option]").forEach((option) => {
+    option.hidden = Boolean(term) && !option.dataset.projectSearchText.includes(term);
+  });
+  positionProductionProjectDropdown(field);
+}
+
+function closeProductionProjectDropdowns(except = null) {
+  document.querySelectorAll("[data-production-project-filter], [data-production-rig-filter]").forEach((field) => {
+    if (except && field === except) return;
+    const menu = field.querySelector("[data-project-dropdown]");
+    const trigger = field.querySelector("[data-project-dropdown-toggle]");
+    if (menu) menu.hidden = true;
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  });
+}
+
+function positionProductionProjectDropdown(field) {
+  const menu = field?.querySelector("[data-project-dropdown]");
+  const trigger = field?.querySelector("[data-project-dropdown-toggle]");
+  if (!field || !menu || !trigger || menu.hidden) return;
+  const rect = trigger.getBoundingClientRect();
+  const viewportGap = 14;
+  const width = Math.min(520, Math.max(rect.width, window.innerWidth - rect.left - viewportGap));
+  menu.style.left = `${Math.max(viewportGap, rect.left)}px`;
+  menu.style.top = `${rect.bottom + 6}px`;
+  menu.style.width = `${width}px`;
+  menu.style.maxHeight = `${Math.max(180, window.innerHeight - rect.bottom - 24)}px`;
+}
+
+function positionOpenProductionProjectDropdowns() {
+  document.querySelectorAll("[data-production-project-filter], [data-production-rig-filter]").forEach((field) => positionProductionProjectDropdown(field));
+}
+
+function resetAnalyticsFilter(kind) {
+  const formEl = document.querySelector(`[data-analytics-filter="${kind}"]`);
+  if (!formEl) return;
+  if (kind === "productionReport") {
+    const state = analyticsState.productionReport;
+    state.selectedRigs = new Set(state.availableRigs.map((item) => item.value));
+    state.selectedProjects = new Set(state.availableProjects.map((item) => item.value));
+    state.rigTouched = false;
+    state.projectTouched = false;
+    state.sideSearch = "";
+    state.wellQuery = "";
+    state.detailPage = 1;
+    refreshProductionReportView();
+    return;
+  }
+  if (kind === "npt") {
+    const state = analyticsState.npt;
+    state.selectedRigs = new Set(state.availableRigs.map((item) => item.value));
+    state.selectedProjects = new Set(state.availableProjects.map((item) => item.value));
+    state.rigTouched = false;
+    state.projectTouched = false;
+    state.sideSearch = "";
+    state.keywordQuery = "";
+    state.detailPage = 1;
+    refreshNptReportView();
+    return;
+  }
+  formEl.querySelectorAll("input, select").forEach((control) => {
+    if (control.name === "project_mode") return;
+    control.value = "";
+  });
+  formEl.querySelectorAll("[data-production-project-filter], [data-production-rig-filter]").forEach((field) => {
+    delete field.dataset.projectTouched;
+    field.querySelector("[data-project-search]") && (field.querySelector("[data-project-search]").value = "");
+    setProductionProjectSelection(field, new Set());
+    filterProductionProjectOptions(field);
+  });
+}
+
+function projectOptionLabel(item = {}) {
+  const dates = [item.start_date, item.end_date].filter(Boolean).join(" ~ ");
+  const contract = item.contract_no ? `${item.contract_no} / ` : "";
+  return `${contract}${item.label || item.value || ""}${dates ? ` (${dates})` : ""}`;
 }
 
 function renderProductionAnalytics(payload) {
@@ -1426,34 +2094,399 @@ function renderProductionAnalytics(payload) {
     analyticsKpi(ui("kpiReportCompleteness"), `${completeness.percent || 0}%`, ui("analyticsCompletenessCaption").replace("{missing}", completeness.missing_days || 0).replace("{warning}", completeness.warning_days || 0)),
   ].join("");
   const reportTypeSeries = Object.keys(REPORT_TYPE_LABELS_JS).map((key) => ({ key, label: reportTypeLabel(key) }));
-  renderStackedBars('[data-chart="production-rig"]', payload.by_rig || [], reportTypeSeries);
+  renderProductionNptRanking('[data-chart="production-rig"]', payload.npt_by_rig || []);
   renderDonut('[data-chart="production-type"]', (payload.by_type || []).map((item) => ({ label: reportTypeLabel(item.report_type || item.type || item.value || item.label), value: item.hours })));
-  renderLineChart('[data-chart="production-monthly"]', payload.monthly || [], reportTypeSeries);
-  renderProductionTable(payload.details || []);
+  renderProductionWellGantt('[data-chart="production-monthly"]', payload);
+}
+
+function renderProductionReportAnalytics(payload) {
+  renderProductionReportTabs();
+  renderProductionReportSide();
+  renderProductionReportFilters();
+  renderProductionReportTable(productionReportVisibleRows(payload.details || []));
+}
+
+function renderProductionReportTabs() {
+  const state = analyticsState.productionReport;
+  document.querySelectorAll("[data-production-report-tab]").forEach((button) => {
+    const active = button.dataset.productionReportTab === state.activeTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+}
+
+function renderProductionReportSide() {
+  const state = analyticsState.productionReport;
+  const host = document.querySelector("[data-production-report-side]");
+  if (!host) return;
+  const isRigTab = state.activeTab === "rig";
+  const items = isRigTab ? state.availableRigs : state.availableProjects;
+  const selected = isRigTab ? state.selectedRigs : state.selectedProjects;
+  const title = isRigTab ? "钻井队列表" : "项目列表";
+  const placeholder = isRigTab ? "搜索井队" : "搜索项目";
+  const term = state.sideSearch.trim().toLowerCase();
+  const visibleItems = items.filter((item) => !term || item.searchText.includes(term));
+  host.innerHTML = `
+    <div class="production-side-heading">
+      <div><h3>${escapeHtml(title)}</h3></div>
+      <strong>${selected.size}/${items.length}</strong>
+    </div>
+    <input class="production-side-search" type="search" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(state.sideSearch)}" data-production-side-search />
+    <div class="production-side-actions">
+      <button class="link-button" type="button" data-production-side-select="all">全选</button>
+      <button class="link-button" type="button" data-production-side-select="clear">清空</button>
+    </div>
+    <div class="production-side-list">
+      ${visibleItems.map((item) => productionReportCheckbox("production-side-option", item, selected.has(item.value))).join("") || `<div class="empty-records">暂无可选项</div>`}
+    </div>
+  `;
+}
+
+function renderProductionReportFilters() {
+  const state = analyticsState.productionReport;
+  const host = document.querySelector("[data-production-report-filters]");
+  if (!host) return;
+  const isRigTab = state.activeTab === "rig";
+  const filterItems = isRigTab ? state.availableProjects : state.availableRigs;
+  const selected = isRigTab ? state.selectedProjects : state.selectedRigs;
+  const filterType = isRigTab ? "project" : "rig";
+  const title = isRigTab ? "项目过滤" : "井队过滤";
+  const hint = isRigTab ? "可复选项目，进一步收窄当前井队范围" : "可复选井队，进一步收窄当前项目范围";
+  const placeholder = isRigTab ? "搜索合同 / 项目" : "搜索井队";
+  const emptyText = isRigTab ? "暂无项目" : "暂无井队";
+  const summary = productionReportFilterSummary(filterItems, selected, filterType);
+  host.innerHTML = `
+    <div class="production-filter-field production-report-filter-dropdown" data-production-report-filter-field="${escapeHtml(filterType)}">
+      <div class="production-filter-label">
+        <span>${escapeHtml(title)}</span>
+        <em data-production-report-filter-count>${selected.size}/${filterItems.length}</em>
+      </div>
+      <button class="project-multiselect-trigger production-report-filter-trigger" type="button" data-production-report-filter-toggle aria-expanded="false">
+        <span data-production-report-filter-summary title="${escapeHtml(summary.title)}">${escapeHtml(summary.text)}</span>
+      </button>
+      <div class="project-multiselect-menu production-report-filter-menu" data-production-report-filter-menu hidden>
+        <input class="project-multiselect-search" type="search" placeholder="${escapeHtml(placeholder)}" data-production-report-filter-search />
+        <div class="production-filter-menu-actions">
+          <span>${escapeHtml(hint)}</span>
+          <div>
+            <button class="link-button" type="button" data-production-filter-select="${filterType}" data-mode="all">全选</button>
+            <button class="link-button" type="button" data-production-filter-select="${filterType}" data-mode="clear">清空</button>
+          </div>
+        </div>
+        <div class="project-multiselect-options production-report-filter-options">
+          ${filterItems.map((item) => productionReportCheckbox("production-filter-option", item, selected.has(item.value), filterType)).join("") || `<div class="project-multiselect-empty">${escapeHtml(emptyText)}</div>`}
+        </div>
+      </div>
+    </div>
+    <label class="production-search-field production-filter-field">
+      <span>井号查找</span>
+      <input type="search" placeholder="输入井号" value="${escapeHtml(state.wellQuery)}" data-production-well-query />
+    </label>
+    <div class="production-report-actions production-filter-field">
+      <button class="button production-action-button" type="button" data-analytics-search="productionReport"><span aria-hidden="true">⌕</span><b data-i18n="search">查询</b></button>
+      <button class="button secondary production-action-button" type="button" data-analytics-reset="productionReport"><span aria-hidden="true">↻</span><b data-i18n="reset">重置</b></button>
+      <button class="button secondary production-action-button" type="button" data-analytics-export="productionReport"><span aria-hidden="true">⇩</span><b>导出Excel</b></button>
+    </div>
+  `;
+}
+
+function productionReportCheckbox(dataName, item, checked, type = "") {
+  return `
+    <label class="production-check-option" data-project-option data-project-search-text="${escapeHtml(item.searchText || item.label || item.value || "")}">
+      <input type="checkbox" value="${escapeHtml(item.value)}" ${checked ? "checked" : ""} data-${dataName}${type ? `="${escapeHtml(type)}"` : ""} />
+      <span>${escapeHtml(item.label)}</span>
+    </label>
+  `;
+}
+
+function productionReportFilterSummary(items, selected, type) {
+  const selectedItems = items.filter((item) => selected.has(item.value));
+  const unit = type === "project" ? "个项目" : "个井队";
+  const allLabel = type === "project" ? "全部项目" : "全部井队";
+  const emptyLabel = type === "project" ? "未选择项目" : "未选择井队";
+  if (!items.length) return { text: allLabel, title: "" };
+  if (!selectedItems.length) return { text: emptyLabel, title: "" };
+  if (selectedItems.length === items.length) return { text: allLabel, title: selectedItems.map((item) => item.label).join("\n") };
+  if (selectedItems.length === 1) return { text: selectedItems[0].label, title: selectedItems[0].label };
+  return {
+    text: `已选 ${selectedItems.length} ${unit}`,
+    title: selectedItems.map((item) => item.label).join("\n"),
+  };
+}
+
+function currentProductionReportFilterItems(type) {
+  const state = analyticsState.productionReport;
+  return type === "project" ? state.availableProjects : state.availableRigs;
+}
+
+function currentProductionReportFilterSelection(type) {
+  const state = analyticsState.productionReport;
+  return type === "project" ? state.selectedProjects : state.selectedRigs;
+}
+
+function setProductionReportFilterSelection(type, selected) {
+  const state = analyticsState.productionReport;
+  if (type === "project") {
+    state.selectedProjects = selected;
+    state.projectTouched = true;
+  } else {
+    state.selectedRigs = selected;
+    state.rigTouched = true;
+  }
+  state.detailPage = 1;
+}
+
+function syncProductionReportFilterField(field) {
+  if (!field) return;
+  const type = field.dataset.productionReportFilterField;
+  const items = currentProductionReportFilterItems(type);
+  const selected = currentProductionReportFilterSelection(type);
+  field.querySelectorAll("[data-production-filter-option]").forEach((checkbox) => {
+    checkbox.checked = selected.has(checkbox.value);
+  });
+  const count = field.querySelector("[data-production-report-filter-count]");
+  if (count) count.textContent = `${selected.size}/${items.length}`;
+  const summary = productionReportFilterSummary(items, selected, type);
+  const summaryEl = field.querySelector("[data-production-report-filter-summary]");
+  if (summaryEl) {
+    summaryEl.textContent = summary.text;
+    summaryEl.title = summary.title;
+  }
+}
+
+function filterProductionReportDropdownOptions(field) {
+  const term = (field?.querySelector("[data-production-report-filter-search]")?.value || "").trim().toLowerCase();
+  field?.querySelectorAll("[data-project-option]").forEach((option) => {
+    option.hidden = Boolean(term) && !option.dataset.projectSearchText.includes(term);
+  });
+  positionProductionReportFilterDropdown(field);
+}
+
+function closeProductionReportFilterDropdowns(except = null) {
+  document.querySelectorAll("[data-production-report-filter-field]").forEach((field) => {
+    if (except && field === except) return;
+    const menu = field.querySelector("[data-production-report-filter-menu]");
+    const trigger = field.querySelector("[data-production-report-filter-toggle]");
+    if (menu) menu.hidden = true;
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  });
+}
+
+function positionProductionReportFilterDropdown(field) {
+  const menu = field?.querySelector("[data-production-report-filter-menu]");
+  const trigger = field?.querySelector("[data-production-report-filter-toggle]");
+  if (!field || !menu || !trigger || menu.hidden) return;
+  const rect = trigger.getBoundingClientRect();
+  menu.style.left = "";
+  menu.style.top = "";
+  menu.style.width = "";
+  menu.style.maxHeight = `${Math.max(180, window.innerHeight - rect.bottom - 24)}px`;
+}
+
+function positionOpenProductionReportDropdowns() {
+  document.querySelectorAll("[data-production-report-filter-field]").forEach((field) => positionProductionReportFilterDropdown(field));
+}
+
+function productionReportVisibleRows(rows) {
+  const state = analyticsState.productionReport;
+  const rigSelected = state.selectedRigs;
+  const projectSelected = state.selectedProjects;
+  const query = state.wellQuery.trim().toLowerCase();
+  if ((state.rigTouched || state.availableRigs.length) && !rigSelected.size) return [];
+  if ((state.projectTouched || state.availableProjects.length) && !projectSelected.size) return [];
+  return (rows || []).filter((row) => {
+    if (rigSelected.size && !rigSelected.has(String(row.rig || ""))) return false;
+    if (projectSelected.size && !projectSelected.has(String(row.project_id || ""))) return false;
+    if (query && !String(row.wellbore || "").toLowerCase().includes(query)) return false;
+    return true;
+  });
+}
+
+function refreshProductionReportView() {
+  const payload = analyticsState.productionReport.payload;
+  if (payload) renderProductionReportAnalytics(payload);
+}
+
+function initializeNptReportSelections(filters = {}) {
+  const state = analyticsState.npt;
+  state.availableRigs = (filters.rigs || []).map((rig) => ({ value: rig, label: rig, searchText: String(rig || "").toLowerCase() }));
+  state.availableProjects = productionProjectItems(filters.projects || []);
+  const rigValues = new Set(state.availableRigs.map((item) => item.value));
+  const projectValues = new Set(state.availableProjects.map((item) => item.value));
+  let defaultApplied = false;
+  if (!state.selectionInitialized) {
+    state.selectedRigs = new Set(rigValues);
+    state.selectedProjects = new Set(projectValues);
+    state.selectionInitialized = true;
+    defaultApplied = true;
+  } else {
+    state.selectedRigs = new Set([...state.selectedRigs].filter((value) => rigValues.has(value)));
+    state.selectedProjects = new Set([...state.selectedProjects].filter((value) => projectValues.has(value)));
+    if (!state.rigTouched && state.selectedRigs.size !== rigValues.size) state.selectedRigs = new Set(rigValues);
+    if (!state.projectTouched && state.selectedProjects.size !== projectValues.size) state.selectedProjects = new Set(projectValues);
+  }
+  refreshNptReportView();
+  return defaultApplied;
+}
+
+function refreshNptReportView() {
+  const payload = analyticsState.npt.payload;
+  if (payload) renderNptAnalytics(payload);
+}
+
+function renderNptReportTabs() {
+  const state = analyticsState.npt;
+  document.querySelectorAll("[data-npt-report-tab]").forEach((button) => {
+    const active = button.dataset.nptReportTab === state.activeTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+}
+
+function renderNptReportSide() {
+  const state = analyticsState.npt;
+  const host = document.querySelector("[data-npt-report-side]");
+  if (!host) return;
+  const isRigTab = state.activeTab === "rig";
+  const items = isRigTab ? state.availableRigs : state.availableProjects;
+  const selected = isRigTab ? state.selectedRigs : state.selectedProjects;
+  const title = isRigTab ? "钻井队列表" : "项目列表";
+  const placeholder = isRigTab ? "搜索井队" : "搜索项目";
+  const term = state.sideSearch.trim().toLowerCase();
+  const visibleItems = items.filter((item) => !term || item.searchText.includes(term));
+  host.innerHTML = `
+    <div class="production-side-heading">
+      <div><h3>${escapeHtml(title)}</h3></div>
+      <strong>${selected.size}/${items.length}</strong>
+    </div>
+    <input class="production-side-search" type="search" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(state.sideSearch)}" data-npt-side-search />
+    <div class="production-side-actions">
+      <button class="link-button" type="button" data-npt-side-select="all">全选</button>
+      <button class="link-button" type="button" data-npt-side-select="clear">清空</button>
+    </div>
+    <div class="production-side-list">
+      ${visibleItems.map((item) => productionReportCheckbox("npt-side-option", item, selected.has(item.value))).join("") || `<div class="empty-records">暂无可选项</div>`}
+    </div>
+  `;
+}
+
+function renderNptReportFilters() {
+  const state = analyticsState.npt;
+  const host = document.querySelector("[data-npt-report-filters]");
+  if (!host) return;
+  const isRigTab = state.activeTab === "rig";
+  const filterItems = isRigTab ? state.availableProjects : state.availableRigs;
+  const selected = isRigTab ? state.selectedProjects : state.selectedRigs;
+  const filterType = isRigTab ? "project" : "rig";
+  const title = isRigTab ? "项目过滤" : "井队过滤";
+  const placeholder = isRigTab ? "搜索合同 / 项目" : "搜索井队";
+  const emptyText = isRigTab ? "暂无项目" : "暂无井队";
+  const summary = productionReportFilterSummary(filterItems, selected, filterType);
+  host.innerHTML = `
+    <div class="production-filter-field production-report-filter-dropdown" data-npt-report-filter-field="${escapeHtml(filterType)}">
+      <div class="production-filter-label">
+        <span>${escapeHtml(title)}</span>
+        <em data-npt-report-filter-count>${selected.size}/${filterItems.length}</em>
+      </div>
+      <button class="project-multiselect-trigger production-report-filter-trigger" type="button" data-npt-report-filter-toggle aria-expanded="false">
+        <span data-npt-report-filter-summary title="${escapeHtml(summary.title)}">${escapeHtml(summary.text)}</span>
+      </button>
+      <div class="project-multiselect-menu production-report-filter-menu" data-npt-report-filter-menu hidden>
+        <input class="project-multiselect-search" type="search" placeholder="${escapeHtml(placeholder)}" data-npt-report-filter-search />
+        <div class="production-filter-menu-actions">
+          <span>可复选，用于进一步收窄当前统计范围</span>
+          <div>
+            <button class="link-button" type="button" data-npt-filter-select="${filterType}" data-mode="all">全选</button>
+            <button class="link-button" type="button" data-npt-filter-select="${filterType}" data-mode="clear">清空</button>
+          </div>
+        </div>
+        <div class="project-multiselect-options production-report-filter-options">
+          ${filterItems.map((item) => productionReportCheckbox("npt-filter-option", item, selected.has(item.value), filterType)).join("") || `<div class="project-multiselect-empty">${escapeHtml(emptyText)}</div>`}
+        </div>
+      </div>
+    </div>
+    <label class="production-search-field production-filter-field">
+      <span>井号搜索</span>
+      <input type="search" placeholder="输入井号" value="${escapeHtml(state.keywordQuery)}" data-npt-keyword-query />
+    </label>
+    <div class="production-report-actions production-filter-field">
+      <button class="button production-action-button" type="button" data-analytics-search="npt"><span aria-hidden="true">⌕</span><b data-i18n="search">查询</b></button>
+      <button class="button secondary production-action-button" type="button" data-analytics-reset="npt"><span aria-hidden="true">↻</span><b data-i18n="reset">重置</b></button>
+      <button class="button secondary production-action-button" type="button" data-analytics-export="npt"><span aria-hidden="true">⇩</span><b>导出Excel</b></button>
+    </div>
+  `;
+}
+
+function currentNptReportFilterItems() {
+  const state = analyticsState.npt;
+  return state.activeTab === "rig" ? state.availableProjects : state.availableRigs;
+}
+
+function currentNptReportFilterSelection() {
+  const state = analyticsState.npt;
+  return state.activeTab === "rig" ? state.selectedProjects : state.selectedRigs;
+}
+
+function setNptReportFilterSelection(type, selected) {
+  const state = analyticsState.npt;
+  if (type === "project") {
+    state.selectedProjects = selected;
+    state.projectTouched = true;
+  } else {
+    state.selectedRigs = selected;
+    state.rigTouched = true;
+  }
+}
+
+function syncNptReportFilterField(field) {
+  if (!field) return;
+  const type = field.dataset.nptReportFilterField;
+  const items = currentNptReportFilterItems();
+  const selected = currentNptReportFilterSelection();
+  const summary = productionReportFilterSummary(items, selected, type);
+  field.querySelector("[data-npt-report-filter-count]") && (field.querySelector("[data-npt-report-filter-count]").textContent = `${selected.size}/${items.length}`);
+  const summaryEl = field.querySelector("[data-npt-report-filter-summary]");
+  if (summaryEl) {
+    summaryEl.textContent = summary.text;
+    summaryEl.title = summary.title;
+  }
+  field.querySelectorAll("[data-npt-filter-option]").forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+}
+
+function filterNptReportDropdownOptions(field) {
+  if (!field) return;
+  const term = (field.querySelector("[data-npt-report-filter-search]")?.value || "").trim().toLowerCase();
+  field.querySelectorAll("[data-project-option]").forEach((option) => {
+    option.hidden = Boolean(term) && !String(option.dataset.projectSearchText || "").toLowerCase().includes(term);
+  });
+}
+
+function closeNptReportFilterDropdowns(except = null) {
+  document.querySelectorAll("[data-npt-report-filter-field]").forEach((field) => {
+    if (except && field === except) return;
+    const menu = field.querySelector("[data-npt-report-filter-menu]");
+    const trigger = field.querySelector("[data-npt-report-filter-toggle]");
+    if (menu) menu.hidden = true;
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  });
+}
+
+function nptReportVisibleRows(rows) {
+  const keyword = analyticsState.npt.keywordQuery.trim().toLowerCase();
+  if (!keyword) return rows;
+  return rows.filter((row) => String(row.wellbore || "").toLowerCase().includes(keyword));
 }
 
 function renderNptAnalytics(payload) {
-  const kpis = payload.kpis || {};
   const details = payload.details || [];
-  const dailyRows = nptDailyRows(details, payload.monthly || []);
-  const activeDays = Math.max(1, new Set(details.map((row) => row.reportDate).filter(Boolean)).size || dailyRows.length || 1);
-  const totalNpt = Number(kpis.total_npt || 0);
-  const dailyAverage = totalNpt / activeDays;
-  const dailyShare = (totalNpt / (activeDays * 24)) * 100;
-  const delta = nptTrendDelta(dailyRows, "hours");
   const note = document.querySelector('[data-analytics-note="npt"]');
   if (note) note.textContent = ui("analyticsNptScope");
-  document.querySelector('[data-analytics-kpis="npt"]').innerHTML = [
-    nptKpiCard("总NPT时长", `${formatHours(totalNpt)} h`, nptDeltaCaption(delta, "h"), "clock", "orange"),
-    nptKpiCard("日均NPT时长", `${formatHours(dailyAverage)} h/天`, `${activeDays} 个统计日`, "calendar", "green"),
-    nptKpiCard("日均NPT占比", `${dailyShare.toFixed(2)} %`, "按 24h/天折算", "pie", "blue"),
-  ].join("");
-  renderNptRigBars('[data-chart="npt-rig"]', payload.by_rig || []);
-  renderNptReasonDonut('[data-chart="npt-reason"]', payload.by_reason || [], totalNpt);
-  renderNptWellRanking('[data-chart="npt-well"]', payload.by_well || [], totalNpt);
-  renderNptLineChart('[data-chart="npt-monthly"]', dailyRows, "hours", "h");
-  renderNptPendingList('[data-chart="npt-pending"]', details);
-  renderNptTable(details);
+  renderNptReportTabs();
+  renderNptReportSide();
+  renderNptReportFilters();
+  renderNptTable(nptReportVisibleRows(details));
 }
 
 const REPORT_TYPE_LABELS_JS = {
@@ -1567,6 +2600,31 @@ function renderSimpleBars(selector, rows) {
   if (!rows.length) return host.innerHTML = emptyAnalytics();
   const max = Math.max(...rows.map((row) => Number(row.hours || 0)), 1);
   host.innerHTML = `<div class="bar-list">${rows.map((row) => `<div class="bar-row"><span>${escapeHtml(row.label)}</span><div class="single-bar"><i style="width:${(Number(row.hours || 0) / max) * 100}%"></i></div><b>${formatHours(row.hours)}</b></div>`).join("")}</div>`;
+}
+
+function renderProductionNptRanking(selector, rows) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  const usable = [...(rows || [])].filter((row) => Number(row.hours || 0) > 0)
+    .sort((left, right) => Number(right.hours || 0) - Number(left.hours || 0));
+  if (!usable.length) return host.innerHTML = emptyAnalytics();
+  const max = Math.max(...usable.map((row) => Number(row.hours || 0)), 1);
+  host.innerHTML = `
+    <div class="production-npt-ranking">
+      ${usable.map((row, index) => {
+        const width = Math.max(4, (Number(row.hours || 0) / max) * 100);
+        return `
+          <div class="production-npt-rank-row">
+            <span class="production-npt-rank-no">${index + 1}</span>
+            <strong>${escapeHtml(row.label || "-")}</strong>
+            <div class="production-npt-rank-track"><i style="width:${width}%"></i></div>
+            <b>${formatHours(row.hours)}</b>
+          </div>
+        `;
+      }).join("")}
+    </div>
+    <div class="production-npt-ranking-caption"><i></i>累计NPT时长 (h)</div>
+  `;
 }
 
 function renderNptRigBars(selector, rows) {
@@ -1744,6 +2802,94 @@ function renderLineChart(selector, rows, series) {
   host.innerHTML = `<svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img">${lines}${labels}</svg>${legend(series.map((item) => item.label))}`;
 }
 
+const PRODUCTION_GANTT_TYPES = [
+  { key: "move", label: "搬迁", start: "move_date", end: "move_date", hours: "move_hours", color: "#f59e0b" },
+  { key: "drilling", label: "钻井", start: "drilling_start_date", end: "drilling_finish_date", hours: "drilling_hours", color: "#2563eb" },
+  { key: "completion", label: "完井", start: "completion_date", end: "completion_date", hours: "completion_hours", color: "#f97316" },
+  { key: "workover", label: "修井", start: "workover_date", end: "workover_date", hours: "workover_hours", color: "#14b8a6" },
+];
+
+function renderProductionWellGantt(selector, payload = {}) {
+  const host = document.querySelector(selector);
+  if (!host) return;
+  const details = Array.isArray(payload.details) ? payload.details : [];
+  const rows = productionGanttRows(details);
+  const segments = rows.flatMap((row) => row.segments);
+  if (!rows.length || !segments.length) {
+    host.innerHTML = emptyAnalytics();
+    return;
+  }
+  const timestamps = segments.flatMap((segment) => [parseDateMs(segment.start), parseDateMs(segment.end)]).filter(Number.isFinite);
+  const minMs = Math.min(...timestamps);
+  const maxMs = Math.max(...timestamps);
+  const domainDays = Math.max(1, daysBetweenMs(minMs, maxMs) + 1);
+  host.innerHTML = `
+    <div class="production-gantt">
+      <div class="production-gantt-axis">
+        <span>${escapeHtml(formatDateFromMs(minMs))}</span>
+        <span>${escapeHtml(formatDateFromMs(maxMs))}</span>
+      </div>
+      <div class="production-gantt-rows">
+        ${rows.map((row) => `
+          <div class="production-gantt-row">
+            <div class="production-gantt-label">
+              <strong>${escapeHtml(row.wellbore || "-")}</strong>
+              <span>${escapeHtml(row.rig || "-")} / ${escapeHtml(row.project_name || "-")}</span>
+            </div>
+            <div class="production-gantt-track">
+              ${row.segments.map((segment) => {
+                const startOffset = daysBetweenMs(minMs, parseDateMs(segment.start));
+                const segmentDays = daysBetweenMs(parseDateMs(segment.start), parseDateMs(segment.end)) + 1;
+                const left = Math.max(0, Math.min(100, (startOffset / domainDays) * 100));
+                const width = Math.max(3, Math.min(100 - left, (Math.max(1, segmentDays) / domainDays) * 100));
+                const title = `${segment.label} ${segment.start}${segment.end !== segment.start ? ` ~ ${segment.end}` : ""} ${formatHours(segment.hours)}h`;
+                return `<i class="production-gantt-segment" style="left:${left}%;width:${width}%;background:${segment.color}" title="${escapeHtml(title)}"><span>${escapeHtml(segment.label)}</span></i>`;
+              }).join("")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="production-gantt-legend">
+        ${PRODUCTION_GANTT_TYPES.map((type) => `<span><i style="background:${type.color}"></i>${escapeHtml(type.label)}</span>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function productionGanttRows(details) {
+  return (details || []).map((row) => {
+    const segments = PRODUCTION_GANTT_TYPES.flatMap((type) => {
+      const start = String(row[type.start] || "");
+      const end = String(row[type.end] || start);
+      const hours = Number(row[type.hours] || 0);
+      if (!start || !Number.isFinite(parseDateMs(start)) || hours <= 0) return [];
+      return [{ ...type, start, end: end || start, hours }];
+    });
+    return {
+      wellbore: row.wellbore || "",
+      rig: row.rig || "",
+      project_id: row.project_id || "",
+      project_name: row.project_name || row.contract_project || "",
+      segments,
+    };
+  }).filter((row) => row.wellbore && row.segments.length)
+    .sort((left, right) => String(left.wellbore).localeCompare(String(right.wellbore), currentLanguage === "zh" ? "zh-Hans" : currentLanguage, { numeric: true, sensitivity: "base" }));
+}
+
+function parseDateMs(value) {
+  const text = String(value || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return NaN;
+  return Date.parse(`${text}T00:00:00Z`);
+}
+
+function daysBetweenMs(startMs, endMs) {
+  return Math.max(0, Math.round((endMs - startMs) / 86400000));
+}
+
+function formatDateFromMs(ms) {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
 function renderDonut(selector, rows) {
   const host = document.querySelector(selector);
   if (!host) return;
@@ -1790,24 +2936,103 @@ function renderProductionTable(rows) {
   host.innerHTML = `<table class="record-table analytics-table"><thead><tr>${headers}</tr></thead><tbody>${pageRows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(reportTypeLabel(row.report_type))}</td><td>${escapeHtml(row.start_date)}</td><td>${escapeHtml(row.end_date)}</td><td>${formatHours(row.drilling_hours)}</td><td>${formatHours(row.completion_hours)}</td><td>${formatHours(row.workover_hours)}</td><td>${formatHours(row.move_hours)}</td><td>${formatHours(row.npt_hours)}</td><td>${escapeHtml(statusLabel(row.status))}</td></tr>`).join("")}</tbody></table>${analyticsPaginationMarkup("production", currentPage, totalPages, rows.length)}`;
 }
 
+function renderProductionReportTable(rows) {
+  const host = document.querySelector('[data-table-host="productionReport"]');
+  if (!host) return;
+  if (!rows.length) return host.innerHTML = emptyAnalytics();
+  const sortedRows = analyticsSortedRows("productionReport", rows);
+  const { pageRows, currentPage, totalPages } = analyticsPageSlice("productionReport", sortedRows);
+  const showRig = analyticsState.productionReport.activeTab === "project";
+  const headers = [
+    analyticsSortHeader("productionReport", "wellbore", ui("tableWell")),
+    showRig ? analyticsSortHeader("productionReport", "rig", ui("tableRig")) : "",
+    analyticsSortHeader("productionReport", "contract_project", ui("tableContractProject")),
+    analyticsSortHeader("productionReport", "move_date", ui("tableMoveDate")),
+    analyticsSortHeader("productionReport", "drilling_start_date", ui("tableDrillingStartDate")),
+    analyticsSortHeader("productionReport", "drilling_finish_date", ui("tableDrillingFinishDate")),
+    analyticsSortHeader("productionReport", "completion_date", ui("tableCompletionDate")),
+    analyticsSortHeader("productionReport", "workover_date", ui("tableWorkoverDate")),
+    analyticsSortHeader("productionReport", "move_hours", ui("tableMoveHours")),
+    analyticsSortHeader("productionReport", "drilling_hours", ui("tableDrillingHours")),
+    analyticsSortHeader("productionReport", "completion_hours", ui("tableCompletionHours")),
+    analyticsSortHeader("productionReport", "workover_hours", ui("tableWorkoverHours")),
+    analyticsSortHeader("productionReport", "npt_hours", ui("tableNptHours")),
+    `<th>${escapeHtml(ui("tableRemarks"))}</th>`
+  ].filter(Boolean).join("");
+  host.innerHTML = `<table class="record-table analytics-table production-report-table"><thead><tr>${headers}</tr></thead><tbody>${pageRows.map((row) => {
+    const rigCell = showRig ? `<td>${escapeHtml(row.rig || "-")}</td>` : "";
+    return `<tr><td>${productionReportWellShortcut(row)}</td>${rigCell}<td>${escapeHtml(row.contract_project || row.project_name || "-")}</td><td>${escapeHtml(row.move_date || "-")}</td><td>${escapeHtml(row.drilling_start_date || "-")}</td><td>${escapeHtml(row.drilling_finish_date || "-")}</td><td>${escapeHtml(row.completion_date || "-")}</td><td>${escapeHtml(row.workover_date || "-")}</td><td>${formatHours(row.move_hours)}</td><td>${formatHours(row.drilling_hours)}</td><td>${formatHours(row.completion_hours)}</td><td>${formatHours(row.workover_hours)}</td><td>${formatHours(row.npt_hours)}</td><td>${productionRemarkCell(row)}</td></tr>`;
+  }).join("")}</tbody></table>${analyticsPaginationMarkup("productionReport", currentPage, totalPages, rows.length)}`;
+}
+
+function productionReportWellShortcut(row) {
+  const wellbore = row.wellbore || "";
+  if (!wellbore) return "<strong>-</strong>";
+  const reportType = normalizeReportType(row.report_type || "drilling");
+  return `<button class="link-button production-well-shortcut" type="button" data-open-report-home data-report-type="${escapeHtml(reportType)}" data-wellbore="${escapeHtml(wellbore)}"><strong>${escapeHtml(wellbore)}</strong></button>`;
+}
+
+function productionRemarkCell(row) {
+  return `
+    <div class="production-remark-cell">
+      <textarea class="production-remark-input" data-production-remark data-remark-key="${escapeHtml(row.remark_key || "")}" maxlength="500" rows="1">${escapeHtml(row.remarks || "")}</textarea>
+      <button class="link-button production-remark-save" type="button" data-production-remark-save data-remark-key="${escapeHtml(row.remark_key || "")}">保存</button>
+    </div>
+  `;
+}
+
+async function saveProductionRemark(button) {
+  if (!frontCan("save")) return showToast("当前账号没有保存权限");
+  const cell = button.closest(".production-remark-cell");
+  const remarkKey = button.dataset.remarkKey || cell?.querySelector("[data-production-remark]")?.dataset.remarkKey || "";
+  const input = cell?.querySelector("[data-production-remark]");
+  if (!remarkKey || !input) return showToast("缺少备注行标识");
+  const remarks = input.value.trim();
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/production-report-remarks", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ remark_key: remarkKey, remarks }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "备注保存失败");
+    const rows = analyticsState.productionReport.payload?.details || [];
+    rows.forEach((row) => {
+      if (row.remark_key === remarkKey) row.remarks = payload.remarks || "";
+    });
+    showToast("备注已保存");
+  } catch (error) {
+    showToast(error.message || "备注保存失败");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderNptTable(rows) {
   const host = document.querySelector('[data-table-host="npt"]');
   if (!host) return;
   if (!rows.length) return host.innerHTML = emptyAnalytics();
   const sortedRows = analyticsSortedRows("npt", rows);
   const { pageRows, currentPage, totalPages } = analyticsPageSlice("npt", sortedRows);
+  const showRig = analyticsState.npt.activeTab === "project";
   const headers = [
-    analyticsSortHeader("npt", "rig", ui("tableRig")),
     analyticsSortHeader("npt", "wellbore", ui("tableWell")),
+    showRig ? analyticsSortHeader("npt", "rig", ui("tableRig")) : "",
+    analyticsSortHeader("npt", "project_name", "项目"),
     analyticsSortHeader("npt", "reportDate", ui("tableDate")),
     analyticsSortHeader("npt", "hours", ui("tableNptHours")),
-    analyticsSortHeader("npt", "op_code", ui("opCode")),
-    analyticsSortHeader("npt", "op_sub", ui("opSub")),
-    analyticsSortHeader("npt", "reason", ui("category")),
-    `<th>${escapeHtml(ui("tableOperationDetails"))}</th>`,
-    `<th>${escapeHtml(ui("operation"))}</th>`
-  ].join("");
-  host.innerHTML = `<table class="record-table analytics-table npt-detail-table-lite"><thead><tr>${headers}</tr></thead><tbody>${pageRows.map((row) => `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.rig)}</td><td>${escapeHtml(row.wellbore)}</td><td>${escapeHtml(row.reportDate)}</td><td>${formatHours(row.hours)}</td><td>${escapeHtml(row.op_code)}</td><td>${escapeHtml(row.op_sub)}</td><td>${escapeHtml(reasonLabel(row.reason))}</td><td>${escapeHtml(row.operation_details).slice(0, 100)}</td><td><button class="link-button" type="button" data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}">查看</button></td></tr>`).join("")}</tbody></table>${analyticsPaginationMarkup("npt", currentPage, totalPages, rows.length)}`;
+    analyticsSortHeader("npt", "reason", "NPT描述关键词"),
+    `<th>${escapeHtml("备注（NPT描述）")}</th>`
+  ].filter(Boolean).join("");
+  host.innerHTML = `<table class="record-table analytics-table npt-detail-table-lite npt-report-table ${showRig ? "npt-show-rig" : ""}"><thead><tr>${headers}</tr></thead><tbody>${pageRows.map((row) => {
+    const rigCell = showRig ? `<td>${escapeHtml(row.rig || "-")}</td>` : "";
+    const projectName = row.project_name || row.contract_project || "-";
+    const keyword = row.op_sub || row.op_code || reasonLabel(row.reason) || "-";
+    const description = row.operation_details || "-";
+    return `<tr data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type)}"><td>${escapeHtml(row.wellbore || "-")}</td>${rigCell}<td>${escapeHtml(projectName)}</td><td>${escapeHtml(row.reportDate || "-")}</td><td>${formatHours(row.hours)}</td><td>${escapeHtml(keyword)}</td><td class="npt-report-description"><button type="button" class="npt-report-description-button" data-npt-description="${escapeHtml(description)}">${escapeHtml(description)}</button></td></tr>`;
+  }).join("")}</tbody></table>${analyticsPaginationMarkup("npt", currentPage, totalPages, rows.length)}`;
 }
 
 async function loadNptConfirmations() {
@@ -2031,18 +3256,133 @@ function updateNptNoteCount() {
   if (counter) counter.textContent = String((note?.value || "").length);
 }
 
+function productionReportExportColumns() {
+  const showRig = analyticsState.productionReport.activeTab === "project";
+  return [
+    { key: "wellbore", label: ui("tableWell") },
+    showRig ? { key: "rig", label: ui("tableRig") } : null,
+    { key: "contract_project", label: ui("tableContractProject"), fallback: "project_name" },
+    { key: "move_date", label: ui("tableMoveDate") },
+    { key: "drilling_start_date", label: ui("tableDrillingStartDate") },
+    { key: "drilling_finish_date", label: ui("tableDrillingFinishDate") },
+    { key: "completion_date", label: ui("tableCompletionDate") },
+    { key: "workover_date", label: ui("tableWorkoverDate") },
+    { key: "move_hours", label: ui("tableMoveHours"), hours: true },
+    { key: "drilling_hours", label: ui("tableDrillingHours"), hours: true },
+    { key: "completion_hours", label: ui("tableCompletionHours"), hours: true },
+    { key: "workover_hours", label: ui("tableWorkoverHours"), hours: true },
+    { key: "npt_hours", label: ui("tableNptHours"), hours: true },
+    { key: "remarks", label: ui("tableRemarks") },
+  ].filter(Boolean);
+}
+
+function productionReportExportValue(row, column) {
+  if (column.hours) return formatHours(row[column.key]);
+  return row[column.key] ?? (column.fallback ? row[column.fallback] : "") ?? "";
+}
+
+function excelCellHtml(value) {
+  const text = String(value ?? "");
+  const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return escapeHtml(safeText);
+}
+
+function downloadProductionReportExcel(rows) {
+  const columns = productionReportExportColumns();
+  const state = analyticsState.productionReport;
+  const tabLabel = state.activeTab === "project" ? "按项目" : "按钻井队";
+  const today = new Date().toISOString().slice(0, 10);
+  const headerHtml = columns.map((column) => `<th>${excelCellHtml(column.label)}</th>`).join("");
+  const bodyHtml = rows.map((row) => `<tr>${columns.map((column) => `<td>${excelCellHtml(productionReportExportValue(row, column))}</td>`).join("")}</tr>`).join("");
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
+    th, td { border: 1px solid #9fb4c8; padding: 6px 8px; mso-number-format:"\\@"; }
+    th { background: #0b4d7a; color: #ffffff; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <table>
+    <thead><tr>${headerHtml}</tr></thead>
+    <tbody>${bodyHtml}</tbody>
+  </table>
+</body>
+</html>`;
+  const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `生产报表-${tabLabel}-${today}.xls`;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function downloadProductionReportExcelFromServer() {
+  const state = analyticsState.productionReport;
+  const params = analyticsFilterValues("productionReport");
+  params.set("view", state.activeTab);
+  if (state.sortField) {
+    params.set("sort_field", state.sortField);
+    params.set("sort_dir", state.sortDir || "desc");
+  }
+  const link = document.createElement("a");
+  link.href = `/api/production-summary-export?${params.toString()}`;
+  link.download = "";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function downloadNptReportExcelFromServer() {
+  const state = analyticsState.npt;
+  const params = analyticsFilterValues("npt");
+  params.set("view", state.activeTab);
+  if (state.sortField) {
+    params.set("sort_field", state.sortField);
+    params.set("sort_dir", state.sortDir || "desc");
+  }
+  const link = document.createElement("a");
+  link.href = `/api/npt-stats-export?${params.toString()}`;
+  link.download = "";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 function exportAnalytics(kind) {
   const payload = analyticsState[kind].payload;
   if (!payload) return;
-  const rows = kind === "npt" ? payload.details || [] : payload.details || [];
+  const rows = kind === "productionReport"
+    ? productionReportVisibleRows(payload.details || [])
+    : kind === "npt"
+      ? nptReportVisibleRows(payload.details || [])
+      : payload.details || [];
   if (!rows.length) return showToast(ui("noExportData"));
+  if (kind === "productionReport") {
+    downloadProductionReportExcelFromServer();
+    return;
+  }
+  if (kind === "npt") {
+    downloadNptReportExcelFromServer();
+    return;
+  }
   const headers = Object.keys(rows[0]);
   const csv = [headers.join(","), ...rows.map((row) => headers.map((key) => `"${String(row[key] ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
   const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = `${kind}-analytics.csv`;
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
+  link.remove();
   URL.revokeObjectURL(link.href);
 }
 
@@ -2644,6 +3984,10 @@ function updateSaveButton(reportType) {
   if (!reportType) return;
   const button = document.querySelector(`[data-save-report="${reportType}"]`);
   if (!button) return;
+  if (reportContentState[reportType]?.mode === "translated") {
+    button.disabled = true;
+    return;
+  }
   const currentSignature = reportSignature(reportType);
   button.disabled = isCurrentReportLocked(reportType) || !currentSignature || currentSignature === savedReportSignatures[reportType];
 }
@@ -2660,6 +4004,10 @@ function tableReportType(tableId) {
 }
 
 async function saveCurrentReport(reportType) {
+  if (reportContentState[reportType]?.mode === "translated") {
+    showToast(ui("translationPreviewNotice"));
+    return;
+  }
   if (isCurrentReportLocked(reportType)) {
     showToast("该日报已被NPT确认锁定，不能再修改保存。");
     return;
@@ -2713,55 +4061,36 @@ async function openRecordDetail(reportType, recordId) {
 }
 
 function applyImportedPayload(payload) {
-  applyReportFields(payload.report_fields || {});
-  setDrillingSourceFile(payload.metadata?.source_file || "");
+  setReportOriginalPayload("drilling", payload);
+  renderReportPayload("drilling", payload);
   rememberRecord("drilling", payload);
-  loadRows({
-    surveyTable: rowsFromPayload(payload.survey_data, "surveyTable"),
-    bhaTable: rowsFromPayload(payload.bha_components, "bhaTable"),
-    operationsTable: rowsFromPayload(payload.operations, "operationsTable"),
-    costTable: rowsFromPayload(payload.daily_costs, "costTable"),
-    bulkTable: rowsFromPayload(payload.bulks, "bulkTable")
-  });
   showReportDetail("drilling");
   markReportSaved("drilling");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function applyImportedCompletionPayload(payload) {
-  applyReportFields(payload.report_fields || {}, completionForm);
+  setReportOriginalPayload("completion", payload);
+  renderReportPayload("completion", payload);
   rememberRecord("completion", payload);
-  loadRows({
-    completionOperationsTable: rowsFromPayload(payload.operations, "completionOperationsTable"),
-    completionBulkTable: rowsFromPayload(payload.bulks, "completionBulkTable"),
-    completionCostTable: rowsFromPayload(payload.daily_costs, "completionCostTable"),
-    perforationIntervalsTable: rowsFromPayload(payload.perforation_intervals, "perforationIntervalsTable")
-  }, completionTableIds);
   setActiveMenu("completion-daily");
   showReportDetail("completion");
   markReportSaved("completion");
 }
 
 function applyImportedWorkoverPayload(payload) {
-  applyReportFields(payload.report_fields || {}, workoverForm);
+  setReportOriginalPayload("workover", payload);
+  renderReportPayload("workover", payload);
   rememberRecord("workover", payload);
-  loadRows({
-    workoverOperationsTable: rowsFromPayload(payload.operations, "workoverOperationsTable"),
-    workoverBulkTable: rowsFromPayload(payload.bulks, "workoverBulkTable"),
-    workoverCostTable: rowsFromPayload(payload.daily_costs, "workoverCostTable"),
-    workoverIntervalsTable: rowsFromPayload(payload.perforation_intervals, "workoverIntervalsTable")
-  }, workoverTableIds);
   setActiveMenu("workover-daily");
   showReportDetail("workover");
   markReportSaved("workover");
 }
 
 function applyImportedMovePayload(payload) {
-  applyReportFields(payload.report_fields || {}, moveForm);
+  setReportOriginalPayload("move", payload);
+  renderReportPayload("move", payload);
   rememberRecord("move", payload);
-  loadRows({
-    moveOperationsTable: rowsFromPayload(payload.operations, "moveOperationsTable")
-  }, moveTableIds);
   setActiveMenu("move-daily");
   showReportDetail("move");
   markReportSaved("move");
@@ -3048,6 +4377,7 @@ function showImportError(error) {
 
 document.querySelectorAll("[data-add-row]").forEach((button) => {
   button.addEventListener("click", () => {
+    markReportOriginalEdited(tableReportType(button.dataset.addRow));
     addRow(button.dataset.addRow);
     validateForTable(button.dataset.addRow);
     updateSaveButton(tableReportType(button.dataset.addRow));
@@ -3068,6 +4398,55 @@ document.querySelectorAll("[data-back-records]").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const projectToggle = event.target.closest("[data-project-dropdown-toggle]");
+  if (projectToggle) {
+    const field = projectToggle.closest("[data-production-project-filter], [data-production-rig-filter]");
+    const menu = field?.querySelector("[data-project-dropdown]");
+    if (field && menu) {
+      const willOpen = menu.hidden;
+      closeProductionProjectDropdowns(field);
+      menu.hidden = !willOpen;
+      projectToggle.setAttribute("aria-expanded", String(willOpen));
+      if (willOpen) {
+        positionProductionProjectDropdown(field);
+        field.querySelector("[data-project-search]")?.focus();
+      }
+    }
+    return;
+  }
+  const productionReportFilterToggle = event.target.closest("[data-production-report-filter-toggle]");
+  if (productionReportFilterToggle) {
+    const field = productionReportFilterToggle.closest("[data-production-report-filter-field]");
+    const menu = field?.querySelector("[data-production-report-filter-menu]");
+    if (field && menu) {
+      const willOpen = menu.hidden;
+      closeProductionReportFilterDropdowns(field);
+      menu.hidden = !willOpen;
+      productionReportFilterToggle.setAttribute("aria-expanded", String(willOpen));
+      if (willOpen) {
+        positionProductionReportFilterDropdown(field);
+        field.querySelector("[data-production-report-filter-search]")?.focus();
+      }
+    }
+    return;
+  }
+  const nptReportFilterToggle = event.target.closest("[data-npt-report-filter-toggle]");
+  if (nptReportFilterToggle) {
+    const field = nptReportFilterToggle.closest("[data-npt-report-filter-field]");
+    const menu = field?.querySelector("[data-npt-report-filter-menu]");
+    if (field && menu) {
+      const willOpen = menu.hidden;
+      closeNptReportFilterDropdowns(field);
+      menu.hidden = !willOpen;
+      nptReportFilterToggle.setAttribute("aria-expanded", String(willOpen));
+      if (willOpen) field.querySelector("[data-npt-report-filter-search]")?.focus();
+    }
+    return;
+  }
+  if (!event.target.closest("[data-production-project-filter], [data-production-rig-filter]")) closeProductionProjectDropdowns();
+  if (!event.target.closest("[data-production-report-filter-field]")) closeProductionReportFilterDropdowns();
+  if (!event.target.closest("[data-npt-report-filter-field]")) closeNptReportFilterDropdowns();
+
   const nptDescription = event.target.closest("[data-npt-description]");
   if (nptDescription) {
     showNptDescriptionPopover(nptDescription);
@@ -3116,17 +4495,91 @@ document.addEventListener("click", (event) => {
     backupAdminDatabase();
     return;
   }
+  const productionReportTab = event.target.closest("[data-production-report-tab]");
+  if (productionReportTab) {
+    analyticsState.productionReport.activeTab = productionReportTab.dataset.productionReportTab === "project" ? "project" : "rig";
+    analyticsState.productionReport.detailPage = 1;
+    analyticsState.productionReport.sortField = "";
+    analyticsState.productionReport.sortDir = "desc";
+    analyticsState.productionReport.sideSearch = "";
+    refreshProductionReportView();
+    return;
+  }
+  const productionSideSelect = event.target.closest("[data-production-side-select]");
+  if (productionSideSelect) {
+    const state = analyticsState.productionReport;
+    const isRigTab = state.activeTab === "rig";
+    const values = (isRigTab ? state.availableRigs : state.availableProjects).map((item) => item.value);
+    const selected = productionSideSelect.dataset.productionSideSelect === "all" ? new Set(values) : new Set();
+    if (isRigTab) {
+      state.selectedRigs = selected;
+      state.rigTouched = true;
+    } else {
+      state.selectedProjects = selected;
+      state.projectTouched = true;
+    }
+    state.detailPage = 1;
+    refreshProductionReportView();
+    return;
+  }
+  const productionFilterSelect = event.target.closest("[data-production-filter-select]");
+  if (productionFilterSelect) {
+    const state = analyticsState.productionReport;
+    const type = productionFilterSelect.dataset.productionFilterSelect;
+    const values = (type === "project" ? state.availableProjects : state.availableRigs).map((item) => item.value);
+    const selected = productionFilterSelect.dataset.mode === "all" ? new Set(values) : new Set();
+    setProductionReportFilterSelection(type, selected);
+    syncProductionReportFilterField(productionFilterSelect.closest("[data-production-report-filter-field]"));
+    renderProductionReportTable(productionReportVisibleRows(state.payload?.details || []));
+    return;
+  }
+  const nptReportTab = event.target.closest("[data-npt-report-tab]");
+  if (nptReportTab) {
+    analyticsState.npt.activeTab = nptReportTab.dataset.nptReportTab === "project" ? "project" : "rig";
+    analyticsState.npt.detailPage = 1;
+    analyticsState.npt.sortField = "";
+    analyticsState.npt.sortDir = "desc";
+    analyticsState.npt.sideSearch = "";
+    refreshNptReportView();
+    return;
+  }
+  const nptSideSelect = event.target.closest("[data-npt-side-select]");
+  if (nptSideSelect) {
+    const state = analyticsState.npt;
+    const isRigTab = state.activeTab === "rig";
+    const values = (isRigTab ? state.availableRigs : state.availableProjects).map((item) => item.value);
+    const selected = nptSideSelect.dataset.nptSideSelect === "all" ? new Set(values) : new Set();
+    if (isRigTab) {
+      state.selectedRigs = selected;
+      state.rigTouched = true;
+    } else {
+      state.selectedProjects = selected;
+      state.projectTouched = true;
+    }
+    state.detailPage = 1;
+    refreshNptReportView();
+    return;
+  }
+  const nptFilterSelect = event.target.closest("[data-npt-filter-select]");
+  if (nptFilterSelect) {
+    const state = analyticsState.npt;
+    const type = nptFilterSelect.dataset.nptFilterSelect;
+    const values = (type === "project" ? state.availableProjects : state.availableRigs).map((item) => item.value);
+    const selected = nptFilterSelect.dataset.mode === "all" ? new Set(values) : new Set();
+    setNptReportFilterSelection(type, selected);
+    syncNptReportFilterField(nptFilterSelect.closest("[data-npt-report-filter-field]"));
+    renderNptTable(nptReportVisibleRows(state.payload?.details || []));
+    return;
+  }
   const analyticsSearch = event.target.closest("[data-analytics-search]");
   if (analyticsSearch) {
-    loadAnalytics(analyticsSearch.dataset.analyticsSearch);
+    loadAnalytics(analyticsSearch.dataset.analyticsSearch, { force: true });
     return;
   }
   const analyticsReset = event.target.closest("[data-analytics-reset]");
   if (analyticsReset) {
     const kind = analyticsReset.dataset.analyticsReset;
-    document.querySelector(`[data-analytics-filter="${kind}"]`)?.querySelectorAll("input, select").forEach((control) => {
-      control.value = "";
-    });
+    resetAnalyticsFilter(kind);
     loadAnalytics(kind);
     return;
   }
@@ -3143,9 +4596,23 @@ document.addEventListener("click", (event) => {
       analyticsState[kind].sortField = analyticsSortButton.dataset.analyticsSort || "";
       analyticsState[kind].sortDir = analyticsSortButton.dataset.sortDir === "desc" ? "desc" : "asc";
       analyticsState[kind].detailPage = 1;
-      if (kind === "npt") renderNptTable(analyticsState.npt.payload?.details || []);
+      if (kind === "npt") renderNptTable(nptReportVisibleRows(analyticsState.npt.payload?.details || []));
+      else if (kind === "productionReport") renderProductionReportTable(productionReportVisibleRows(analyticsState.productionReport.payload?.details || []));
       else renderProductionTable(analyticsState.production.payload?.details || []);
     }
+    return;
+  }
+  const productionRemarkSave = event.target.closest("[data-production-remark-save]");
+  if (productionRemarkSave) {
+    saveProductionRemark(productionRemarkSave);
+    return;
+  }
+  if (event.target.closest("[data-production-remark]")) {
+    return;
+  }
+  const reportHomeShortcut = event.target.closest("[data-open-report-home]");
+  if (reportHomeShortcut) {
+    openReportHomeForWell(reportHomeShortcut.dataset.reportType, reportHomeShortcut.dataset.wellbore || "");
     return;
   }
   const openAnalyticsRecord = event.target.closest("[data-open-record]");
@@ -3227,7 +4694,8 @@ document.addEventListener("click", (event) => {
     const kind = analyticsPageButton.dataset.analyticsKind;
     if (analyticsState[kind]) {
       analyticsState[kind].detailPage = Number(analyticsPageButton.dataset.analyticsPage) || 1;
-      if (kind === "npt") renderNptTable(analyticsState.npt.payload?.details || []);
+      if (kind === "npt") renderNptTable(nptReportVisibleRows(analyticsState.npt.payload?.details || []));
+      else if (kind === "productionReport") renderProductionReportTable(productionReportVisibleRows(analyticsState.productionReport.payload?.details || []));
       else renderProductionTable(analyticsState.production.payload?.details || []);
     }
     return;
@@ -3317,7 +4785,121 @@ document.addEventListener("click", (event) => {
   }
 });
 
+document.addEventListener("change", (event) => {
+  const productionScopeType = event.target.closest("[data-production-scope-type]");
+  if (productionScopeType) {
+    const payload = analyticsState.production.payload || {};
+    populateProductionSummaryScopeFilter(productionScopeType.closest('[data-analytics-filter="production"]'), payload.filters || {});
+    return;
+  }
+  if (event.target.matches("[data-production-side-option]")) {
+    const state = analyticsState.productionReport;
+    const isRigTab = state.activeTab === "rig";
+    const selected = new Set(isRigTab ? state.selectedRigs : state.selectedProjects);
+    if (event.target.checked) selected.add(event.target.value);
+    else selected.delete(event.target.value);
+    if (isRigTab) {
+      state.selectedRigs = selected;
+      state.rigTouched = true;
+    } else {
+      state.selectedProjects = selected;
+      state.projectTouched = true;
+    }
+    state.detailPage = 1;
+    refreshProductionReportView();
+    return;
+  }
+  if (event.target.matches("[data-production-filter-option]")) {
+    const state = analyticsState.productionReport;
+    const type = event.target.dataset.productionFilterOption;
+    const selected = new Set(type === "project" ? state.selectedProjects : state.selectedRigs);
+    if (event.target.checked) selected.add(event.target.value);
+    else selected.delete(event.target.value);
+    setProductionReportFilterSelection(type, selected);
+    syncProductionReportFilterField(event.target.closest("[data-production-report-filter-field]"));
+    renderProductionReportTable(productionReportVisibleRows(state.payload?.details || []));
+    return;
+  }
+  if (event.target.matches("[data-npt-side-option]")) {
+    const state = analyticsState.npt;
+    const isRigTab = state.activeTab === "rig";
+    const selected = new Set(isRigTab ? state.selectedRigs : state.selectedProjects);
+    if (event.target.checked) selected.add(event.target.value);
+    else selected.delete(event.target.value);
+    if (isRigTab) {
+      state.selectedRigs = selected;
+      state.rigTouched = true;
+    } else {
+      state.selectedProjects = selected;
+      state.projectTouched = true;
+    }
+    state.detailPage = 1;
+    refreshNptReportView();
+    return;
+  }
+  if (event.target.matches("[data-npt-filter-option]")) {
+    const state = analyticsState.npt;
+    const type = event.target.dataset.nptFilterOption;
+    const selected = new Set(type === "project" ? state.selectedProjects : state.selectedRigs);
+    if (event.target.checked) selected.add(event.target.value);
+    else selected.delete(event.target.value);
+    setNptReportFilterSelection(type, selected);
+    syncNptReportFilterField(event.target.closest("[data-npt-report-filter-field]"));
+    renderNptTable(nptReportVisibleRows(state.payload?.details || []));
+    return;
+  }
+  if (!event.target.matches('[data-project-option] input[type="checkbox"]')) return;
+  const field = event.target.closest("[data-production-project-filter], [data-production-rig-filter]");
+  if (!field) return;
+  field.dataset.projectTouched = "1";
+  const selected = selectedProductionProjectValues(field);
+  if (event.target.checked) selected.add(event.target.value);
+  else selected.delete(event.target.value);
+  setProductionProjectSelection(field, selected);
+});
+
 document.addEventListener("input", (event) => {
+  const productionSideSearch = event.target.closest("[data-production-side-search]");
+  if (productionSideSearch) {
+    analyticsState.productionReport.sideSearch = productionSideSearch.value;
+    renderProductionReportSide();
+    return;
+  }
+  const productionReportFilterSearch = event.target.closest("[data-production-report-filter-search]");
+  if (productionReportFilterSearch) {
+    filterProductionReportDropdownOptions(productionReportFilterSearch.closest("[data-production-report-filter-field]"));
+    return;
+  }
+  const productionWellQuery = event.target.closest("[data-production-well-query]");
+  if (productionWellQuery) {
+    analyticsState.productionReport.wellQuery = productionWellQuery.value;
+    analyticsState.productionReport.detailPage = 1;
+    renderProductionReportTable(productionReportVisibleRows(analyticsState.productionReport.payload?.details || []));
+    return;
+  }
+  const nptSideSearch = event.target.closest("[data-npt-side-search]");
+  if (nptSideSearch) {
+    analyticsState.npt.sideSearch = nptSideSearch.value;
+    renderNptReportSide();
+    return;
+  }
+  const nptReportFilterSearch = event.target.closest("[data-npt-report-filter-search]");
+  if (nptReportFilterSearch) {
+    filterNptReportDropdownOptions(nptReportFilterSearch.closest("[data-npt-report-filter-field]"));
+    return;
+  }
+  const nptKeywordQuery = event.target.closest("[data-npt-keyword-query]");
+  if (nptKeywordQuery) {
+    analyticsState.npt.keywordQuery = nptKeywordQuery.value;
+    analyticsState.npt.detailPage = 1;
+    renderNptTable(nptReportVisibleRows(analyticsState.npt.payload?.details || []));
+    return;
+  }
+  const projectSearch = event.target.closest("[data-project-search]");
+  if (projectSearch) {
+    filterProductionProjectOptions(projectSearch.closest("[data-production-project-filter], [data-production-rig-filter]"));
+    return;
+  }
   if (event.target.matches("[data-npt-only-sc-npt]")) {
     collectNptConfirmationRows();
     renderNptOperationRows(Boolean(nptConfirmState.detail?.meta?.locked));
@@ -3350,7 +4932,15 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-window.addEventListener("scroll", () => document.querySelector(".npt-description-popover")?.remove(), true);
+window.addEventListener("scroll", () => {
+  document.querySelector(".npt-description-popover")?.remove();
+  positionOpenProductionProjectDropdowns();
+  positionOpenProductionReportDropdowns();
+}, true);
+window.addEventListener("resize", () => {
+  positionOpenProductionProjectDropdowns();
+  positionOpenProductionReportDropdowns();
+});
 
 document.querySelectorAll(".menu-group-toggle").forEach((button) => {
   button.addEventListener("click", () => {
@@ -3362,7 +4952,7 @@ document.querySelectorAll(".menu-group-toggle").forEach((button) => {
 });
 
 document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
-  button.addEventListener("click", () => applyLanguage(button.dataset.lang));
+  button.addEventListener("click", () => handleLanguageChoice(button.dataset.lang));
 });
 
 document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {
@@ -3410,14 +5000,14 @@ document.querySelector("#importMovePdf").addEventListener("click", () => {
 document.querySelector("#movePdfInput").addEventListener("change", (event) => {
   importReportFiles("move", event.target.files);
 });
-form.addEventListener("input", () => { validate(); updateSaveButton("drilling"); });
-form.addEventListener("change", () => { validate(); updateSaveButton("drilling"); });
-completionForm.addEventListener("input", () => { validateCompletion(); updateSaveButton("completion"); });
-completionForm.addEventListener("change", () => { validateCompletion(); updateSaveButton("completion"); });
-workoverForm.addEventListener("input", () => { validateWorkover(); updateSaveButton("workover"); });
-workoverForm.addEventListener("change", () => { validateWorkover(); updateSaveButton("workover"); });
-moveForm.addEventListener("input", () => { validateMove(); updateSaveButton("move"); });
-moveForm.addEventListener("change", () => { validateMove(); updateSaveButton("move"); });
+form.addEventListener("input", () => { markReportOriginalEdited("drilling"); validate(); updateSaveButton("drilling"); });
+form.addEventListener("change", () => { markReportOriginalEdited("drilling"); validate(); updateSaveButton("drilling"); });
+completionForm.addEventListener("input", () => { markReportOriginalEdited("completion"); validateCompletion(); updateSaveButton("completion"); });
+completionForm.addEventListener("change", () => { markReportOriginalEdited("completion"); validateCompletion(); updateSaveButton("completion"); });
+workoverForm.addEventListener("input", () => { markReportOriginalEdited("workover"); validateWorkover(); updateSaveButton("workover"); });
+workoverForm.addEventListener("change", () => { markReportOriginalEdited("workover"); validateWorkover(); updateSaveButton("workover"); });
+moveForm.addEventListener("input", () => { markReportOriginalEdited("move"); validateMove(); updateSaveButton("move"); });
+moveForm.addEventListener("change", () => { markReportOriginalEdited("move"); validateMove(); updateSaveButton("move"); });
 
 loadRows();
 loadRows({}, completionTableIds);
@@ -3425,7 +5015,7 @@ loadRows({}, workoverTableIds);
 loadRows({}, moveTableIds);
 applyLanguage(currentLanguage);
 setDrillingSourceFile();
-setActiveMenu("drilling-daily");
+setActiveMenu(initialReportRoute.target || "drilling-daily");
 Object.keys(savedReportSignatures).forEach((reportType) => {
   savedReportSignatures[reportType] = reportSignature(reportType);
 });

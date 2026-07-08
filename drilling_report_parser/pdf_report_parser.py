@@ -77,6 +77,13 @@ def _clean(value: str) -> str:
     return value
 
 
+def _clean_rig(value: str) -> str:
+    value = _clean(value)
+    value = re.sub(r"^00\s+(SINOPEC\b)", r"\1", value, flags=re.I)
+    value = re.sub(r"\bSINOPEC[-\s]*(\d+)\b", r"SINOPEC \1", value, flags=re.I)
+    return value
+
+
 def _num(value: str) -> str:
     match = re.search(NUM_RE, value or "")
     return match.group(0).replace(",", "") if match else ""
@@ -150,7 +157,7 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     rig_line = _first_line(lines, "Wellbore:")
     rig_match = re.search(r"Wellbore:\s*00\s+SINOPEC\s+(\d+)\s*Rig:", rig_line)
     if rig_match:
-        fields["rig"] = f"00 SINOPEC {rig_match.group(1)}"
+        fields["rig"] = _clean_rig(f"SINOPEC {rig_match.group(1)}")
     fields["refDatum"] = _value_between(rig_line, "Ref Datum:", "DFS:")
 
     today_line = _first_line(lines, "Today's MD:")

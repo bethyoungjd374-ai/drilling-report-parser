@@ -8,7 +8,9 @@ const adminState = {
   roles: [],
   config: {},
   projectTeams: { teams: [], projects: [], pending_wells: [] },
+  translationTerms: { terms: [], protected_terms: {} },
   dataStatus: null,
+  records: [],
   logs: [],
   logsPage: 1,
   logsPageSize: 20
@@ -57,18 +59,22 @@ async function loadAdminSession() {
 
 async function loadAdminData() {
   try {
-    const [users, config, projectTeams, dataStatus, logs] = await Promise.all([
+    const [users, config, projectTeams, translationTerms, dataStatus, records, logs] = await Promise.all([
       adminRequest("/api/admin/users"),
       adminRequest("/api/admin/config"),
       adminRequest("/api/admin/project-teams"),
+      adminRequest("/api/admin/translation-terms"),
       adminRequest("/api/admin/data-status"),
+      adminRequest("/api/records"),
       adminRequest("/api/admin/audit-logs"),
     ]);
     adminState.users = users.users || [];
     adminState.roles = users.roles || [];
     adminState.config = config.config || {};
     adminState.projectTeams = { teams: projectTeams.teams || [], projects: projectTeams.projects || [], pending_wells: projectTeams.pending_wells || [] };
+    adminState.translationTerms = { terms: translationTerms.terms || [], protected_terms: translationTerms.protected_terms || {} };
     adminState.dataStatus = dataStatus;
+    adminState.records = records.records || [];
     adminState.logs = logs.logs || [];
     adminState.logsPage = 1;
     renderAdminPanels();
@@ -89,7 +95,7 @@ function renderAdminPanels() {
   renderAdminUsers();
   renderAdminRoles();
   renderAdminProjects();
-  renderAdminTeams();
+  renderAdminTranslationTerms();
   renderAdminConfig();
   renderAdminData();
   renderAdminLogs();
@@ -192,64 +198,231 @@ function renderAdminProjects() {
   const teams = config.teams || [];
   const projects = config.projects || [];
   const activeProjects = projects.filter((project) => project.status === "active");
+  const teamProjectMap = teamProjectAssignments(config, teams);
   host.innerHTML = `
     <section class="admin-kpi-grid compact">
       ${adminKpi("项目合同", projects.length, `${activeProjects.length} 个启用`, "database")}
       ${adminKpi("队伍", teams.length, "全局队伍库", "users")}
       ${adminKpi("项目井号", projectWellCount(projects), "已归属井号", "overview")}
-      ${adminKpi("待归集", (config.pending_wells || []).length, "日报自动发现", "logs")}
+      ${adminKpi("待调整", (config.pending_wells || []).length, "需要人工确认", "logs")}
     </section>
     <section class="panel">
       <div class="panel-heading">
-        <div><h2>项目合同列表</h2><span class="panel-note">编辑项目时维护绑定队伍、日期和井号</span></div>
+        <div><h2>项目合同列表</h2><span class="panel-note">编辑项目时维护绑定队伍、合同周期和井号</span></div>
         <button class="button small" type="button" data-admin-new-project>新增项目合同</button>
       </div>
       <div class="table-wrap"><table class="record-table admin-table project-table">
-        <thead><tr><th>合同号</th><th>项目名称</th><th>状态</th><th>队伍 / 井</th><th>日期</th><th>操作</th></tr></thead>
-        <tbody>${projects.map((project) => `<tr><td><strong>${escapeHtml(project.contract_no || "-")}</strong></td><td>${escapeHtml(project.project_name || "-")}</td><td><span class="status-pill ${project.status === "active" ? "uploaded" : "failed"}">${project.status === "active" ? "启用" : "关闭"}</span></td><td>${projectTeamSummary(project)}</td><td>${escapeHtml(project.start_date || "-")} 至 ${escapeHtml(project.end_date || "-")}</td><td><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="6">暂无项目合同</td></tr>`}</tbody>
+        <thead><tr><th>项目名称</th><th>合同号</th><th>合同周期</th><th>状态</th><th>队伍 / 井</th><th>操作</th></tr></thead>
+        <tbody>${projects.map((project) => `<tr><td><strong>${escapeHtml(project.project_name || "-")}</strong></td><td>${escapeHtml(project.contract_no || "-")}</td><td>${escapeHtml(projectPeriodText(project))}</td><td><span class="status-pill ${project.status === "active" ? "uploaded" : "failed"}">${project.status === "active" ? "启用" : "关闭"}</span></td><td>${projectTeamSummary(project)}</td><td><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="6">暂无项目合同</td></tr>`}</tbody>
       </table></div>
     </section>
+    ${teamListPanel(teams, teamProjectMap, "新增钻井队伍")}
     <section class="panel">
-      <div class="panel-heading"><h2>项目井号明细</h2><span class="panel-note">按项目展开队伍和井号</span></div>
-      <div class="admin-project-cards">${projects.map(projectCard).join("") || `<div class="empty-records">暂无项目配置</div>`}</div>
-    </section>
-    <section class="panel">
-      <div class="panel-heading"><h2>待归集井号</h2><span class="panel-note">多个启用项目时，日报自动发现的井号先进入这里</span></div>
+      <div class="panel-heading"><h2>井号列表</h2><span class="panel-note">井号自动从日报中建立归属关系；井队已绑定项目时自动带出归属项目</span></div>
       <div class="table-wrap"><table class="record-table admin-table">
-        <thead><tr><th>队伍</th><th>井号</th><th>日报类型</th><th>来源时间</th><th>归属项目</th><th>操作</th></tr></thead>
-        <tbody>${(config.pending_wells || []).map((item, index) => `<tr><td>${escapeHtml(item.rig)}</td><td><strong>${escapeHtml(item.wellbore)}</strong></td><td>${escapeHtml(item.report_type || "-")}</td><td>${escapeHtml(item.created_at || "-")}</td><td><select class="admin-inline-select" data-pending-project="${index}">${projectSelectOptions(projects)}</select></td><td><button class="link-button" type="button" data-admin-assign-pending="${index}">归入项目</button></td></tr>`).join("") || `<tr><td colspan="6">暂无待归集井号</td></tr>`}</tbody>
+        <thead><tr><th>井号</th><th>队伍</th><th>归属项目</th><th>来源报表</th><th>操作</th></tr></thead>
+        <tbody>${wellAssignmentRows(config).map((item, index) => `<tr><td><strong>${escapeHtml(item.wellbore)}</strong></td><td>${escapeHtml(item.rig || "-")}</td><td>${escapeHtml(item.project_label || "未归属")}</td><td>${escapeHtml(item.source_report || "-")}</td><td><button class="link-button" type="button" data-admin-edit-well-assignment="${index}">编辑</button></td></tr>`).join("") || `<tr><td colspan="5">暂无井号</td></tr>`}</tbody>
       </table></div>
     </section>
   `;
 }
 
-function renderAdminTeams() {
-  const host = document.querySelector('[data-admin-panel="teams"]');
-  const config = adminState.projectTeams || { teams: [], projects: [], pending_wells: [] };
-  const teams = config.teams || [];
-  const usedTeams = new Set((config.projects || []).flatMap((project) => (project.rigs || []).map((rig) => rig.rig).filter(Boolean)));
-  host.innerHTML = `
-    <section class="admin-kpi-grid compact">
-      ${adminKpi("队伍总数", teams.length, "全局队伍库", "users")}
-      ${adminKpi("已绑定队伍", usedTeams.size, "已用于项目合同", "database")}
-      ${adminKpi("启用队伍", teams.filter((team) => team.status !== "inactive").length, "可被项目选择", "overview")}
-      ${adminKpi("待归集", (config.pending_wells || []).length, "日报自动发现", "logs")}
-    </section>
+function wellAssignmentRows(config = {}) {
+  const sourceMap = wellSourceReportMap();
+  const rows = [];
+  (config.projects || []).forEach((project) => {
+    (project.rigs || []).forEach((rig) => {
+      (rig.wells || []).forEach((wellbore) => {
+        const source = sourceMap.get(wellSourceKey(rig.rig || "", wellbore));
+        rows.push({
+          kind: "assigned",
+          project_id: project.id || "",
+          project_label: projectLabel(project),
+          rig: rig.rig || "",
+          wellbore,
+          source_report: sourceReportText(source),
+        });
+      });
+    });
+  });
+  (config.pending_wells || []).forEach((item, pending_index) => {
+    const source = sourceMap.get(wellSourceKey(item.rig || "", item.wellbore || ""));
+    rows.push({
+      kind: "pending",
+      pending_index,
+      project_id: "",
+      project_label: "",
+      rig: item.rig || "",
+      wellbore: item.wellbore || "",
+      source_report: sourceReportText(source),
+    });
+  });
+  rows.sort((left, right) => String(left.wellbore).localeCompare(String(right.wellbore), "zh-Hans-CN", { numeric: true }) || String(left.rig).localeCompare(String(right.rig), "zh-Hans-CN", { numeric: true }));
+  adminState.wellAssignmentRows = rows;
+  return rows;
+}
+
+function wellSourceReportMap() {
+  const map = new Map();
+  (adminState.records || []).forEach((record) => {
+    const key = wellSourceKey(record.rig || "", record.wellbore || "");
+    if (!key) return;
+    const current = map.get(key);
+    const reportDate = record.reportDate || "";
+    const updatedAt = record.updated_at || "";
+    const type = record.report_type || "";
+    if (!current) {
+      map.set(key, { report_type: type, reportDate, updated_at: updatedAt, all_types: new Set([type].filter(Boolean)) });
+      return;
+    }
+    if (type) current.all_types.add(type);
+    if (`${reportDate} ${updatedAt}` < `${current.reportDate || ""} ${current.updated_at || ""}`) {
+      current.report_type = type || current.report_type;
+      current.reportDate = reportDate;
+      current.updated_at = updatedAt;
+    }
+  });
+  return map;
+}
+
+function wellSourceKey(rig, wellbore) {
+  const left = String(rig || "").trim();
+  const right = String(wellbore || "").trim();
+  return left && right ? `${left}||${right}` : "";
+}
+
+function sourceReportText(source) {
+  if (!source?.report_type) return "-";
+  const first = reportTypeLabel(source.report_type);
+  const others = [...(source.all_types || [])].filter((type) => type && type !== source.report_type).map(reportTypeLabel);
+  return others.length ? `${first}（另有${others.join("、")}）` : first;
+}
+
+function reportTypeLabel(type = "") {
+  return ({ drilling: "钻井日报", completion: "完井日报", workover: "修井日报", move: "搬迁日报" })[type] || type || "-";
+}
+
+function projectLabel(project = {}) {
+  return [project.project_name, project.contract_no].filter(Boolean).join(" / ") || project.id || "-";
+}
+
+function projectPeriodText(project = {}) {
+  return `${project.start_date || "-"} 至 ${project.end_date || "-"}`;
+}
+
+function teamProjectAssignments(config = {}, teams = []) {
+  const result = new Map();
+  const teamLookup = new Map();
+  teams.forEach((team) => {
+    [team.name, ...(Array.isArray(team.aliases) ? team.aliases : [])].forEach((value) => {
+      const key = String(value || "").trim();
+      if (key) teamLookup.set(key, team.name);
+    });
+  });
+  (config.projects || []).forEach((project) => {
+    (project.rigs || []).forEach((rig) => {
+      if (!rig.rig) return;
+      const teamName = teamLookup.get(String(rig.rig).trim()) || rig.rig;
+      const rows = result.get(teamName) || [];
+      const projectKey = project.id || `${project.project_name || ""}|${project.contract_no || ""}|${project.start_date || ""}|${project.end_date || ""}`;
+      if (!rows.some((item) => item.key === projectKey)) {
+        rows.push({ key: projectKey, name: project.project_name || project.contract_no || "-", period: projectPeriodText(project) });
+      }
+      result.set(teamName, rows);
+    });
+  });
+  return result;
+}
+
+function teamListPanel(teams = [], teamProjectMap = new Map(), buttonText = "新增队伍") {
+  return `
     <section class="panel">
       <div class="panel-heading">
         <div><h2>队伍列表</h2><span class="panel-note">维护全局队伍库，项目配置中可选择绑定</span></div>
-        <button class="button small" type="button" data-admin-new-team>新增队伍</button>
+        <button class="button small" type="button" data-admin-new-team>${escapeHtml(buttonText)}</button>
       </div>
       <div class="table-wrap"><table class="record-table admin-table">
-        <thead><tr><th>队伍</th><th>编号</th><th>承包商</th><th>状态</th><th>项目绑定</th><th>操作</th></tr></thead>
-        <tbody>${teams.map((team) => `<tr><td><strong>${escapeHtml(team.name)}</strong></td><td>${escapeHtml(team.code || "-")}</td><td>${escapeHtml(team.contractor || "-")}</td><td><span class="status-pill ${team.status === "active" ? "uploaded" : "failed"}">${team.status === "active" ? "启用" : "停用"}</span></td><td>${usedTeams.has(team.name) ? "已绑定" : "未绑定"}</td><td><button class="link-button" type="button" data-admin-edit-team="${escapeHtml(team.id)}">编辑</button></td></tr>`).join("") || `<tr><td colspan="6">暂无队伍</td></tr>`}</tbody>
+        <thead><tr><th>队伍</th><th>承包商</th><th>识别别名</th><th>状态</th><th>归属项目</th><th>项目合同周期</th><th>操作</th></tr></thead>
+        <tbody>${teams.map((team) => {
+          const assignments = teamProjectMap.get(team.name) || [];
+          return `<tr><td><strong>${escapeHtml(team.name)}</strong></td><td>${escapeHtml(team.contractor || "-")}</td><td>${escapeHtml(teamAliasText(team))}</td><td><span class="status-pill ${team.status === "active" ? "uploaded" : "failed"}">${team.status === "active" ? "启用" : "停用"}</span></td><td>${teamProjectCell(assignments, "name")}</td><td>${teamProjectCell(assignments, "period")}</td><td><button class="link-button" type="button" data-admin-edit-team="${escapeHtml(team.id)}">编辑</button></td></tr>`;
+        }).join("") || `<tr><td colspan="7">暂无队伍</td></tr>`}</tbody>
       </table></div>
     </section>
   `;
 }
 
-function projectCard(project) {
-  return `<article class="admin-project-card"><header><strong>${escapeHtml(project.contract_no || project.project_name)}</strong><span>${escapeHtml(project.project_name || "")}</span></header>${(project.rigs || []).map((rig) => `<div><b>${escapeHtml(rig.rig)}</b><small>${escapeHtml(projectRigDateText(rig))}</small><small>${(rig.wells || []).map(escapeHtml).join("、") || "暂无井号"}</small></div>`).join("") || `<p>暂无队伍</p>`}</article>`;
+function teamProjectCell(assignments = [], field = "name") {
+  if (!assignments.length) return "未绑定";
+  return assignments.map((item) => `<div>${escapeHtml(item[field] || "-")}</div>`).join("");
+}
+
+function teamAliasText(team = {}) {
+  const aliases = Array.isArray(team.aliases) ? team.aliases.filter(Boolean) : [];
+  return aliases.length ? aliases.join("、") : "-";
+}
+
+function renderAdminTranslationTerms() {
+  const host = document.querySelector('[data-admin-panel="translationTerms"]');
+  if (!host) return;
+  const terms = adminState.translationTerms?.terms || [];
+  const enabledCount = terms.filter((term) => term.enabled !== false).length;
+  const protectedCount = terms.filter((term) => term.protected !== false).length;
+  host.innerHTML = `
+    <section class="admin-kpi-grid compact">
+      ${adminKpi("术语总数", terms.length, "三语映射行", "database")}
+      ${adminKpi("已启用", enabledCount, "参与前台翻译", "overview")}
+      ${adminKpi("占位保护", protectedCount, "翻译前不改写", "shield")}
+      ${adminKpi("存储文件", "JSON", "outputs/translation_terms.json", "settings")}
+    </section>
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>术语翻译</h2><span class="panel-note">维护中文、英文、西班牙语专业词语映射；前台语言切换会优先使用这里的术语</span></div>
+        <button class="button small" type="button" data-admin-add-translation-term>新增术语</button>
+      </div>
+      <div class="table-wrap">
+        <table class="record-table admin-table translation-terms-table">
+          <thead><tr><th>启用</th><th>分类</th><th>中文</th><th>English</th><th>Español</th><th>别名</th><th>保护</th><th>操作</th></tr></thead>
+          <tbody>${terms.map(translationTermRow).join("") || `<tr><td colspan="8">暂无术语</td></tr>`}</tbody>
+        </table>
+      </div>
+      <div class="admin-actions">
+        <button class="button" type="button" data-admin-save-translation-terms>保存术语表</button>
+      </div>
+    </section>`;
+}
+
+function translationTermRow(term = {}) {
+  const id = escapeHtml(term.id || newClientId());
+  const aliases = term.aliases || {};
+  return `<tr data-translation-term-row data-term-id="${id}">
+    <td>
+      <select name="termEnabled">
+        <option value="true" ${term.enabled !== false ? "selected" : ""}>启用</option>
+        <option value="false" ${term.enabled === false ? "selected" : ""}>停用</option>
+      </select>
+    </td>
+    <td><input name="termCategory" value="${escapeHtml(term.category || "drilling")}" /></td>
+    <td><textarea name="termZh" rows="2">${escapeHtml(term.zh || "")}</textarea></td>
+    <td><textarea name="termEn" rows="2">${escapeHtml(term.en || "")}</textarea></td>
+    <td><textarea name="termEs" rows="2">${escapeHtml(term.es || "")}</textarea></td>
+    <td class="term-alias-cell">
+      <label>中<textarea name="termAliasesZh" rows="2" placeholder="每行一个别名">${escapeHtml(aliasInputValue(aliases.zh))}</textarea></label>
+      <label>EN<textarea name="termAliasesEn" rows="2" placeholder="one alias per line">${escapeHtml(aliasInputValue(aliases.en))}</textarea></label>
+      <label>ES<textarea name="termAliasesEs" rows="2" placeholder="un alias por línea">${escapeHtml(aliasInputValue(aliases.es))}</textarea></label>
+    </td>
+    <td>
+      <select name="termProtected">
+        <option value="true" ${term.protected !== false ? "selected" : ""}>保护</option>
+        <option value="false" ${term.protected === false ? "selected" : ""}>仅替换</option>
+      </select>
+    </td>
+    <td><button class="link-button" type="button" data-admin-delete-translation-term>删除</button></td>
+  </tr>`;
+}
+
+function aliasInputValue(value) {
+  return Array.isArray(value) ? value.join("\n") : "";
 }
 
 function projectWellCount(projects) {
@@ -261,16 +434,9 @@ function projectTeamSummary(project) {
   return `${rigs.length} 队 / ${projectWellCount([project])} 井`;
 }
 
-function projectRigDateText(rig = {}) {
-  const start = rig.start_date || "";
-  const end = rig.end_date || "";
-  if (!start && !end) return "未设置队伍周期";
-  return `${start || "-"} 至 ${end || "-"}`;
-}
-
-function projectSelectOptions(projects) {
+function projectSelectOptions(projects, selected = "") {
   const active = (projects || []).filter((project) => project.status !== "closed");
-  return active.map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.contract_no || project.project_name || "-")} / ${escapeHtml(project.project_name || "-")}</option>`).join("") || `<option value="">请先新增项目</option>`;
+  return active.map((project) => `<option value="${escapeHtml(project.id)}" ${project.id === selected ? "selected" : ""}>${escapeHtml(projectLabel(project))}</option>`).join("") || `<option value="">请先新增项目</option>`;
 }
 
 function closeAdminModal() {
@@ -361,8 +527,9 @@ function openTeamModal(id = "") {
   openAdminModal(
     isEdit ? "编辑队伍" : "新增队伍",
     `<input name="teamId" type="hidden" value="${escapeHtml(team.id || "")}" />
+    <input name="teamOriginalName" type="hidden" value="${escapeHtml(team.name || "")}" />
     <div class="admin-modal-form compact">
-      <label>队伍名称<input name="teamName" value="${escapeHtml(team.name || "")}" placeholder="例如：00 SINOPEC 248" /></label>
+      <label>队伍名称<input name="teamName" value="${escapeHtml(team.name || "")}" placeholder="例如：SINOPEC 248" /></label>
       <label>队伍编号<input name="teamCode" value="${escapeHtml(team.code || "")}" placeholder="可选" /></label>
       <label>承包商<input name="teamContractor" value="${escapeHtml(team.contractor || "")}" placeholder="例如：SINOPEC" /></label>
       <label>状态
@@ -371,9 +538,31 @@ function openTeamModal(id = "") {
           <option value="inactive" ${team.status === "inactive" ? "selected" : ""}>停用</option>
         </select>
       </label>
+      <label class="wide">识别别名<textarea name="teamAliases" placeholder="日报中识别到的旧队伍名或其他写法，每行一个">${escapeHtml(aliasInputValue(team.aliases || []))}</textarea></label>
     </div>`,
     `<button class="button secondary" type="button" data-admin-modal-close>取消</button>
     <button class="button" type="button" data-admin-save-team-modal>${isEdit ? "保存队伍" : "新增队伍"}</button>`
+  );
+}
+
+function openWellAssignmentModal(index = 0) {
+  const row = (adminState.wellAssignmentRows || wellAssignmentRows(adminState.projectTeams))[Number(index)];
+  if (!row) return showToast("井号记录不存在");
+  openAdminModal(
+    "编辑井号归属",
+    `<input name="wellAssignmentIndex" type="hidden" value="${Number(index)}" />
+    <input name="wellAssignmentOriginalProject" type="hidden" value="${escapeHtml(row.project_id || "")}" />
+    <input name="wellAssignmentOriginalRig" type="hidden" value="${escapeHtml(row.rig || "")}" />
+    <input name="wellAssignmentOriginalWell" type="hidden" value="${escapeHtml(row.wellbore || "")}" />
+    <input name="wellAssignmentKind" type="hidden" value="${escapeHtml(row.kind || "")}" />
+    <input name="wellAssignmentPendingIndex" type="hidden" value="${escapeHtml(String(row.pending_index ?? ""))}" />
+    <div class="admin-modal-form compact">
+      <label>井号<input name="wellAssignmentWell" value="${escapeHtml(row.wellbore || "")}" /></label>
+      <label>队伍<select name="wellAssignmentRig"><option value="">未选择队伍</option>${teamSelectOptions(row.rig || "")}</select></label>
+      <label class="wide">归属项目<select name="wellAssignmentProject"><option value="">未归属</option>${projectSelectOptions(adminState.projectTeams.projects || [], row.project_id || "")}</select></label>
+    </div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>取消</button>
+    <button class="button" type="button" data-admin-save-well-assignment>保存井号归属</button>`
   );
 }
 
@@ -450,6 +639,7 @@ function adminLogPagination(totalRows, currentPage, totalPages, pageSize) {
 }
 
 function switchAdminTab(tab) {
+  if (tab === "teams") tab = "projects";
   adminState.tab = tab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => button.classList.toggle("active", button.dataset.adminTab === tab));
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => panel.hidden = panel.dataset.adminPanel !== tab);
@@ -569,8 +759,70 @@ async function saveProjectTeamConfig(message = "业务配置已保存") {
   adminState.projectTeams = { teams: response.teams || [], projects: response.projects || [], pending_wells: response.pending_wells || [] };
   showToast(message);
   renderAdminProjects();
-  renderAdminTeams();
   renderAdminOverview();
+}
+
+function collectTranslationTerms() {
+  return [...document.querySelectorAll("[data-translation-term-row]")].map((row) => {
+    const zh = row.querySelector('[name="termZh"]')?.value.trim() || "";
+    const en = row.querySelector('[name="termEn"]')?.value.trim() || "";
+    const es = row.querySelector('[name="termEs"]')?.value.trim() || "";
+    if (!zh && !en && !es) return null;
+    return {
+      id: row.dataset.termId || newClientId(),
+      category: row.querySelector('[name="termCategory"]')?.value.trim() || "drilling",
+      zh,
+      en,
+      es,
+      aliases: {
+        zh: parseAliasList(row.querySelector('[name="termAliasesZh"]')?.value || ""),
+        en: parseAliasList(row.querySelector('[name="termAliasesEn"]')?.value || ""),
+        es: parseAliasList(row.querySelector('[name="termAliasesEs"]')?.value || ""),
+      },
+      protected: row.querySelector('[name="termProtected"]')?.value !== "false",
+      enabled: row.querySelector('[name="termEnabled"]')?.value !== "false",
+      updated_at: new Date().toISOString().slice(0, 19),
+    };
+  }).filter(Boolean);
+}
+
+function parseAliasList(value) {
+  return [...new Set(String(value || "").split(/[\n,，;；]+/).map((item) => item.trim()).filter(Boolean))];
+}
+
+function addTranslationTerm() {
+  adminState.translationTerms = adminState.translationTerms || { terms: [], protected_terms: {} };
+  adminState.translationTerms.terms = [
+    ...collectTranslationTerms(),
+    {
+      id: newClientId(),
+      category: "drilling",
+      zh: "",
+      en: "",
+      es: "",
+      aliases: { zh: [], en: [], es: [] },
+      protected: true,
+      enabled: true,
+      updated_at: new Date().toISOString().slice(0, 19),
+    }
+  ];
+  renderAdminTranslationTerms();
+}
+
+async function saveTranslationTerms() {
+  const payload = {
+    terms: collectTranslationTerms(),
+    protected_terms: adminState.translationTerms?.protected_terms || {},
+  };
+  try {
+    const response = await adminRequest("/api/admin/translation-terms", { method: "POST", body: JSON.stringify(payload) });
+    adminState.translationTerms = { terms: response.terms || [], protected_terms: response.protected_terms || {} };
+    showToast("术语翻译配置已保存");
+    renderAdminTranslationTerms();
+    renderAdminOverview();
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function saveProjectContract() {
@@ -613,6 +865,7 @@ function saveProjectContract() {
 function saveTeam() {
   const modal = document.querySelector(".admin-modal");
   const id = modal?.querySelector('[name="teamId"]')?.value || "";
+  const originalName = modal?.querySelector('[name="teamOriginalName"]')?.value.trim() || "";
   const name = modal?.querySelector('[name="teamName"]')?.value.trim() || "";
   if (!name) return showToast("请填写队伍名称");
   const teams = [...(adminState.projectTeams.teams || [])];
@@ -624,10 +877,25 @@ function saveTeam() {
   team.name = name;
   team.code = modal?.querySelector('[name="teamCode"]')?.value.trim() || "";
   team.contractor = modal?.querySelector('[name="teamContractor"]')?.value.trim() || "";
+  const aliases = parseAliasList(modal?.querySelector('[name="teamAliases"]')?.value || "").filter((alias) => alias !== name);
+  if (originalName && originalName !== name && !aliases.includes(originalName)) aliases.unshift(originalName);
+  team.aliases = aliases;
   team.status = modal?.querySelector('[name="teamStatus"]')?.value || "active";
   adminState.projectTeams.teams = teams;
+  if (originalName && originalName !== name) renameTeamReferences(originalName, name);
   closeAdminModal();
   saveProjectTeamConfig("队伍已保存");
+}
+
+function renameTeamReferences(originalName, newName) {
+  (adminState.projectTeams.projects || []).forEach((project) => {
+    (project.rigs || []).forEach((rig) => {
+      if (rig.rig === originalName) rig.rig = newName;
+    });
+  });
+  (adminState.projectTeams.pending_wells || []).forEach((item) => {
+    if (item.rig === originalName) item.rig = newName;
+  });
 }
 
 function parseWells(value) {
@@ -659,6 +927,51 @@ function assignPendingWell(index) {
   target.wells.sort();
   adminState.projectTeams.pending_wells.splice(Number(index), 1);
   saveProjectTeamConfig("待归集井号已归入项目");
+}
+
+function saveWellAssignment() {
+  const modal = document.querySelector(".admin-modal");
+  const originalProject = modal?.querySelector('[name="wellAssignmentOriginalProject"]')?.value || "";
+  const originalRig = modal?.querySelector('[name="wellAssignmentOriginalRig"]')?.value || "";
+  const originalWell = modal?.querySelector('[name="wellAssignmentOriginalWell"]')?.value || "";
+  const kind = modal?.querySelector('[name="wellAssignmentKind"]')?.value || "";
+  const pendingIndex = Number(modal?.querySelector('[name="wellAssignmentPendingIndex"]')?.value || -1);
+  const projectId = modal?.querySelector('[name="wellAssignmentProject"]')?.value || "";
+  const rig = modal?.querySelector('[name="wellAssignmentRig"]')?.value || "";
+  const wellbore = modal?.querySelector('[name="wellAssignmentWell"]')?.value.trim() || "";
+  if (!wellbore) return showToast("请填写井号");
+  if (!rig) return showToast("请先选择队伍");
+
+  removeWellAssignment(kind, originalProject, originalRig, originalWell, pendingIndex);
+  if (projectId) {
+    const project = (adminState.projectTeams.projects || []).find((item) => item.id === projectId);
+    if (!project) return showToast("项目不存在");
+    project.rigs = project.rigs || [];
+    let target = project.rigs.find((item) => item.rig === rig);
+    if (!target) {
+      target = { rig, start_date: "", end_date: "", wells: [], note: "" };
+      project.rigs.push(target);
+    }
+    target.wells = [...new Set([...(target.wells || []), wellbore])].sort();
+    project.updated_at = new Date().toISOString().slice(0, 19);
+  } else {
+    adminState.projectTeams.pending_wells = adminState.projectTeams.pending_wells || [];
+    if (!adminState.projectTeams.pending_wells.some((item) => item.rig === rig && item.wellbore === wellbore)) {
+      adminState.projectTeams.pending_wells.push({ rig, wellbore, source: "manual", created_at: new Date().toISOString().slice(0, 19) });
+    }
+  }
+  closeAdminModal();
+  saveProjectTeamConfig("井号归属已保存");
+}
+
+function removeWellAssignment(kind, projectId, rig, wellbore, pendingIndex) {
+  if (kind === "assigned") {
+    const project = (adminState.projectTeams.projects || []).find((item) => item.id === projectId);
+    const target = project?.rigs?.find((item) => item.rig === rig);
+    if (target) target.wells = (target.wells || []).filter((well) => well !== wellbore);
+  } else if (Number.isInteger(pendingIndex) && pendingIndex >= 0) {
+    adminState.projectTeams.pending_wells?.splice(pendingIndex, 1);
+  }
 }
 
 async function backupAdminDatabase() {
@@ -702,6 +1015,12 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-modal-close]")) return closeAdminModal();
   if (event.target.closest("[data-admin-new-project]")) return openProjectModal();
   if (event.target.closest("[data-admin-new-team]")) return openTeamModal();
+  if (event.target.closest("[data-admin-add-translation-term]")) return addTranslationTerm();
+  const deleteTranslationTerm = event.target.closest("[data-admin-delete-translation-term]");
+  if (deleteTranslationTerm) {
+    deleteTranslationTerm.closest("[data-translation-term-row]")?.remove();
+    return;
+  }
   const addProjectRig = event.target.closest("[data-admin-add-project-rig]");
   if (addProjectRig) {
     const list = document.querySelector("[data-project-rig-list]");
@@ -719,6 +1038,8 @@ document.addEventListener("click", (event) => {
   if (editProject) return fillProjectForm(editProject.dataset.adminEditProject);
   const editTeam = event.target.closest("[data-admin-edit-team]");
   if (editTeam) return fillTeamForm(editTeam.dataset.adminEditTeam);
+  const editWellAssignment = event.target.closest("[data-admin-edit-well-assignment]");
+  if (editWellAssignment) return openWellAssignmentModal(editWellAssignment.dataset.adminEditWellAssignment);
   const assignPending = event.target.closest("[data-admin-assign-pending]");
   if (assignPending) return assignPendingWell(assignPending.dataset.adminAssignPending);
   if (event.target.closest("[data-admin-save-user]")) return saveAdminUser();
@@ -726,7 +1047,9 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-save-roles]")) return saveAdminRoles();
   if (event.target.closest("[data-admin-save-project-modal]")) return saveProjectContract();
   if (event.target.closest("[data-admin-save-team-modal]")) return saveTeam();
+  if (event.target.closest("[data-admin-save-well-assignment]")) return saveWellAssignment();
   if (event.target.closest("[data-admin-save-config]")) return saveAdminConfig();
+  if (event.target.closest("[data-admin-save-translation-terms]")) return saveTranslationTerms();
   if (event.target.closest("[data-admin-backup]")) return backupAdminDatabase();
   if (event.target.closest("[data-admin-logout]")) return logoutAdmin();
 });

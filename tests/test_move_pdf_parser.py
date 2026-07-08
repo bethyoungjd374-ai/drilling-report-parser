@@ -21,7 +21,7 @@ class MovePdfParserTest(unittest.TestCase):
         self.assertEqual(fields["reportDate"], "2026-06-10")
         self.assertEqual(fields["reportNo"], "5")
         self.assertEqual(fields["primaryReason"], "INICIAL MOVE")
-        self.assertEqual(fields["rig"], "00 SINOPEC 168")
+        self.assertEqual(fields["rig"], "SINOPEC 168")
         self.assertNotIn("supervisor1", fields)
         self.assertNotIn("engineer", fields)
         self.assertNotIn("rigMovePercent", fields)

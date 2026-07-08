@@ -31,7 +31,7 @@ class PdfReportParserTest(unittest.TestCase):
         fields = payload["report_fields"]
         self.assertEqual(fields["wellbore"], "SCHAO-611")
         self.assertEqual(fields["reportNo"], "16")
-        self.assertEqual(fields["rig"], "00 SINOPEC 129")
+        self.assertEqual(fields["rig"], "SINOPEC 129")
         self.assertEqual(fields["prevMd"], "10754.00")
         self.assertEqual(fields["progress"], "0.00")
         self.assertEqual(fields["rotHrsToday"], "")
@@ -67,7 +67,7 @@ class PdfReportParserTest(unittest.TestCase):
         fields = payload["report_fields"]
         self.assertEqual(fields["wellbore"], "PCNC-040")
         self.assertEqual(fields["reportNo"], "11")
-        self.assertEqual(fields["rig"], "00 SINOPEC 248")
+        self.assertEqual(fields["rig"], "SINOPEC 248")
         self.assertEqual(fields["prevMd"], "10641.00")
         self.assertEqual(fields["progress"], "191.00")
         self.assertEqual(fields["rotHrsToday"], "4.48")

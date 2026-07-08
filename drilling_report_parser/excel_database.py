@@ -316,6 +316,22 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
     return payload
 
 
+def delete_report_payload(database_path: str | Path, record_id: str) -> bool:
+    path = Path(database_path)
+    if not path.exists():
+        return False
+    workbook = load_workbook(path)
+    _ensure_schema(workbook)
+    record = _record_index(workbook["records"]).get(record_id)
+    if not record:
+        return False
+    report_type = _normalize_report_type(str(record.get("report_type", "")))
+    _replace_record_rows(workbook, report_type, record_id)
+    _format_workbook(workbook)
+    workbook.save(path)
+    return True
+
+
 def list_records(database_path: str | Path) -> list[dict[str, str]]:
     path = Path(database_path)
     if not path.exists():
@@ -329,6 +345,7 @@ def list_records(database_path: str | Path) -> list[dict[str, str]]:
             continue
         fields = _first_matching_row(workbook[REPORT_TABLES[report_type]["field_sheet"]], record_id)
         record["afeNumber"] = fields.get("afeNumber", "")
+        record["event"] = fields.get("event", "")
     records.sort(key=lambda record: (record.get("reportDate", ""), record.get("updated_at", "")), reverse=True)
     return records
 

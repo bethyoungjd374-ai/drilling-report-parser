@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "source": "example",
+    "source_file": "mixed-en-es-drilling-report.pdf",
+    "parser": "manual_sample"
+  },
+  "report_fields": {
+    "event": "DEV DRILLING",
+    "reportDate": "2026-07-06",
+    "reportNo": "21",
+    "wellbore": "EB-D-12",
+    "rig": "00 SINOPEC 248",
+    "currentOps": "Drilling 8-1/2\" hole from 2450m to 2510m. Circuló fondo arriba con MW 10.2 ppg.",
+    "summary24h": "Tripping out BHA #5 after lost circulation. Se observó pérdida parcial de circulación; no kick.",
+    "forecast24h": "Continue drilling and monitor SPP, ROP and ECD."
+  },
+  "operations": [
+    {
+      "from": "00:00",
+      "to": "06:00",
+      "hours": "6",
+      "op_code": "DRLG",
+      "op_sub": "Rotary",
+      "op_type": "P",
+      "operation_details": "Drilled 8-1/2\" section from 2450m to 2510m, ROP 18 m/hr, WOB 22 klb."
+    },
+    {
+      "from": "06:00",
+      "to": "12:00",
+      "hours": "6",
+      "op_code": "CIRC",
+      "op_sub": "Condition hole",
+      "op_type": "P",
+      "operation_details": "Circuló fondo arriba con 400 gpm y SPP 2800 psi."
+    },
+    {
+      "from": "12:00",
+      "to": "18:00",
+      "hours": "6",
+      "op_code": "TRIP",
+      "op_sub": "POOH",
+      "op_type": "P",
+      "operation_details": "Tripping out to inspect BHA and check BOP pressure test records."
+    }
+  ],
+  "bha_components": [
+    {
+      "component": "PDC Bit",
+      "od": "8.500",
+      "id": "",
+      "joints": "1",
+      "length": "0.95"
+    },
+    {
+      "component": "Power Drive 900 AA",
+      "od": "6.750",
+      "id": "3.250",
+      "joints": "1",
+      "length": "12.35"
+    }
+  ],
+  "bulks": [
+    {
+      "bulk": "BARITE",
+      "qty_start": "120",
+      "qty_used": "10",
+      "qty_end": "110"
+    }
+  ]
+}

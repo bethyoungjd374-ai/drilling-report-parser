@@ -7,6 +7,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from drilling_report_parser.excel_database import (
+    delete_report_payload,
     list_records,
     list_npt_confirmation_wells,
     load_npt_confirmation_detail,
@@ -100,6 +101,23 @@ class ExcelDatabaseTest(unittest.TestCase):
             loaded = load_report_payload(database, "completion:SCHAS-513:2026-06-11:7")
             self.assertEqual(loaded["operations"][0]["from"], "06:00")
             self.assertEqual(loaded["bulks"], [])
+
+    def test_delete_report_removes_record_and_detail_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "report_database.xlsx"
+            result = save_report_payload(
+                database,
+                {
+                    "report_fields": {"reportDate": "2026-06-11", "reportNo": "11", "wellbore": "PCNC-040", "rig": "SINOPEC 248"},
+                    "operations": [{"from": "00:00", "to": "24:00", "hours": "24.00"}],
+                },
+                "drilling",
+            )
+
+            self.assertTrue(delete_report_payload(database, result["record_id"]))
+            self.assertEqual(list_records(database), [])
+            with self.assertRaises(KeyError):
+                load_report_payload(database, result["record_id"])
 
     def test_save_to_existing_records_sheet_aligns_added_status_columns(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
