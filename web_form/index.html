@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>钻井日报填报工作台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=well-calendar-month-1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="./styles.css?v=modern-minimal-2" />
   </head>
   <body>
     <div class="app-shell">
@@ -20,39 +23,39 @@
         <nav class="system-nav">
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <img class="menu-group-icon" src="./icons/daily-parsing.png" alt="" />
+              <span class="menu-group-icon icon-parsing" aria-hidden="true"></span>
               <span data-i18n="menuDailyParsing">日报解析</span>
               <span class="menu-chevron">v</span>
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link active" data-menu-target="drilling-daily" data-title-i18n="menuDrillingDaily" data-desc-i18n="descDrillingDaily"><img class="menu-item-icon" src="./icons/drilling-daily.png" alt="" /><span data-i18n="menuDrillingDaily">钻井日报</span></a>
-              <a href="#" class="menu-link" data-menu-target="completion-daily" data-title-i18n="menuCompletionDaily" data-desc-i18n="descCompletionDaily"><img class="menu-item-icon" src="./icons/completion-daily.png" alt="" /><span data-i18n="menuCompletionDaily">完井日报</span></a>
-              <a href="#" class="menu-link" data-menu-target="workover-daily" data-title-i18n="menuWorkoverDaily" data-desc-i18n="descWorkoverDaily"><img class="menu-item-icon" src="./icons/workover-daily.png" alt="" /><span data-i18n="menuWorkoverDaily">修井日报</span></a>
+              <a href="#" class="menu-link active" data-menu-target="drilling-daily" data-title-i18n="menuDrillingDaily" data-desc-i18n="descDrillingDaily"><span class="menu-item-icon icon-drilling" aria-hidden="true"></span><span data-i18n="menuDrillingDaily">钻井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="completion-daily" data-title-i18n="menuCompletionDaily" data-desc-i18n="descCompletionDaily"><span class="menu-item-icon icon-completion" aria-hidden="true"></span><span data-i18n="menuCompletionDaily">完井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="workover-daily" data-title-i18n="menuWorkoverDaily" data-desc-i18n="descWorkoverDaily"><span class="menu-item-icon icon-workover" aria-hidden="true"></span><span data-i18n="menuWorkoverDaily">修井日报</span></a>
             </div>
           </div>
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <img class="menu-group-icon" src="./icons/production-report.png" alt="" />
+              <span class="menu-group-icon icon-production" aria-hidden="true"></span>
               <span data-i18n="menuProductionReport">生产报表</span>
               <span class="menu-chevron">v</span>
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/rig-production-summary.png" alt="" /><span data-i18n="menuRigProductionSummary">生产时效</span></a>
-              <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><img class="menu-item-icon" src="./icons/production-report.png" alt="" /><span data-i18n="menuProductionDetailReport">生产报表</span></a>
-              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/well-npt-confirm.png" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
-              <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/rig-npt-ranking.png" alt="" /><span data-i18n="menuRigNptRanking">NPT确认</span></a>
+              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><span class="menu-item-icon icon-summary" aria-hidden="true"></span><span data-i18n="menuRigProductionSummary">生产时效</span></a>
+              <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><span class="menu-item-icon icon-report" aria-hidden="true"></span><span data-i18n="menuProductionDetailReport">生产报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><span class="menu-item-icon icon-analytics" aria-hidden="true"></span><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
+              <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><span class="menu-item-icon icon-check-list" aria-hidden="true"></span><span data-i18n="menuRigNptRanking">NPT确认</span></a>
             </div>
           </div>
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <img class="menu-group-icon" src="./icons/hsse.png" alt="" />
+              <span class="menu-group-icon icon-hsse" aria-hidden="true"></span>
               <span data-i18n="menuHsse">HSSE管理</span>
               <span class="menu-chevron">v</span>
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link" data-menu-target="hsse-collection" data-title-i18n="menuHsseCollection" data-desc-i18n="descHsseCollection"><img class="menu-item-icon" src="./icons/hsse-collection.png" alt="" /><span data-i18n="menuHsseCollection">信息填报</span></a>
-              <a href="#" class="menu-link" data-menu-target="hsse-dashboard" data-title-i18n="menuHsseDashboard" data-desc-i18n="descHsseDashboard"><img class="menu-item-icon" src="./icons/hsse-dashboard.png" alt="" /><span data-i18n="menuHsseDashboard">安全驾驶舱</span></a>
-              <a href="#" class="menu-link" data-menu-target="period-safety-report" data-title-i18n="menuPeriodSafetyReport" data-desc-i18n="descPeriodSafetyReport"><img class="menu-item-icon" src="./icons/period-safety-report.png" alt="" /><span data-i18n="menuPeriodSafetyReport">安全报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="hsse-collection" data-title-i18n="menuHsseCollection" data-desc-i18n="descHsseCollection"><span class="menu-item-icon icon-form" aria-hidden="true"></span><span data-i18n="menuHsseCollection">信息填报</span></a>
+              <a href="#" class="menu-link" data-menu-target="hsse-dashboard" data-title-i18n="menuHsseDashboard" data-desc-i18n="descHsseDashboard"><span class="menu-item-icon icon-dashboard" aria-hidden="true"></span><span data-i18n="menuHsseDashboard">安全驾驶舱</span></a>
+              <a href="#" class="menu-link" data-menu-target="period-safety-report" data-title-i18n="menuPeriodSafetyReport" data-desc-i18n="descPeriodSafetyReport"><span class="menu-item-icon icon-report" aria-hidden="true"></span><span data-i18n="menuPeriodSafetyReport">安全报表</span></a>
             </div>
           </div>
         </nav>
