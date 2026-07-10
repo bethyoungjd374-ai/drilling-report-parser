@@ -36,12 +36,22 @@
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
               <span class="admin-menu-icon icon-database" aria-hidden="true"></span>
+              <span>AI服务管理</span>
+              <span class="menu-chevron">v</span>
+            </button>
+            <div class="menu-items">
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiModels"><span class="admin-menu-icon icon-sliders" aria-hidden="true"></span><span>模型接入配置</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="translationTuning"><span class="admin-menu-icon icon-sliders" aria-hidden="true"></span><span>翻译调优</span></a>
+            </div>
+          </div>
+          <div class="menu-group open">
+            <button class="menu-group-toggle" type="button" aria-expanded="true">
+              <span class="admin-menu-icon icon-database" aria-hidden="true"></span>
               <span>业务配置</span>
               <span class="menu-chevron">v</span>
             </button>
             <div class="menu-items">
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="projects"><span class="admin-menu-icon icon-database" aria-hidden="true"></span><span>项目配置</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="translationTerms"><span class="admin-menu-icon icon-sliders" aria-hidden="true"></span><span>术语翻译</span></a>
             </div>
           </div>
         </nav>
@@ -69,8 +79,9 @@
           <section class="admin-panel" data-admin-panel="overview"></section>
           <section class="admin-panel" data-admin-panel="users" hidden></section>
           <section class="admin-panel" data-admin-panel="roles" hidden></section>
+          <section class="admin-panel" data-admin-panel="aiModels" hidden></section>
           <section class="admin-panel" data-admin-panel="projects" hidden></section>
-          <section class="admin-panel" data-admin-panel="translationTerms" hidden></section>
+          <section class="admin-panel" data-admin-panel="translationTuning" hidden></section>
           <section class="admin-panel" data-admin-panel="config" hidden></section>
           <section class="admin-panel" data-admin-panel="data" hidden></section>
           <section class="admin-panel" data-admin-panel="logs" hidden></section>

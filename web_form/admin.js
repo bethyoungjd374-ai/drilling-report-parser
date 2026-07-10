@@ -7,8 +7,24 @@ const adminState = {
   users: [],
   roles: [],
   config: {},
+  aiModels: { models: [], default_model_id: "" },
+  selectedAiModelId: "",
+  aiModelTestResult: null,
   projectTeams: { teams: [], projects: [], pending_wells: [] },
   translationTerms: { terms: [], protected_terms: {} },
+  translationTuning: { scope_rules: [], scope_catalog: { report_types: [] }, target_languages: ["zh-CN", "en", "es"], prompt: {}, protections: {} },
+  translationTuningView: "fields",
+  translationScopeDraft: { report_type: "drilling", section: "report_fields", field_name: "currentOps" },
+  selectedTranslationTermId: "",
+  translationTermImport: { running: false, result: null, duplicates: [] },
+  translationQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
+  translationTestResult: null,
+  translationTestRunning: false,
+  translationTestSource: "05:30-07:30, BAJA BHA #5 DIRECCIONAL HASTA 4125 ft. PERFORA DE 4125 ft A 4140 ft CON ROP 90 ft/hr, WOB 18 klb Y SPP 12.5 MPa.",
+  translationTestModelId: "",
+  translationTestLanguage: "zh-CN",
+  translationTestFieldCode: "",
+  translationTermSearch: "",
   dataStatus: null,
   records: [],
   logs: [],
@@ -27,9 +43,10 @@ function showToast(message) {
 }
 
 async function adminRequest(path, options = {}) {
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(path, {
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: { ...(isFormData ? {} : { "Content-Type": "application/json" }), ...(options.headers || {}) },
     ...options,
   });
   const payload = await response.json().catch(() => ({}));
@@ -59,11 +76,14 @@ async function loadAdminSession() {
 
 async function loadAdminData() {
   try {
-    const [users, config, projectTeams, translationTerms, dataStatus, records, logs] = await Promise.all([
+    const [users, config, aiModels, projectTeams, translationTerms, translationTuning, translationQueue, dataStatus, records, logs] = await Promise.all([
       adminRequest("/api/admin/users"),
       adminRequest("/api/admin/config"),
+      adminRequest("/api/admin/ai-models"),
       adminRequest("/api/admin/project-teams"),
       adminRequest("/api/admin/translation-terms"),
+      adminRequest("/api/admin/translation-tuning"),
+      adminRequest("/api/admin/translations"),
       adminRequest("/api/admin/data-status"),
       adminRequest("/api/records"),
       adminRequest("/api/admin/audit-logs"),
@@ -71,8 +91,13 @@ async function loadAdminData() {
     adminState.users = users.users || [];
     adminState.roles = users.roles || [];
     adminState.config = config.config || {};
+    adminState.aiModels = { models: aiModels.models || [], default_model_id: aiModels.default_model_id || "" };
+    adminState.selectedAiModelId = adminState.aiModels.default_model_id || adminState.aiModels.models?.[0]?.id || "";
     adminState.projectTeams = { teams: projectTeams.teams || [], projects: projectTeams.projects || [], pending_wells: projectTeams.pending_wells || [] };
     adminState.translationTerms = { terms: translationTerms.terms || [], protected_terms: translationTerms.protected_terms || {} };
+    adminState.translationTuning = translationTuning || adminState.translationTuning;
+    adminState.translationQueue = translationQueue || adminState.translationQueue;
+    adminState.selectedTranslationTermId = adminState.selectedTranslationTermId || adminState.translationTerms.terms?.[0]?.id || "";
     adminState.dataStatus = dataStatus;
     adminState.records = records.records || [];
     adminState.logs = logs.logs || [];
@@ -94,8 +119,9 @@ function renderAdminPanels() {
   renderAdminOverview();
   renderAdminUsers();
   renderAdminRoles();
+  renderAdminAiModels();
   renderAdminProjects();
-  renderAdminTranslationTerms();
+  renderAdminTranslationTuning();
   renderAdminConfig();
   renderAdminData();
   renderAdminLogs();
@@ -109,24 +135,25 @@ function renderAdminOverview() {
   host.innerHTML = `
     <section class="admin-kpi-grid">
       ${adminKpi("当前账号", user.display_name || user.username || "-", roleLabel(user.role), "users")}
-      ${adminKpi("日报记录", status.records || 0, "Excel库记录数", "database")}
+      ${adminKpi("日报记录", status.records || 0, "MySQL记录数", "database")}
       ${adminKpi("源PDF", status.source_pdf_count || 0, "本地保存数量", "logs")}
-      ${adminKpi("库文件", fileSize(status.database_size || 0), status.database_updated_at || "未生成", "settings")}
+      ${adminKpi("MySQL", status.mysql?.available ? "可用" : "不可用", `${status.database_host || ""}:${status.database_port || ""}/${status.database_name || ""}`, "settings")}
     </section>
     <section class="panel admin-overview-panel">
       <div class="panel-heading"><h2>后台范围</h2><span class="panel-note">独立管理入口，轻量 JSON 配置</span></div>
       <div class="admin-note-grid">
         <span><strong>账号与角色</strong><small>新增、启停账号并分配固定角色</small></span>
         <span><strong>项目队伍</strong><small>维护合同、队伍和项目井号归属</small></span>
-        <span><strong>系统参数</strong><small>维护记录分页、语言、Excel 路径和源文件策略</small></span>
-        <span><strong>数据维护</strong><small>下载或备份当前 Excel 库</small></span>
+        <span><strong>系统参数</strong><small>维护记录分页、语言和源文件策略</small></span>
+        <span><strong>数据维护</strong><small>查看 MySQL 连接和记录状态</small></span>
       </div>
     </section>
   `;
 }
 
-function adminKpi(label, value, caption, icon) {
-  return `<div class="admin-kpi-card"><span class="admin-kpi-icon icon-${escapeHtml(icon)}" aria-hidden="true"></span><div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(caption || "")}</small></div></div>`;
+function adminKpi(label, value, caption, icon, attributes = "") {
+  const interactive = attributes ? " interactive" : "";
+  return `<div class="admin-kpi-card${interactive}" ${attributes}><span class="admin-kpi-icon icon-${escapeHtml(icon)}" aria-hidden="true"></span><div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(caption || "")}</small></div></div>`;
 }
 
 function renderAdminUsers() {
@@ -190,6 +217,112 @@ function renderAdminRoles() {
       </table></div>
       <div class="admin-actions"><button class="button" type="button" data-admin-save-roles>保存角色权限</button></div>
     </section>`;
+}
+
+function renderAdminAiModels() {
+  const host = document.querySelector('[data-admin-panel="aiModels"]');
+  if (!host) return;
+  const models = adminState.aiModels.models || [];
+  const selected = models.find((item) => item.id === adminState.selectedAiModelId) || models[0] || emptyAiModel();
+  adminState.selectedAiModelId = selected.id || "";
+  const enabledCount = models.filter((item) => item.enabled !== false).length;
+  const pendingCount = adminState.records.filter(translationNeedsProcessing).length;
+  host.innerHTML = `
+    <section class="admin-kpi-grid compact">
+      ${adminKpi("模型配置", models.length, "公网 / 局域网 / 本地", "database")}
+      ${adminKpi("已启用", enabledCount, "可被翻译任务调用", "overview")}
+      ${adminKpi("默认模型", defaultAiModelName(), "日报翻译优先使用", "shield")}
+      ${adminKpi("密钥存储", "本机JSON", "仅后端保存", "settings")}
+    </section>
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>模型接入配置</h2><span class="panel-note">支持 OpenAI-Compatible 公网模型和局域网本地模型；保存后日报翻译会使用默认启用模型</span></div>
+        <div class="admin-actions">
+          <button class="button secondary small" type="button" data-admin-reset-translations>清空译文</button>
+          <button class="button secondary small" type="button" data-admin-queue-translations ${pendingCount ? "" : "disabled"}>翻译待处理 (${pendingCount})</button>
+          <button class="button small" type="button" data-admin-new-ai-model>新增模型</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="record-table admin-table">
+        <thead><tr><th>配置名称</th><th>接口类型</th><th>API地址</th><th>模型名称</th><th>超时</th><th>启用</th><th>默认</th><th>更新时间</th><th>操作</th></tr></thead>
+        <tbody>${models.map(aiModelRow).join("") || `<tr><td colspan="9">暂无模型配置</td></tr>`}</tbody>
+      </table></div>
+    </section>
+    <section class="admin-project-layout">
+      <section class="panel">
+        <div class="panel-heading"><h2>模型配置详情</h2><span class="panel-note">API Key 留空表示沿用已保存密钥；本地模型可不填 Key</span></div>
+        ${aiModelForm(selected)}
+      </section>
+      <section class="panel">
+        <div class="panel-heading"><h2>连接测试结果</h2><span class="panel-note">测试会向模型发送最小请求，不写入业务数据</span></div>
+        ${aiModelTestResultMarkup()}
+      </section>
+    </section>`;
+}
+
+function aiModelRow(model = {}) {
+  const isSelected = model.id === adminState.selectedAiModelId;
+  return `<tr class="${isSelected ? "selected-row" : ""}">
+    <td><strong>${escapeHtml(model.name || "-")}</strong></td>
+    <td>${escapeHtml(apiTypeLabel(model.api_type))}</td>
+    <td>${escapeHtml(model.base_url || "-")}</td>
+    <td>${escapeHtml(model.model || "-")}</td>
+    <td>${escapeHtml(model.timeout_seconds || 60)}s</td>
+    <td><span class="status-pill ${model.enabled !== false ? "uploaded" : "failed"}">${model.enabled !== false ? "启用" : "停用"}</span></td>
+    <td>${model.is_default ? "默认" : "-"}</td>
+    <td>${escapeHtml(model.updated_at || "-")}</td>
+    <td><button class="link-button" type="button" data-admin-edit-ai-model="${escapeHtml(model.id)}">编辑</button></td>
+  </tr>`;
+}
+
+function aiModelForm(model = {}) {
+  const apiType = model.api_type || "openai-compatible";
+  return `<div class="admin-config-grid ai-model-form">
+    <input type="hidden" name="aiModelId" value="${escapeHtml(model.id || "")}" />
+    <label>配置名称<input name="aiModelName" value="${escapeHtml(model.name || "")}" placeholder="例如：主模型-DeepSeek-V3" /></label>
+    <label>接口类型<select name="aiModelApiType"><option value="openai-compatible" ${apiType !== "ollama" ? "selected" : ""}>OpenAI Compatible</option><option value="ollama" ${apiType === "ollama" ? "selected" : ""}>Ollama</option></select></label>
+    <label class="wide">API地址<input name="aiModelBaseUrl" value="${escapeHtml(model.base_url || "")}" placeholder="https://api.example.com/v1 或 http://10.10.1.12:8000/v1" /></label>
+    <label>模型名称<input name="aiModelModel" value="${escapeHtml(model.model || "")}" placeholder="deepseek-chat / qwen-plus / llama3" /></label>
+    <label>API Key<input name="aiModelApiKey" type="password" value="${model.api_key_set ? "********" : ""}" placeholder="${model.api_key_set ? "已保存，留空不改" : "本地模型可留空"}" /></label>
+    <label>超时秒数<input name="aiModelTimeout" type="number" min="5" max="600" value="${escapeHtml(model.timeout_seconds || 60)}" /></label>
+    <label>Temperature<input name="aiModelTemperature" type="number" min="0" max="2" step="0.1" value="${escapeHtml(model.temperature ?? 0)}" /></label>
+    <label>重试次数<input name="aiModelRetry" type="number" min="0" max="10" value="${escapeHtml(model.retry_count ?? 2)}" /></label>
+    <label>启用状态<select name="aiModelEnabled"><option value="true" ${model.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${model.enabled === false ? "selected" : ""}>停用</option></select></label>
+    <label>默认模型<select name="aiModelDefault"><option value="true" ${model.is_default ? "selected" : ""}>设为默认</option><option value="false" ${!model.is_default ? "selected" : ""}>非默认</option></select></label>
+    <div class="admin-actions wide">
+      <button class="button secondary" type="button" data-admin-test-ai-model>测试连接</button>
+      <button class="button" type="button" data-admin-save-ai-models>保存配置</button>
+      <button class="button secondary" type="button" data-admin-delete-ai-model ${model.id ? "" : "disabled"}>删除</button>
+    </div>
+  </div>`;
+}
+
+function aiModelTestResultMarkup() {
+  const result = adminState.aiModelTestResult;
+  if (!result) return `<div class="admin-empty-panel"><p>尚未测试当前模型连接。</p></div>`;
+  if (result.ok === false) return `<div class="ai-test-result failed"><strong>连接失败</strong><small>${escapeHtml(result.error || "未知错误")}</small></div>`;
+  return `<div class="ai-test-result success">
+    <strong>连接成功，响应耗时 ${escapeHtml(result.elapsed_seconds)}s</strong>
+    <small>测试时间：${escapeHtml(result.tested_at || "-")}</small>
+    <small>接口地址：${escapeHtml(result.api_url || "-")}</small>
+    <small>模型名称：${escapeHtml(result.model || "-")}</small>
+    <small>响应状态：${escapeHtml(result.status || "-")}</small>
+    <small>响应长度：${escapeHtml(result.response_length || 0)} bytes</small>
+    ${result.response_preview ? `<pre>${escapeHtml(result.response_preview)}</pre>` : ""}
+  </div>`;
+}
+
+function emptyAiModel() {
+  return { id: newClientId(), name: "新模型配置", api_type: "openai-compatible", base_url: "", model: "", timeout_seconds: 60, temperature: 0, retry_count: 2, enabled: true, is_default: !(adminState.aiModels.models || []).length };
+}
+
+function apiTypeLabel(value) {
+  return value === "ollama" ? "Ollama" : "OpenAI Compatible";
+}
+
+function defaultAiModelName() {
+  const found = (adminState.aiModels.models || []).find((item) => item.id === adminState.aiModels.default_model_id);
+  return found?.name || "-";
 }
 
 function renderAdminProjects() {
@@ -362,63 +495,217 @@ function teamAliasText(team = {}) {
   return aliases.length ? aliases.join("、") : "-";
 }
 
-function renderAdminTranslationTerms() {
-  const host = document.querySelector('[data-admin-panel="translationTerms"]');
+function renderAdminTranslationTuning() {
+  const host = document.querySelector('[data-admin-panel="translationTuning"]');
   if (!host) return;
+  const tuning = adminState.translationTuning || {};
   const terms = adminState.translationTerms?.terms || [];
-  const enabledCount = terms.filter((term) => term.enabled !== false).length;
-  const protectedCount = terms.filter((term) => term.protected !== false).length;
+  const enabledFields = (tuning.scope_rules || []).filter((item) => item.enabled !== false).length;
+  const pendingCount = adminState.records.filter(translationNeedsProcessing).length;
+  const view = adminState.translationTuningView || "fields";
+  const content = view === "terms" ? translationTermsMarkup() : view === "test" ? translationTestWorkbenchMarkup() : translationFieldPoliciesMarkup();
   host.innerHTML = `
-    <section class="admin-kpi-grid compact">
-      ${adminKpi("术语总数", terms.length, "三语映射行", "database")}
-      ${adminKpi("已启用", enabledCount, "参与前台翻译", "overview")}
-      ${adminKpi("占位保护", protectedCount, "翻译前不改写", "shield")}
-      ${adminKpi("存储文件", "JSON", "outputs/translation_terms.json", "settings")}
+    <section class="admin-kpi-grid compact tuning-kpis">
+      ${adminKpi("翻译范围", enabledFields, `共 ${(tuning.scope_rules || []).length} 条精确规则`, "sliders")}
+      ${adminKpi("术语词库", terms.filter((term) => term.enabled !== false).length, `总计 ${terms.length} 条`, "database")}
+      ${adminKpi("目标语言", (tuning.target_languages || []).length, translationLanguageNames(tuning.target_languages), "overview")}
+      ${adminKpi("待处理日报", pendingCount, "点击查看、选择或覆盖翻译", "logs", 'role="button" tabindex="0" data-admin-open-translation-queue')}
     </section>
-    <section class="panel">
+    <nav class="tuning-tabs" aria-label="翻译调优视图">
+      ${translationTuningTab("fields", "字段与 Prompt")}
+      ${translationTuningTab("terms", "术语词库")}
+      ${translationTuningTab("test", "测试工作台")}
+    </nav>
+    <div class="translation-tuning-content">${content}</div>`;
+}
+
+function translationTuningTab(value, label) {
+  return `<button type="button" class="${adminState.translationTuningView === value ? "active" : ""}" data-translation-tuning-view="${value}">${label}</button>`;
+}
+
+function translationLanguageNames(values = []) {
+  const labels = { "zh-CN": "中文", en: "英文", es: "西班牙语" };
+  return values.map((value) => labels[value] || value).join(" / ") || "未配置";
+}
+
+function translationNeedsProcessing(record = {}) {
+  const status = String(record.translation_status || "").toUpperCase();
+  const version = String(record.translation_version || "");
+  const currentVersion = String(adminState.translationTuning?.version || "");
+  return ["PENDING", "FAILED"].includes(status) || Boolean(currentVersion && version !== currentVersion);
+}
+
+function translationFieldPoliciesMarkup() {
+  const tuning = adminState.translationTuning || {};
+  const prompt = tuning.prompt || {};
+  const protections = tuning.protections || {};
+  const rules = tuning.scope_rules || [];
+  return `
+    <section class="panel tuning-policy-panel">
       <div class="panel-heading">
-        <div><h2>术语翻译</h2><span class="panel-note">维护中文、英文、西班牙语专业词语映射；前台语言切换会优先使用这里的术语</span></div>
-        <button class="button small" type="button" data-admin-add-translation-term>新增术语</button>
+        <div><h2>翻译策略</h2><span class="panel-note">按日报类型、模块和字段精确控制翻译范围</span></div>
+        <button class="button small" type="button" data-admin-save-translation-tuning>保存策略</button>
       </div>
-      <div class="table-wrap">
-        <table class="record-table admin-table translation-terms-table">
-          <thead><tr><th>启用</th><th>分类</th><th>中文</th><th>English</th><th>Español</th><th>别名</th><th>保护</th><th>操作</th></tr></thead>
-          <tbody>${terms.map(translationTermRow).join("") || `<tr><td colspan="8">暂无术语</td></tr>`}</tbody>
+      <div class="tuning-policy-layout">
+        <div class="tuning-prompt-form">
+          <label>系统角色<textarea name="translationSystemPrompt" rows="3" maxlength="1200">${escapeHtml(prompt.system_prompt || "")}</textarea></label>
+          <label>翻译要求<textarea name="translationInstruction" rows="4" maxlength="2400">${escapeHtml(prompt.translation_instruction || "")}</textarea></label>
+        </div>
+        <div class="tuning-option-panel">
+          <fieldset><legend>目标语言</legend>${translationTargetOptions(tuning.target_languages || [])}</fieldset>
+          <fieldset><legend>内容保护</legend>${translationProtectionOptions(protections)}</fieldset>
+          <p>术语词库中的锁定词会强制采用目标译法；缩写、单位和专名会写入模型保护清单。</p>
+        </div>
+      </div>
+      ${translationScopeBuilderMarkup()}
+      <div class="table-wrap tuning-field-table-wrap">
+        <table class="record-table admin-table tuning-field-table">
+          <thead><tr><th>日报类型</th><th>模块 / 部分</th><th>字段</th><th>字段编码</th><th>处理方式</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>${rules.map((rule) => `<tr data-translation-scope-rule="${escapeHtml(rule.id)}">
+            <td><strong>${escapeHtml(rule.report_type_label || rule.report_type)}</strong></td>
+            <td>${escapeHtml(rule.section_label || rule.section)}</td>
+            <td>${escapeHtml(rule.label || rule.field_name)}</td>
+            <td><code>${escapeHtml(rule.field_code)}</code></td>
+            <td><span class="type-pill">大模型 + 术语</span></td>
+            <td><label class="compact-toggle"><input type="checkbox" name="translationPolicyEnabled" ${rule.enabled !== false ? "checked" : ""} /><span>${rule.enabled !== false ? "启用" : "停用"}</span></label></td>
+            <td><button class="link-button danger-link" type="button" data-admin-remove-translation-scope="${escapeHtml(rule.id)}">移除</button></td>
+          </tr>`).join("") || `<tr><td colspan="7">尚未配置翻译范围</td></tr>`}</tbody>
         </table>
-      </div>
-      <div class="admin-actions">
-        <button class="button" type="button" data-admin-save-translation-terms>保存术语表</button>
       </div>
     </section>`;
 }
 
-function translationTermRow(term = {}) {
-  const id = escapeHtml(term.id || newClientId());
-  const aliases = term.aliases || {};
-  return `<tr data-translation-term-row data-term-id="${id}">
-    <td>
-      <select name="termEnabled">
-        <option value="true" ${term.enabled !== false ? "selected" : ""}>启用</option>
-        <option value="false" ${term.enabled === false ? "selected" : ""}>停用</option>
-      </select>
-    </td>
-    <td><input name="termCategory" value="${escapeHtml(term.category || "drilling")}" /></td>
-    <td><textarea name="termZh" rows="2">${escapeHtml(term.zh || "")}</textarea></td>
-    <td><textarea name="termEn" rows="2">${escapeHtml(term.en || "")}</textarea></td>
-    <td><textarea name="termEs" rows="2">${escapeHtml(term.es || "")}</textarea></td>
-    <td class="term-alias-cell">
-      <label>中<textarea name="termAliasesZh" rows="2" placeholder="每行一个别名">${escapeHtml(aliasInputValue(aliases.zh))}</textarea></label>
-      <label>EN<textarea name="termAliasesEn" rows="2" placeholder="one alias per line">${escapeHtml(aliasInputValue(aliases.en))}</textarea></label>
-      <label>ES<textarea name="termAliasesEs" rows="2" placeholder="un alias por línea">${escapeHtml(aliasInputValue(aliases.es))}</textarea></label>
-    </td>
-    <td>
-      <select name="termProtected">
-        <option value="true" ${term.protected !== false ? "selected" : ""}>保护</option>
-        <option value="false" ${term.protected === false ? "selected" : ""}>仅替换</option>
-      </select>
-    </td>
-    <td><button class="link-button" type="button" data-admin-delete-translation-term>删除</button></td>
+function translationScopeBuilderMarkup() {
+  const catalog = adminState.translationTuning?.scope_catalog?.report_types || [];
+  let report = catalog.find((item) => item.value === adminState.translationScopeDraft.report_type) || catalog[0] || { sections: [] };
+  let section = (report.sections || []).find((item) => item.value === adminState.translationScopeDraft.section) || report.sections?.[0] || { fields: [] };
+  let field = (section.fields || []).find((item) => item.value === adminState.translationScopeDraft.field_name) || section.fields?.[0] || {};
+  adminState.translationScopeDraft = { report_type: report.value || "", section: section.value || "", field_name: field.value || "" };
+  return `<section class="translation-scope-builder">
+    <div><strong>新增翻译范围</strong><span>数值、日期、深度和井号等非文本字段不在可选范围内</span></div>
+    <label>日报类型<select name="translationScopeReportType">${catalog.map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === report.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>模块 / 部分<select name="translationScopeSection">${(report.sections || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === section.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>字段<select name="translationScopeField">${(section.fields || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === field.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <button class="button secondary small" type="button" data-admin-add-translation-scope>新增范围</button>
+  </section>`;
+}
+
+function translationTargetOptions(selected = []) {
+  return [["zh-CN", "中文"], ["en", "英文"], ["es", "西班牙语"]].map(([value, label]) => `<label><input type="checkbox" name="translationTargetLanguage" value="${value}" ${selected.includes(value) ? "checked" : ""} />${label}</label>`).join("");
+}
+
+function translationProtectionOptions(protections = {}) {
+  return [["numbers", "数字与精度"], ["units", "计量单位"], ["acronyms", "专业缩写"], ["proper_nouns", "公司与专名"]].map(([value, label]) => `<label><input type="checkbox" name="translationProtection" value="${value}" ${protections[value] !== false ? "checked" : ""} />${label}</label>`).join("");
+}
+
+function translationTermsMarkup() {
+  const terms = adminState.translationTerms?.terms || [];
+  const query = String(adminState.translationTermSearch || "").trim().toLowerCase();
+  const visibleTerms = terms.filter((term) => !query || [term.zh, term.en, term.es, term.category].some((value) => String(value || "").toLowerCase().includes(query)));
+  const selected = selectedTranslationTerm();
+  return `
+    <section class="panel">
+      <div class="panel-heading tuning-term-heading">
+        <div><h2>术语词库</h2><span class="panel-note">锁定术语会强制映射；普通术语作为 glossary 提供给模型参考</span></div>
+        <div class="admin-actions"><input class="tuning-term-search" type="search" value="${escapeHtml(adminState.translationTermSearch)}" placeholder="搜索中文、英文或西班牙语" data-translation-term-search /><input type="file" accept=".xlsx,.xls,.xlsm,.xltx,.xltm" data-translation-term-file hidden /><button class="button secondary small" type="button" data-admin-import-translation-terms ${adminState.translationTermImport.running ? "disabled" : ""}>${adminState.translationTermImport.running ? "AI 分析中..." : "导入 Excel"}</button><button class="button small" type="button" data-admin-add-translation-term>新增术语</button></div>
+      </div>
+      ${translationTermImportSummaryMarkup()}
+      <div class="table-wrap tuning-term-table-wrap"><table class="record-table admin-table tuning-term-table">
+        <thead><tr><th>分类</th><th>中文</th><th>English</th><th>Español</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>${visibleTerms.map(translationTermListRow).join("") || `<tr><td colspan="6">没有匹配的术语</td></tr>`}</tbody>
+      </table></div>
+    </section>
+    <section class="tuning-term-editor-layout">
+      <section class="panel">
+        <div class="panel-heading"><h2>术语详情</h2><span class="panel-note">别名可用换行或逗号分隔</span></div>
+        ${translationTermDetailMarkup(selected)}
+      </section>
+      <section class="panel">
+        <div class="panel-heading"><h2>全局保护项</h2><span class="panel-note">这些内容会随 Prompt 一并发送给模型并要求保持原样</span></div>
+        ${protectedTermsMarkup()}
+      </section>
+    </section>`;
+}
+
+function translationTermImportSummaryMarkup() {
+  const result = adminState.translationTermImport?.result;
+  if (!result) return "";
+  const hasDuplicates = Number(result.duplicate_count || 0) > 0;
+  return `<div class="term-import-summary ${hasDuplicates ? "warning" : "success"}">
+    <div><strong>${escapeHtml(result.filename || "Excel")}</strong><span>AI 识别 ${escapeHtml(result.analyzed_terms || 0)} 条，已导入 ${escapeHtml(result.imported_count || 0)} 条，跳过重复 ${escapeHtml(result.duplicate_count || 0)} 条</span><small>${escapeHtml(result.model_name || "默认模型")} · ${escapeHtml(result.workbook?.sheet_count || 0)} 个工作表</small></div>
+    ${hasDuplicates ? `<button class="button secondary small" type="button" data-admin-review-term-duplicates>查看重复项</button>` : ""}
+  </div>`;
+}
+
+function translationTermListRow(term = {}) {
+  const selected = term.id === adminState.selectedTranslationTermId;
+  return `<tr class="${selected ? "selected-row" : ""}">
+    <td>${escapeHtml(term.category || "drilling")}</td><td><strong>${escapeHtml(term.zh || "-")}</strong></td><td>${escapeHtml(term.en || "-")}</td><td>${escapeHtml(term.es || "-")}</td>
+    <td><span class="status-pill ${term.enabled !== false ? "uploaded" : "failed"}">${term.enabled !== false ? (term.protected !== false ? "启用 / 锁定" : "启用") : "停用"}</span></td>
+    <td><button class="link-button" type="button" data-admin-edit-translation-term="${escapeHtml(term.id)}">编辑</button><button class="link-button danger-link" type="button" data-admin-delete-translation-term="${escapeHtml(term.id)}">删除</button></td>
   </tr>`;
+}
+
+function selectedTranslationTerm() {
+  const terms = adminState.translationTerms?.terms || [];
+  return terms.find((term) => term.id === adminState.selectedTranslationTermId) || terms[0] || null;
+}
+
+function translationTermDetailMarkup(term) {
+  if (!term) return `<div class="admin-empty-panel"><p>新增一条术语后即可编辑。</p></div>`;
+  const aliases = term.aliases || {};
+  return `<div class="tuning-term-form" data-translation-term-detail data-term-id="${escapeHtml(term.id)}">
+    <label>分类<input name="termCategory" value="${escapeHtml(term.category || "drilling")}" /></label>
+    <label>中文<input name="termZh" value="${escapeHtml(term.zh || "")}" /></label>
+    <label>English<input name="termEn" value="${escapeHtml(term.en || "")}" /></label>
+    <label>Español<input name="termEs" value="${escapeHtml(term.es || "")}" /></label>
+    <label>中文别名<textarea name="termAliasesZh" rows="3">${escapeHtml(aliasInputValue(aliases.zh))}</textarea></label>
+    <label>英文别名<textarea name="termAliasesEn" rows="3">${escapeHtml(aliasInputValue(aliases.en))}</textarea></label>
+    <label>西语别名<textarea name="termAliasesEs" rows="3">${escapeHtml(aliasInputValue(aliases.es))}</textarea></label>
+    <div class="tuning-term-switches"><label><input type="checkbox" name="termEnabled" ${term.enabled !== false ? "checked" : ""} />启用</label><label><input type="checkbox" name="termProtected" ${term.protected !== false ? "checked" : ""} />锁定译法</label></div>
+    <div class="admin-actions wide"><button class="button" type="button" data-admin-save-translation-terms>保存词库</button></div>
+  </div>`;
+}
+
+function protectedTermsMarkup() {
+  const protectedTerms = adminState.translationTerms?.protected_terms || {};
+  return `<div class="protected-terms-form">
+    <label>专业缩写<textarea name="protectedAcronyms" rows="4">${escapeHtml((protectedTerms.acronyms || []).join(", "))}</textarea></label>
+    <label>计量单位<textarea name="protectedUnits" rows="3">${escapeHtml((protectedTerms.units || []).join(", "))}</textarea></label>
+    <label>公司、地层与专名<textarea name="protectedProperNouns" rows="5">${escapeHtml((protectedTerms.proper_nouns || []).join("\n"))}</textarea></label>
+  </div>`;
+}
+
+function translationTestWorkbenchMarkup() {
+  const models = (adminState.aiModels.models || []).filter((model) => model.enabled !== false);
+  const policies = (adminState.translationTuning?.scope_rules || []).filter((policy) => policy.enabled !== false);
+  const result = adminState.translationTestResult;
+  return `<section class="tuning-test-layout">
+    <section class="panel tuning-test-input">
+      <div class="panel-heading"><h2>测试输入</h2><span class="panel-note">测试会调用模型，但不会写入日报数据库</span></div>
+      <div class="tuning-test-controls">
+        <label>模型<select name="translationTestModel">${models.map((model) => `<option value="${escapeHtml(model.id)}" ${model.id === (adminState.translationTestModelId || adminState.aiModels.default_model_id) ? "selected" : ""}>${escapeHtml(model.name)} / ${escapeHtml(model.model)}</option>`).join("")}</select></label>
+        <label>目标语言<select name="translationTestLanguage"><option value="zh-CN" ${adminState.translationTestLanguage === "zh-CN" ? "selected" : ""}>中文</option><option value="en" ${adminState.translationTestLanguage === "en" ? "selected" : ""}>英文</option><option value="es" ${adminState.translationTestLanguage === "es" ? "selected" : ""}>西班牙语</option></select></label>
+        <label>模拟字段<select name="translationTestField">${policies.map((policy) => `<option value="${escapeHtml(policy.id)}" ${policy.id === adminState.translationTestFieldCode ? "selected" : ""}>${escapeHtml(policy.report_type_label)} / ${escapeHtml(policy.section_label)} / ${escapeHtml(policy.label)}</option>`).join("")}</select></label>
+      </div>
+      <label class="tuning-test-source">日报原文<textarea name="translationTestSource" rows="10" maxlength="8000">${escapeHtml(adminState.translationTestSource || "")}</textarea></label>
+      <div class="admin-actions"><button class="button" type="button" data-admin-run-translation-test ${adminState.translationTestRunning ? "disabled" : ""}>${adminState.translationTestRunning ? "测试中..." : "运行测试"}</button></div>
+      <details class="prompt-preview" ${result?.prompt_preview ? "open" : ""}><summary>实际 Prompt 预览</summary><pre>${escapeHtml(result?.prompt_preview || "运行测试后显示最终发送给模型的 Prompt。")}</pre></details>
+    </section>
+    <section class="panel tuning-test-output">
+      <div class="panel-heading"><h2>输出与校验</h2><span class="panel-note">${result ? `${escapeHtml(result.model_name || "-")} / ${escapeHtml(result.elapsed_ms || 0)} ms` : "等待测试"}</span></div>
+      ${translationTestResultMarkup(result)}
+    </section>
+  </section>`;
+}
+
+function translationTestResultMarkup(result) {
+  if (!result) return `<div class="admin-empty-panel tuning-test-empty"><p>输入一段真实日报描述，运行后可查看译文、Prompt 和质量检查。</p></div>`;
+  return `<div class="translation-test-result ${result.ok ? "success" : "failed"}">
+    <div class="translation-output-text"><span>译文</span><p>${escapeHtml(result.translated_text || result.error || "模型未返回译文")}</p></div>
+    <div class="translation-test-meta"><span>源语言 <strong>${escapeHtml(result.source_language || "-")}</strong></span><span>目标语言 <strong>${escapeHtml(result.target_language || "-")}</strong></span><span>Prompt版本 <strong>${escapeHtml(result.prompt_version || "-")}</strong></span></div>
+    <div class="translation-checks">${(result.checks || []).map((check) => `<div class="${escapeHtml(check.status || "warning")}"><span aria-hidden="true"></span><div><strong>${escapeHtml(check.label)}</strong>${check.detail ? `<small>${escapeHtml(check.detail)}</small>` : ""}</div></div>`).join("")}</div>
+  </div>`;
 }
 
 function aliasInputValue(value) {
@@ -576,7 +863,8 @@ function renderAdminConfig() {
         <label>系统名称<input name="system_name" value="${escapeHtml(config.system_name)}" /></label>
         <label>默认语言<select name="default_language"><option value="zh">中文</option><option value="en">EN</option><option value="es">ES</option></select></label>
         <label>每页记录数<input name="records_per_page" type="number" min="5" max="100" value="${escapeHtml(config.records_per_page)}" /></label>
-        <label>Excel路径<input name="excel_path" value="${escapeHtml(config.excel_path)}" /></label>
+        <label>数据库类型<input name="database_engine" value="${escapeHtml(config.database_engine || "mysql")}" readonly /></label>
+        <label>数据库名<input name="database_name" value="${escapeHtml(config.database_name || "")}" readonly /></label>
         <label>源PDF保存<select name="save_source_pdf"><option value="true">开启</option><option value="false">关闭</option></select></label>
         <label>PDF保留天数<input name="source_pdf_retention_days" type="number" min="1" value="${escapeHtml(config.source_pdf_retention_days)}" /></label>
       </div>
@@ -592,7 +880,7 @@ function renderAdminData() {
   const byType = status.by_type || {};
   host.innerHTML = `
     <section class="admin-kpi-grid">${adminKpi("总记录", status.records || 0, "全部日报", "database")}${adminKpi("钻井日报", byType.drilling || 0, "drilling", "overview")}${adminKpi("完井日报", byType.completion || 0, "completion", "shield")}${adminKpi("修井 / 搬迁", `${byType.workover || 0} / ${byType.move || 0}`, "workover / move", "logs")}</section>
-    <section class="panel"><div class="panel-heading"><h2>数据维护</h2><span class="panel-note">备份当前 Excel 库，查看最近备份</span></div><div class="admin-actions"><a class="button secondary" href="/api/download-database">下载Excel库</a><button class="button" type="button" data-admin-backup>立即备份</button></div><div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>备份文件</th><th>大小</th><th>时间</th></tr></thead><tbody>${(status.backups || []).map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong></td><td>${fileSize(item.size)}</td><td>${escapeHtml(item.created_at)}</td></tr>`).join("") || `<tr><td colspan="3">暂无备份</td></tr>`}</tbody></table></div></section>`;
+    <section class="panel"><div class="panel-heading"><h2>数据维护</h2><span class="panel-note">当前运行时只使用 MySQL；Excel 文件库已移除</span></div><div class="admin-note-grid"><span><strong>数据库</strong><small>${escapeHtml(status.database_name || "-")}</small></span><span><strong>连接</strong><small>${escapeHtml(`${status.database_host || ""}:${status.database_port || ""}`)}</small></span><span><strong>状态</strong><small>${status.mysql?.available ? "可用" : escapeHtml(status.mysql?.error || "不可用")}</small></span></div></section>`;
 }
 
 function renderAdminLogs() {
@@ -754,6 +1042,157 @@ async function saveAdminConfig() {
   }
 }
 
+function collectAiModelForm() {
+  const host = document.querySelector('[data-admin-panel="aiModels"]');
+  return {
+    id: host?.querySelector('[name="aiModelId"]')?.value || newClientId(),
+    name: host?.querySelector('[name="aiModelName"]')?.value.trim() || "未命名模型",
+    api_type: host?.querySelector('[name="aiModelApiType"]')?.value || "openai-compatible",
+    base_url: host?.querySelector('[name="aiModelBaseUrl"]')?.value.trim() || "",
+    api_key: host?.querySelector('[name="aiModelApiKey"]')?.value || "",
+    model: host?.querySelector('[name="aiModelModel"]')?.value.trim() || "",
+    timeout_seconds: Number(host?.querySelector('[name="aiModelTimeout"]')?.value || 60),
+    temperature: Number(host?.querySelector('[name="aiModelTemperature"]')?.value || 0),
+    retry_count: Number(host?.querySelector('[name="aiModelRetry"]')?.value || 2),
+    enabled: host?.querySelector('[name="aiModelEnabled"]')?.value !== "false",
+    is_default: host?.querySelector('[name="aiModelDefault"]')?.value === "true",
+  };
+}
+
+function aiModelsWithCurrentForm() {
+  const current = collectAiModelForm();
+  const others = (adminState.aiModels.models || []).filter((item) => item.id !== current.id);
+  const models = [...others, current];
+  if (current.is_default || !adminState.aiModels.default_model_id) {
+    models.forEach((item) => item.is_default = item.id === current.id);
+    adminState.aiModels.default_model_id = current.id;
+  }
+  return models;
+}
+
+async function saveAiModels() {
+  const models = aiModelsWithCurrentForm();
+  const defaultModel = models.find((item) => item.is_default) || models.find((item) => item.enabled !== false) || models[0];
+  try {
+    const response = await adminRequest("/api/admin/ai-models", {
+      method: "POST",
+      body: JSON.stringify({ models, default_model_id: defaultModel?.id || "" }),
+    });
+    adminState.aiModels = { models: response.models || [], default_model_id: response.default_model_id || "" };
+    adminState.selectedAiModelId = response.default_model_id || defaultModel?.id || "";
+    adminState.aiModelTestResult = null;
+    showToast("模型配置已保存");
+    renderAdminAiModels();
+    renderAdminOverview();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function testAiModel() {
+  const model = collectAiModelForm();
+  adminState.aiModelTestResult = null;
+  renderAdminAiModels();
+  try {
+    adminState.aiModelTestResult = await adminRequest("/api/admin/ai-models/test", { method: "POST", body: JSON.stringify({ model }) });
+  } catch (error) {
+    adminState.aiModelTestResult = { ok: false, error: error.message };
+  }
+  renderAdminAiModels();
+}
+
+async function resetTranslations() {
+  if (!window.confirm("确认清空全部日报译文、错误和翻译进度？原始日报不会删除。")) return;
+  try {
+    const result = await adminRequest("/api/admin/translations/reset", { method: "POST", body: "{}" });
+    showToast(`已清空译文，重置 ${result.reset_records || 0} 条日报`);
+    await loadAdminData();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function queueTranslations(mode = "continue", recordIds = null) {
+  const countText = Array.isArray(recordIds) ? `${recordIds.length} 条选中日报` : "全部待处理日报";
+  const actionText = mode === "overwrite" ? "清除现有译文并覆盖重译" : "继续翻译";
+  if (!window.confirm(`确认对 ${countText}${actionText}？这会调用当前默认模型。`)) return;
+  try {
+    const body = { mode };
+    if (Array.isArray(recordIds)) body.record_ids = recordIds;
+    const result = await adminRequest("/api/admin/translations/queue", { method: "POST", body: JSON.stringify(body) });
+    showToast(`已加入翻译队列：${result.queued_records || 0} 条${result.skipped_records ? `，跳过 ${result.skipped_records} 条` : ""}`);
+    closeAdminModal();
+    await loadAdminData();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function openTranslationQueue() {
+  try {
+    adminState.translationQueue = await adminRequest("/api/admin/translations");
+    const records = (adminState.translationQueue.records || []).filter((record) => record.needs_translation || ["QUEUED", "IN_PROGRESS"].includes(record.status));
+    openAdminModal(
+      `待翻译日报（${adminState.translationQueue.pending_count || 0}）`,
+      `<div class="translation-queue-toolbar"><label><input type="checkbox" data-translation-queue-select-all checked />全选待处理日报</label><span>继续翻译会跳过已完成的当前版本；覆盖重译会先删除选中日报的现有译文。</span></div>
+      <div class="table-wrap translation-queue-table-wrap"><table class="record-table admin-table translation-queue-table">
+        <thead><tr><th>选择</th><th>类型</th><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>待处理原因</th></tr></thead>
+        <tbody>${records.map(translationQueueRowMarkup).join("") || `<tr><td colspan="7">当前没有待翻译日报</td></tr>`}</tbody>
+      </table></div>`,
+      `<button class="button secondary" type="button" data-admin-modal-close>取消</button>
+       <button class="button secondary" type="button" data-admin-queue-selected="overwrite" ${records.length ? "" : "disabled"}>覆盖重译选中</button>
+       <button class="button" type="button" data-admin-queue-selected="continue" ${records.length ? "" : "disabled"}>继续翻译选中</button>`
+    );
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function translationQueueRowMarkup(record = {}) {
+  const processing = ["QUEUED", "IN_PROGRESS"].includes(record.status);
+  return `<tr>
+    <td><input type="checkbox" name="translationQueueRecord" value="${escapeHtml(record.record_id)}" ${record.needs_translation && !processing ? "checked" : ""} ${processing ? "disabled" : ""} /></td>
+    <td><strong>${escapeHtml(record.report_type_label || record.report_type)}</strong></td>
+    <td>${escapeHtml(record.report_date || "-")}<small class="table-subtext">${escapeHtml(record.report_no || "-")}</small></td>
+    <td>${escapeHtml(record.wellbore || "-")}</td><td>${escapeHtml(record.rig || "-")}</td>
+    <td><span class="status-pill ${record.status === "FAILED" ? "failed" : record.status === "COMPLETED" ? "uploaded" : "pending"}">${escapeHtml(translationQueueStatusLabel(record.status))}${record.progress ? ` ${escapeHtml(record.progress)}%` : ""}</span></td>
+    <td>${escapeHtml(record.reason || "-")}</td>
+  </tr>`;
+}
+
+function translationQueueStatusLabel(status = "") {
+  return { PENDING: "待处理", FAILED: "失败", QUEUED: "已排队", IN_PROGRESS: "翻译中", COMPLETED: "已完成", NOT_REQUIRED: "无需翻译" }[status] || status || "待处理";
+}
+
+function selectedTranslationQueueIds() {
+  return [...document.querySelectorAll('[name="translationQueueRecord"]:checked')].map((input) => input.value);
+}
+
+function queueSelectedTranslations(mode) {
+  const recordIds = selectedTranslationQueueIds();
+  if (!recordIds.length) return showToast("请至少选择一条日报");
+  return queueTranslations(mode, recordIds);
+}
+
+function newAiModel() {
+  const model = emptyAiModel();
+  adminState.aiModels.models = [...(adminState.aiModels.models || []), model];
+  adminState.selectedAiModelId = model.id;
+  adminState.aiModelTestResult = null;
+  renderAdminAiModels();
+}
+
+function deleteSelectedAiModel() {
+  const id = collectAiModelForm().id;
+  adminState.aiModels.models = (adminState.aiModels.models || []).filter((item) => item.id !== id);
+  if (adminState.aiModels.default_model_id === id) {
+    adminState.aiModels.default_model_id = adminState.aiModels.models.find((item) => item.enabled !== false)?.id || adminState.aiModels.models[0]?.id || "";
+  }
+  adminState.selectedAiModelId = adminState.aiModels.default_model_id || adminState.aiModels.models[0]?.id || "";
+  adminState.aiModelTestResult = null;
+  renderAdminAiModels();
+}
+
 async function saveProjectTeamConfig(message = "业务配置已保存") {
   const response = await adminRequest("/api/admin/project-teams", { method: "POST", body: JSON.stringify(adminState.projectTeams || {}) });
   adminState.projectTeams = { teams: response.teams || [], projects: response.projects || [], pending_wells: response.pending_wells || [] };
@@ -762,66 +1201,250 @@ async function saveProjectTeamConfig(message = "业务配置已保存") {
   renderAdminOverview();
 }
 
-function collectTranslationTerms() {
-  return [...document.querySelectorAll("[data-translation-term-row]")].map((row) => {
-    const zh = row.querySelector('[name="termZh"]')?.value.trim() || "";
-    const en = row.querySelector('[name="termEn"]')?.value.trim() || "";
-    const es = row.querySelector('[name="termEs"]')?.value.trim() || "";
-    if (!zh && !en && !es) return null;
-    return {
-      id: row.dataset.termId || newClientId(),
-      category: row.querySelector('[name="termCategory"]')?.value.trim() || "drilling",
-      zh,
-      en,
-      es,
-      aliases: {
-        zh: parseAliasList(row.querySelector('[name="termAliasesZh"]')?.value || ""),
-        en: parseAliasList(row.querySelector('[name="termAliasesEn"]')?.value || ""),
-        es: parseAliasList(row.querySelector('[name="termAliasesEs"]')?.value || ""),
-      },
-      protected: row.querySelector('[name="termProtected"]')?.value !== "false",
-      enabled: row.querySelector('[name="termEnabled"]')?.value !== "false",
-      updated_at: new Date().toISOString().slice(0, 19),
-    };
-  }).filter(Boolean);
-}
-
 function parseAliasList(value) {
   return [...new Set(String(value || "").split(/[\n,，;；]+/).map((item) => item.trim()).filter(Boolean))];
 }
 
+function captureTranslationTuningForm() {
+  const host = document.querySelector('[data-admin-panel="translationTuning"]');
+  if (!host || adminState.translationTuningView !== "fields") return adminState.translationTuning;
+  const current = adminState.translationTuning || {};
+  const scopeRules = (current.scope_rules || []).map((rule) => {
+    const row = host.querySelector(`[data-translation-scope-rule="${CSS.escape(rule.id)}"]`);
+    return { ...rule, enabled: row?.querySelector('[name="translationPolicyEnabled"]')?.checked ?? rule.enabled !== false };
+  });
+  const targetLanguages = [...host.querySelectorAll('[name="translationTargetLanguage"]:checked')].map((input) => input.value);
+  const protectionInputs = [...host.querySelectorAll('[name="translationProtection"]')];
+  const protections = Object.fromEntries(protectionInputs.map((input) => [input.value, input.checked]));
+  adminState.translationTuning = {
+    ...current,
+    scope_rules: scopeRules,
+    target_languages: targetLanguages.length ? targetLanguages : ["zh-CN"],
+    prompt: {
+      system_prompt: host.querySelector('[name="translationSystemPrompt"]')?.value.trim() || "",
+      translation_instruction: host.querySelector('[name="translationInstruction"]')?.value.trim() || "",
+    },
+    protections,
+  };
+  return adminState.translationTuning;
+}
+
+function scopeCatalogSelection(reportType, sectionValue = "", fieldValue = "") {
+  const catalog = adminState.translationTuning?.scope_catalog?.report_types || [];
+  const report = catalog.find((item) => item.value === reportType) || catalog[0] || { sections: [] };
+  const section = (report.sections || []).find((item) => item.value === sectionValue) || report.sections?.[0] || { fields: [] };
+  const field = (section.fields || []).find((item) => item.value === fieldValue) || section.fields?.[0] || {};
+  return { report, section, field };
+}
+
+function refreshTranslationScopeBuilder(changedName = "") {
+  const host = document.querySelector('[data-admin-panel="translationTuning"]');
+  if (!host) return;
+  const reportType = host.querySelector('[name="translationScopeReportType"]')?.value || adminState.translationScopeDraft.report_type;
+  const requestedSection = changedName === "translationScopeReportType" ? "" : host.querySelector('[name="translationScopeSection"]')?.value || "";
+  const requestedField = changedName === "translationScopeField" ? host.querySelector('[name="translationScopeField"]')?.value || "" : "";
+  const { report, section, field } = scopeCatalogSelection(reportType, requestedSection, requestedField);
+  adminState.translationScopeDraft = { report_type: report.value || "", section: section.value || "", field_name: field.value || "" };
+  captureTranslationTuningForm();
+  renderAdminTranslationTuning();
+}
+
+function addTranslationScope() {
+  const host = document.querySelector('[data-admin-panel="translationTuning"]');
+  if (!host) return;
+  captureTranslationTuningForm();
+  const reportType = host.querySelector('[name="translationScopeReportType"]')?.value || "";
+  const sectionValue = host.querySelector('[name="translationScopeSection"]')?.value || "";
+  const fieldValue = host.querySelector('[name="translationScopeField"]')?.value || "";
+  const { report, section, field } = scopeCatalogSelection(reportType, sectionValue, fieldValue);
+  if (!report.value || !section.value || !field.value) return showToast("请选择完整的翻译范围");
+  const id = `${report.value}:${section.value}:${field.value}`;
+  const rules = adminState.translationTuning.scope_rules || [];
+  if (rules.some((rule) => rule.report_type === report.value && rule.section === section.value && rule.field_name === field.value)) return showToast("该翻译范围已存在");
+  rules.push({ id, report_type: report.value, report_type_label: report.label, section: section.value, section_label: section.label, field_name: field.value, field_code: `${section.value}.${field.value}`, label: field.label, enabled: true });
+  adminState.translationTuning.scope_rules = rules;
+  renderAdminTranslationTuning();
+}
+
+function removeTranslationScope(id) {
+  captureTranslationTuningForm();
+  adminState.translationTuning.scope_rules = (adminState.translationTuning.scope_rules || []).filter((rule) => rule.id !== id);
+  renderAdminTranslationTuning();
+}
+
+function syncTranslationTermDetail() {
+  const detail = document.querySelector("[data-translation-term-detail]");
+  if (!detail) return;
+  const terms = adminState.translationTerms?.terms || [];
+  const term = terms.find((item) => item.id === detail.dataset.termId);
+  if (!term) return;
+  term.category = detail.querySelector('[name="termCategory"]')?.value.trim() || "drilling";
+  term.zh = detail.querySelector('[name="termZh"]')?.value.trim() || "";
+  term.en = detail.querySelector('[name="termEn"]')?.value.trim() || "";
+  term.es = detail.querySelector('[name="termEs"]')?.value.trim() || "";
+  term.aliases = {
+    zh: parseAliasList(detail.querySelector('[name="termAliasesZh"]')?.value || ""),
+    en: parseAliasList(detail.querySelector('[name="termAliasesEn"]')?.value || ""),
+    es: parseAliasList(detail.querySelector('[name="termAliasesEs"]')?.value || ""),
+  };
+  term.enabled = detail.querySelector('[name="termEnabled"]')?.checked ?? true;
+  term.protected = detail.querySelector('[name="termProtected"]')?.checked ?? true;
+  term.updated_at = new Date().toISOString().slice(0, 19);
+}
+
+function captureProtectedTerms() {
+  const host = document.querySelector('[data-admin-panel="translationTuning"]');
+  if (!host || adminState.translationTuningView !== "terms") return adminState.translationTerms?.protected_terms || {};
+  return {
+    acronyms: parseAliasList(host.querySelector('[name="protectedAcronyms"]')?.value || ""),
+    units: parseAliasList(host.querySelector('[name="protectedUnits"]')?.value || ""),
+    proper_nouns: parseAliasList(host.querySelector('[name="protectedProperNouns"]')?.value || ""),
+  };
+}
+
 function addTranslationTerm() {
+  syncTranslationTermDetail();
   adminState.translationTerms = adminState.translationTerms || { terms: [], protected_terms: {} };
-  adminState.translationTerms.terms = [
-    ...collectTranslationTerms(),
-    {
-      id: newClientId(),
-      category: "drilling",
-      zh: "",
-      en: "",
-      es: "",
-      aliases: { zh: [], en: [], es: [] },
-      protected: true,
-      enabled: true,
-      updated_at: new Date().toISOString().slice(0, 19),
-    }
-  ];
-  renderAdminTranslationTerms();
+  const term = { id: newClientId(), category: "drilling", zh: "", en: "", es: "", aliases: { zh: [], en: [], es: [] }, protected: true, enabled: true, updated_at: new Date().toISOString().slice(0, 19) };
+  adminState.translationTerms.terms = [...(adminState.translationTerms.terms || []), term];
+  adminState.selectedTranslationTermId = term.id;
+  renderAdminTranslationTuning();
 }
 
 async function saveTranslationTerms() {
+  syncTranslationTermDetail();
   const payload = {
-    terms: collectTranslationTerms(),
-    protected_terms: adminState.translationTerms?.protected_terms || {},
+    terms: (adminState.translationTerms?.terms || []).filter((term) => term.zh || term.en || term.es),
+    protected_terms: captureProtectedTerms(),
   };
   try {
     const response = await adminRequest("/api/admin/translation-terms", { method: "POST", body: JSON.stringify(payload) });
     adminState.translationTerms = { terms: response.terms || [], protected_terms: response.protected_terms || {} };
-    showToast("术语翻译配置已保存");
-    renderAdminTranslationTerms();
+    adminState.selectedTranslationTermId = adminState.translationTerms.terms.find((term) => term.id === adminState.selectedTranslationTermId)?.id || adminState.translationTerms.terms[0]?.id || "";
+    showToast("术语词库已保存");
+    renderAdminTranslationTuning();
     renderAdminOverview();
   } catch (error) {
     showToast(error.message);
+  }
+}
+
+function chooseTranslationTermWorkbook() {
+  document.querySelector("[data-translation-term-file]")?.click();
+}
+
+async function importTranslationTermWorkbook(file) {
+  if (!file) return;
+  const allowed = /\.(xlsx|xlsm|xltx|xltm|xls)$/i.test(file.name || "");
+  if (!allowed) return showToast("仅支持 Excel 文件");
+  syncTranslationTermDetail();
+  adminState.translationTermImport = { running: true, result: null, duplicates: [] };
+  renderAdminTranslationTuning();
+  const form = new FormData();
+  form.append("workbook", file);
+  try {
+    const result = await adminRequest("/api/admin/translation-terms/import", { method: "POST", body: form });
+    adminState.translationTerms = { terms: result.terms || [], protected_terms: result.protected_terms || {} };
+    adminState.translationTermImport = { running: false, result, duplicates: result.duplicates || [] };
+    adminState.selectedTranslationTermId = adminState.translationTerms.terms[0]?.id || "";
+    showToast(`已导入 ${result.imported_count || 0} 条术语，跳过 ${result.duplicate_count || 0} 条重复项`);
+  } catch (error) {
+    adminState.translationTermImport = { running: false, result: null, duplicates: [] };
+    showToast(error.message);
+  }
+  renderAdminTranslationTuning();
+}
+
+function openTranslationTermDuplicateReview() {
+  const duplicates = adminState.translationTermImport?.duplicates || [];
+  if (!duplicates.length) return showToast("没有需要处理的重复术语");
+  openAdminModal(
+    `重复术语复核（${duplicates.length}）`,
+    `<div class="duplicate-review-note">重复项已跳过，不会自动改写现有译法。勾选后才会使用 Excel 识别结果覆盖对应语言。</div>
+    <div class="term-duplicate-list">${duplicates.map(translationTermDuplicateMarkup).join("")}</div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>保留全部现有术语</button><button class="button" type="button" data-admin-resolve-term-duplicates>覆盖选中项</button>`
+  );
+}
+
+function translationTermDuplicateMarkup(item = {}) {
+  const existing = item.existing || {};
+  const candidate = item.candidate || {};
+  return `<section class="term-duplicate-item">
+    <label class="duplicate-choice"><input type="checkbox" name="translationTermDuplicate" value="${escapeHtml(item.id)}" /><span>使用导入译法</span></label>
+    <div class="term-duplicate-compare"><div><strong>现有术语</strong>${termLanguageLines(existing)}</div><div><strong>Excel 识别</strong>${termLanguageLines(candidate)}</div></div>
+    <p>${escapeHtml(item.suggestion || "请核对后决定是否覆盖。")}</p>
+  </section>`;
+}
+
+function termLanguageLines(term = {}) {
+  return `<span>中文：${escapeHtml(term.zh || "-")}</span><span>English：${escapeHtml(term.en || "-")}</span><span>Español：${escapeHtml(term.es || "-")}</span>`;
+}
+
+async function resolveTranslationTermDuplicates() {
+  const selected = new Set([...document.querySelectorAll('[name="translationTermDuplicate"]:checked')].map((input) => input.value));
+  if (!selected.size) return showToast("请勾选需要覆盖的重复术语");
+  const duplicates = adminState.translationTermImport?.duplicates || [];
+  const replacements = duplicates.filter((item) => selected.has(item.id)).map((item) => ({ existing_id: item.existing_id, candidate: item.candidate }));
+  try {
+    const result = await adminRequest("/api/admin/translation-terms/import/resolve", { method: "POST", body: JSON.stringify({ replacements }) });
+    adminState.translationTerms = { terms: result.terms || [], protected_terms: result.protected_terms || {} };
+    adminState.translationTermImport.duplicates = duplicates.filter((item) => !selected.has(item.id));
+    if (adminState.translationTermImport.result) adminState.translationTermImport.result.duplicate_count = adminState.translationTermImport.duplicates.length;
+    closeAdminModal();
+    renderAdminTranslationTuning();
+    showToast(`已覆盖 ${result.updated_count || 0} 条术语`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function saveTranslationTuning() {
+  const payload = captureTranslationTuningForm();
+  try {
+    const response = await adminRequest("/api/admin/translation-tuning", { method: "POST", body: JSON.stringify(payload) });
+    adminState.translationTuning = response;
+    showToast("翻译策略已保存");
+    renderAdminTranslationTuning();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function switchTranslationTuningView(view) {
+  if (adminState.translationTuningView === "fields") captureTranslationTuningForm();
+  if (adminState.translationTuningView === "terms") {
+    syncTranslationTermDetail();
+    adminState.translationTerms.protected_terms = captureProtectedTerms();
+  }
+  adminState.translationTuningView = view;
+  renderAdminTranslationTuning();
+}
+
+async function runTranslationTuningTest() {
+  const host = document.querySelector('[data-admin-panel="translationTuning"]');
+  const sourceText = host?.querySelector('[name="translationTestSource"]')?.value.trim() || "";
+  if (!sourceText) return showToast("请输入需要测试的日报文本");
+  adminState.translationTestSource = sourceText;
+  adminState.translationTestModelId = host.querySelector('[name="translationTestModel"]')?.value || adminState.aiModels.default_model_id;
+  adminState.translationTestLanguage = host.querySelector('[name="translationTestLanguage"]')?.value || "zh-CN";
+  adminState.translationTestFieldCode = host.querySelector('[name="translationTestField"]')?.value || "";
+  adminState.translationTestRunning = true;
+  adminState.translationTestResult = null;
+  const payload = {
+    source_text: sourceText,
+    target_language: adminState.translationTestLanguage,
+    model_id: adminState.translationTestModelId,
+    field_code: adminState.translationTestFieldCode,
+    tuning: adminState.translationTuning,
+  };
+  renderAdminTranslationTuning();
+  try {
+    adminState.translationTestResult = await adminRequest("/api/admin/translation-tuning/test", { method: "POST", body: JSON.stringify(payload) });
+  } catch (error) {
+    adminState.translationTestResult = { ok: false, error: error.message, checks: [{ label: "模型调用", status: "failed", detail: error.message }] };
+  } finally {
+    adminState.translationTestRunning = false;
+    renderAdminTranslationTuning();
   }
 }
 
@@ -974,18 +1597,6 @@ function removeWellAssignment(kind, projectId, rig, wellbore, pendingIndex) {
   }
 }
 
-async function backupAdminDatabase() {
-  try {
-    await adminRequest("/api/admin/backup", { method: "POST", body: "{}" });
-    showToast("Excel库已备份");
-    adminState.dataStatus = await adminRequest("/api/admin/data-status");
-    renderAdminData();
-    renderAdminOverview();
-  } catch (error) {
-    showToast(error.message);
-  }
-}
-
 async function logoutAdmin() {
   await adminRequest("/api/admin/logout", { method: "POST", body: "{}" }).catch(() => {});
   window.location.href = "/login/?next=/admin/";
@@ -1015,11 +1626,45 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-modal-close]")) return closeAdminModal();
   if (event.target.closest("[data-admin-new-project]")) return openProjectModal();
   if (event.target.closest("[data-admin-new-team]")) return openTeamModal();
+  if (event.target.closest("[data-admin-new-ai-model]")) return newAiModel();
+  const editAiModel = event.target.closest("[data-admin-edit-ai-model]");
+  if (editAiModel) {
+    adminState.selectedAiModelId = editAiModel.dataset.adminEditAiModel;
+    adminState.aiModelTestResult = null;
+    return renderAdminAiModels();
+  }
+  if (event.target.closest("[data-admin-test-ai-model]")) return testAiModel();
+  if (event.target.closest("[data-admin-save-ai-models]")) return saveAiModels();
+  if (event.target.closest("[data-admin-delete-ai-model]")) return deleteSelectedAiModel();
+  if (event.target.closest("[data-admin-reset-translations]")) return resetTranslations();
+  if (event.target.closest("[data-admin-queue-translations]")) return queueTranslations();
+  if (event.target.closest("[data-admin-open-translation-queue]")) return openTranslationQueue();
+  const queueSelected = event.target.closest("[data-admin-queue-selected]");
+  if (queueSelected) return queueSelectedTranslations(queueSelected.dataset.adminQueueSelected);
+  const tuningView = event.target.closest("[data-translation-tuning-view]");
+  if (tuningView) return switchTranslationTuningView(tuningView.dataset.translationTuningView);
+  if (event.target.closest("[data-admin-save-translation-tuning]")) return saveTranslationTuning();
+  if (event.target.closest("[data-admin-add-translation-scope]")) return addTranslationScope();
+  const removeScope = event.target.closest("[data-admin-remove-translation-scope]");
+  if (removeScope) return removeTranslationScope(removeScope.dataset.adminRemoveTranslationScope);
+  if (event.target.closest("[data-admin-run-translation-test]")) return runTranslationTuningTest();
+  if (event.target.closest("[data-admin-import-translation-terms]")) return chooseTranslationTermWorkbook();
+  if (event.target.closest("[data-admin-review-term-duplicates]")) return openTranslationTermDuplicateReview();
+  if (event.target.closest("[data-admin-resolve-term-duplicates]")) return resolveTranslationTermDuplicates();
   if (event.target.closest("[data-admin-add-translation-term]")) return addTranslationTerm();
+  const editTranslationTerm = event.target.closest("[data-admin-edit-translation-term]");
+  if (editTranslationTerm) {
+    syncTranslationTermDetail();
+    adminState.selectedTranslationTermId = editTranslationTerm.dataset.adminEditTranslationTerm;
+    return renderAdminTranslationTuning();
+  }
   const deleteTranslationTerm = event.target.closest("[data-admin-delete-translation-term]");
   if (deleteTranslationTerm) {
-    deleteTranslationTerm.closest("[data-translation-term-row]")?.remove();
-    return;
+    syncTranslationTermDetail();
+    const id = deleteTranslationTerm.dataset.adminDeleteTranslationTerm;
+    adminState.translationTerms.terms = (adminState.translationTerms.terms || []).filter((term) => term.id !== id);
+    adminState.selectedTranslationTermId = adminState.translationTerms.terms[0]?.id || "";
+    return renderAdminTranslationTuning();
   }
   const addProjectRig = event.target.closest("[data-admin-add-project-rig]");
   if (addProjectRig) {
@@ -1050,7 +1695,6 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-save-well-assignment]")) return saveWellAssignment();
   if (event.target.closest("[data-admin-save-config]")) return saveAdminConfig();
   if (event.target.closest("[data-admin-save-translation-terms]")) return saveTranslationTerms();
-  if (event.target.closest("[data-admin-backup]")) return backupAdminDatabase();
   if (event.target.closest("[data-admin-logout]")) return logoutAdmin();
 });
 
@@ -1060,9 +1704,40 @@ document.addEventListener("change", (event) => {
     adminState.logsPage = 1;
     renderAdminLogs();
   }
+  if (event.target.matches('[name="translationPolicyEnabled"]')) {
+    const label = event.target.closest("label")?.querySelector("span");
+    if (label) label.textContent = event.target.checked ? "启用" : "停用";
+  }
+  if (event.target.matches('[name="translationScopeReportType"], [name="translationScopeSection"], [name="translationScopeField"]')) {
+    return refreshTranslationScopeBuilder(event.target.name);
+  }
+  if (event.target.matches("[data-translation-term-file]")) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    return importTranslationTermWorkbook(file);
+  }
+  if (event.target.matches("[data-translation-queue-select-all]")) {
+    document.querySelectorAll('[name="translationQueueRecord"]:not(:disabled)').forEach((input) => { input.checked = event.target.checked; });
+  }
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target.matches("[data-translation-term-search]")) {
+    syncTranslationTermDetail();
+    adminState.translationTerms.protected_terms = captureProtectedTerms();
+    adminState.translationTermSearch = event.target.value;
+    renderAdminTranslationTuning();
+    const search = document.querySelector("[data-translation-term-search]");
+    search?.focus();
+    if (search) search.setSelectionRange(search.value.length, search.value.length);
+  }
 });
 
 document.addEventListener("keydown", (event) => {
+  if (["Enter", " "].includes(event.key) && event.target.matches("[data-admin-open-translation-queue]")) {
+    event.preventDefault();
+    return openTranslationQueue();
+  }
   if (event.key === "Escape") closeAdminModal();
 });
 

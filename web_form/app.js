@@ -12,7 +12,7 @@ const i18n = {
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
-      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationRunningShort: "翻译中", translationReady: "日报语言已切换。", translationFailed: "翻译数据暂不可用，请确认本地大模型服务或后台翻译任务状态。", translationPreviewNotice: "当前显示数据库译文，只读展示；切回原文可编辑原始日报。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
+      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationRunningShort: "翻译中", translationReady: "日报语言已切换。", translationFailed: "翻译数据暂不可用，请确认本地大模型服务或后台翻译任务状态。", translationPreviewNotice: "当前显示数据库译文，只读展示；切回原文可编辑原始日报。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "数据库状态", backRecords: "返回记录", databaseSaved: "已保存到 MySQL 数据库。", databaseSaveFailed: "保存 MySQL 数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
       uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", translationQueuedStatus: "翻译排队", translationRunningStatus: "翻译中", translationDoneStatus: "翻译完成", translationFailedStatus: "翻译失败", translationNotReady: "译文未完成，完成后才能切换语言。", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
       metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性", metricMoveDrillingDays: "搬迁 / 钻井",
@@ -87,7 +87,7 @@ const i18n = {
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
-      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationRunningShort: "Translating", translationReady: "Report language switched.", translationFailed: "Translation data is not available. Check the local model service or translation task status.", translationPreviewNotice: "Database translation is shown read-only. Switch back to Original to edit the source report.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
+      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationRunningShort: "Translating", translationReady: "Report language switched.", translationFailed: "Translation data is not available. Check the local model service or translation task status.", translationPreviewNotice: "Database translation is shown read-only. Switch back to Original to edit the source report.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Database Status", backRecords: "Back to Records", databaseSaved: "Saved to MySQL.", databaseSaveFailed: "Failed to save to MySQL.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
       uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", translationQueuedStatus: "Translation queued", translationRunningStatus: "Translating", translationDoneStatus: "Translation done", translationFailedStatus: "Translation failed", translationNotReady: "Translation is not complete yet. Language switching is available after completion.", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
       metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness", metricMoveDrillingDays: "Move / Drilling",
@@ -162,7 +162,7 @@ const i18n = {
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
-      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationRunningShort: "Traduciendo", translationReady: "Idioma del reporte cambiado.", translationFailed: "Los datos traducidos no están disponibles. Revise el modelo local o el estado de la tarea.", translationPreviewNotice: "Se muestra la traducción de base de datos en modo lectura. Vuelva a Original para editar el reporte fuente.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
+      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationRunningShort: "Traduciendo", translationReady: "Idioma del reporte cambiado.", translationFailed: "Los datos traducidos no están disponibles. Revise el modelo local o el estado de la tarea.", translationPreviewNotice: "Se muestra la traducción de base de datos en modo lectura. Vuelva a Original para editar el reporte fuente.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Estado BD", backRecords: "Volver a registros", databaseSaved: "Guardado en MySQL.", databaseSaveFailed: "No se pudo guardar en MySQL.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
       uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", translationQueuedStatus: "Traducción en cola", translationRunningStatus: "Traduciendo", translationDoneStatus: "Traducción completa", translationFailedStatus: "Traducción falló", translationNotReady: "La traducción aún no está completa. El cambio de idioma estará disponible al finalizar.", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
       metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte", metricMoveDrillingDays: "Movilización / Perforación",
@@ -3602,14 +3602,14 @@ function renderAdminOverview() {
   host.innerHTML = `
     <section class="admin-kpi-grid">
       ${adminKpi("当前账号", user.display_name || user.username || "-", user.role || "")}
-      ${adminKpi("日报记录", status.records || 0, "Excel库记录数")}
+      ${adminKpi("日报记录", status.records || 0, "MySQL记录数")}
       ${adminKpi("源PDF", status.source_pdf_count || 0, "本地保存数量")}
-      ${adminKpi("库文件", fileSize(status.database_size || 0), status.database_updated_at || "未生成")}
+      ${adminKpi("MySQL", status.mysql?.available ? "可用" : "不可用", `${status.database_host || ""}:${status.database_port || ""}/${status.database_name || ""}`)}
     </section>
     <section class="panel">
       <div class="panel-heading"><h2>后台范围</h2><span class="panel-note">轻量 JSON 配置，适合单机或小团队部署</span></div>
       <div class="admin-note-grid">
-        <span>账号与角色</span><span>配置项</span><span>Excel备份</span><span>操作日志</span>
+        <span>账号与角色</span><span>配置项</span><span>MySQL数据</span><span>操作日志</span>
       </div>
     </section>
   `;
@@ -3673,7 +3673,8 @@ function renderAdminConfig() {
         <label>系统名称<input name="system_name" value="${escapeHtml(config.system_name)}" /></label>
         <label>默认语言<select name="default_language"><option value="zh">中文</option><option value="en">EN</option><option value="es">ES</option></select></label>
         <label>每页记录数<input name="records_per_page" type="number" min="5" max="100" value="${escapeHtml(config.records_per_page)}" /></label>
-        <label>Excel路径<input name="excel_path" value="${escapeHtml(config.excel_path)}" /></label>
+        <label>数据库类型<input name="database_engine" value="${escapeHtml(config.database_engine || "mysql")}" readonly /></label>
+        <label>数据库名<input name="database_name" value="${escapeHtml(config.database_name || "")}" readonly /></label>
         <label>源PDF保存<select name="save_source_pdf"><option value="true">开启</option><option value="false">关闭</option></select></label>
         <label>PDF保留天数<input name="source_pdf_retention_days" type="number" min="1" value="${escapeHtml(config.source_pdf_retention_days)}" /></label>
       </div>
@@ -3698,16 +3699,11 @@ function renderAdminData() {
       ${adminKpi("修井/搬迁", `${byType.workover || 0} / ${byType.move || 0}`, "workover / move")}
     </section>
     <section class="panel">
-      <div class="panel-heading"><h2>数据维护</h2><span class="panel-note">备份当前 Excel 库，查看最近备份</span></div>
-      <div class="admin-actions">
-        <a class="button secondary" href="/api/download-database">下载Excel库</a>
-        <button class="button" type="button" data-admin-backup>立即备份</button>
-      </div>
-      <div class="table-wrap">
-        <table class="record-table admin-table">
-          <thead><tr><th>备份文件</th><th>大小</th><th>时间</th></tr></thead>
-          <tbody>${(status.backups || []).map((item) => `<tr><td>${escapeHtml(item.name)}</td><td>${fileSize(item.size)}</td><td>${escapeHtml(item.created_at)}</td></tr>`).join("") || `<tr><td colspan="3">暂无备份</td></tr>`}</tbody>
-        </table>
+      <div class="panel-heading"><h2>数据维护</h2><span class="panel-note">当前运行时只使用 MySQL；Excel 文件库已移除</span></div>
+      <div class="admin-note-grid">
+        <span>数据库</span><strong>${escapeHtml(status.database_name || "-")}</strong>
+        <span>连接</span><strong>${escapeHtml(`${status.database_host || ""}:${status.database_port || ""}`)}</strong>
+        <span>状态</span><strong>${status.mysql?.available ? "可用" : escapeHtml(status.mysql?.error || "不可用")}</strong>
       </div>
     </section>
   `;
@@ -3820,19 +3816,6 @@ async function saveAdminConfig() {
     adminState.config = response.config || {};
     showToast("配置已保存");
     renderAdminConfig();
-  } catch (error) {
-    showToast(error.message);
-  }
-}
-
-async function backupAdminDatabase() {
-  try {
-    await adminRequest("/api/admin/backup", { method: "POST", body: "{}" });
-    showToast("Excel库已备份");
-    const status = await adminRequest("/api/admin/data-status");
-    adminState.dataStatus = status;
-    renderAdminData();
-    renderAdminOverview();
   } catch (error) {
     showToast(error.message);
   }
@@ -4623,11 +4606,6 @@ document.addEventListener("click", (event) => {
   const adminSaveConfig = event.target.closest("[data-admin-save-config]");
   if (adminSaveConfig) {
     saveAdminConfig();
-    return;
-  }
-  const adminBackup = event.target.closest("[data-admin-backup]");
-  if (adminBackup) {
-    backupAdminDatabase();
     return;
   }
   const productionReportTab = event.target.closest("[data-production-report-tab]");

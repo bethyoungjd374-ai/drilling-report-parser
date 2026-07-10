@@ -5,6 +5,9 @@ __pycache__/
 .venv/
 outputs/source_pdfs/
 outputs/backups/
+outputs/report_database.xlsx
+outputs/ai_model_configs.json
+outputs/translation_tuning.json
 outputs/users.json
 outputs/system_config.json
 outputs/audit_logs.jsonl

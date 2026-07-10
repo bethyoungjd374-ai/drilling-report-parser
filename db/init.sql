@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS report_records (
   translation_progress VARCHAR(16) NOT NULL DEFAULT '',
   translation_error TEXT NULL,
   translation_version VARCHAR(64) NOT NULL DEFAULT '',
+  translation_updated_at VARCHAR(64) NOT NULL DEFAULT '',
   validation_status VARCHAR(64) NOT NULL DEFAULT '',
   validation_warnings TEXT NULL,
   locked VARCHAR(32) NOT NULL DEFAULT '',

@@ -25,12 +25,13 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
 
         self.assertEqual(cursor.statements[0], "SHOW COLUMNS FROM report_records")
         alter_statements = cursor.statements[1:]
-        self.assertEqual(len(alter_statements), 5)
+        self.assertEqual(len(alter_statements), 6)
         self.assertIn("ADD COLUMN source_language", alter_statements[0])
         self.assertIn("ADD COLUMN translation_status", alter_statements[1])
         self.assertIn("ADD COLUMN translation_progress", alter_statements[2])
         self.assertIn("ADD COLUMN translation_error", alter_statements[3])
         self.assertIn("ADD COLUMN translation_version", alter_statements[4])
+        self.assertIn("ADD COLUMN translation_updated_at", alter_statements[5])
 
     def test_keeps_existing_translation_columns(self) -> None:
         cursor = FakeCursor([
@@ -41,6 +42,7 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
             "translation_progress",
             "translation_error",
             "translation_version",
+            "translation_updated_at",
         ])
 
         _ensure_report_record_columns(cursor)

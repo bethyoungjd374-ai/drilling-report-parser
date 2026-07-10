@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -19,6 +20,8 @@ DEFAULT_TERMS_PATH = Path(__file__).with_name("drilling_terms.json")
 LANGUAGES = ("zh-CN", "en", "es")
 TARGET_LANGUAGE = "zh-CN"
 PROMPT_VERSION = "drilling-daily-v4"
+DEFAULT_SYSTEM_PROMPT = "你是石油钻完井日报专业翻译器，熟悉钻井、完井、修井和搬迁作业术语。"
+DEFAULT_TRANSLATION_INSTRUCTION = "不得总结、删减、解释或添加说明；保持原文信息顺序和技术含义。"
 TRANSLATABLE_REPORT_FIELDS = {
     "currentOps",
     "summary24h",
@@ -55,7 +58,13 @@ class TranslationConfig:
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen3.5:9b"
     ollama_temperature: float = 0.0
+    openai_base_url: str = ""
+    openai_api_key: str = ""
+    openai_model: str = ""
+    openai_temperature: float = 0.0
     timeout_seconds: float = 120.0
+    model_config_id: str = ""
+    retry_count: int = 2
 
     @classmethod
     def from_env(cls) -> "TranslationConfig":
@@ -68,7 +77,82 @@ class TranslationConfig:
             ollama_url=os.environ.get("DRP_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/"),
             ollama_model=os.environ.get("DRP_OLLAMA_MODEL", "qwen3.5:9b").strip() or "qwen3.5:9b",
             ollama_temperature=float(os.environ.get("DRP_OLLAMA_TEMPERATURE", "0") or "0"),
+            openai_base_url=os.environ.get("DRP_OPENAI_COMPATIBLE_URL", "").rstrip("/"),
+            openai_api_key=os.environ.get("DRP_OPENAI_COMPATIBLE_API_KEY", ""),
+            openai_model=os.environ.get("DRP_OPENAI_COMPATIBLE_MODEL", "").strip(),
+            openai_temperature=float(os.environ.get("DRP_OPENAI_COMPATIBLE_TEMPERATURE", "0") or "0"),
             timeout_seconds=float(os.environ.get("DRP_TRANSLATION_TIMEOUT", "120") or "120"),
+            model_config_id=os.environ.get("DRP_TRANSLATION_MODEL_CONFIG_ID", "").strip(),
+            retry_count=max(0, int(os.environ.get("DRP_TRANSLATION_RETRY_COUNT", "2") or "2")),
+        )
+
+
+@dataclass(frozen=True)
+class TranslationTuningConfig:
+    report_fields: tuple[str, ...] = tuple(sorted(TRANSLATABLE_REPORT_FIELDS))
+    row_fields: tuple[str, ...] = tuple(sorted(TRANSLATABLE_ROW_FIELDS))
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    translation_instruction: str = DEFAULT_TRANSLATION_INSTRUCTION
+    protect_numbers: bool = True
+    protect_units: bool = True
+    protect_acronyms: bool = True
+    protect_proper_nouns: bool = True
+    version: str = PROMPT_VERSION
+    scope_rules: tuple[tuple[str, str, str], ...] = ()
+
+    @classmethod
+    def from_data(cls, data: object) -> "TranslationTuningConfig":
+        source = data if isinstance(data, dict) else {}
+        raw_fields = source.get("scope_rules") if isinstance(source.get("scope_rules"), list) else source.get("field_policies") if isinstance(source.get("field_policies"), list) else []
+        enabled_codes = {
+            str(item.get("field_code", "") or "")
+            for item in raw_fields
+            if isinstance(item, dict) and item.get("enabled", True)
+        }
+        report_fields = tuple(sorted(
+            code.split(".", 1)[1]
+            for code in enabled_codes
+            if code.startswith("report_fields.") and "." in code
+        ))
+        row_fields = tuple(sorted(
+            code.split(".", 1)[1]
+            for code in enabled_codes
+            if code.startswith("rows.") and "." in code
+        ))
+        if not raw_fields:
+            report_fields = tuple(sorted(TRANSLATABLE_REPORT_FIELDS))
+            row_fields = tuple(sorted(TRANSLATABLE_ROW_FIELDS))
+        scope_rules: list[tuple[str, str, str]] = []
+        for item in raw_fields:
+            if not isinstance(item, dict) or not item.get("enabled", True):
+                continue
+            field_code = str(item.get("field_code", "") or "")
+            report_type = str(item.get("report_type", "*") or "*").strip().lower()
+            section = str(item.get("section", "") or "").strip()
+            field_name = str(item.get("field_name", "") or "").strip()
+            if not section or not field_name:
+                prefix, _, suffix = field_code.partition(".")
+                if prefix == "report_fields":
+                    section, field_name = "report_fields", suffix
+                elif prefix == "rows":
+                    section, field_name = "*", suffix
+                elif prefix and suffix:
+                    section, field_name = prefix, suffix
+            if section and field_name:
+                scope_rules.append((report_type, section, field_name))
+        prompt = source.get("prompt") if isinstance(source.get("prompt"), dict) else {}
+        protections = source.get("protections") if isinstance(source.get("protections"), dict) else {}
+        return cls(
+            report_fields=report_fields,
+            row_fields=row_fields,
+            system_prompt=str(prompt.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip(),
+            translation_instruction=str(prompt.get("translation_instruction", "") or DEFAULT_TRANSLATION_INSTRUCTION).strip(),
+            protect_numbers=bool(protections.get("numbers", True)),
+            protect_units=bool(protections.get("units", True)),
+            protect_acronyms=bool(protections.get("acronyms", True)),
+            protect_proper_nouns=bool(protections.get("proper_nouns", True)),
+            version=str(source.get("version", "") or PROMPT_VERSION).strip(),
+            scope_rules=tuple(sorted(set(scope_rules))),
         )
 
 
@@ -262,6 +346,63 @@ class OllamaTranslationEngine:
         }
 
 
+class OpenAICompatibleTranslationEngine:
+    name = "openai-compatible"
+
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        api_key: str = "",
+        temperature: float = 0.0,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.api_key = api_key
+        self.temperature = temperature
+
+    def translate_items(self, items: list[dict[str, Any]], target_language: str, timeout_seconds: float) -> dict[str, str]:
+        if not items:
+            return {}
+        payload = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "messages": [
+                {"role": "system", "content": _prompt_system_message(items)},
+                {"role": "user", "content": _ollama_batch_prompt(items, target_language, strict=False)},
+            ],
+        }
+        data = _post_json(
+            _chat_completions_url(self.base_url),
+            payload,
+            timeout_seconds,
+            headers=_auth_headers(self.api_key),
+        )
+        content = _chat_content(data)
+        parsed = _json_object_from_text(content)
+        raw_items = parsed.get("items")
+        if not isinstance(raw_items, list):
+            raise TranslationError("OpenAI-compatible response missing items array.")
+        translated = {
+            str(item.get("id", "")): str(item.get("translated_text", "") or "")
+            for item in raw_items
+            if isinstance(item, dict)
+        }
+        failed = {
+            str(item.get("id", "")): _translation_quality_error(
+                str(item.get("source_text", "") or ""),
+                str(translated.get(str(item.get("id", "")), "") or ""),
+                target_language,
+            )
+            for item in items
+        }
+        failed = {item_id: error for item_id, error in failed.items() if error}
+        if failed:
+            details = "; ".join(f"{item_id}: {error}" for item_id, error in failed.items())
+            raise TranslationError(f"OpenAI-compatible model returned low-quality translation ({details}).")
+        return translated
+
+
 class NoopTranslationEngine:
     name = "noop"
 
@@ -277,11 +418,17 @@ class DrillingReportTranslator:
         terms: TermsConfig,
         target_language: str = TARGET_LANGUAGE,
         timeout_seconds: float = 120.0,
+        model_config_id: str = "",
+        retry_count: int = 2,
+        tuning: TranslationTuningConfig | None = None,
     ) -> None:
         self.engine = engine
         self.terms = terms
         self.target_language = normalize_language(target_language)
         self.timeout_seconds = timeout_seconds
+        self.model_config_id = model_config_id or engine.name
+        self.retry_count = max(0, retry_count)
+        self.tuning = tuning or TranslationTuningConfig()
         self._term_matchers = _compiled_term_matchers(terms.entries, self.target_language)
 
     def translate_report_payload(
@@ -296,7 +443,13 @@ class DrillingReportTranslator:
         source_payload.pop("translation_content", None)
         record_id = record_id or str(source_payload.get("metadata", {}).get("record_id", "") or "")
         target_languages = [normalize_language(language) for language in (target_languages or [self.target_language])]
-        units = iter_payload_text_units(source_payload, record_id=record_id)
+        units = iter_payload_text_units(
+            source_payload,
+            record_id=record_id,
+            report_fields=set(self.tuning.report_fields),
+            row_fields=set(self.tuning.row_fields),
+            scope_rules=set(self.tuning.scope_rules) if self.tuning.scope_rules else None,
+        )
         rows: list[dict[str, str]] = []
         warnings: list[str] = []
         for target_language in target_languages:
@@ -316,7 +469,7 @@ class DrillingReportTranslator:
                 "engine": self.engine.name,
                 "target_language": self.target_language,
                 "target_languages": target_languages,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": self.tuning.version,
                 "generated_at": _now(),
                 "item_count": len(rows),
                 "translated_count": sum(1 for row in rows if row.get("translation_status") in {"COMPLETED", "NOT_REQUIRED"}),
@@ -370,8 +523,8 @@ class DrillingReportTranslator:
                 "target_language": target_language,
                 "source_text": source_text,
                 "source_hash": source_hash(source_text),
-                "model_config_id": self.engine.name,
-                "prompt_version": PROMPT_VERSION,
+                "model_config_id": self.model_config_id,
+                "prompt_version": self.tuning.version,
                 "is_manual_modified": "",
                 "created_at": now,
                 "updated_at": now,
@@ -386,6 +539,7 @@ class DrillingReportTranslator:
                 "source_text": source_text,
                 "source_language": source_language,
                 "glossary": self._term_glossary(source_text, target_language),
+                "prompt_context": self._prompt_context(),
             })
 
         completed_units = len(rows)
@@ -394,7 +548,7 @@ class DrillingReportTranslator:
 
         for chunk in _translation_chunks(pending):
             try:
-                translated = self.engine.translate_items(chunk, target_language, self.timeout_seconds)
+                translated = self._translate_with_retries(chunk, target_language)
             except Exception as exc:
                 if len(chunk) > 1:
                     rows.extend(self._translate_items_one_by_one(chunk, target_language, warnings, str(exc)))
@@ -415,6 +569,17 @@ class DrillingReportTranslator:
                 on_progress(completed_units, len(units))
         return rows
 
+    def prompt_preview(self, text: str, target_language: str) -> str:
+        source_text = _clean_text(text)
+        item = {
+            "id": "0",
+            "source_language": detect_language(source_text),
+            "source_text": source_text,
+            "glossary": self._term_glossary(source_text, target_language),
+            "prompt_context": self._prompt_context(),
+        }
+        return _ollama_batch_prompt([item], target_language, strict=False)
+
     def _translate_items_one_by_one(
         self,
         chunk: list[dict[str, Any]],
@@ -426,7 +591,7 @@ class DrillingReportTranslator:
         rows: list[dict[str, str]] = []
         for item in chunk:
             try:
-                translated = self.engine.translate_items([item], target_language, self.timeout_seconds)
+                translated = self._translate_with_retries([item], target_language)
             except Exception as exc:
                 warnings.append(str(exc))
                 rows.append({**item["base"], "translated_text": "", "translation_status": "FAILED", "error_message": str(exc)})
@@ -438,6 +603,18 @@ class DrillingReportTranslator:
             else:
                 rows.append({**item["base"], "translated_text": "", "translation_status": "FAILED", "error_message": "missing translated_text"})
         return rows
+
+    def _translate_with_retries(self, items: list[dict[str, Any]], target_language: str) -> dict[str, str]:
+        last_error: Exception | None = None
+        for attempt in range(self.retry_count + 1):
+            try:
+                return self.engine.translate_items(items, target_language, self.timeout_seconds)
+            except Exception as exc:
+                last_error = exc
+                if attempt < self.retry_count:
+                    time.sleep(min(0.25 * (2 ** attempt), 2.0))
+        assert last_error is not None
+        raise last_error
 
     def _term_glossary(self, text: str, target_language: str) -> list[dict[str, str]]:
         records: list[dict[str, str]] = []
@@ -458,6 +635,21 @@ class DrillingReportTranslator:
                 records.append({"source": source_value, "target": target})
         return records[:30]
 
+    def _prompt_context(self) -> dict[str, object]:
+        protected: list[str] = []
+        if self.tuning.protect_acronyms:
+            protected.extend(self.terms.acronyms)
+        if self.tuning.protect_units:
+            protected.extend(self.terms.units)
+        if self.tuning.protect_proper_nouns:
+            protected.extend(self.terms.proper_nouns)
+        return {
+            "system_prompt": self.tuning.system_prompt,
+            "translation_instruction": self.tuning.translation_instruction,
+            "protect_numbers": self.tuning.protect_numbers,
+            "protected_terms": list(dict.fromkeys(protected))[:120],
+        }
+
     def _apply_term_replacements(self, text: str) -> str:
         translated = text
         for pattern, replacement in self._term_matchers:
@@ -470,6 +662,7 @@ def build_translator(
     engine: TranslationEngine | None = None,
     terms: TermsConfig | None = None,
     target_language: str | None = None,
+    tuning: TranslationTuningConfig | None = None,
 ) -> DrillingReportTranslator:
     config = config or TranslationConfig.from_env()
     selected_terms = terms or TermsConfig.load(config.terms_path)
@@ -479,6 +672,9 @@ def build_translator(
         selected_terms,
         target_language=target_language or config.target_language,
         timeout_seconds=config.timeout_seconds,
+        model_config_id=config.model_config_id,
+        retry_count=config.retry_count,
+        tuning=tuning,
     )
 
 
@@ -490,9 +686,18 @@ def build_engine(config: TranslationConfig) -> TranslationEngine:
             model=config.ollama_model,
             temperature=config.ollama_temperature,
         )
+    if engine in {"openai-compatible", "openai_compatible", "openai"}:
+        if not config.openai_base_url or not config.openai_model:
+            raise ValueError("OpenAI-compatible base URL and model are required.")
+        return OpenAICompatibleTranslationEngine(
+            base_url=config.openai_base_url,
+            model=config.openai_model,
+            api_key=config.openai_api_key,
+            temperature=config.openai_temperature,
+        )
     if engine in {"noop", "none"}:
         return NoopTranslationEngine()
-    raise ValueError(f"Unsupported translation engine: {config.engine}. Use ollama or noop.")
+    raise ValueError(f"Unsupported translation engine: {config.engine}. Use ollama, openai-compatible or noop.")
 
 
 def apply_translation_content(payload: dict[str, Any], rows: list[dict[str, Any]], target_language: str) -> dict[str, Any]:
@@ -508,17 +713,79 @@ def apply_translation_content(payload: dict[str, Any], rows: list[dict[str, Any]
         if not text:
             continue
         path = field_code_to_path(str(row.get("field_code", "")), str(row.get("entity_id", "")))
+        expected_hash = str(row.get("source_hash", "") or "")
+        source_value = _payload_value(payload, path)
+        if expected_hash and source_hash(_clean_text(source_value)) != expected_hash:
+            continue
         _set_payload_value(translated_payload, path, text)
     translated_payload["translation_content"] = rows
     return translated_payload
 
 
-def iter_payload_text_units(payload: dict[str, Any], *, record_id: str = "") -> list[TextUnit]:
+def translation_coverage(
+    payload: dict[str, Any],
+    rows: list[dict[str, Any]],
+    target_language: str,
+    tuning: TranslationTuningConfig | None = None,
+) -> dict[str, Any]:
+    target_language = normalize_language(target_language)
+    valid_rows = {
+        (
+            str(row.get("entity_id", "") or ""),
+            str(row.get("field_code", "") or ""),
+        ): row
+        for row in rows
+        if isinstance(row, dict)
+        and normalize_language(row.get("target_language", "")) == target_language
+        and str(row.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"}
+    }
+    selected_tuning = tuning or TranslationTuningConfig()
+    required = [
+        unit
+        for unit in iter_payload_text_units(
+            payload,
+            report_fields=set(selected_tuning.report_fields),
+            row_fields=set(selected_tuning.row_fields),
+            scope_rules=set(selected_tuning.scope_rules) if selected_tuning.scope_rules else None,
+        )
+        if detect_language(unit.text) != target_language
+    ]
+    missing: list[str] = []
+    for unit in required:
+        row = valid_rows.get((unit.entity_id, unit.field_code))
+        if not row or str(row.get("source_hash", "") or "") != source_hash(_clean_text(unit.text)):
+            missing.append(unit.path)
+    return {
+        "ready": not missing,
+        "required_count": len(required),
+        "completed_count": len(required) - len(missing),
+        "missing": missing,
+    }
+
+
+def iter_payload_text_units(
+    payload: dict[str, Any],
+    *,
+    record_id: str = "",
+    report_fields: set[str] | None = None,
+    row_fields: set[str] | None = None,
+    scope_rules: set[tuple[str, str, str]] | None = None,
+) -> list[TextUnit]:
     record_id = record_id or str(payload.get("metadata", {}).get("record_id", "") or "")
+    metadata = payload.get("metadata", {}) if isinstance(payload.get("metadata"), dict) else {}
+    report_type = str(metadata.get("report_type", "") or "").strip().lower()
     fields = payload.get("report_fields", {})
     units: list[TextUnit] = []
+    selected_report_fields = TRANSLATABLE_REPORT_FIELDS if report_fields is None else report_fields
+    selected_row_fields = TRANSLATABLE_ROW_FIELDS if row_fields is None else row_fields
+    if scope_rules is not None:
+        selected_report_fields = {
+            field_name
+            for rule_report_type, section, field_name in scope_rules
+            if section == "report_fields" and rule_report_type in {"*", report_type}
+        }
     if isinstance(fields, dict):
-        for key in sorted(TRANSLATABLE_REPORT_FIELDS):
+        for key in sorted(selected_report_fields):
             value = fields.get(key)
             if _is_text_value(value):
                 units.append(TextUnit(
@@ -535,7 +802,14 @@ def iter_payload_text_units(payload: dict[str, Any], *, record_id: str = "") -> 
             if not isinstance(row, dict):
                 continue
             row_no = str(row.get("row_no") or index + 1)
-            for key in sorted(TRANSLATABLE_ROW_FIELDS):
+            section_row_fields = selected_row_fields
+            if scope_rules is not None:
+                section_row_fields = {
+                    field_name
+                    for rule_report_type, rule_section, field_name in scope_rules
+                    if rule_report_type in {"*", report_type} and rule_section in {"*", section}
+                }
+            for key in sorted(section_row_fields):
                 value = row.get(key)
                 if _is_text_value(value):
                     units.append(TextUnit(
@@ -603,9 +877,10 @@ def _target_languages_from_env() -> list[str]:
     return languages or list(LANGUAGES)
 
 
-def _post_json(url: str, payload: dict[str, Any], timeout_seconds: float) -> Any:
+def _post_json(url: str, payload: dict[str, Any], timeout_seconds: float, *, headers: dict[str, str] | None = None) -> Any:
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
+    request_headers = {"Content-Type": "application/json; charset=utf-8", **(headers or {})}
+    request = urllib.request.Request(url, data=body, headers=request_headers, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
             raw = response.read().decode("utf-8")
@@ -621,6 +896,33 @@ def _post_json(url: str, payload: dict[str, Any], timeout_seconds: float) -> Any
         return json.loads(raw)
     except json.JSONDecodeError as exc:
         raise TranslationError(f"{url} returned non-JSON response.") from exc
+
+
+def _auth_headers(api_key: str) -> dict[str, str]:
+    key = str(api_key or "").strip()
+    return {"Authorization": f"Bearer {key}"} if key else {}
+
+
+def _chat_completions_url(base_url: str) -> str:
+    base = str(base_url or "").rstrip("/")
+    if base.endswith("/chat/completions"):
+        return base
+    return f"{base}/chat/completions"
+
+
+def _chat_content(data: Any) -> str:
+    if not isinstance(data, dict):
+        raise TranslationError("OpenAI-compatible endpoint returned invalid response.")
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise TranslationError("OpenAI-compatible response missing choices.")
+    first = choices[0]
+    if not isinstance(first, dict):
+        raise TranslationError("OpenAI-compatible response choice is invalid.")
+    message = first.get("message")
+    if isinstance(message, dict):
+        return str(message.get("content", "") or "")
+    return str(first.get("text", "") or "")
 
 
 def _ollama_batch_prompt(items: list[dict[str, Any]], target_language: str, *, strict: bool = False) -> str:
@@ -642,15 +944,33 @@ def _ollama_batch_prompt(items: list[dict[str, Any]], target_language: str, *, s
     retry_rule = "上一次结果照抄了原文。本次必须翻译所有自然语言正文。" if strict and target == "zh-CN" else (
         "The previous result copied source prose. This time translate every natural-language phrase." if strict else ""
     )
+    context = items[0].get("prompt_context", {}) if items and isinstance(items[0].get("prompt_context"), dict) else {}
+    system_prompt = str(context.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip()
+    additional_instruction = str(context.get("translation_instruction", "") or DEFAULT_TRANSLATION_INSTRUCTION).strip()
+    protected_terms = [str(item) for item in context.get("protected_terms", []) if str(item).strip()] if isinstance(context.get("protected_terms"), list) else []
+    protection_rules = []
+    if context.get("protect_numbers", True):
+        protection_rules.append("保留日期、时间、数字及数值精度")
+    if protected_terms:
+        protection_rules.append(f"以下内容保持原样：{', '.join(protected_terms)}")
+    protection_text = "；".join(protection_rules)
     return (
         "/no_think\n"
-        "你是石油钻井日报专业翻译器。\n"
+        f"{system_prompt}\n"
         f"{instruction}\n"
-        "不得总结、删减、解释或添加说明。保留井名、公司名、设备型号、专业缩写、日期、数字和单位，并应用每条记录的 glossary。\n"
+        f"{additional_instruction}\n"
+        f"{protection_text}\n"
+        "必须应用每条记录的 glossary；glossary 中的目标译法优先于模型自由翻译。\n"
         f"{retry_rule}\n"
         "只返回严格 JSON，格式为：{\"items\":[{\"id\":\"0\",\"translated_text\":\"译文\"}]}。每个输入 id 必须返回一条。\n"
         f"Input JSON:\n{json.dumps({'items': compact_items}, ensure_ascii=False)}"
     )
+
+
+def _prompt_system_message(items: list[dict[str, Any]]) -> str:
+    context = items[0].get("prompt_context", {}) if items and isinstance(items[0].get("prompt_context"), dict) else {}
+    system_prompt = str(context.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip()
+    return f"{system_prompt} Return strict JSON only."
 
 
 def _translation_quality_error(source_text: str, translated_text: str, target_language: str) -> str:
@@ -741,10 +1061,25 @@ def _set_payload_value(payload: dict[str, Any], path: str, value: str) -> None:
         rows[index][key] = value
 
 
+def _payload_value(payload: dict[str, Any], path: str) -> object:
+    if path.startswith("report_fields."):
+        fields = payload.get("report_fields")
+        return fields.get(path.split(".", 1)[1], "") if isinstance(fields, dict) else ""
+    match = re.match(r"([A-Za-z0-9_]+)\[(\d+)]\.([A-Za-z0-9_]+)$", path)
+    if not match:
+        return ""
+    section, index_text, key = match.groups()
+    rows = payload.get(section)
+    index = int(index_text)
+    if isinstance(rows, list) and 0 <= index < len(rows) and isinstance(rows[index], dict):
+        return rows[index].get(key, "")
+    return ""
+
+
 def _compiled_term_matchers(entries: tuple[TermEntry, ...], target_language: str) -> list[tuple[re.Pattern[str], str]]:
     matchers: list[tuple[re.Pattern[str], str]] = []
     for entry in entries:
-        if not entry.enabled:
+        if not entry.enabled or not entry.protected:
             continue
         replacement = entry.value(target_language)
         if not replacement:

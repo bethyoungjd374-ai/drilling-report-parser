@@ -14,7 +14,7 @@ from drilling_report_parser import excel_database, mysql_database  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Import existing Excel report database into MySQL.")
-    parser.add_argument("--excel", default=str(ROOT / "outputs" / "report_database.xlsx"), help="Path to report_database.xlsx")
+    parser.add_argument("--excel", required=True, help="Path to a legacy Excel database file")
     parser.add_argument("--report-type", default="", choices=["", "drilling", "completion", "workover", "move"], help="Optional report type filter")
     args = parser.parse_args()
 
