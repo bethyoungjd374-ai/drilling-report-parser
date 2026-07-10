@@ -218,7 +218,10 @@ function renderAdminProjects() {
     </section>
     ${teamListPanel(teams, teamProjectMap, "新增钻井队伍")}
     <section class="panel">
-      <div class="panel-heading"><h2>井号列表</h2><span class="panel-note">井号自动从日报中建立归属关系；井队已绑定项目时自动带出归属项目</span></div>
+      <div class="panel-heading">
+        <div><h2>井号列表</h2><span class="panel-note">井号自动从日报中建立归属关系；井队已绑定项目时自动带出归属项目</span></div>
+        <button class="button small" type="button" data-admin-new-well-assignment>新增井号</button>
+      </div>
       <div class="table-wrap"><table class="record-table admin-table">
         <thead><tr><th>井号</th><th>队伍</th><th>归属项目</th><th>来源报表</th><th>操作</th></tr></thead>
         <tbody>${wellAssignmentRows(config).map((item, index) => `<tr><td><strong>${escapeHtml(item.wellbore)}</strong></td><td>${escapeHtml(item.rig || "-")}</td><td>${escapeHtml(item.project_label || "未归属")}</td><td>${escapeHtml(item.source_report || "-")}</td><td><button class="link-button" type="button" data-admin-edit-well-assignment="${index}">编辑</button></td></tr>`).join("") || `<tr><td colspan="5">暂无井号</td></tr>`}</tbody>
@@ -443,13 +446,14 @@ function closeAdminModal() {
   document.querySelector(".admin-modal")?.remove();
 }
 
-function openAdminModal(title, body, footer) {
+function openAdminModal(title, body, footer, options = {}) {
   closeAdminModal();
+  const size = ["small", "medium", "wide"].includes(options.size) ? options.size : "medium";
   const wrapper = document.createElement("div");
   wrapper.className = "admin-modal";
   wrapper.innerHTML = `
     <div class="admin-modal-backdrop" data-admin-modal-close></div>
-    <section class="admin-modal-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+    <section class="admin-modal-panel admin-modal-panel--${size}" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
       <header class="admin-modal-header">
         <h2>${escapeHtml(title)}</h2>
         <button class="icon-button" type="button" data-admin-modal-close aria-label="关闭">×</button>
@@ -517,7 +521,8 @@ function openProjectModal(id = "") {
       <div class="admin-project-rig-list" data-project-rig-list>${projectRigRows(project)}</div>
     </section>`,
     `<button class="button secondary" type="button" data-admin-modal-close>取消</button>
-    <button class="button" type="button" data-admin-save-project-modal>${isEdit ? "保存项目" : "新增项目"}</button>`
+    <button class="button" type="button" data-admin-save-project-modal>${isEdit ? "保存项目" : "新增项目"}</button>`,
+    { size: "wide" }
   );
 }
 
@@ -541,16 +546,20 @@ function openTeamModal(id = "") {
       <label class="wide">识别别名<textarea name="teamAliases" placeholder="日报中识别到的旧队伍名或其他写法，每行一个">${escapeHtml(aliasInputValue(team.aliases || []))}</textarea></label>
     </div>`,
     `<button class="button secondary" type="button" data-admin-modal-close>取消</button>
-    <button class="button" type="button" data-admin-save-team-modal>${isEdit ? "保存队伍" : "新增队伍"}</button>`
+    <button class="button" type="button" data-admin-save-team-modal>${isEdit ? "保存队伍" : "新增队伍"}</button>`,
+    { size: "medium" }
   );
 }
 
-function openWellAssignmentModal(index = 0) {
-  const row = (adminState.wellAssignmentRows || wellAssignmentRows(adminState.projectTeams))[Number(index)];
+function openWellAssignmentModal(index = "") {
+  const hasIndex = index !== "" && index !== null && index !== undefined;
+  const row = hasIndex
+    ? (adminState.wellAssignmentRows || wellAssignmentRows(adminState.projectTeams))[Number(index)]
+    : { kind: "manual", project_id: "", rig: "", wellbore: "", pending_index: "" };
   if (!row) return showToast("井号记录不存在");
   openAdminModal(
-    "编辑井号归属",
-    `<input name="wellAssignmentIndex" type="hidden" value="${Number(index)}" />
+    hasIndex ? "编辑井号归属" : "新增井号归属",
+    `<input name="wellAssignmentIndex" type="hidden" value="${hasIndex ? Number(index) : ""}" />
     <input name="wellAssignmentOriginalProject" type="hidden" value="${escapeHtml(row.project_id || "")}" />
     <input name="wellAssignmentOriginalRig" type="hidden" value="${escapeHtml(row.rig || "")}" />
     <input name="wellAssignmentOriginalWell" type="hidden" value="${escapeHtml(row.wellbore || "")}" />
@@ -562,7 +571,8 @@ function openWellAssignmentModal(index = 0) {
       <label class="wide">归属项目<select name="wellAssignmentProject"><option value="">未归属</option>${projectSelectOptions(adminState.projectTeams.projects || [], row.project_id || "")}</select></label>
     </div>`,
     `<button class="button secondary" type="button" data-admin-modal-close>取消</button>
-    <button class="button" type="button" data-admin-save-well-assignment>保存井号归属</button>`
+    <button class="button" type="button" data-admin-save-well-assignment>保存井号归属</button>`,
+    { size: "small" }
   );
 }
 
@@ -1015,6 +1025,7 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-modal-close]")) return closeAdminModal();
   if (event.target.closest("[data-admin-new-project]")) return openProjectModal();
   if (event.target.closest("[data-admin-new-team]")) return openTeamModal();
+  if (event.target.closest("[data-admin-new-well-assignment]")) return openWellAssignmentModal();
   if (event.target.closest("[data-admin-add-translation-term]")) return addTranslationTerm();
   const deleteTranslationTerm = event.target.closest("[data-admin-delete-translation-term]");
   if (deleteTranslationTerm) {

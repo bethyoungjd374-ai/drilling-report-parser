@@ -12,7 +12,7 @@ const i18n = {
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
-      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationReady: "译文预览已生成。", translationFailed: "翻译失败，请确认本地翻译服务已启动。", translationPreviewNotice: "译文仅供查看，切回原文后编辑保存。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
+      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationReady: "译文预览已生成。", translationFailed: "翻译失败，请确认本地翻译服务已启动。", translationPreviewNotice: "译文仅供查看，切回原文后编辑保存。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", breadcrumbBackParent: "返回上一级", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
       uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
       metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性", metricMoveDrillingDays: "搬迁 / 钻井",
@@ -87,7 +87,7 @@ const i18n = {
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
-      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationReady: "Translation preview is ready.", translationFailed: "Translation failed. Check that the local translation service is running.", translationPreviewNotice: "Translation is view-only. Switch back to Original before editing or saving.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
+      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationReady: "Translation preview is ready.", translationFailed: "Translation failed. Check that the local translation service is running.", translationPreviewNotice: "Translation is view-only. Switch back to Original before editing or saving.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", breadcrumbBackParent: "Back up one level", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
       uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
       metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness", metricMoveDrillingDays: "Move / Drilling",
@@ -162,7 +162,7 @@ const i18n = {
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
-      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationReady: "Vista traducida lista.", translationFailed: "Falló la traducción. Verifique que el servicio local esté iniciado.", translationPreviewNotice: "La traducción es solo lectura. Vuelva a Original para editar o guardar.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
+      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationReady: "Vista traducida lista.", translationFailed: "Falló la traducción. Verifique que el servicio local esté iniciado.", translationPreviewNotice: "La traducción es solo lectura. Vuelva a Original para editar o guardar.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", breadcrumbBackParent: "Volver al nivel anterior", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
       uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
       metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte", metricMoveDrillingDays: "Movilización / Perforación",
@@ -414,6 +414,15 @@ function activeMenuLink() {
   return document.querySelector(`.menu-link[data-menu-target="${activeMenuTarget}"]`);
 }
 
+function openMenuTarget(target) {
+  const menuTarget = String(target || "").trim();
+  if (!menuTarget) return;
+  const link = document.querySelector(`.menu-link[data-menu-target="${menuTarget}"]`);
+  link?.closest(".menu-group")?.classList.add("open");
+  link?.closest(".menu-group")?.querySelector(".menu-group-toggle")?.setAttribute("aria-expanded", "true");
+  setActiveMenu(menuTarget);
+}
+
 function setDrillingSourceFile(filename = "") {
   drillingSourceFileName = filename;
   const sourceLabel = document.querySelector("#drillingSourceFile");
@@ -423,11 +432,13 @@ function setDrillingSourceFile(filename = "") {
 function setNptConfirmBreadcrumb(current = "") {
   const currentLabel = document.querySelector("[data-npt-breadcrumb-current]");
   const separator = document.querySelector("[data-npt-breadcrumb-separator]");
+  const backButton = document.querySelector("[data-npt-breadcrumb-back]");
   if (!currentLabel || !separator) return;
   const hasCurrent = Boolean(String(current || "").trim());
   currentLabel.textContent = hasCurrent ? current : "";
   currentLabel.hidden = !hasCurrent;
   separator.hidden = !hasCurrent;
+  if (backButton) backButton.hidden = !hasCurrent;
 }
 
 function reportName(reportType) {
@@ -444,6 +455,9 @@ function setReportMode(reportType, mode) {
     el.hidden = mode !== "records";
   });
   document.querySelectorAll(`[data-detail-view="${reportType}"]`).forEach((el) => {
+    el.hidden = mode !== "detail";
+  });
+  document.querySelectorAll(`[data-breadcrumb-back-records="${reportType}"]`).forEach((el) => {
     el.hidden = mode !== "detail";
   });
   document.querySelectorAll(`[data-back-records="${reportType}"], [data-save-report="${reportType}"]`).forEach((el) => {
@@ -573,7 +587,10 @@ function renderModulePlaceholder(link = activeMenuLink()) {
   const parentKey = link.closest(".menu-group")?.querySelector(".menu-group-toggle span[data-i18n]")?.dataset.i18n || "moduleStatusPlanned";
   const parentLabel = document.querySelector("#placeholderModule");
   if (parentLabel) {
+    const parentTarget = link.closest(".menu-group")?.querySelector(".menu-link[data-menu-target]")?.dataset.menuTarget || "";
     parentLabel.dataset.i18n = parentKey;
+    parentLabel.dataset.breadcrumbTarget = parentTarget;
+    parentLabel.disabled = !parentTarget;
     parentLabel.textContent = ui(parentKey);
   }
   document.querySelector("#placeholderTitle").textContent = ui(link.dataset.titleI18n);
@@ -643,6 +660,11 @@ function applyLanguage(language) {
   });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.placeholder = ui(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const label = ui(el.dataset.i18nTitle);
+    el.title = label;
+    el.setAttribute("aria-label", label);
   });
   syncLanguageButtons();
   document.querySelectorAll("label").forEach((label) => {
@@ -1493,6 +1515,13 @@ function calendarMarkup(reportType, dateValue, uploadedDays, stageDays) {
   const firstDay = base.getDay();
   const totalDays = new Date(year, month + 1, 0).getDate();
   const prevTotal = new Date(year, month, 0).getDate();
+  const legendItems = reportType === "drilling"
+    ? [
+        { tone: "move", label: "Rig Move" },
+        { tone: "drilling", label: "Drilling" },
+        { tone: "upload", label: ui("uploadedDays") }
+      ]
+    : [{ tone: "upload", label: ui("uploadedDays") }];
   const cells = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevTotal - i, muted: true });
   for (let day = 1; day <= totalDays; day++) cells.push({ day, date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` });
@@ -1515,7 +1544,9 @@ function calendarMarkup(reportType, dateValue, uploadedDays, stageDays) {
         return `<button type="button" class="${statusClass}" data-calendar-date="${cell.date || ""}" data-report-type="${reportType}" ${cell.muted ? "disabled" : ""}><span>${cell.day}</span></button>`;
       }).join("")}
     </div>
-    <div class="calendar-legend"><span class="dot move"></span>Rig Move<span class="dot drilling"></span>Drilling</div>
+    <div class="calendar-legend">
+      ${legendItems.map((item) => `<span class="calendar-legend-item"><span class="dot ${item.tone}"></span>${escapeHtml(item.label)}</span>`).join("")}
+    </div>
   `;
 }
 
@@ -4398,6 +4429,16 @@ document.querySelectorAll("[data-back-records]").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const breadcrumbBackRecords = event.target.closest("[data-breadcrumb-back-records]");
+  if (breadcrumbBackRecords) {
+    showReportRecords(breadcrumbBackRecords.dataset.breadcrumbBackRecords);
+    return;
+  }
+  const breadcrumbTarget = event.target.closest("[data-breadcrumb-target]");
+  if (breadcrumbTarget) {
+    openMenuTarget(breadcrumbTarget.dataset.breadcrumbTarget);
+    return;
+  }
   const projectToggle = event.target.closest("[data-project-dropdown-toggle]");
   if (projectToggle) {
     const field = projectToggle.closest("[data-production-project-filter], [data-production-rig-filter]");
@@ -4958,9 +4999,7 @@ document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
 document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
-    link.closest(".menu-group")?.classList.add("open");
-    link.closest(".menu-group")?.querySelector(".menu-group-toggle")?.setAttribute("aria-expanded", "true");
-    setActiveMenu(link.dataset.menuTarget);
+    openMenuTarget(link.dataset.menuTarget);
   });
 });
 
