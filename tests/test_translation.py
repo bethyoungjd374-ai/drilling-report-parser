@@ -2,76 +2,87 @@ from __future__ import annotations
 
 import unittest
 
-from drilling_report_parser.translation import TermsConfig
-from drilling_report_parser.translation.service import DrillingReportTranslator, detect_language
+from drilling_report_parser.translation import TermsConfig, apply_translation_content
+from drilling_report_parser.translation.service import (
+    DrillingReportTranslator,
+    _split_translation_text,
+    _translation_quality_error,
+    detect_language,
+    iter_payload_text_units,
+)
 
 
 class FakeLocalEngine:
     name = "fake-local"
 
-    def translate(self, text: str, source_language: str, target_language: str = "zh") -> str:
-        return f"local[{source_language}->{target_language}] {text}"
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        return {str(item["id"]): f"local {item['source_text']}" for item in items}
 
 
 class TranslationServiceTest(unittest.TestCase):
     def setUp(self) -> None:
         self.terms = TermsConfig.load()
-        self.translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, target_language="zh")
+        self.translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, target_language="zh-CN")
 
     def test_detects_basic_languages(self) -> None:
-        self.assertEqual(detect_language("已经完成钻进"), "zh")
+        self.assertEqual(detect_language("已经完成钻进"), "zh-CN")
         self.assertEqual(detect_language("Drilled ahead with stable SPP."), "en")
         self.assertEqual(detect_language("Circuló fondo arriba con lodo."), "es")
         self.assertEqual(detect_language("SACA BHA #5 DIRECCIONAL"), "es")
+        self.assertEqual(detect_language("Environ Incident? N INCIDENTES SIN REPORTAR EN LAS ULTIMAS 24 HORAS."), "es")
 
-    def test_protects_well_measurements_and_replaces_terms_to_chinese(self) -> None:
-        item = self.translator.translate_text(
-            'Drilling 8-1/2" hole on EB-D-12, ROP 18 m/hr, WOB 22 klb.',
-            "report_fields.currentOps",
-        )
+    def test_rejects_unchanged_or_barely_translated_chinese_output(self) -> None:
+        source = "INCIDENTES SIN REPORTAR EN LAS ULTIMAS 24 HORAS. TRASLADO DE FLUIDOS DEL CAMPAMENTO."
+        self.assertIn("unchanged", _translation_quality_error(source, source, "zh-CN"))
+        self.assertIn("excessive", _translation_quality_error(source, f"{source} 钻进", "zh-CN"))
+        self.assertEqual(_translation_quality_error(source, "过去 24 小时内无事故报告。已转运营地流体。", "zh-CN"), "")
 
-        self.assertEqual(item["language"], "en")
-        self.assertTrue(item["translated"])
-        self.assertIn("EB-D-12", item["translated_text"])
-        self.assertIn('8-1/2"', item["translated_text"])
-        self.assertIn("机械钻速", item["translated_text"])
-        self.assertIn("钻压", item["translated_text"])
-        self.assertIn("EB-D-12", item["untranslated_tokens"])
-        self.assertIn("18 m/hr", item["untranslated_tokens"])
+    def test_splits_long_remarks_without_losing_text(self) -> None:
+        source = "第一段内容。 " + ("LONG TECHNICAL REMARK - " * 45) + "最后一段。"
+        parts = _split_translation_text(source, max_chars=180)
+        self.assertGreater(len(parts), 2)
+        self.assertTrue(all(len(part) <= 181 for part in parts))
+        self.assertEqual("".join(parts).replace(" ", ""), source.replace(" ", ""))
 
-    def test_replaces_terms_from_chinese_to_english(self) -> None:
-        translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, target_language="en")
-        item = translator.translate_text("完成起钻后循环，检查防喷器。", "report_fields.summary24h")
-
-        self.assertEqual(item["language"], "zh")
-        self.assertIn("tripping out", item["translated_text"])
-        self.assertIn("circulate", item["translated_text"])
-        self.assertIn("BOP", item["translated_text"])
-        self.assertTrue(any(record["replacement"] == "tripping out" for record in item["term_replacements"]))
-
-    def test_replaces_terms_from_spanish_to_english(self) -> None:
-        translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, target_language="en")
-        item = translator.translate_text("pérdida de circulación durante revestimiento", "operations[0].operation_details")
-
-        self.assertEqual(item["language"], "es")
-        self.assertIn("lost circulation", item["translated_text"])
-        self.assertIn("casing", item["translated_text"])
-
-    def test_replaces_terms_from_english_to_spanish(self) -> None:
-        translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, target_language="es")
-        item = translator.translate_text("Lost circulation while drilling casing section.", "operations[0].operation_details")
-
-        self.assertEqual(item["language"], "en")
-        self.assertIn("pérdida de circulación", item["translated_text"])
-        self.assertIn("perforación", item["translated_text"])
-        self.assertIn("revestimiento", item["translated_text"])
-
-    def test_translates_payload_and_preserves_original_result_items(self) -> None:
+    def test_extracts_only_configured_free_text_fields(self) -> None:
         payload = {
-            "metadata": {"source_file": "mixed.pdf"},
+            "metadata": {"record_id": "drilling:PCNC-040:2026-06-11:11"},
+            "report_fields": {
+                "wellbore": "PCNC-040",
+                "currentOps": "SACANDO BHA #3.",
+                "incidentComments": "SIN INCIDENTES REPORTADOS.",
+                "otherRemarks": "TRASLADO DE FLUIDOS DEL CAMPAMENTO.",
+                "todayMd": "10832",
+            },
+            "operations": [
+                {
+                    "from": "00:00",
+                    "op_code": "DRLG",
+                    "operation_details": "PERFORA SECCION.",
+                }
+            ],
+        }
+
+        units = iter_payload_text_units(payload)
+
+        self.assertEqual(
+            [unit.field_code for unit in units],
+            [
+                "report_fields.currentOps",
+                "report_fields.incidentComments",
+                "report_fields.otherRemarks",
+                "operations.operation_details",
+            ],
+        )
+        self.assertTrue(all("wellbore" not in unit.field_code for unit in units))
+
+    def test_generates_translation_content_and_preserves_original_payload(self) -> None:
+        payload = {
+            "metadata": {"record_id": "drilling:XX-101H:2026-06-11:11"},
             "report_fields": {
                 "wellbore": "XX-101H",
-                "currentOps": "Tripping out BHA #5. Circuló fondo arriba con MW 10.2 ppg.",
+                "currentOps": "ROP 18 m/hr while drilling 12.25 in section.",
             },
             "operations": [
                 {
@@ -85,16 +96,50 @@ class TranslationServiceTest(unittest.TestCase):
             ],
         }
 
-        result = self.translator.translate_report_payload(payload)
+        progress_updates = []
+        result = self.translator.translate_report_payload(
+            payload,
+            on_progress=lambda language, completed, total: progress_updates.append((language, completed, total)),
+        )
 
         self.assertEqual(result["metadata"]["engine"], "fake-local")
-        self.assertEqual(result["metadata"]["target_language"], "zh")
-        self.assertIn("translated_payload", result)
+        self.assertEqual(result["metadata"]["target_language"], "zh-CN")
+        self.assertIn("translation_content", result)
         self.assertEqual(payload["report_fields"]["wellbore"], "XX-101H")
+        fields = result["translated_payload"]["report_fields"]
+        self.assertIn("机械钻速", fields["currentOps"])
         translated_ops = result["translated_payload"]["operations"][0]["operation_details"]
         self.assertIn("井漏", translated_ops)
-        self.assertIn("钻进", translated_ops)
-        self.assertTrue(any(record["replacement"] == "井漏" for record in result["term_replacement_records"]))
+        self.assertTrue(all(row["source_hash"] for row in result["translation_content"]))
+        self.assertEqual(progress_updates[-1], ("zh-CN", 2, 2))
+
+    def test_applies_saved_translation_content_to_payload(self) -> None:
+        payload = {
+            "metadata": {"record_id": "drilling:PCNC-040:2026-06-11:11"},
+            "report_fields": {"currentOps": "SACANDO BHA"},
+            "operations": [{"operation_details": "PERFORA SECCION"}],
+        }
+        rows = [
+            {
+                "entity_id": "drilling:PCNC-040:2026-06-11:11",
+                "field_code": "report_fields.currentOps",
+                "target_language": "zh-CN",
+                "translated_text": "起出 BHA",
+                "translation_status": "COMPLETED",
+            },
+            {
+                "entity_id": "drilling:PCNC-040:2026-06-11:11:operations:1",
+                "field_code": "operations.operation_details",
+                "target_language": "zh-CN",
+                "translated_text": "钻进井段",
+                "translation_status": "COMPLETED",
+            },
+        ]
+
+        translated = apply_translation_content(payload, rows, "zh-CN")
+
+        self.assertEqual(translated["report_fields"]["currentOps"], "起出 BHA")
+        self.assertEqual(translated["operations"][0]["operation_details"], "钻进井段")
 
 
 if __name__ == "__main__":

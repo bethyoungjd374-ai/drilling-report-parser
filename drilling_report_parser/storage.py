@@ -58,6 +58,72 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
     return excel_database.load_report_payload(database_path, record_id)
 
 
+def save_translation_content(database_path: str | Path, record_id: str, rows: list[dict[str, Any]]) -> None:
+    excel_database.save_translation_content(database_path, record_id, rows)
+    if _should_try_mysql(database_path):
+        try:
+            from . import mysql_database
+
+            mysql_database.save_translation_content(database_path, record_id, rows)
+        except Exception as exc:
+            _mark_mysql_failure(exc)
+
+
+def load_translation_content(database_path: str | Path, record_id: str) -> list[dict[str, str]]:
+    if _should_try_mysql(database_path):
+        try:
+            from . import mysql_database
+
+            return mysql_database.load_translation_content(database_path, record_id)
+        except Exception as exc:
+            _mark_mysql_failure(exc)
+    return excel_database.load_translation_content(database_path, record_id)
+
+
+def clear_translation_content(database_path: str | Path, record_id: str = "") -> None:
+    excel_database.clear_translation_content(database_path, record_id)
+    if _should_try_mysql(database_path):
+        try:
+            from . import mysql_database
+
+            mysql_database.clear_translation_content(database_path, record_id)
+        except Exception as exc:
+            _mark_mysql_failure(exc)
+
+
+def update_record_translation_status(
+    database_path: str | Path,
+    record_id: str,
+    *,
+    status: str,
+    progress: int | str = "",
+    error: str = "",
+    version: str = "",
+) -> None:
+    excel_database.update_record_translation_status(
+        database_path,
+        record_id,
+        status=status,
+        progress=progress,
+        error=error,
+        version=version,
+    )
+    if _should_try_mysql(database_path):
+        try:
+            from . import mysql_database
+
+            mysql_database.update_record_translation_status(
+                database_path,
+                record_id,
+                status=status,
+                progress=progress,
+                error=error,
+                version=version,
+            )
+        except Exception as exc:
+            _mark_mysql_failure(exc)
+
+
 def delete_report_payload(database_path: str | Path, record_id: str) -> bool:
     deleted = excel_database.delete_report_payload(database_path, record_id)
     if _should_try_mysql(database_path):

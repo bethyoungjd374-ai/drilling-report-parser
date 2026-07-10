@@ -687,9 +687,10 @@ class FormServerImportTest(unittest.TestCase):
                 self.assertEqual(response["status"], 200, response["body"])
                 payload = json.loads(response["body"])
                 self.assertEqual(payload["metadata"]["engine"], "noop")
+                self.assertEqual(payload["metadata"]["target_language"], "zh-CN")
+                self.assertIn("translation_content", payload)
                 self.assertIn("机械钻速", payload["translated_payload"]["report_fields"]["currentOps"])
-                self.assertTrue(any(record["replacement"] == "机械钻速" for record in payload["term_replacement_records"]))
-                self.assertTrue(any(field["path"].startswith("report_fields.wellbore") for field in payload["untranslated_fields"]))
+                self.assertTrue(any(row["field_code"] == "report_fields.currentOps" for row in payload["translation_content"]))
             finally:
                 server.shutdown()
                 server.server_close()

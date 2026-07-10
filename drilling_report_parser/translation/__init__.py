@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from .service import (
     DrillingReportTranslator,
-    LibreTranslateEngine,
     NoopTranslationEngine,
+    OllamaTranslationEngine,
+    PROMPT_VERSION,
     TermEntry,
     TermsConfig,
     TranslationConfig,
     TranslationEngine,
+    apply_translation_content,
     build_engine,
     build_translator,
     detect_language,
@@ -18,12 +20,14 @@ from .service import (
 
 __all__ = [
     "DrillingReportTranslator",
-    "LibreTranslateEngine",
     "NoopTranslationEngine",
+    "OllamaTranslationEngine",
+    "PROMPT_VERSION",
     "TermEntry",
     "TermsConfig",
     "TranslationConfig",
     "TranslationEngine",
+    "apply_translation_content",
     "build_engine",
     "build_translator",
     "detect_language",

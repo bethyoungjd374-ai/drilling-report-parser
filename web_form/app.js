@@ -12,29 +12,29 @@ const i18n = {
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
-      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationReady: "译文预览已生成。", translationFailed: "翻译失败，请确认本地翻译服务已启动。", translationPreviewNotice: "译文仅供查看，切回原文后编辑保存。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
-      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
+      importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationRunningShort: "翻译中", translationReady: "日报语言已切换。", translationFailed: "翻译数据暂不可用，请确认本地大模型服务或后台翻译任务状态。", translationPreviewNotice: "当前显示数据库译文，只读展示；切回原文可编辑原始日报。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "下载Excel库", backRecords: "返回记录", databaseSaved: "已保存到Excel数据库。", databaseSaveFailed: "保存Excel数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
+      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", failed: "失败", warningStatus: "有告警", pending: "待补传", translationQueuedStatus: "翻译排队", translationRunningStatus: "翻译中", translationDoneStatus: "翻译完成", translationFailedStatus: "翻译失败", translationNotReady: "译文未完成，完成后才能切换语言。", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
       metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性", metricMoveDrillingDays: "搬迁 / 钻井",
       analyticsKicker: "数据看板", analyticsProductionScope: "基于已保存到 Excel 库的日报解析数据", analyticsNptScope: "基于已保存到 Excel 库的日报解析数据；分类按日报作业代码 / 作业子项汇总", search: "查询", reset: "重置", wellborePlaceholder: "请输入井号",
       chartRigHours: "各井队累计NPT排名", chartOperationMix: "作业时效构成", chartMonthlyHours: "单井作业甘特图", chartNptRig: "各井队NPT对比 (h)", chartNptReason: "作业代码 / 作业子项分布", chartNptWell: "各井NPT排行", chartNptMonthly: "月度NPT趋势 (h)", productionDetailTitle: "生产报表明细", nptDetailTitle: "NPT统计明细", analyticsRowHint: "点击行可打开日报详情", productionReportRowHint: "点击井号新开日报首页并选中该井", nptRowHint: "按日报作业代码 / 作业子项原文汇总，点击行可追溯日报",
       kpiRigCount: "井队数", kpiNptRigCount: "NPT井队数", kpiWellCount: "涉及井数", kpiTotalHours: "总作业时长", kpiTotalNpt: "总NPT", kpiReportCompleteness: "日报完整性", kpiNptEvents: "NPT事件数", analyticsDefaultCaption: "基于已入库日报", analyticsNptCaption: "按作业代码 / 作业子项汇总", analyticsCompletenessCaption: "缺失 {missing} 天 / 告警 {warning} 天", noAnalyticsData: "暂无可统计数据", noExportData: "暂无可导出数据", normalStatus: "正常", reasonMissing: "未填写作业代码 / 作业子项",
       allRigs: "全部井队", allProjects: "全部项目", allReportTypes: "全部类型", allReasons: "全部分类", opCodeSub: "作业代码 / 子项", opCode: "作业代码", opSub: "作业子项", category: "分类", tableProject: "项目", tableContractProject: "合同(项目)", tableRig: "井队", tableWell: "井号", tableReportType: "日报类型", tableStartDate: "开工时间", tableEndDate: "完工时间", tableMoveDate: "搬迁日期", tableDrillingStartDate: "开钻日期", tableDrillingFinishDate: "完钻日期", tableCompletionDate: "完井日期", tableWorkoverDate: "修井日期", tableDrillingHours: "钻井(h)", tableCompletionHours: "完井(h)", tableWorkoverHours: "修井(h)", tableMoveHours: "搬迁(h)", tableNptHours: "NPT(h)", tableRemarks: "备注", tableDate: "日期", tableOperationDetails: "作业详情",
-      sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "Survey Data (Last 6)", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "Operations", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
+      sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "测斜数据（最近 6 条）", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "作业明细", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
       noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、BOP、泵压、扭矩和钩载", noteIncidents: "HSE 状态、同步作业和其他说明",
       completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "对应搬迁 PDF 顶部日报抬头、AFE 和井队信息", moveNoteRemarks: "其他现场备注原文",
       addSurvey: "新增测斜", addBha: "新增 BHA", addOperation: "新增作业行", addCost: "新增成本", addBulk: "新增库存", addInterval: "新增区间", rulesTitle: "基础条件限制规则", liveValidation: "实时校验",
       uploadedDays: "已上传", daysUnit: "天", missingDate: "缺失日期",
       prevMonth: "上一月", nextMonth: "下一月", savedWarnings: "保存时校验",
       noIssues: "当前没有校验问题。", pdfImporting: "正在解析 PDF 日报...", pdfImported: "PDF 日报已解析并填充到界面。", pdfImportFailed: "PDF 解析失败，请检查文件格式或模板。",
-      thMd: "MD (ft)", thIncl: "Incl (deg)", thAzi: "Azi (deg)", thTvd: "TVD (ft)", thVse: "VSE (ft)", thNs: "N/-S (ft)", thDls: "DLS (deg/100ft)", thBuild: "Build (deg/100ft)", thComponent: "Component", thOd: "OD (in)", thId: "ID (in)", thJts: "Jts", thLength: "Length (ft)", thFrom: "From (HH:MM)", thTo: "To (HH:MM)", thHrs: "Hrs (h)", thOpCode: "Op Code", thOpSub: "Op Sub", thType: "Type", thOperationDetails: "Operation Details", thCostDescription: "Cost Description", thVendor: "Vendor", thAmount: "Amount (USD)", thBulk: "Bulk", thQtyStart: "Qty Start", thQtyUsed: "Qty Used", thQtyEnd: "Qty End", thFormation: "Formation", thTopMd: "Top MD (ft)", thBaseMd: "Base MD (ft)", thDensity: "Density (spf)", thCharges: "Charges", thPhase: "Phase (deg)", thPenetration: "Penetration (in)", thDiameter: "Diameter (in)", thDate: "Date", thStatus: "Status", thComments: "Comments", thLocation: "Location", thEquipment: "Equipment", thPlate: "Plate", thEntryDate: "Entry Date", thEntryTime: "Entry Time", thGuide: "Guide", thCargo: "Cargo", thTrip: "Trip"
+      thMd: "测量深度 MD (ft)", thIncl: "井斜角 (deg)", thAzi: "方位角 (deg)", thTvd: "垂深 TVD (ft)", thVse: "垂直剖面 VSE (ft)", thNs: "南北位移 N/-S (ft)", thDls: "狗腿度 DLS (deg/100ft)", thBuild: "造斜率 (deg/100ft)", thComponent: "组件", thOd: "外径 OD (in)", thId: "内径 ID (in)", thJts: "根数", thLength: "长度 (ft)", thFrom: "开始 (HH:MM)", thTo: "结束 (HH:MM)", thHrs: "时长 (h)", thOpCode: "作业代码", thOpSub: "作业子项", thType: "类型", thOperationDetails: "作业详情", thCostDescription: "成本说明", thVendor: "供应商", thAmount: "金额 (USD)", thBulk: "库存物料", thQtyStart: "期初数量", thQtyUsed: "使用数量", thQtyEnd: "期末数量", thFormation: "地层", thTopMd: "顶部 MD (ft)", thBaseMd: "底部 MD (ft)", thDensity: "孔密 (spf)", thCharges: "射孔弹数", thPhase: "相位 (deg)", thPenetration: "穿透深度 (in)", thDiameter: "孔径 (in)", thDate: "日期", thStatus: "状态", thComments: "备注", thLocation: "地点", thEquipment: "设备", thPlate: "车牌", thEntryDate: "录入日期", thEntryTime: "录入时间", thGuide: "引导员", thCargo: "货物", thTrip: "车次"
     },
     fields: {
       event: "事件", reportDate: "日期", project: "项目", date_from: "日期起", date_to: "日期止", report_type: "日报类型", reason: "作业代码 / 子项", nptWellbore: "井号", nptRig: "井队", nptStatus: "确认状态", reportNo: "报告编号", wellbore: "井号", rig: "井队", primaryReason: "主要原因", afeNumber: "AFE 编号", refDatum: "参考基准", todayMd: "当日 MD (ft)", prevMd: "前日 MD (ft)", progress: "进尺 (ft)", rotHrsToday: "当日旋转时长",
-      currentOps: "Current Ops", summary24h: "24-Hr Summary", forecast24h: "24-Hr Forecast", lastCasing: "Last Casing", lastCasingSize: "Last Casing Size", lastCasingDepth: "Last Casing Depth", nextCasing: "Next Casing", nextCasingSize: "Next Casing Size", nextCasingDepth: "Next Casing Depth", formTestEmw: "Form Test/EMW", lastBopPressTest: "Last BOP Press Test", pumpRate: "Pump Rate (gpm)", pumpPress: "Pump Press (psi)", stringWeightUpDown: "String Wt Up/Dn", torqueOnBottom: "Torque On Btm",
-      mudEngineer: "Mud Engineer", sampleFrom: "Sample From", mudType: "Mud Type", mudTimeMd: "Time / MD", mudTime: "Mud Time", mudMd: "Mud MD", mudDensity: "Density (ppg)", mudTemperature: "Mud Temp", rheologyTemp: "Rheology Temp", viscosity: "Viscosity", pvYp: "PV / YP", pv: "PV", yp: "YP", gels: "Gels 10s/10m/30m", gel10s: "Gel 10s", gel10m: "Gel 10m", gel30m: "Gel 30m", apiWl: "API WL", oilWater: "Oil / Water", oilPercent: "Oil (%)", waterPercent: "Water (%)", sand: "Sand (%)", ecd: "ECD", mudComments: "Mud Comments",
-      bitNo: "Bit No", bitSize: "Bit Size", bitManufacturer: "Manufacturer", bitSerial: "Serial No", bhaNo: "BHA No", bhaMdIn: "MD In", bhaMdOut: "MD Out", bhaTotalLength: "Total Length (ft)", safetyIncident: "Safety Incident?", environmentIncident: "Environ Incident?", daysSinceRi: "Days since Last RI", daysSinceLta: "Days since Last LTA", incidentComments: "Incident Comments", otherRemarks: "Other Remarks",
-      description: "Description", operationStartDate: "Operation Start", workoverNo: "WO No", afeCost: "AFP Cost", dailyCost: "Daily Cost", cumulativeCost: "Cumulative Cost", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Engineer", pamEngineer: "PAM Engineer", geologist: "Geologist", totalPersonnel: "Total Personnel", safetyComments: "Safety Comments", groundElev: "Ground Elev", afeMdDays: "AFE MD/Days", environmentIncident: "Environmental Incident", daysSinceRi: "Days since RI", daysSinceLta: "Days since LTA"
+      currentOps: "当前作业", summary24h: "24 小时总结", forecast24h: "未来 24 小时计划", lastCasing: "上一层套管", lastCasingSize: "上一层套管尺寸", lastCasingDepth: "上一层套管深度", nextCasing: "下一层套管", nextCasingSize: "下一层套管尺寸", nextCasingDepth: "下一层套管深度", formTestEmw: "地层测试 / EMW", lastBopPressTest: "最近一次 BOP 试压", pumpRate: "泵排量 (gpm)", pumpPress: "泵压 (psi)", stringWeightUpDown: "钻柱上提/下放重量", torqueOnBottom: "井底扭矩",
+      mudEngineer: "泥浆工程师", sampleFrom: "取样位置", mudType: "泥浆类型", mudTimeMd: "时间 / MD", mudTime: "泥浆取样时间", mudMd: "泥浆取样 MD", mudDensity: "密度 (ppg)", mudTemperature: "泥浆温度", rheologyTemp: "流变测试温度", viscosity: "黏度", pvYp: "PV / YP", pv: "塑性黏度 PV", yp: "动切力 YP", gels: "静切力 10s/10m/30m", gel10s: "10 秒静切力", gel10m: "10 分钟静切力", gel30m: "30 分钟静切力", apiWl: "API 失水", oilWater: "油 / 水", oilPercent: "含油量 (%)", waterPercent: "含水量 (%)", sand: "含砂量 (%)", ecd: "当量循环密度 ECD", mudComments: "泥浆备注",
+      bitNo: "钻头编号", bitSize: "钻头尺寸", bitManufacturer: "制造商", bitSerial: "序列号", bhaNo: "BHA 编号", bhaMdIn: "入井 MD", bhaMdOut: "出井 MD", bhaTotalLength: "总长度 (ft)", safetyIncident: "是否发生安全事故？", environmentIncident: "是否发生环境事故？", daysSinceRi: "距上次 RI 天数", daysSinceLta: "距上次 LTA 天数", incidentComments: "事故说明", otherRemarks: "其他备注",
+      description: "说明", operationStartDate: "作业开始日期", workoverNo: "修井编号", afeCost: "AFP 成本", dailyCost: "当日成本", cumulativeCost: "累计成本", supervisor1: "监督 1", supervisor2: "监督 2", engineer: "工程师", pamEngineer: "PAM 工程师", geologist: "地质师", totalPersonnel: "现场总人数", safetyComments: "安全备注", groundElev: "地面海拔", afeMdDays: "AFE 设计井深/天数"
     },
     rules: [
       "<strong>必填：</strong>Date、Report No、Wellbore、Rig、Current Ops、24-Hr Summary、Mud Type、Today's MD。",
@@ -87,8 +87,8 @@ const i18n = {
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
-      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationReady: "Translation preview is ready.", translationFailed: "Translation failed. Check that the local translation service is running.", translationPreviewNotice: "Translation is view-only. Switch back to Original before editing or saving.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
-      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
+      importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationRunningShort: "Translating", translationReady: "Report language switched.", translationFailed: "Translation data is not available. Check the local model service or translation task status.", translationPreviewNotice: "Database translation is shown read-only. Switch back to Original to edit the source report.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Download Excel DB", backRecords: "Back to Records", databaseSaved: "Saved to the Excel database.", databaseSaveFailed: "Failed to save the Excel database.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
+      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", failed: "Failed", warningStatus: "Warnings", pending: "Pending", translationQueuedStatus: "Translation queued", translationRunningStatus: "Translating", translationDoneStatus: "Translation done", translationFailedStatus: "Translation failed", translationNotReady: "Translation is not complete yet. Language switching is available after completion.", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
       metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness", metricMoveDrillingDays: "Move / Drilling",
       analyticsKicker: "Analytics", analyticsProductionScope: "Based on daily report data saved in the Excel library", analyticsNptScope: "Based on daily report data saved in the Excel library; grouped by report OP Code / OP Sub", search: "Search", reset: "Reset", wellborePlaceholder: "Enter well",
@@ -162,8 +162,8 @@ const i18n = {
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
-      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationReady: "Vista traducida lista.", translationFailed: "Falló la traducción. Verifique que el servicio local esté iniciado.", translationPreviewNotice: "La traducción es solo lectura. Vuelva a Original para editar o guardar.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
-      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
+      importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationRunningShort: "Traduciendo", translationReady: "Idioma del reporte cambiado.", translationFailed: "Los datos traducidos no están disponibles. Revise el modelo local o el estado de la tarea.", translationPreviewNotice: "Se muestra la traducción de base de datos en modo lectura. Vuelva a Original para editar el reporte fuente.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Descargar Excel", backRecords: "Volver a registros", databaseSaved: "Guardado en la base Excel.", databaseSaveFailed: "No se pudo guardar la base Excel.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
+      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", translationQueuedStatus: "Traducción en cola", translationRunningStatus: "Traduciendo", translationDoneStatus: "Traducción completa", translationFailedStatus: "Traducción falló", translationNotReady: "La traducción aún no está completa. El cambio de idioma estará disponible al finalizar.", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
       metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte", metricMoveDrillingDays: "Movilización / Perforación",
       analyticsKicker: "Panel de Datos", analyticsProductionScope: "Basado en reportes diarios guardados en la biblioteca Excel", analyticsNptScope: "Basado en reportes diarios guardados en la biblioteca Excel; agrupado por código y subcódigo de operación", search: "Consultar", reset: "Restablecer", wellborePlaceholder: "Ingrese pozo",
@@ -261,6 +261,7 @@ let currentLanguage = ["zh", "en", "es"].includes(storedLanguage) ? storedLangua
 let reportContentLanguageMode = "original";
 let activeMenuTarget = "drilling-daily";
 let drillingSourceFileName = "";
+let reportTranslationBusy = { reportType: "", language: "" };
 const MANUAL_WELLS_STORAGE_KEY = "drillingReportManualWellProfiles";
 const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" };
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
@@ -279,6 +280,7 @@ const recordState = {
   workover: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
   move: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" }
 };
+const translationPollTimers = { drilling: null, completion: null, workover: null, move: null };
 const serverWarnings = { drilling: [], completion: [], workover: [], move: [] };
 const wellStatsCache = {};
 const analyticsState = {
@@ -450,6 +452,7 @@ function setReportMode(reportType, mode) {
     el.hidden = mode !== "detail" || (el.matches("[data-save-report]") && !frontCan("save"));
   });
   applyFrontPermissions();
+  syncLanguageButtons();
 }
 
 function showReportRecords(reportType) {
@@ -519,7 +522,7 @@ function applyFrontPermissions() {
   });
   document.querySelectorAll("[data-save-report]").forEach((el) => {
     el.hidden = el.hidden || !canSave;
-    el.disabled = !canSave || el.disabled;
+    el.disabled = !canSave;
   });
   document.querySelectorAll(".download-link,[data-analytics-export]").forEach((el) => {
     el.hidden = !canExport;
@@ -555,6 +558,7 @@ function rememberRecord(reportType, payload = {}) {
     const sourceLabel = document.querySelector("#drillingSourceFile");
     if (sourceLabel) sourceLabel.textContent = source ? `${source}${suffix}` : ui("sourceFileEmpty");
   }
+  syncLanguageButtons();
 }
 
 function truthy(value) {
@@ -675,30 +679,105 @@ function applyLanguage(language) {
 
 function syncLanguageButtons() {
   document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.lang === reportContentLanguageMode);
+    const reportType = activeReportType(button);
+    const language = button.dataset.lang;
+    const isLoading = reportTranslationBusy.language
+      && language === reportTranslationBusy.language
+      && (!reportTranslationBusy.reportType || reportType === reportTranslationBusy.reportType);
+    const disabledForTranslation = language !== "original" && reportType && !canSwitchReportTranslation(reportType);
+    button.textContent = isLoading ? ui("translationRunningShort") : languageButtonLabel(language);
+    button.classList.toggle("active", language === reportContentLanguageMode);
+    button.classList.toggle("is-loading", Boolean(isLoading));
+    button.disabled = Boolean(reportTranslationBusy.language) || disabledForTranslation;
+    button.title = disabledForTranslation ? ui("translationNotReady") : "";
+    button.setAttribute("aria-busy", isLoading ? "true" : "false");
   });
 }
 
-async function handleLanguageChoice(language) {
+async function handleLanguageChoice(language, sourceButton = null) {
+  if (reportTranslationBusy.language) return;
+  const reportType = activeReportType(sourceButton);
   if (language === "original") {
-    restoreActiveReportOriginal();
+    if (reportType) restoreReportOriginal(reportType);
+    else restoreActiveReportOriginal();
     reportContentLanguageMode = "original";
     syncLanguageButtons();
     return;
   }
   if (!["zh", "en", "es"].includes(language)) return;
-  reportContentLanguageMode = language;
-  applyLanguage(language);
-  await translateVisibleReportContent(language);
+  if (reportType && !canSwitchReportTranslation(reportType)) {
+    showToast(ui("translationNotReady"));
+    return;
+  }
+  setReportTranslationBusy(reportType, language);
+  try {
+    applyLanguage(language);
+    const translated = await translateVisibleReportContent(language, reportType);
+    if (translated) {
+      reportContentLanguageMode = language;
+    }
+  } finally {
+    clearReportTranslationBusy();
+  }
+}
+
+function setReportTranslationBusy(reportType, language) {
+  reportTranslationBusy = { reportType: reportType || activeReportType() || "", language };
   syncLanguageButtons();
 }
 
-function activeReportType() {
+function clearReportTranslationBusy() {
+  reportTranslationBusy = { reportType: "", language: "" };
+  syncLanguageButtons();
+}
+
+function languageButtonLabel(language) {
+  if (language === "original") return ui("originalReport");
+  if (language === "zh") return "中";
+  if (language === "en") return "EN";
+  if (language === "es") return "ES";
+  return language || "";
+}
+
+function canSwitchReportTranslation(reportType) {
+  const record = currentReportRecord(reportType);
+  if (!record) return false;
+  return String(record.translation_status || "").toUpperCase() === "COMPLETED";
+}
+
+function currentReportRecord(reportType) {
+  const recordId = currentRecordIds[reportType];
+  if (!recordId) return null;
+  return recordState[reportType]?.records?.find((record) => record.record_id === recordId) || null;
+}
+
+function activeReportType(sourceEl = null) {
+  const pageFromSource = sourceEl?.closest?.(".module-page");
+  if (pageFromSource && !pageFromSource.hidden && pageFromSource.classList.contains("active")) {
+    const sourceReportType = reportTypeFromPage(pageFromSource);
+    if (sourceReportType && isReportDetailVisible(sourceReportType)) return sourceReportType;
+  }
   return ["drilling", "completion", "workover", "move"].find((reportType) => {
     const page = reportPage(reportType);
     if (!page || page.hidden || !page.classList.contains("active")) return false;
-    return [...document.querySelectorAll(`[data-detail-view="${reportType}"]`)].some((el) => !el.hidden);
+    return isReportDetailVisible(reportType);
   }) || "";
+}
+
+function reportTypeFromPage(page) {
+  const ids = {
+    drillingDailyPage: "drilling",
+    completionDailyPage: "completion",
+    workoverDailyPage: "workover",
+    moveDailyPage: "move",
+  };
+  return ids[page?.id] || "";
+}
+
+function isReportDetailVisible(reportType) {
+  const page = reportPage(reportType);
+  if (!page || page.hidden || !page.classList.contains("active")) return false;
+  return [...page.querySelectorAll(`[data-detail-view="${reportType}"]`)].some((el) => !el.hidden && el.offsetParent !== null);
 }
 
 function reportPage(reportType) {
@@ -731,7 +810,8 @@ function setReportOriginalPayload(reportType, payload) {
 function captureOriginalReport(reportType) {
   const state = reportContentState[reportType];
   if (!state) return null;
-  if (state.mode === "original" || !state.original) {
+  if (state.mode === "original" && state.original) return clonePayload(state.original);
+  if (!state.original) {
     state.original = clonePayload(reportPayload(reportType));
     state.cache = {};
   }
@@ -762,43 +842,50 @@ function restoreReportOriginal(reportType) {
   updateSaveButton(reportType);
 }
 
-async function translateVisibleReportContent(targetLanguage) {
-  const reportType = activeReportType();
-  if (!reportType) return;
+async function translateVisibleReportContent(targetLanguage, explicitReportType = "") {
+  const reportType = explicitReportType || activeReportType();
+  if (!reportType) {
+    showToast(ui("translationFailed"));
+    return false;
+  }
   const sourcePayload = captureOriginalReport(reportType);
-  if (!sourcePayload) return;
+  if (!sourcePayload) return false;
   const state = reportContentState[reportType];
-  const cacheKey = translationCacheKey(reportType, sourcePayload, targetLanguage);
   try {
     showToast(ui("translationRunning"));
-    let result = state.cache[cacheKey];
-    if (!result) {
-      const response = await fetch("/api/translate-report", {
+    let result = state.cache[targetLanguage];
+    if (!result && currentRecordIds[reportType]) {
+      const response = await fetch("/api/load-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target_language: targetLanguage, payload: sourcePayload }),
+        body: JSON.stringify({ record_id: currentRecordIds[reportType], lang: apiLanguage(targetLanguage) }),
       });
       result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Translation failed");
-      state.cache[cacheKey] = result;
+      if (response.ok) {
+        state.cache[targetLanguage] = result;
+      } else {
+        throw new Error(result.error || "Load failed");
+      }
     }
-    renderReportPayload(reportType, result.translated_payload || sourcePayload);
+    if (!result) throw new Error(ui("translationNotReady"));
+    renderReportPayload(reportType, result.translated_payload || result || sourcePayload);
     state.mode = "translated";
     state.targetLanguage = targetLanguage;
     state.lastResult = result;
     applyFrontPermissions();
+    updateSaveButton(reportType);
     showToast(ui("translationReady"));
+    return true;
   } catch (error) {
     console.error(error);
     const detail = error?.message ? `：${error.message}` : "";
     showToast(`${ui("translationFailed")}${detail}`);
+    return false;
   }
 }
 
-function translationCacheKey(reportType, payload, targetLanguage) {
-  const metadata = payload?.metadata || {};
-  const identity = metadata.record_id || metadata.source_file || "";
-  return `${reportType}|${identity}|${targetLanguage}|${JSON.stringify(payload)}`;
+function apiLanguage(language) {
+  return language === "zh" ? "zh-CN" : language;
 }
 
 function renderReportPayload(reportType, payload = {}) {
@@ -851,9 +938,6 @@ function applyTranslationPreviewState(reportType = "") {
     page.querySelectorAll(".report-form input,.report-form textarea,.report-form select,.report-form button,[data-add-row],.row-delete").forEach((el) => {
       el.disabled = true;
       if (el.matches("[data-add-row],.row-delete")) el.hidden = true;
-    });
-    document.querySelectorAll(`[data-save-report="${type}"]`).forEach((el) => {
-      el.disabled = true;
     });
   });
 }
@@ -1018,12 +1102,28 @@ async function refreshRecords(reportType) {
     recordState[reportType].records.forEach((record) => {
       if (truthy(record.locked)) lockedRecordIds.add(record.record_id);
     });
+    scheduleTranslationStatusRefresh(reportType);
   } catch (error) {
     console.error(error);
     recordState[reportType].records = [];
   }
   applyInitialWellSelection(reportType);
   renderRecordDashboard(reportType);
+  syncLanguageButtons();
+}
+
+function scheduleTranslationStatusRefresh(reportType) {
+  if (translationPollTimers[reportType]) {
+    clearTimeout(translationPollTimers[reportType]);
+    translationPollTimers[reportType] = null;
+  }
+  const hasRunningTranslation = (recordState[reportType]?.records || []).some((record) => {
+    const status = String(record.translation_status || "").toUpperCase();
+    return ["QUEUED", "IN_PROGRESS"].includes(status);
+  });
+  if (hasRunningTranslation) {
+    translationPollTimers[reportType] = setTimeout(() => refreshRecords(reportType), 5000);
+  }
 }
 
 function invalidateWellStats(reportType) {
@@ -1712,10 +1812,45 @@ function closeSourcePdf() {
 
 function recordStatusMarkup(record) {
   const warnings = record.validation_warnings || "";
-  if (record.validation_status === "warning") {
-    return `<span class="status-pill warning" title="${escapeHtml(warnings)}">${ui("warningStatus")}</span>`;
+  const validationMarkup = record.validation_status === "warning"
+    ? `<span class="status-pill warning" title="${escapeHtml(warnings)}">${ui("warningStatus")}</span>`
+    : `<span class="status-pill uploaded">${ui("uploaded")}</span>`;
+  return `<div class="record-status-stack">${validationMarkup}${translationStatusMarkup(record)}</div>`;
+}
+
+function translationStatusMarkup(record) {
+  const status = String(record.translation_status || "").toUpperCase();
+  const progress = translationProgress(record);
+  const error = record.translation_error || "";
+  if (status === "COMPLETED" || status === "NOT_REQUIRED") {
+    return `<span class="status-pill translated">${ui("translationDoneStatus")}</span>`;
   }
-  return `<span class="status-pill uploaded">${ui("uploaded")}</span>`;
+  if (status === "FAILED") {
+    return `<span class="status-pill failed" title="${escapeHtml(error)}">${ui("translationFailedStatus")} ${progress}%</span>`;
+  }
+  if (["QUEUED", "PENDING"].includes(status)) {
+    return `<span class="status-pill queued">${ui("translationQueuedStatus")} ${progress}%</span>`;
+  }
+  if (status === "IN_PROGRESS") {
+    return `
+      <div class="progress-status translation-progress">
+        <span>${ui("translationRunningStatus")} ${progress}%</span>
+        <div class="progress-track"><i style="width:${Math.max(4, Math.min(100, progress))}%"></i></div>
+      </div>
+    `;
+  }
+  if (record.validation_status === "warning") {
+    return `<span class="status-pill queued">${ui("translationQueuedStatus")} 0%</span>`;
+  }
+  return `<span class="status-pill queued">${ui("translationQueuedStatus")} 0%</span>`;
+}
+
+function translationProgress(record) {
+  const value = Number(record.translation_progress);
+  if (Number.isFinite(value)) return Math.max(0, Math.min(100, Math.round(value)));
+  const status = String(record.translation_status || "").toUpperCase();
+  if (status === "COMPLETED" || status === "NOT_REQUIRED") return 100;
+  return 0;
 }
 
 function jobStatusMarkup(job) {
@@ -3984,12 +4119,10 @@ function updateSaveButton(reportType) {
   if (!reportType) return;
   const button = document.querySelector(`[data-save-report="${reportType}"]`);
   if (!button) return;
-  if (reportContentState[reportType]?.mode === "translated") {
-    button.disabled = true;
-    return;
-  }
+  const translatedMode = reportContentState[reportType]?.mode === "translated";
+  button.textContent = ui("saveDatabase");
   const currentSignature = reportSignature(reportType);
-  button.disabled = isCurrentReportLocked(reportType) || !currentSignature || currentSignature === savedReportSignatures[reportType];
+  button.disabled = translatedMode || isCurrentReportLocked(reportType) || !currentSignature || currentSignature === savedReportSignatures[reportType];
 }
 
 function updateAllSaveButtons() {
@@ -4004,18 +4137,15 @@ function tableReportType(tableId) {
 }
 
 async function saveCurrentReport(reportType) {
-  if (reportContentState[reportType]?.mode === "translated") {
-    showToast(ui("translationPreviewNotice"));
-    return;
-  }
-  if (isCurrentReportLocked(reportType)) {
+  const translatedMode = reportContentState[reportType]?.mode === "translated";
+  if (!translatedMode && isCurrentReportLocked(reportType)) {
     showToast("该日报已被NPT确认锁定，不能再修改保存。");
     return;
   }
   updateSaveButton(reportType);
   const button = document.querySelector(`[data-save-report="${reportType}"]`);
   if (button?.disabled) return;
-  const payload = reportPayload(reportType);
+  const payload = payloadForSave(reportType);
   try {
     const response = await fetch("/api/save-report", {
       method: "POST",
@@ -4033,6 +4163,11 @@ async function saveCurrentReport(reportType) {
     console.error(error);
     showToast(ui("recordLoadFailed"));
   }
+}
+
+function payloadForSave(reportType) {
+  const payload = reportPayload(reportType);
+  return payload;
 }
 
 async function openRecordDetail(reportType, recordId) {
@@ -4952,7 +5087,7 @@ document.querySelectorAll(".menu-group-toggle").forEach((button) => {
 });
 
 document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
-  button.addEventListener("click", () => handleLanguageChoice(button.dataset.lang));
+  button.addEventListener("click", () => handleLanguageChoice(button.dataset.lang, button));
 });
 
 document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {

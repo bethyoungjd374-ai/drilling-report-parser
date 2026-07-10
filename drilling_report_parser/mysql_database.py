@@ -23,6 +23,11 @@ BASE_RECORD_COLUMNS = [
     "wellbore",
     "rig",
     "status",
+    "source_language",
+    "translation_status",
+    "translation_progress",
+    "translation_error",
+    "translation_version",
     "validation_status",
     "validation_warnings",
     "locked",
@@ -48,7 +53,25 @@ def initialize_database() -> None:
         with connection.cursor() as cursor:
             for statement in statements:
                 cursor.execute(statement)
+            _ensure_report_record_columns(cursor)
         connection.commit()
+
+
+def _ensure_report_record_columns(cursor: Any) -> None:
+    cursor.execute("SHOW COLUMNS FROM report_records")
+    columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
+    migrations = (
+        ("source_language", "VARCHAR(16) NOT NULL DEFAULT '' AFTER status"),
+        ("translation_status", "VARCHAR(64) NOT NULL DEFAULT '' AFTER source_language"),
+        ("translation_progress", "VARCHAR(16) NOT NULL DEFAULT '' AFTER translation_status"),
+        ("translation_error", "TEXT NULL AFTER translation_progress"),
+        ("translation_version", "VARCHAR(64) NOT NULL DEFAULT '' AFTER translation_error"),
+    )
+    for column, definition in migrations:
+        if column in columns:
+            continue
+        cursor.execute(f"ALTER TABLE report_records ADD COLUMN {column} {definition}")
+        columns.add(column)
 
 
 def save_report_payload(
@@ -97,6 +120,7 @@ def save_report_payload(
                         """,
                         (record_id, module_name, row_no, _json_dumps(row)),
                     )
+            cursor.execute("DELETE FROM translation_content WHERE record_id=%s", (record_id,))
         connection.commit()
     return {"record_id": record_id, "database_path": "mysql", "updated_at": updated_at}
 
@@ -118,6 +142,11 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
                     "report_type": report_type,
                     "source_file": record.get("source_file", ""),
                     "parser": record.get("parser", ""),
+                    "source_language": record.get("source_language", ""),
+                    "translation_status": record.get("translation_status", ""),
+                    "translation_progress": record.get("translation_progress", ""),
+                    "translation_error": record.get("translation_error", ""),
+                    "translation_version": record.get("translation_version", ""),
                     "locked": record.get("locked", ""),
                     "confirmation_status": record.get("confirmation_status", ""),
                     "confirmed_at": record.get("confirmed_at", ""),
@@ -137,6 +166,9 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
         module_name = str(row.get("module_name", "") or "")
         if module_name in payload:
             payload[module_name].append(_json_loads(row.get("row_json"), {}))
+    translation_content = load_translation_content(None, record_id)
+    if translation_content:
+        payload["translation_content"] = translation_content
     return payload
 
 
@@ -148,6 +180,114 @@ def delete_report_payload(database_path: str | Path | None, record_id: str) -> b
             deleted = cursor.rowcount > 0
         connection.commit()
     return deleted
+
+
+def save_translation_content(database_path: str | Path | None, record_id: str, rows: list[dict[str, Any]]) -> None:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM translation_content WHERE record_id=%s", (record_id,))
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                cursor.execute(
+                    """
+                    INSERT INTO translation_content (
+                      record_id, entity_type, entity_id, field_code, source_language, target_language,
+                      source_text, translated_text, source_hash, model_config_id, prompt_version,
+                      translation_status, error_message, is_manual_modified, created_at, updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                      source_text=VALUES(source_text),
+                      translated_text=VALUES(translated_text),
+                      source_hash=VALUES(source_hash),
+                      model_config_id=VALUES(model_config_id),
+                      prompt_version=VALUES(prompt_version),
+                      translation_status=VALUES(translation_status),
+                      error_message=VALUES(error_message),
+                      is_manual_modified=VALUES(is_manual_modified),
+                      updated_at=VALUES(updated_at)
+                    """,
+                    (
+                        record_id,
+                        _text(row.get("entity_type")),
+                        _text(row.get("entity_id")),
+                        _text(row.get("field_code")),
+                        _text(row.get("source_language")),
+                        _text(row.get("target_language")),
+                        _text(row.get("source_text")),
+                        _text(row.get("translated_text")),
+                        _text(row.get("source_hash")),
+                        _text(row.get("model_config_id")),
+                        _text(row.get("prompt_version")),
+                        _text(row.get("translation_status")),
+                        _text(row.get("error_message")),
+                        _text(row.get("is_manual_modified")),
+                        _text(row.get("created_at")),
+                        _text(row.get("updated_at")),
+                    ),
+                )
+        connection.commit()
+
+
+def load_translation_content(database_path: str | Path | None, record_id: str) -> list[dict[str, str]]:
+    del database_path
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM translation_content WHERE record_id=%s", (record_id,))
+            rows = cursor.fetchall()
+    return [{key: _text(value) for key, value in row.items() if key != "mysql_updated_at"} for row in rows]
+
+
+def clear_translation_content(database_path: str | Path | None, record_id: str = "") -> None:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            if record_id:
+                cursor.execute("DELETE FROM translation_content WHERE record_id=%s", (record_id,))
+            else:
+                cursor.execute("DELETE FROM translation_content")
+            connection.commit()
+
+
+def update_record_translation_status(
+    database_path: str | Path | None,
+    record_id: str,
+    *,
+    status: str,
+    progress: int | str = "",
+    error: str = "",
+    version: str = "",
+) -> None:
+    del database_path
+    if not record_id:
+        return
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            if version:
+                cursor.execute(
+                    """
+                    UPDATE report_records
+                    SET translation_status=%s, translation_progress=%s, translation_error=%s,
+                        translation_version=%s, updated_at=%s
+                    WHERE record_id=%s
+                    """,
+                    (_text(status), _text(progress), _text(error)[:500], _text(version), _now(), record_id),
+                )
+            else:
+                cursor.execute(
+                    """
+                    UPDATE report_records
+                    SET translation_status=%s, translation_progress=%s, translation_error=%s, updated_at=%s
+                    WHERE record_id=%s
+                    """,
+                    (_text(status), _text(progress), _text(error)[:500], _now(), record_id),
+                )
+            connection.commit()
 
 
 def list_records(
@@ -240,6 +380,11 @@ def _upsert_record(cursor: Any, record: dict[str, str]) -> None:
         "wellbore",
         "rig",
         "status",
+        "source_language",
+        "translation_status",
+        "translation_progress",
+        "translation_error",
+        "translation_version",
         "validation_status",
         "validation_warnings",
         "locked",
@@ -281,6 +426,11 @@ def _record_from_payload(
         "wellbore": fields.get("wellbore", ""),
         "rig": fields.get("rig", ""),
         "status": metadata.get("status", "parsed"),
+        "source_language": metadata.get("source_language", ""),
+        "translation_status": metadata.get("translation_status", ""),
+        "translation_progress": metadata.get("translation_progress", ""),
+        "translation_error": metadata.get("translation_error", ""),
+        "translation_version": metadata.get("translation_version", ""),
         "validation_status": metadata.get("validation_status", "ok"),
         "validation_warnings": metadata.get("validation_warnings", ""),
         "locked": metadata.get("locked", ""),
@@ -306,6 +456,11 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
         "wellbore": _text(row.get("wellbore")),
         "rig": _text(row.get("rig")),
         "status": _text(row.get("status")),
+        "source_language": _text(row.get("source_language")),
+        "translation_status": _text(row.get("translation_status")),
+        "translation_progress": _text(row.get("translation_progress")),
+        "translation_error": _text(row.get("translation_error")),
+        "translation_version": _text(row.get("translation_version")),
         "validation_status": _text(row.get("validation_status")),
         "validation_warnings": _text(row.get("validation_warnings")),
         "locked": _text(row.get("locked")),

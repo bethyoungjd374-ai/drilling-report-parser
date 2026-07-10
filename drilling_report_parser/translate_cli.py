@@ -22,19 +22,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--engine",
         default=None,
-        choices=["libretranslate", "noop"],
-        help="Local translation engine adapter. Defaults to DRP_TRANSLATION_ENGINE or libretranslate.",
+        choices=["ollama", "noop"],
+        help="Local translation engine adapter. Defaults to DRP_TRANSLATION_ENGINE or ollama.",
     )
     parser.add_argument(
         "--target-language",
         default=None,
-        choices=["zh", "en", "es"],
-        help="Target language. Defaults to DRP_TRANSLATION_TARGET or zh.",
+        choices=["zh-CN", "zh", "en", "es"],
+        help="Target language. Defaults to DRP_TRANSLATION_TARGET or zh-CN.",
     )
     parser.add_argument(
-        "--libretranslate-url",
+        "--ollama-url",
         default=None,
-        help="Base URL for local LibreTranslate, for example http://127.0.0.1:5000.",
+        help="Base URL for local Ollama, for example http://127.0.0.1:11434.",
+    )
+    parser.add_argument(
+        "--ollama-model",
+        default=None,
+        help="Ollama model name, for example qwen3.5:9b.",
     )
     parser.add_argument(
         "--terms",
@@ -55,8 +60,10 @@ def main() -> None:
         config = _replace_config(config, engine=args.engine)
     if args.target_language:
         config = _replace_config(config, target_language=args.target_language)
-    if args.libretranslate_url:
-        config = _replace_config(config, libretranslate_url=args.libretranslate_url.rstrip("/"))
+    if args.ollama_url:
+        config = _replace_config(config, ollama_url=args.ollama_url.rstrip("/"))
+    if args.ollama_model:
+        config = _replace_config(config, ollama_model=args.ollama_model.strip())
     if args.terms:
         config = _replace_config(config, terms_path=Path(args.terms).expanduser().resolve())
 
@@ -90,9 +97,11 @@ def _replace_config(config: TranslationConfig, **updates: object) -> Translation
     values = {
         "engine": config.engine,
         "target_language": config.target_language,
+        "target_languages": config.target_languages,
         "terms_path": config.terms_path,
-        "libretranslate_url": config.libretranslate_url,
-        "libretranslate_api_key": config.libretranslate_api_key,
+        "ollama_url": config.ollama_url,
+        "ollama_model": config.ollama_model,
+        "ollama_temperature": config.ollama_temperature,
         "timeout_seconds": config.timeout_seconds,
     }
     values.update(updates)

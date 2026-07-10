@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
 import re
+import threading
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +14,16 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 
 REPORT_TYPES = {"drilling", "completion", "workover", "move"}
+_WORKBOOK_LOCK = threading.RLock()
+
+
+def _with_workbook_lock(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with _WORKBOOK_LOCK:
+            return func(*args, **kwargs)
+
+    return wrapper
 
 BASE_COLUMNS = [
     "record_id",
@@ -22,6 +35,11 @@ BASE_COLUMNS = [
     "wellbore",
     "rig",
     "status",
+    "source_language",
+    "translation_status",
+    "translation_progress",
+    "translation_error",
+    "translation_version",
     "validation_status",
     "validation_warnings",
     "locked",
@@ -165,6 +183,25 @@ ROW_COLUMNS = {
     "mud_products": ["product", "unit", "received", "used", "returned", "ending"],
 }
 
+TRANSLATION_CONTENT_COLUMNS = [
+    "record_id",
+    "entity_type",
+    "entity_id",
+    "field_code",
+    "source_language",
+    "target_language",
+    "source_text",
+    "translated_text",
+    "source_hash",
+    "model_config_id",
+    "prompt_version",
+    "translation_status",
+    "error_message",
+    "is_manual_modified",
+    "created_at",
+    "updated_at",
+]
+
 DEPRECATED_ROW_COLUMNS = {
     "operations": ["confirmation_note"],
 }
@@ -213,16 +250,18 @@ REPORT_TABLES = {
 }
 
 
+@_with_workbook_lock
 def initialize_database(database_path: str | Path) -> Path:
     path = Path(database_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook = _load_or_create_workbook(path)
     _ensure_schema(workbook)
     _format_workbook(workbook)
-    workbook.save(path)
+    _save_workbook(workbook, path)
     return path
 
 
+@_with_workbook_lock
 def save_report_payload(
     database_path: str | Path,
     payload: dict[str, Any],
@@ -262,6 +301,11 @@ def save_report_payload(
             "wellbore": fields.get("wellbore", ""),
             "rig": fields.get("rig", ""),
             "status": metadata.get("status", "parsed"),
+            "source_language": metadata.get("source_language", ""),
+            "translation_status": metadata.get("translation_status", ""),
+            "translation_progress": metadata.get("translation_progress", ""),
+            "translation_error": metadata.get("translation_error", ""),
+            "translation_version": metadata.get("translation_version", ""),
             "validation_status": metadata.get("validation_status", "ok"),
             "validation_warnings": metadata.get("validation_warnings", ""),
             "locked": metadata.get("locked", existing.get("locked", "")),
@@ -282,10 +326,11 @@ def save_report_payload(
             _append_row(workbook[sheet_name], columns, {"record_id": record_id, "row_no": row_no, **(row or {})})
 
     _format_workbook(workbook)
-    workbook.save(path)
+    _save_workbook(workbook, path)
     return {"record_id": record_id, "database_path": str(path), "updated_at": now}
 
 
+@_with_workbook_lock
 def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, Any]:
     path = Path(database_path)
     if not path.exists():
@@ -303,6 +348,11 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
             "report_type": report_type,
             "source_file": record.get("source_file", ""),
             "parser": record.get("parser", ""),
+            "source_language": record.get("source_language", ""),
+            "translation_status": record.get("translation_status", ""),
+            "translation_progress": record.get("translation_progress", ""),
+            "translation_error": record.get("translation_error", ""),
+            "translation_version": record.get("translation_version", ""),
             "locked": record.get("locked", ""),
             "confirmation_status": record.get("confirmation_status", ""),
             "confirmed_at": record.get("confirmed_at", ""),
@@ -313,9 +363,13 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
     }
     for module_name, sheet_name in table_info["multi"].items():
         payload[module_name] = _matching_rows(workbook[sheet_name], record_id)
+    translation_content = load_translation_content(path, record_id)
+    if translation_content:
+        payload["translation_content"] = translation_content
     return payload
 
 
+@_with_workbook_lock
 def delete_report_payload(database_path: str | Path, record_id: str) -> bool:
     path = Path(database_path)
     if not path.exists():
@@ -328,10 +382,92 @@ def delete_report_payload(database_path: str | Path, record_id: str) -> bool:
     report_type = _normalize_report_type(str(record.get("report_type", "")))
     _replace_record_rows(workbook, report_type, record_id)
     _format_workbook(workbook)
-    workbook.save(path)
+    _save_workbook(workbook, path)
     return True
 
 
+@_with_workbook_lock
+def save_translation_content(database_path: str | Path, record_id: str, rows: list[dict[str, Any]]) -> None:
+    path = Path(database_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook = _load_or_create_workbook(path)
+    _ensure_schema(workbook)
+    worksheet = workbook["translation_content"]
+    _delete_rows_by_record_id(worksheet, record_id)
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        _append_row(worksheet, TRANSLATION_CONTENT_COLUMNS, {"record_id": record_id, **row})
+    _format_workbook(workbook)
+    _save_workbook(workbook, path)
+
+
+@_with_workbook_lock
+def load_translation_content(database_path: str | Path, record_id: str) -> list[dict[str, str]]:
+    path = Path(database_path)
+    if not path.exists():
+        return []
+    workbook = load_workbook(path, read_only=True, data_only=True)
+    if "translation_content" not in workbook.sheetnames:
+        return []
+    headers = _headers(workbook["translation_content"])
+    rows: list[dict[str, str]] = []
+    for raw in workbook["translation_content"].iter_rows(min_row=2, values_only=True):
+        row = {headers[index]: _cell_value(value) for index, value in enumerate(raw) if index < len(headers)}
+        if row.get("record_id") == record_id:
+            rows.append(row)
+    return rows
+
+
+@_with_workbook_lock
+def clear_translation_content(database_path: str | Path, record_id: str = "") -> None:
+    path = Path(database_path)
+    if not path.exists():
+        return
+    workbook = load_workbook(path)
+    _ensure_schema(workbook)
+    worksheet = workbook["translation_content"]
+    if record_id:
+        _delete_rows_by_record_id(worksheet, record_id)
+    else:
+        worksheet.delete_rows(2, max(0, worksheet.max_row - 1))
+    _format_workbook(workbook)
+    _save_workbook(workbook, path)
+
+
+@_with_workbook_lock
+def update_record_translation_status(
+    database_path: str | Path,
+    record_id: str,
+    *,
+    status: str,
+    progress: int | str = "",
+    error: str = "",
+    version: str = "",
+) -> None:
+    path = Path(database_path)
+    if not path.exists() or not record_id:
+        return
+    workbook = load_workbook(path)
+    _ensure_schema(workbook)
+    worksheet = workbook["records"]
+    headers = _headers(worksheet)
+    now = _now()
+    for row_index in range(2, worksheet.max_row + 1):
+        if str(worksheet.cell(row=row_index, column=headers.index("record_id") + 1).value or "") != record_id:
+            continue
+        worksheet.cell(row=row_index, column=headers.index("translation_status") + 1, value=str(status or ""))
+        worksheet.cell(row=row_index, column=headers.index("translation_progress") + 1, value=str(progress if progress != "" else ""))
+        worksheet.cell(row=row_index, column=headers.index("translation_error") + 1, value=str(error or "")[:500])
+        if version:
+            worksheet.cell(row=row_index, column=headers.index("translation_version") + 1, value=str(version))
+        worksheet.cell(row=row_index, column=headers.index("updated_at") + 1, value=now)
+        _format_workbook(workbook)
+        _save_workbook(workbook, path)
+        return
+
+
+@_with_workbook_lock
 def list_records(database_path: str | Path) -> list[dict[str, str]]:
     path = Path(database_path)
     if not path.exists():
@@ -350,6 +486,7 @@ def list_records(database_path: str | Path) -> list[dict[str, str]]:
     return records
 
 
+@_with_workbook_lock
 def list_npt_confirmation_wells(database_path: str | Path, *, rig: str = "", wellbore: str = "", status: str = "", scope_rig: str = "") -> dict[str, Any]:
     path = Path(database_path)
     if not path.exists():
@@ -428,6 +565,7 @@ def list_npt_confirmation_wells(database_path: str | Path, *, rig: str = "", wel
     return {"items": items, "filters": {"rigs": rigs, "statuses": _npt_statuses()}}
 
 
+@_with_workbook_lock
 def load_npt_confirmation_detail(database_path: str | Path, wellbore: str, *, rig: str = "", scope_rig: str = "") -> dict[str, Any]:
     path = Path(database_path)
     if not path.exists():
@@ -489,6 +627,7 @@ def load_npt_confirmation_detail(database_path: str | Path, wellbore: str, *, ri
     return {"meta": meta, "operations": rows}
 
 
+@_with_workbook_lock
 def save_npt_confirmation(
     database_path: str | Path,
     wellbore: str,
@@ -561,8 +700,19 @@ def save_npt_confirmation(
             records_sheet.cell(row=row_index, column=record_headers.index("confirmed_at") + 1, value=now)
             records_sheet.cell(row=row_index, column=record_headers.index("confirmed_by") + 1, value=confirmed_by)
     _format_workbook(workbook)
-    workbook.save(path)
+    _save_workbook(workbook, path)
     return {"wellbore": wellbore, "updated_records": len(touched_ids), "status": "confirmed" if submit else "draft", "locked": submit, "updated_at": now}
+
+
+def _save_workbook(workbook: Workbook, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f".{path.stem}.{os.getpid()}.{threading.get_ident()}.xlsx")
+    try:
+        workbook.save(tmp_path)
+        tmp_path.replace(path)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
 
 
 def _load_or_create_workbook(path: Path) -> Workbook:
@@ -619,6 +769,9 @@ def _confirmation_group_status(item: dict[str, Any]) -> str:
 
 def _ensure_schema(workbook: Workbook) -> None:
     _ensure_sheet(workbook, "records", BASE_COLUMNS)
+    if "record_translations" in workbook.sheetnames:
+        del workbook["record_translations"]
+    _ensure_sheet(workbook, "translation_content", TRANSLATION_CONTENT_COLUMNS)
     for report_type, table_info in REPORT_TABLES.items():
         _ensure_sheet(workbook, table_info["field_sheet"], table_info["field_columns"])
         for module_name, sheet_name in table_info["multi"].items():
@@ -653,12 +806,16 @@ def _drop_columns(worksheet: Worksheet, columns: list[str]) -> None:
 
 
 def _replace_record_rows(workbook: Workbook, report_type: str, record_id: str) -> None:
-    sheets = ["records", REPORT_TABLES[report_type]["field_sheet"], *REPORT_TABLES[report_type]["multi"].values()]
+    sheets = ["records", "translation_content", REPORT_TABLES[report_type]["field_sheet"], *REPORT_TABLES[report_type]["multi"].values()]
     for sheet_name in sheets:
         worksheet = workbook[sheet_name]
-        for row_number in range(worksheet.max_row, 1, -1):
-            if str(worksheet.cell(row=row_number, column=1).value or "") == record_id:
-                worksheet.delete_rows(row_number)
+        _delete_rows_by_record_id(worksheet, record_id)
+
+
+def _delete_rows_by_record_id(worksheet: Worksheet, record_id: str) -> None:
+    for row_number in range(worksheet.max_row, 1, -1):
+        if str(worksheet.cell(row=row_number, column=1).value or "") == record_id:
+            worksheet.delete_rows(row_number)
 
 
 def _append_row(worksheet: Worksheet, columns: list[str], values: dict[str, Any]) -> None:

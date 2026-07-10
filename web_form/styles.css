@@ -731,6 +731,10 @@ h2 {
 }
 
 .language-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-width: 38px;
   height: 28px;
   border: 0;
@@ -742,10 +746,37 @@ h2 {
   cursor: pointer;
 }
 
+.language-switch button:disabled {
+  cursor: wait;
+  opacity: 0.78;
+}
+
 .language-switch button.active {
   background: var(--navy);
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(18, 53, 84, 0.18);
+}
+
+.language-switch button.is-loading {
+  min-width: 82px;
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.language-switch button.is-loading::before {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  content: "";
+  animation: language-spin 0.8s linear infinite;
+}
+
+@keyframes language-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .button {
@@ -3687,6 +3718,23 @@ body:has(#nptStatsPage.active) .workspace {
   color: var(--danger);
 }
 
+.status-pill.queued {
+  background: #eef3f8;
+  color: #5b6f82;
+}
+
+.status-pill.translated {
+  background: #e8f5ef;
+  color: #08734f;
+}
+
+.record-status-stack {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .progress-status {
   display: grid;
   gap: 5px;
@@ -3707,6 +3755,10 @@ body:has(#nptStatsPage.active) .workspace {
   height: 100%;
   border-radius: inherit;
   background: var(--blue);
+}
+
+.translation-progress {
+  min-width: 132px;
 }
 
 .link-button {

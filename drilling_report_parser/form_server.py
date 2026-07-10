@@ -5,10 +5,13 @@ import hashlib
 import hmac
 import json
 import mimetypes
+import os
 import re
 import secrets
 import shutil
+import threading
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date, datetime
 from email.parser import BytesParser
@@ -27,10 +30,19 @@ from .excel_database import (
     load_npt_confirmation_detail,
     save_npt_confirmation,
 )
-from .storage import initialize_database, list_records, load_report_payload, mysql_status, save_report_payload
+from .storage import (
+    initialize_database,
+    list_records,
+    load_report_payload,
+    load_translation_content,
+    mysql_status,
+    save_report_payload,
+    save_translation_content,
+    update_record_translation_status,
+)
 from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_report_parser import parse_pdf_daily_report
-from .translation import TermsConfig, build_translator
+from .translation import PROMPT_VERSION, TermsConfig, apply_translation_content, build_translator, detect_language, iter_payload_text_units, normalize_language
 from .workover_pdf_parser import parse_workover_pdf_daily_report
 
 
@@ -48,6 +60,8 @@ PRODUCTION_REPORT_REMARKS_PATH = ROOT / "outputs" / "production_report_remarks.j
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
+TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="drp-translation")
+TRANSLATION_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -598,10 +612,28 @@ class FormHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json_body()
             record_id = str(payload.get("record_id", "")).strip()
+            target_language = normalize_language(payload.get("lang", "original"))
             if not record_id:
                 self._send_json({"error": "record_id is required."}, status=400)
                 return
-            self._send_json(load_report_payload(DATABASE_PATH, record_id))
+            report_payload = load_report_payload(DATABASE_PATH, record_id)
+            if target_language in {"zh-CN", "en", "es"}:
+                rows = report_payload.get("translation_content")
+                if not isinstance(rows, list):
+                    rows = load_translation_content(DATABASE_PATH, record_id)
+                source_language = normalize_language(report_payload.get("metadata", {}).get("source_language", "") if isinstance(report_payload.get("metadata"), dict) else "")
+                has_target_rows = any(
+                    normalize_language(row.get("target_language", "")) == target_language
+                    and str(row.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"}
+                    for row in rows
+                    if isinstance(row, dict)
+                )
+                if not has_target_rows and source_language != target_language:
+                    self._send_json({"error": "Translation is not ready.", "translation_status": "PENDING"}, status=409)
+                    return
+                report_payload = apply_translation_content(report_payload, rows, target_language)
+                report_payload.setdefault("metadata", {})["display_language"] = target_language
+            self._send_json(report_payload)
         except KeyError:
             self._send_json({"error": "Record not found."}, status=404)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
@@ -610,16 +642,23 @@ class FormHandler(BaseHTTPRequestHandler):
     def _translate_report(self) -> None:
         try:
             request_payload = self._read_json_body()
-            target_language = str(request_payload.get("target_language", "zh") or "zh").strip().lower()
-            if target_language not in {"zh", "en", "es"}:
-                self._send_json({"error": "target_language must be zh, en or es."}, status=400)
+            target_language = normalize_language(request_payload.get("target_language", "zh-CN"))
+            if target_language not in {"zh-CN", "en", "es"}:
+                self._send_json({"error": "target_language must be zh-CN, en or es."}, status=400)
                 return
             report_payload = request_payload.get("payload", {})
             if not isinstance(report_payload, dict):
                 self._send_json({"error": "Invalid report payload."}, status=400)
                 return
             terms = TermsConfig.from_data(_load_translation_terms_config())
-            result = build_translator(terms=terms, target_language=target_language).translate_report_payload(report_payload)
+            record_id = str(report_payload.get("metadata", {}).get("record_id", "") if isinstance(report_payload.get("metadata"), dict) else "")
+            result = build_translator(terms=terms, target_language=target_language).translate_report_payload(
+                report_payload,
+                record_id=record_id,
+                target_languages=[target_language],
+            )
+            if record_id and isinstance(result.get("translation_content"), list):
+                save_translation_content(DATABASE_PATH, record_id, result["translation_content"])
             self._send_json(result)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
@@ -850,6 +889,11 @@ class FormHandler(BaseHTTPRequestHandler):
         warnings = list(dict.fromkeys(_normalize_payload_values(payload) + _validation_warnings(payload, report_type)))
         if isinstance(metadata, dict):
             metadata.setdefault("status", "parsed")
+            metadata.setdefault("source_language", _detect_payload_source_language(payload))
+            metadata["translation_status"] = "QUEUED" if _translation_jobs_enabled() else "NOT_REQUIRED"
+            metadata["translation_progress"] = "0" if _translation_jobs_enabled() else "100"
+            metadata["translation_error"] = ""
+            metadata["translation_version"] = PROMPT_VERSION
             metadata["validation_status"] = "warning" if warnings else "ok"
             metadata["validation_warnings"] = "; ".join(warnings)
         result = save_report_payload(
@@ -861,6 +905,8 @@ class FormHandler(BaseHTTPRequestHandler):
         _auto_register_project_well(payload, report_type)
         if isinstance(metadata, dict):
             metadata.update(result)
+            if _translation_jobs_enabled():
+                _schedule_translation_job(str(metadata.get("record_id", "")))
 
     def _store_source_pdf(self, payload: dict[str, object], pdf_bytes: bytes) -> None:
         if not _load_config().get("save_source_pdf", True):
@@ -963,6 +1009,135 @@ class FormHandler(BaseHTTPRequestHandler):
 def _source_pdf_path(record_id: str) -> Path:
     safe_name = re.sub(r"[^A-Za-z0-9_.:-]+", "_", record_id).strip("._")
     return SOURCE_PDF_DIR / f"{safe_name or 'record'}.pdf"
+
+
+def _detect_payload_source_language(payload: dict[str, object]) -> str:
+    units = iter_payload_text_units(payload)  # type: ignore[arg-type]
+    text = " ".join(unit.text for unit in units[:5])
+    return detect_language(text) if text else "es"
+
+
+def _translation_jobs_enabled() -> bool:
+    engine = os.environ.get("DRP_TRANSLATION_ENGINE", "").strip().lower()
+    return bool(engine) and engine not in {"noop", "none"}
+
+
+def _schedule_translation_job(record_id: str) -> None:
+    if not record_id:
+        return
+    TRANSLATION_EXECUTOR.submit(_run_translation_job, record_id)
+
+
+def _run_translation_job(record_id: str) -> None:
+    with TRANSLATION_LOCK:
+        try:
+            payload = load_report_payload(DATABASE_PATH, record_id)
+            terms = TermsConfig.from_data(_load_translation_terms_config())
+            target_languages = _translation_target_languages()
+            all_rows: list[dict[str, object]] = []
+            update_record_translation_status(DATABASE_PATH, record_id, status="IN_PROGRESS", progress=1, error="")
+            for index, language in enumerate(target_languages, start=1):
+                def update_language_progress(_language: str, completed: int, total: int) -> None:
+                    language_fraction = completed / max(total, 1)
+                    progress = max(1, min(94, round(((index - 1) + language_fraction) / max(len(target_languages), 1) * 95)))
+                    update_record_translation_status(
+                        DATABASE_PATH,
+                        record_id,
+                        status="IN_PROGRESS",
+                        progress=progress,
+                        error="",
+                    )
+
+                result = build_translator(terms=terms, target_language=language).translate_report_payload(
+                    payload,
+                    record_id=record_id,
+                    target_languages=[language],
+                    on_progress=update_language_progress,
+                )
+                rows = result.get("translation_content")
+                if isinstance(rows, list):
+                    all_rows = [
+                        row for row in all_rows
+                        if normalize_language(row.get("target_language", "")) != normalize_language(language)
+                    ]
+                    all_rows.extend(rows)
+                    save_translation_content(DATABASE_PATH, record_id, all_rows)  # type: ignore[arg-type]
+                progress = max(1, min(99, round(index / max(len(target_languages), 1) * 95)))
+                update_record_translation_status(DATABASE_PATH, record_id, status="IN_PROGRESS", progress=progress, error="")
+            failed = [row for row in all_rows if str(row.get("translation_status", "")) == "FAILED"]
+            if failed:
+                error = "; ".join(dict.fromkeys(str(row.get("error_message", "") or "") for row in failed if row.get("error_message")))
+                update_record_translation_status(
+                    DATABASE_PATH,
+                    record_id,
+                    status="FAILED",
+                    progress=round(len(all_rows) and (len(all_rows) - len(failed)) / len(all_rows) * 100 or 0),
+                    error=error,
+                    version=PROMPT_VERSION,
+                )
+            else:
+                update_record_translation_status(
+                    DATABASE_PATH,
+                    record_id,
+                    status="COMPLETED",
+                    progress=100,
+                    error="",
+                    version=PROMPT_VERSION,
+                )
+        except Exception as exc:  # pragma: no cover - background job should not stop the app.
+            update_record_translation_status(
+                DATABASE_PATH,
+                record_id,
+                status="FAILED",
+                progress=0,
+                error=str(exc),
+                version=PROMPT_VERSION,
+            )
+            print(f"translation job failed for {record_id}: {exc}")
+
+
+def _translation_target_languages() -> list[str]:
+    raw = os.environ.get("DRP_TRANSLATION_TARGET_LANGUAGES", "zh-CN,en,es")
+    languages: list[str] = []
+    for item in raw.split(","):
+        language = normalize_language(item)
+        if language in {"zh-CN", "en", "es"} and language not in languages:
+            languages.append(language)
+    return languages or ["zh-CN", "en", "es"]
+
+
+def _resume_translation_jobs() -> None:
+    if not _translation_jobs_enabled():
+        return
+    try:
+        records = list_records(DATABASE_PATH)
+    except Exception as exc:
+        print(f"translation resume skipped: {exc}")
+        return
+    records.sort(
+        key=lambda record: (
+            str(record.get("translation_version", "") or "") == PROMPT_VERSION,
+            {
+                "FAILED": 0,
+                "IN_PROGRESS": 1,
+                "PENDING": 2,
+                "COMPLETED": 3,
+                "QUEUED": 4,
+            }.get(str(record.get("translation_status", "") or "").strip().upper(), 5),
+        )
+    )
+    for record in records:
+        status = str(record.get("translation_status", "") or "").strip().upper()
+        version = str(record.get("translation_version", "") or "").strip()
+        needs_resume = status in {"", "PENDING", "QUEUED", "IN_PROGRESS", "FAILED", "NOT_REQUIRED"}
+        needs_upgrade = version != PROMPT_VERSION
+        if not needs_resume and not needs_upgrade:
+            continue
+        record_id = str(record.get("record_id", "") or "")
+        if not record_id:
+            continue
+        update_record_translation_status(DATABASE_PATH, record_id, status="QUEUED", progress=0, error="")
+        _schedule_translation_job(record_id)
 
 
 def _default_config() -> dict[str, object]:
@@ -1615,6 +1790,8 @@ def main() -> None:
         _reset_admin_password(args.admin_username, password)
         print(f"Admin reset complete. username={args.admin_username} password={password}")
         return
+    initialize_database(DATABASE_PATH)
+    _resume_translation_jobs()
     server = ThreadingHTTPServer((args.host, args.port), FormHandler)
     print(f"Drilling report form: http://{args.host}:{args.port}/web_form/")
     server.serve_forever()

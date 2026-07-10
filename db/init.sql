@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS report_records (
   wellbore VARCHAR(128) NOT NULL DEFAULT '',
   rig VARCHAR(128) NOT NULL DEFAULT '',
   status VARCHAR(64) NOT NULL DEFAULT '',
+  source_language VARCHAR(16) NOT NULL DEFAULT '',
+  translation_status VARCHAR(64) NOT NULL DEFAULT '',
+  translation_progress VARCHAR(16) NOT NULL DEFAULT '',
+  translation_error TEXT NULL,
+  translation_version VARCHAR(64) NOT NULL DEFAULT '',
   validation_status VARCHAR(64) NOT NULL DEFAULT '',
   validation_warnings TEXT NULL,
   locked VARCHAR(32) NOT NULL DEFAULT '',
@@ -54,6 +59,31 @@ CREATE TABLE IF NOT EXISTS report_rows (
   UNIQUE KEY uq_report_rows_record_module_row (record_id, module_name, row_no),
   KEY idx_report_rows_module (module_name),
   CONSTRAINT fk_report_rows_record
+    FOREIGN KEY (record_id) REFERENCES report_records(record_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS translation_content (
+  record_id VARCHAR(191) NOT NULL,
+  entity_type VARCHAR(64) NOT NULL,
+  entity_id VARCHAR(255) NOT NULL,
+  field_code VARCHAR(128) NOT NULL,
+  source_language VARCHAR(16) NOT NULL DEFAULT '',
+  target_language VARCHAR(16) NOT NULL,
+  source_text MEDIUMTEXT NULL,
+  translated_text MEDIUMTEXT NULL,
+  source_hash VARCHAR(64) NOT NULL DEFAULT '',
+  model_config_id VARCHAR(128) NOT NULL DEFAULT '',
+  prompt_version VARCHAR(64) NOT NULL DEFAULT '',
+  translation_status VARCHAR(64) NOT NULL DEFAULT '',
+  error_message TEXT NULL,
+  is_manual_modified VARCHAR(16) NOT NULL DEFAULT '',
+  updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  created_at VARCHAR(64) NOT NULL DEFAULT '',
+  mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (record_id, entity_id, field_code, target_language),
+  KEY idx_translation_content_status (translation_status),
+  CONSTRAINT fk_translation_content_record
     FOREIGN KEY (record_id) REFERENCES report_records(record_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

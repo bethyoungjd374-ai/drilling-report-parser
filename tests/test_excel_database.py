@@ -12,8 +12,10 @@ from drilling_report_parser.excel_database import (
     list_npt_confirmation_wells,
     load_npt_confirmation_detail,
     load_report_payload,
+    load_translation_content,
     save_npt_confirmation,
     save_report_payload,
+    save_translation_content,
 )
 
 
@@ -58,6 +60,51 @@ class ExcelDatabaseTest(unittest.TestCase):
             self.assertEqual(len(loaded["operations"]), 2)
             self.assertEqual(loaded["operations"][1]["op_type"], "NPT")
             self.assertEqual(loaded["survey_data"][0]["md"], "1000")
+
+    def test_save_and_load_translation_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "report_database.xlsx"
+            result = save_report_payload(
+                database,
+                {
+                    "report_fields": {
+                        "reportDate": "2026-06-11",
+                        "reportNo": "11",
+                        "wellbore": "PCNC-040",
+                        "rig": "00 SINOPEC 248",
+                        "currentOps": "SACANDO BHA",
+                    },
+                    "operations": [{"from": "00:00", "to": "24:00", "hours": "24.00", "operation_details": "PERFORA SECCION"}],
+                },
+                "drilling",
+            )
+            save_translation_content(database, result["record_id"], [
+                {
+                    "entity_type": "daily_report",
+                    "entity_id": result["record_id"],
+                    "field_code": "report_fields.currentOps",
+                    "source_language": "es",
+                    "target_language": "zh-CN",
+                    "source_text": "SACANDO BHA",
+                    "translated_text": "起出 BHA",
+                    "source_hash": "abc",
+                    "model_config_id": "fake",
+                    "prompt_version": "test",
+                    "translation_status": "COMPLETED",
+                    "error_message": "",
+                    "is_manual_modified": "",
+                    "created_at": "2026-07-10T00:00:00+00:00",
+                    "updated_at": "2026-07-10T00:00:00+00:00",
+                }
+            ])
+
+            workbook = load_workbook(database)
+            self.assertIn("translation_content", workbook.sheetnames)
+            self.assertNotIn("record_translations", workbook.sheetnames)
+
+            loaded = load_report_payload(database, result["record_id"])
+            self.assertEqual(loaded["translation_content"][0]["translated_text"], "起出 BHA")
+            self.assertEqual(load_translation_content(database, result["record_id"])[0]["model_config_id"], "fake")
 
     def test_list_records_includes_well_profile_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
