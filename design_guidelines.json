@@ -1,0 +1,102 @@
+{
+  "project_context": {
+    "type": "Enterprise B2B SaaS / Industrial Web App",
+    "tech_stack": "Pure HTML, CSS, JS",
+    "style_directive": "Modern Minimalist, Industrial Professionalism, High-Contrast Swiss",
+    "app_domain": "Oilfield Drilling Report System"
+  },
+  "theme_archetype": {
+    "id": "Archetype 4: Swiss & High-Contrast",
+    "theme": "Light",
+    "vibe": "Authority, Clarity, Rigid, Functional, Industrial",
+    "rationale": "For an enterprise drilling report system, clarity and data density are paramount. We are moving away from messy liquid-glass to a crisp, 1px-border, grid-based 'Control Room' aesthetic."
+  },
+  "typography": {
+    "headings": {
+      "font_family": "'Chivo', sans-serif",
+      "weights": ["400", "700"],
+      "usage": "Page titles, panel headers, KPI numbers. Gives a squarish, engineered, and professional industrial feel."
+    },
+    "body_and_data": {
+      "font_family": "'IBM Plex Sans', sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "Forms, tables, dense data entry, sidebars. Excellent legibility for numbers, dense grids, and multi-language support (EN/ES/ZH)."
+    },
+    "monospace": {
+      "font_family": "'IBM Plex Mono', monospace",
+      "usage": "Log tables, specific well IDs, raw data points."
+    },
+    "css_import": "@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');"
+  },
+  "color_palette": {
+    "backgrounds": {
+      "base": "#F4F5F7",
+      "surface": "#FFFFFF",
+      "surface_hover": "#F9FAFB",
+      "sidebar": "#101828"
+    },
+    "text": {
+      "primary": "#111827",
+      "secondary": "#4B5563",
+      "tertiary": "#9CA3AF",
+      "inverse": "#FFFFFF"
+    },
+    "brand_accents": {
+      "primary": "#0F52BA",
+      "primary_hover": "#0C4399",
+      "focus_ring": "rgba(15, 82, 186, 0.2)"
+    },
+    "borders": {
+      "light": "#E5E7EB",
+      "medium": "#D1D5DB"
+    },
+    "status": {
+      "success": "#059669",
+      "success_bg": "#D1FAE5",
+      "warning": "#D97706",
+      "warning_bg": "#FEF3C7",
+      "danger": "#DC2626",
+      "danger_bg": "#FEE2E2",
+      "info": "#2563EB",
+      "info_bg": "#DBEAFE"
+    }
+  },
+  "spacing_and_layout": {
+    "strategy": "Control Room Grid",
+    "form_density": "High density. Use CSS Grid for forms: grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;",
+    "panels": "Remove all heavy drop-shadows. Use 1px solid border (#E5E7EB) with border-radius: 4px (very slight rounding, sharp industrial feel).",
+    "padding": {
+      "panel_internal": "20px",
+      "input_internal": "8px 12px",
+      "page_wrapper": "24px"
+    }
+  },
+  "surfaces_and_components": {
+    "liquid_glass_removal": "Target all classes previously using 'liquid-glass' (backdrop-filter, rgba backgrounds). Replace their CSS definitions with flat #FFFFFF backgrounds, 1px solid borders, and no box-shadow. Do NOT remove the HTML classes.",
+    "inputs_and_selects": "Height: 36px. Border: 1px solid #D1D5DB. Background: #FFFFFF. Focus: border-color #0F52BA and box-shadow 0 0 0 2px rgba(15, 82, 186, 0.2). Remove arbitrary bolding.",
+    "buttons": "Primary: #0F52BA bg, #FFFFFF text. Secondary: #FFFFFF bg, 1px solid #D1D5DB, #374151 text. Radius: 4px. Transition: background 0.2s ease.",
+    "tables": "border-collapse. Header row: bg #F9FAFB, text #4B5563, font-weight 600, 12px font size, uppercase tracking-wide. Data rows: 14px font, 1px bottom border #E5E7EB.",
+    "sidebar": "Switch from chaotic indigo to a strict Dark Slate sidebar (#101828) for high contrast. Text: #D1D5DB. Active item: background #1F2937, text #FFFFFF, left border 3px solid #0F52BA.",
+    "toast_and_alerts": "Flat design, solid background colors based on status palette. No transparency."
+  },
+  "icons_and_media": {
+    "strategy": "Replace PNGs with modern scalable icons using Phosphor Icons.",
+    "cdn_link": "<script src=\"https://unpkg.com/@phosphor-icons/web\"></script>",
+    "usage": "Use <i class=\"ph ph-[icon-name]\"></i>. Maintain standard 20px size for sidebar, 16px for inline buttons."
+  },
+  "legacy_integration_rules": {
+    "critical_rule_1": "DO NOT rename any existing classes, IDs, or data-* attributes in the HTML files. JS depends entirely on them.",
+    "critical_rule_2": "DO NOT remove or modify app.js, admin.js, login.js, or liquid-glass.js.",
+    "critical_rule_3": "Rewrite styles.css entirely by mapping the existing class names to the new modern minimalist styles defined here."
+  },
+  "instructions_to_main_agent": [
+    "Step 1: Add the Google Fonts import (Chivo & IBM Plex Sans) and Phosphor Icons CDN to the <head> of /app/web_form/index.html, login.html, and admin.html.",
+    "Step 2: Swap out <img> PNG icons in HTML files for <i class='ph ph-...'></i> (Phosphor Icons) ONLY IF they don't have JS bindings on the exact element.",
+    "Step 3: Open /app/web_form/styles.css and clear out the old 4370 lines. Build a new CSS architecture using :root variables based on the color_palette and typography sections above.",
+    "Step 4: Map the legacy 'liquid-glass' classes (and panel wrappers) in styles.css to the flat 'Control Room Grid' styling (solid #FFFFFF bg, 1px #E5E7EB border).",
+    "Step 5: Apply CSS Grid to the massive form sections to organize inputs neatly (grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))).",
+    "Step 6: Update input, select, textarea, and button classes to be flat, compact (36px height), and use the new focus rings.",
+    "Step 7: Update the sidebar CSS to use the #101828 Dark Slate background and precise active states, removing all gradient/transparency nonsense.",
+    "Step 8: Add data-testid attributes to key interactive elements (buttons, inputs) in HTML files."
+  ]
+}

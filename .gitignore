@@ -8,3 +8,9 @@ outputs/backups/
 outputs/users.json
 outputs/system_config.json
 outputs/audit_logs.jsonl
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
