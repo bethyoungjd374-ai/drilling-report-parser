@@ -8,6 +8,7 @@ import threading
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from drilling_report_parser import form_server
 from drilling_report_parser.excel_database import load_report_payload
@@ -15,6 +16,27 @@ from tests.test_pdf_report_parser import sample_pdf
 
 
 class FormServerImportTest(unittest.TestCase):
+    def test_resume_translation_jobs_requeues_interrupted_failed_and_old_records(self) -> None:
+        records = [
+            {"record_id": "blank", "translation_status": "", "translation_version": ""},
+            {"record_id": "failed", "translation_status": "FAILED", "translation_version": form_server.PROMPT_VERSION},
+            {"record_id": "old", "translation_status": "COMPLETED", "translation_version": "old-version"},
+            {"record_id": "done", "translation_status": "COMPLETED", "translation_version": form_server.PROMPT_VERSION},
+        ]
+
+        with (
+            patch.object(form_server, "_translation_jobs_enabled", return_value=True),
+            patch.object(form_server, "list_records", return_value=records),
+            patch.object(form_server, "update_record_translation_status") as update_status,
+            patch.object(form_server, "_schedule_translation_job") as schedule_job,
+        ):
+            form_server._resume_translation_jobs()
+
+        self.assertEqual({call.args[0] for call in schedule_job.call_args_list}, {"blank", "failed", "old"})
+        self.assertEqual(update_status.call_count, 3)
+        for call in update_status.call_args_list:
+            self.assertEqual(call.kwargs, {"status": "QUEUED", "progress": 0, "error": ""})
+
     def test_project_team_normalization_preserves_rig_binding_metadata(self) -> None:
         normalized = form_server._normalize_project_team_config({
             "teams": [{"name": "00 SINOPEC 248"}],
