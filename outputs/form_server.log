@@ -1,0 +1,331 @@
+Drilling report form: http://127.0.0.1:8080/web_form/
+127.0.0.1 - "HEAD /admin/ HTTP/1.1" 302 -
+127.0.0.1 - "GET /admin/ HTTP/1.1" 302 -
+127.0.0.1 - "GET /login/?next=/admin/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/login.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/assets/login-bg.png HTTP/1.1" 200 -
+127.0.0.1 - "POST /api/admin/login HTTP/1.1" 200 -
+127.0.0.1 - "GET /admin/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "HEAD /admin/ HTTP/1.1" 302 -
+127.0.0.1 - "GET /admin/?verify=1783796149118 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /admin/?menu=1783796319834 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/app.js?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-production-summary.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/well-npt-confirm.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-npt-ranking.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-collection.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-dashboard.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/period-safety-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records?report_type=drilling HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/well-stats?report_type=drilling&wellbore=PCNC-040 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/app.js?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-production-summary.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-npt-ranking.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-collection.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/well-npt-confirm.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-dashboard.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/period-safety-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records?report_type=drilling HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/well-stats?report_type=drilling&wellbore=PCNC-040 HTTP/1.1" 200 -
+127.0.0.1 - "GET /admin/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/?brand=1783796983449 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/app.js?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-production-summary.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-npt-ranking.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/well-npt-confirm.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-collection.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-dashboard.png HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 51596)
+Traceback (most recent call last):
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 434, in handle
+    self.handle_one_request()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 422, in handle_one_request
+    method()
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 236, in do_GET
+    self._admin_project_teams()
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 529, in _admin_project_teams
+    self._send_json(_sync_project_wells_from_database(DATABASE_PATH))
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 1545, in _send_json
+    self.wfile.write(body)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 826, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 51595)
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 51599)
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 434, in handle
+    self.handle_one_request()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 422, in handle_one_request
+    method()
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 179, in do_GET
+    self._list_records(parsed.query)
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 1212, in _list_records
+    self._send_json({"records": records})
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 1545, in _send_json
+    self.wfile.write(body)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 826, in write
+    self._sock.sendall(b)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 434, in handle
+    self.handle_one_request()
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py", line 422, in handle_one_request
+    method()
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 251, in do_GET
+    self._admin_translation_records()
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 673, in _admin_translation_records
+    self._send_json(_translation_queue_snapshot())
+  File "/Users/wujianhui/Documents/钻井报表模板解析/drilling_report_parser/form_server.py", line 1545, in _send_json
+    self.wfile.write(body)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py", line 826, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+127.0.0.1 - "GET /web_form/icons/period-safety-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records?report_type=drilling HTTP/1.1" 200 -
+127.0.0.1 - "GET /admin/?brand=1783796983568 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/well-stats?report_type=drilling&wellbore=PCNC-040 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /login/?brand=1783796983676 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/login.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/assets/login-bg.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/app.js?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-production-summary.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/period-safety-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-npt-ranking.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/well-npt-confirm.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-collection.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-dashboard.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records?report_type=drilling HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/well-stats?report_type=drilling&wellbore=PCNC-040 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/?brand=1783797065216 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/app.js?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-production-summary.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/well-npt-confirm.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-npt-ranking.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-dashboard.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-collection.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/period-safety-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records?report_type=drilling HTTP/1.1" 200 -
+127.0.0.1 - "GET /admin/?brand=1783797065329 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/well-stats?report_type=drilling&wellbore=PCNC-040 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/logo_options.html?ts=1783797255405 HTTP/1.1" 200 -
+127.0.0.1 - code 404, message Not Found
+127.0.0.1 - "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - "GET /web_form/?logo=A&ts=1783797386532 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/app.js?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-production-summary.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/well-npt-confirm.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-collection.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/rig-npt-ranking.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/period-safety-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/hsse-dashboard.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records?report_type=drilling HTTP/1.1" 200 -
+127.0.0.1 - "GET /admin/?logo=A&ts=1783797386647 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=ai-workflows-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/admin.js?v=npt-owner-all-reports-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/session HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/well-stats?report_type=drilling&wellbore=PCNC-040 HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/users HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extraction-rules HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-models HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-terms HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/config HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translation-tuning HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/audit-logs HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/project-teams HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/translations HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/records HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/data-status HTTP/1.1" 200 -
+127.0.0.1 - "GET /api/admin/ai-extractions HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/ HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/styles.css?v=global-back-1 HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/daily-parsing.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/drilling-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/workover-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/production-report.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/icons/completion-daily.png HTTP/1.1" 200 -
+127.0.0.1 - "GET /web_form/liquid-glass.js HTTP/1.1" 200 -

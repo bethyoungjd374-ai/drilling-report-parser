@@ -1,4 +1,5 @@
 const toast = document.querySelector("#toast");
+const ADMIN_DEFAULT_PAGE_SIZE = 10;
 const adminState = {
   authenticated: false,
   user: null,
@@ -11,6 +12,8 @@ const adminState = {
   aiExtraction: { rules: [], catalog: { report_types: [], target_fields: [], output_formats: [] } },
   aiExtractionQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
   aiExtractionView: "rules",
+  aiExtractionQueuePage: 1,
+  aiExtractionQueuePageSize: ADMIN_DEFAULT_PAGE_SIZE,
   selectedAiExtractionRuleId: "",
   aiExtractionTestRecordId: "",
   aiExtractionTestSource: "",
@@ -23,11 +26,15 @@ const adminState = {
   translationTuning: { scope_rules: [], scope_catalog: { report_types: [] }, target_languages: ["zh-CN"], prompt: {}, protections: {} },
   translationTuningView: "fields",
   translationScopeDraft: { report_type: "drilling", section: "report_fields", field_name: "currentOps" },
+  translationScopePage: 1,
+  translationScopePageSize: ADMIN_DEFAULT_PAGE_SIZE,
   translationTermImport: { running: false, result: null, duplicates: [] },
   translationTermCategory: "all",
   translationTermPage: 1,
   translationTermPageSize: 10,
   translationQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
+  translationQueuePage: 1,
+  translationQueuePageSize: ADMIN_DEFAULT_PAGE_SIZE,
   translationTestResult: null,
   translationTestRunning: false,
   translationTestSource: "05:30-07:30, BAJA BHA #5 DIRECCIONAL HASTA 4125 ft. PERFORA DE 4125 ft A 4140 ft CON ROP 90 ft/hr, WOB 18 klb Y SPP 12.5 MPa.",
@@ -355,7 +362,14 @@ function renderAdminAiExtraction() {
     <section class="panel">
       <div class="panel-heading">
         <div><h2>AI 数据提炼规则</h2><span class="panel-note">从指定日报字段提炼关键数据，并映射到生产报表目标字段</span></div>
-        <div class="admin-actions"><label class="inline-check"><input type="checkbox" name="aiExtractionAutoExecute" ${config.auto_execute !== false ? "checked" : ""} /> 上传后自动执行</label><button class="button small" type="button" data-admin-new-extraction-rule>新增规则</button></div>
+        <div class="admin-actions heading-actions">
+          <label class="auto-execute-toggle" title="开启后，上传日报会自动加入 AI 数据提炼任务队列；关闭后需在任务队列手动执行。">
+            <input type="checkbox" name="aiExtractionAutoExecute" ${config.auto_execute !== false ? "checked" : ""} />
+            <span class="auto-execute-switch" aria-hidden="true"></span>
+            <span>上传后自动提炼</span>
+          </label>
+          <button class="button small" type="button" data-admin-new-extraction-rule>新增规则</button>
+        </div>
       </div>
       <div class="table-wrap"><table class="record-table admin-table extraction-rule-table">
         <thead><tr><th>规则名称</th><th>日报类型</th><th>来源字段</th><th>目标字段</th><th>输出</th><th>状态</th><th>操作</th></tr></thead>
@@ -386,13 +400,20 @@ function aiExtractionTab(value, label) {
 function aiExtractionQueueMarkup() {
   const queue = adminState.aiExtractionQueue || {};
   const rows = queue.records || [];
+  const pageSize = Number(adminState.aiExtractionQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = clampPage(adminState.aiExtractionQueuePage, totalPages);
+  adminState.aiExtractionQueuePage = currentPage;
+  const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return `<section class="panel">
     <div class="panel-heading"><div><h2>数据提炼任务</h2><span class="panel-note">规则版本 ${escapeHtml(queue.current_version || "-")}；失败重试不会清除上次成功值</span></div>
-      <div class="admin-actions"><button class="button small" type="button" data-admin-queue-extractions="continue">执行待处理</button><button class="button secondary small" type="button" data-admin-queue-extractions="overwrite">按当前规则覆盖执行</button></div>
+      <div class="admin-actions heading-actions"><button class="button small" type="button" data-admin-queue-extractions="continue">执行待处理</button><button class="button secondary small" type="button" data-admin-queue-extractions="overwrite">按当前规则覆盖执行</button></div>
     </div>
-    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
-      <tbody>${rows.map((row) => `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${row.needs_extraction ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td><span class="status-pill ${aiQueueStatusTone(row.status)}" title="${escapeHtml(row.error || "")}">${escapeHtml(aiQueueStatusLabel(row.status))}</span></td><td>${escapeHtml(row.progress || "0")}%</td><td>${escapeHtml(row.updated_at || "-")}</td></tr>`).join("") || `<tr><td colspan="6">当前没有符合启用规则的日报</td></tr>`}</tbody>
-    </table></div></section>`;
+    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
+      <tbody>${visibleRows.map((row) => `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${row.needs_extraction ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td><span class="status-pill ${aiQueueStatusTone(row.status)}" title="${escapeHtml(row.error || "")}">${escapeHtml(aiQueueStatusLabel(row.status))}</span></td><td>${escapeHtml(row.progress || "0")}%</td><td>${escapeHtml(row.updated_at || "-")}</td></tr>`).join("") || `<tr><td colspan="6">当前没有符合启用规则的日报</td></tr>`}</tbody>
+    </table></div>
+    ${adminPaginationMarkup("aiExtractionQueue", rows.length, currentPage, totalPages, pageSize)}
+  </section>`;
 }
 
 function aiQueueStatusLabel(status = "") {
@@ -440,7 +461,7 @@ function aiExtractionRuleForm(rule = {}) {
 
 function aiExtractionTestMarkup() {
   const selectedRule = (adminState.aiExtraction.rules || []).find((item) => item.id === adminState.selectedAiExtractionRuleId) || {};
-  const matchingRecords = (adminState.records || []).filter((record) => !selectedRule.report_type || record.report_type === selectedRule.report_type);
+  const matchingRecords = (adminState.records || []).filter((record) => !selectedRule.report_type || selectedRule.report_type === "all" || record.report_type === selectedRule.report_type);
   if (!matchingRecords.some((record) => record.record_id === adminState.aiExtractionTestRecordId)) {
     adminState.aiExtractionTestRecordId = matchingRecords[0]?.record_id || "";
   }
@@ -680,8 +701,15 @@ function translationNeedsProcessing(record = {}) {
 function translationQueuePanelMarkup() {
   const queue = adminState.translationQueue || {};
   const records = queue.records || [];
-  return `<section class="panel"><div class="panel-heading"><div><h2>日报翻译任务</h2><span class="panel-note">当前策略版本 ${escapeHtml(queue.current_version || "-")}</span></div><div class="admin-actions"><button class="button secondary small" type="button" data-admin-queue-selected="overwrite">覆盖重译选中</button><button class="button small" type="button" data-admin-queue-selected="continue">继续翻译选中</button></div></div>
-    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th><input type="checkbox" data-translation-queue-select-all /></th><th>类型</th><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>原因</th></tr></thead><tbody>${records.map(translationQueueRowMarkup).join("") || `<tr><td colspan="7">暂无日报记录</td></tr>`}</tbody></table></div></section>`;
+  const pageSize = Number(adminState.translationQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
+  const currentPage = clampPage(adminState.translationQueuePage, totalPages);
+  adminState.translationQueuePage = currentPage;
+  const visibleRecords = records.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  return `<section class="panel"><div class="panel-heading"><div><h2>日报翻译任务</h2><span class="panel-note">当前策略版本 ${escapeHtml(queue.current_version || "-")}</span></div><div class="admin-actions heading-actions"><button class="button secondary small" type="button" data-admin-queue-selected="overwrite">覆盖重译选中</button><button class="button small" type="button" data-admin-queue-selected="continue">继续翻译选中</button></div></div>
+    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-translation-queue-select-all /></th><th>类型</th><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>原因</th></tr></thead><tbody>${visibleRecords.map(translationQueueRowMarkup).join("") || `<tr><td colspan="7">暂无日报记录</td></tr>`}</tbody></table></div>
+    ${adminPaginationMarkup("translationQueue", records.length, currentPage, totalPages, pageSize)}
+  </section>`;
 }
 
 function translationFieldPoliciesMarkup() {
@@ -689,6 +717,11 @@ function translationFieldPoliciesMarkup() {
   const prompt = tuning.prompt || {};
   const protections = tuning.protections || {};
   const rules = tuning.scope_rules || [];
+  const pageSize = Number(adminState.translationScopePageSize || ADMIN_DEFAULT_PAGE_SIZE);
+  const pageCount = Math.max(1, Math.ceil(rules.length / pageSize));
+  adminState.translationScopePage = clampPage(adminState.translationScopePage, pageCount);
+  const start = (adminState.translationScopePage - 1) * pageSize;
+  const visibleRules = rules.slice(start, start + pageSize);
   return `
     <section class="panel tuning-policy-panel">
       <div class="panel-heading">
@@ -710,7 +743,7 @@ function translationFieldPoliciesMarkup() {
       <div class="table-wrap tuning-field-table-wrap">
         <table class="record-table admin-table tuning-field-table">
           <thead><tr><th>日报类型</th><th>模块 / 部分</th><th>字段</th><th>字段编码</th><th>处理方式</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>${rules.map((rule) => `<tr data-translation-scope-rule="${escapeHtml(rule.id)}">
+          <tbody>${visibleRules.map((rule) => `<tr data-translation-scope-rule="${escapeHtml(rule.id)}">
             <td><strong>${escapeHtml(rule.report_type_label || rule.report_type)}</strong></td>
             <td>${escapeHtml(rule.section_label || rule.section)}</td>
             <td>${escapeHtml(rule.label || rule.field_name)}</td>
@@ -721,6 +754,7 @@ function translationFieldPoliciesMarkup() {
           </tr>`).join("") || `<tr><td colspan="7">尚未配置翻译范围</td></tr>`}</tbody>
         </table>
       </div>
+      ${adminPaginationMarkup("translationScope", rules.length, adminState.translationScopePage, pageCount, pageSize)}
     </section>`;
 }
 
@@ -773,7 +807,7 @@ function translationTermsMarkup() {
         <thead><tr><th>作业类型</th><th>中文</th><th>English</th><th>Español</th><th>状态</th><th>操作</th></tr></thead>
         <tbody>${visibleTerms.map(translationTermListRow).join("") || `<tr><td colspan="6">没有匹配的术语</td></tr>`}</tbody>
       </table></div>
-      <div class="translation-term-pagination"><span>共 ${filteredTerms.length} 条，第 ${adminState.translationTermPage} / ${pageCount} 页</span><div><select aria-label="每页术语数量" data-translation-term-page-size><option value="10" ${pageSize === 10 ? "selected" : ""}>10 条/页</option><option value="20" ${pageSize === 20 ? "selected" : ""}>20 条/页</option><option value="50" ${pageSize === 50 ? "selected" : ""}>50 条/页</option></select><button class="button secondary small term-page-button" type="button" title="上一页" data-translation-term-page="${adminState.translationTermPage - 1}" ${adminState.translationTermPage <= 1 ? "disabled" : ""}><span aria-hidden="true">‹</span>上一页</button><button class="button secondary small term-page-button" type="button" title="下一页" data-translation-term-page="${adminState.translationTermPage + 1}" ${adminState.translationTermPage >= pageCount ? "disabled" : ""}>下一页<span aria-hidden="true">›</span></button></div></div>
+      ${adminPaginationMarkup("translationTerms", filteredTerms.length, adminState.translationTermPage, pageCount, pageSize, "translation-term-pagination")}
     </section>
     <section class="panel tuning-protection-panel">
       <div class="panel-heading"><div><h2>全局保护项</h2><span class="panel-note">缩写、单位和专名会随 Prompt 发送给模型并要求保持原样</span></div><button class="button small" type="button" data-admin-save-translation-terms>保存保护项</button></div>
@@ -1052,24 +1086,94 @@ function renderAdminLogs() {
 }
 
 function adminLogPagination(totalRows, currentPage, totalPages, pageSize) {
+  return adminPaginationMarkup("logs", totalRows, currentPage, totalPages, pageSize, "admin-log-pagination");
+}
+
+function clampPage(value, totalPages) {
+  const page = Number.parseInt(value, 10);
+  return Math.min(Math.max(Number.isFinite(page) ? page : 1, 1), Math.max(1, totalPages));
+}
+
+function adminPaginationMarkup(kind, totalRows, currentPage, totalPages, pageSize, extraClass = "") {
   const start = totalRows ? (currentPage - 1) * pageSize + 1 : 0;
   const end = Math.min(totalRows, currentPage * pageSize);
+  const sizes = [10, 20, 50];
   return `
-    <div class="record-pagination admin-log-pagination">
+    <div class="record-pagination admin-list-pagination ${extraClass}">
       <span>共 ${totalRows} 条，显示 ${start}-${end}</span>
       <div class="admin-log-page-controls">
         <label>每页
-          <select data-admin-log-page-size>
-            ${[10, 20, 50].map((size) => `<option value="${size}" ${size === pageSize ? "selected" : ""}>${size} 条</option>`).join("")}
+          <select data-admin-page-size="${kind}">
+            ${sizes.map((size) => `<option value="${size}" ${size === pageSize ? "selected" : ""}>${size} 条</option>`).join("")}
           </select>
         </label>
         <div class="record-page-buttons">
-          <button class="icon-button" type="button" data-admin-log-page="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""} aria-label="上一页">‹</button>
-          <span>${currentPage} / ${totalPages}</span>
-          <button class="icon-button" type="button" data-admin-log-page="${currentPage + 1}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="下一页">›</button>
+          <button class="icon-button" type="button" data-admin-page="${kind}" data-admin-page-value="${currentPage - 1}" ${currentPage <= 1 ? "disabled" : ""} aria-label="上一页">‹</button>
+          <label class="page-jump">第 <input type="number" min="1" max="${totalPages}" value="${currentPage}" inputmode="numeric" data-admin-page-jump="${kind}" aria-label="跳转页码" /> / ${totalPages} 页</label>
+          <button class="icon-button" type="button" data-admin-page="${kind}" data-admin-page-value="${currentPage + 1}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="下一页">›</button>
         </div>
       </div>
     </div>`;
+}
+
+function setAdminPage(kind, page) {
+  if (kind === "logs") {
+    adminState.logsPage = page;
+    return renderAdminLogs();
+  }
+  if (kind === "translationTerms") {
+    adminState.translationTermPage = page;
+    return renderAdminTranslationTuning();
+  }
+  if (kind === "translationScope") {
+    captureTranslationTuningForm();
+    adminState.translationScopePage = page;
+    return renderAdminTranslationTuning();
+  }
+  if (kind === "aiExtractionQueue") {
+    adminState.aiExtractionQueuePage = page;
+    return renderAdminAiExtraction();
+  }
+  if (kind === "translationQueue") {
+    adminState.translationQueuePage = page;
+    return renderAdminTranslationTuning();
+  }
+}
+
+function setAdminPageSize(kind, pageSize) {
+  if (kind === "logs") {
+    adminState.logsPageSize = pageSize;
+    adminState.logsPage = 1;
+    return renderAdminLogs();
+  }
+  if (kind === "translationTerms") {
+    adminState.translationTermPageSize = pageSize;
+    adminState.translationTermPage = 1;
+    return renderAdminTranslationTuning();
+  }
+  if (kind === "translationScope") {
+    captureTranslationTuningForm();
+    adminState.translationScopePageSize = pageSize;
+    adminState.translationScopePage = 1;
+    return renderAdminTranslationTuning();
+  }
+  if (kind === "aiExtractionQueue") {
+    adminState.aiExtractionQueuePageSize = pageSize;
+    adminState.aiExtractionQueuePage = 1;
+    return renderAdminAiExtraction();
+  }
+  if (kind === "translationQueue") {
+    adminState.translationQueuePageSize = pageSize;
+    adminState.translationQueuePage = 1;
+    return renderAdminTranslationTuning();
+  }
+}
+
+function commitAdminPageJump(input) {
+  if (!input) return;
+  const kind = input.dataset.adminPageJump;
+  const max = Number(input.max || 1);
+  setAdminPage(kind, clampPage(input.value, max));
 }
 
 function switchAdminTab(tab) {
@@ -1409,12 +1513,14 @@ function addTranslationScope() {
   if (rules.some((rule) => rule.report_type === report.value && rule.section === section.value && rule.field_name === field.value)) return showToast("该翻译范围已存在");
   rules.push({ id, report_type: report.value, report_type_label: report.label, section: section.value, section_label: section.label, field_name: field.value, field_code: `${section.value}.${field.value}`, label: field.label, enabled: true });
   adminState.translationTuning.scope_rules = rules;
+  adminState.translationScopePage = Math.max(1, Math.ceil(rules.length / (adminState.translationScopePageSize || ADMIN_DEFAULT_PAGE_SIZE)));
   renderAdminTranslationTuning();
 }
 
 function removeTranslationScope(id) {
   captureTranslationTuningForm();
   adminState.translationTuning.scope_rules = (adminState.translationTuning.scope_rules || []).filter((rule) => rule.id !== id);
+  adminState.translationScopePage = clampPage(adminState.translationScopePage, Math.ceil(adminState.translationTuning.scope_rules.length / (adminState.translationScopePageSize || ADMIN_DEFAULT_PAGE_SIZE)));
   renderAdminTranslationTuning();
 }
 
@@ -1920,11 +2026,8 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     return switchAdminTab(tab.dataset.adminTab);
   }
-  const logPageButton = event.target.closest("[data-admin-log-page]");
-  if (logPageButton) {
-    adminState.logsPage = Number(logPageButton.dataset.adminLogPage || 1);
-    return renderAdminLogs();
-  }
+  const adminPageButton = event.target.closest("[data-admin-page]");
+  if (adminPageButton) return setAdminPage(adminPageButton.dataset.adminPage, Number(adminPageButton.dataset.adminPageValue || 1));
   const edit = event.target.closest("[data-admin-edit-user]");
   if (edit) return fillAdminUserForm(edit.dataset.adminEditUser);
   if (event.target.closest("[data-admin-modal-close]")) return closeAdminModal();
@@ -1976,11 +2079,6 @@ document.addEventListener("click", (event) => {
     adminState.translationTermPage = 1;
     return renderAdminTranslationTuning();
   }
-  const termPage = event.target.closest("[data-translation-term-page]");
-  if (termPage) {
-    adminState.translationTermPage = Math.max(1, Number(termPage.dataset.translationTermPage || 1));
-    return renderAdminTranslationTuning();
-  }
   const editTranslationTerm = event.target.closest("[data-admin-edit-translation-term]");
   if (editTranslationTerm) {
     return openTranslationTermModal(editTranslationTerm.dataset.adminEditTranslationTerm);
@@ -2025,11 +2123,8 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("change", (event) => {
-  if (event.target.matches("[data-admin-log-page-size]")) {
-    adminState.logsPageSize = Number(event.target.value || 20);
-    adminState.logsPage = 1;
-    renderAdminLogs();
-  }
+  if (event.target.matches("[data-admin-page-size]")) return setAdminPageSize(event.target.dataset.adminPageSize, Number(event.target.value || ADMIN_DEFAULT_PAGE_SIZE));
+  if (event.target.matches("[data-admin-page-jump]")) return commitAdminPageJump(event.target);
   if (event.target.matches('[name="translationPolicyEnabled"]')) {
     const label = event.target.closest("label")?.querySelector("span");
     if (label) label.textContent = event.target.checked ? "启用" : "停用";
@@ -2055,11 +2150,6 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-translation-queue-select-all]")) {
     document.querySelectorAll('[name="translationQueueRecord"]:not(:disabled)').forEach((input) => { input.checked = event.target.checked; });
   }
-  if (event.target.matches("[data-translation-term-page-size]")) {
-    adminState.translationTermPageSize = Number(event.target.value || 10);
-    adminState.translationTermPage = 1;
-    return renderAdminTranslationTuning();
-  }
 });
 
 document.addEventListener("input", (event) => {
@@ -2075,6 +2165,10 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && event.target.matches("[data-admin-page-jump]")) {
+    event.preventDefault();
+    return commitAdminPageJump(event.target);
+  }
   if (["Enter", " "].includes(event.key) && event.target.matches("[data-admin-open-translation-queue]")) {
     event.preventDefault();
     return openTranslationQueue();

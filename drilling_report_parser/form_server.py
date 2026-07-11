@@ -31,12 +31,14 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from .completion_pdf_parser import parse_completion_pdf_daily_report
 from .db_config import mysql_settings
 from .storage import (
+    background_job_lock,
     initialize_database,
     list_npt_confirmation_wells,
     list_records,
     load_npt_confirmation_detail,
     load_operation_translations,
     load_report_payload,
+    load_report_payloads,
     load_extraction_results,
     load_translation_content,
     mysql_status,
@@ -87,6 +89,8 @@ AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 TRANSLATION_METRICS_PATH = ROOT / "outputs" / "translation_metrics.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
+CONFIG_WRITE_LOCK = threading.RLock()
+AUDIT_LOG_LOCK = threading.Lock()
 
 
 def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
@@ -97,6 +101,9 @@ def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int
     return max(minimum, min(maximum, value))
 
 
+SESSION_TTL_SECONDS = _bounded_env_int("DRP_SESSION_TTL_SECONDS", 12 * 60 * 60, 15 * 60, 7 * 24 * 60 * 60)
+MAX_JSON_BODY_BYTES = _bounded_env_int("DRP_MAX_JSON_BODY_MB", 16, 1, 64) * 1024 * 1024
+MAX_UPLOAD_BYTES = _bounded_env_int("DRP_MAX_UPLOAD_MB", 64, 1, 256) * 1024 * 1024
 TRANSLATION_WORKERS = _bounded_env_int("DRP_TRANSLATION_WORKERS", 2, 1, 4)
 TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=TRANSLATION_WORKERS, thread_name_prefix="drp-translation")
 TRANSLATION_STATE_LOCK = threading.Lock()
@@ -416,8 +423,8 @@ class FormHandler(BaseHTTPRequestHandler):
         payload = self._read_json_body()
         old_password = str(payload.get("old_password", ""))
         new_password = str(payload.get("new_password", ""))
-        if len(new_password) < 6:
-            self._send_json({"error": "新密码至少 6 位。"}, status=400)
+        if len(new_password) < 8:
+            self._send_json({"error": "新密码至少 8 位。"}, status=400)
             return
         users = _load_users()
         target = next((item for item in users if item.get("username") == user.get("username")), None)
@@ -447,7 +454,8 @@ class FormHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "用户名不能为空。"}, status=400)
             return
         existing = next((item for item in users if item.get("username") == username), None)
-        if existing is None:
+        is_new = existing is None
+        if is_new:
             existing = {"id": str(uuid.uuid4()), "username": username, "created_at": datetime.now().isoformat(timespec="seconds")}
             users.append(existing)
         new_role = str(payload.get("role", "viewer")).strip() or "viewer"
@@ -463,10 +471,16 @@ class FormHandler(BaseHTTPRequestHandler):
         existing["role"] = new_role
         existing["status"] = new_status
         password = str(payload.get("password", ""))
+        if is_new and len(password) < 8:
+            self._send_json({"error": "新增账号必须设置至少8位的初始密码。"}, status=400)
+            return
+        if password and len(password) < 8:
+            self._send_json({"error": "密码至少需要8位。"}, status=400)
+            return
         if password:
             existing["password_hash"] = _hash_password(password)
-        elif not existing.get("password_hash"):
-            existing["password_hash"] = _hash_password("123456")
+            if is_new:
+                existing["must_change_password"] = True
         _save_users(users)
         _write_audit(user, "save_user", "system_admin", username, True, str(existing.get("role", "")))
         self._send_json({"ok": True, "users": [_public_user(item) for item in users]})
@@ -519,6 +533,7 @@ class FormHandler(BaseHTTPRequestHandler):
         if not user:
             return
         payload = self._read_json_body()
+        payload.pop("pending_wells", None)
         config = _normalize_project_team_config(payload)
         _save_project_team_config(config)
         config = _sync_project_wells_from_database(DATABASE_PATH)
@@ -985,8 +1000,16 @@ class FormHandler(BaseHTTPRequestHandler):
 
     def _current_user(self) -> dict[str, object] | None:
         _ensure_admin_files()
-        session = SESSIONS.get(self._session_token())
+        token = self._session_token()
+        session = SESSIONS.get(token)
         if not session:
+            return None
+        try:
+            created_at = datetime.fromisoformat(str(session.get("created_at", "")))
+        except ValueError:
+            created_at = datetime.min
+        if (datetime.now() - created_at).total_seconds() > SESSION_TTL_SECONDS:
+            SESSIONS.pop(token, None)
             return None
         username = str(session.get("username", ""))
         return next((user for user in _load_users() if user.get("username") == username and user.get("status") == "active"), None)
@@ -1005,6 +1028,9 @@ class FormHandler(BaseHTTPRequestHandler):
         user = self._current_user()
         if not user:
             self._send_json({"error": "请先登录。"}, status=401)
+            return None
+        if user.get("must_change_password"):
+            self._send_json({"error": "首次登录必须先修改密码。", "must_change_password": True}, status=403)
             return None
         if not _role_permissions(str(user.get("role", ""))).get(permission):
             self._send_json({"error": "当前账号没有该操作权限。"}, status=403)
@@ -1195,6 +1221,10 @@ class FormHandler(BaseHTTPRequestHandler):
             if (not report_type or record.get("report_type") == report_type)
             and (not wellbore or record.get("wellbore") == wellbore)
         ]
+        payloads = load_report_payloads(
+            DATABASE_PATH,
+            [str(record.get("record_id") or "") for record in matched],
+        )
         stats = {
             "days": len({record.get("reportDate") for record in matched if record.get("reportDate")}),
             "total_hours": 0.0,
@@ -1212,9 +1242,8 @@ class FormHandler(BaseHTTPRequestHandler):
             record_id = str(record.get("record_id") or "")
             if not record_id:
                 continue
-            try:
-                payload = load_report_payload(DATABASE_PATH, record_id)
-            except KeyError:
+            payload = payloads.get(record_id)
+            if payload is None:
                 continue
             fields = payload.get("report_fields", {}) if isinstance(payload.get("report_fields", {}), dict) else {}
             if not stats["rig"] and fields.get("rig"):
@@ -1234,7 +1263,7 @@ class FormHandler(BaseHTTPRequestHandler):
                     hours = float(str(row.get("hours", "") or "0").replace(",", ""))
                 except ValueError:
                     hours = 0.0
-                op_type = str(row.get("op_type", "") or "").strip().upper()
+                op_type = _effective_operation_type(row)
                 stats["total_hours"] += hours
                 if op_type == "NPT":
                     stats["npt_hours"] += hours
@@ -1348,6 +1377,8 @@ class FormHandler(BaseHTTPRequestHandler):
             self._send_json({"ok": True, **result})
         except PermissionError as exc:
             self._send_json({"error": str(exc)}, status=409)
+        except RuntimeError as exc:
+            self._send_json({"error": str(exc)}, status=409)
         except Exception as exc:  # pragma: no cover - keeps local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
@@ -1443,7 +1474,6 @@ class FormHandler(BaseHTTPRequestHandler):
             source_file=str(metadata.get("source_file", "")) if isinstance(metadata, dict) else "",
             invalidate_translations=invalidate_translations,
         )
-        _auto_register_project_well(payload, report_type)
         if isinstance(metadata, dict):
             metadata.update(result)
             if queue_extraction:
@@ -1464,6 +1494,8 @@ class FormHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length <= 0:
             return {}
+        if length > MAX_JSON_BODY_BYTES:
+            raise ValueError("请求内容过大。")
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
     def _read_pdf_upload(self) -> UploadedFile:
@@ -1472,6 +1504,8 @@ class FormHandler(BaseHTTPRequestHandler):
             raise ValueError("No PDF file received.")
         if Path(upload.filename).suffix.lower() != ".pdf":
             raise ValueError("Only PDF files are supported.")
+        if not upload.data.lstrip().startswith(b"%PDF-"):
+            raise ValueError("上传文件不是有效的 PDF。")
         return upload
 
     def _read_multipart_file(self, field_name: str) -> UploadedFile:
@@ -1481,6 +1515,8 @@ class FormHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length <= 0:
             raise ValueError("未收到上传文件。")
+        if length > MAX_UPLOAD_BYTES:
+            raise ValueError("上传文件过大。")
 
         body = self.rfile.read(length)
         message = BytesParser(policy=email_policy).parsebytes(
@@ -1651,6 +1687,19 @@ def _translation_job_is_current(record_id: str, generation: int) -> bool:
 
 
 def _run_translation_job(record_id: str, generation: int) -> None:
+    with background_job_lock("translation", record_id) as acquired:
+        if not acquired:
+            _write_translation_metric(
+                "job_cancelled",
+                record_id=record_id,
+                generation=generation,
+                reason="claimed_by_other_process",
+            )
+            return
+        _run_translation_job_locked(record_id, generation)
+
+
+def _run_translation_job_locked(record_id: str, generation: int) -> None:
     prompt_version = PROMPT_VERSION
     job_started = time.monotonic()
     _write_translation_metric("job_start", record_id=record_id, generation=generation, workers=TRANSLATION_WORKERS)
@@ -1765,6 +1814,15 @@ def _run_translation_job(record_id: str, generation: int) -> None:
                 elapsed_ms=round((time.monotonic() - job_started) * 1000),
             )
     except Exception as exc:  # pragma: no cover - background job should not stop the app.
+        if not _translation_job_is_current(record_id, generation):
+            _write_translation_metric(
+                "job_cancelled",
+                record_id=record_id,
+                generation=generation,
+                reason="stale_after_exception",
+                error=str(exc)[:500],
+            )
+            return
         update_record_translation_status(
             DATABASE_PATH,
             record_id,
@@ -1911,6 +1969,9 @@ def _ensure_admin_files() -> None:
         }
         _save_users([admin])
         _write_audit(admin, "init_admin", "system_admin", "admin", True, "default password admin123")
+    for private_path in (USERS_PATH, AI_MODELS_PATH):
+        if private_path.exists():
+            private_path.chmod(0o600)
 
 
 def _load_config() -> dict[str, object]:
@@ -1926,7 +1987,7 @@ def _load_config() -> dict[str, object]:
 
 def _save_config(config: dict[str, object]) -> None:
     _ensure_parent(CONFIG_PATH)
-    CONFIG_PATH.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(CONFIG_PATH, config)
 
 
 def _load_roles() -> list[dict[str, object]]:
@@ -1942,7 +2003,7 @@ def _load_roles() -> list[dict[str, object]]:
 
 def _save_roles(roles: list[dict[str, object]]) -> None:
     _ensure_parent(ROLES_PATH)
-    ROLES_PATH.write_text(json.dumps(_normalize_roles(roles), ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(ROLES_PATH, _normalize_roles(roles))
 
 
 def _default_project_team_config() -> dict[str, object]:
@@ -1962,7 +2023,7 @@ def _load_project_team_config() -> dict[str, object]:
 
 def _save_project_team_config(config: dict[str, object]) -> None:
     _ensure_parent(PROJECT_TEAM_PATH)
-    PROJECT_TEAM_PATH.write_text(json.dumps(_normalize_project_team_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(PROJECT_TEAM_PATH, _normalize_project_team_config(config))
 
 
 def _load_production_report_remarks() -> dict[str, str]:
@@ -1981,7 +2042,7 @@ def _load_production_report_remarks() -> dict[str, str]:
 def _save_production_report_remarks(remarks: dict[str, str]) -> None:
     _ensure_parent(PRODUCTION_REPORT_REMARKS_PATH)
     clean = {str(key): str(value or "")[:500] for key, value in remarks.items() if str(key).strip() and str(value or "").strip()}
-    PRODUCTION_REPORT_REMARKS_PATH.write_text(json.dumps(clean, ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(PRODUCTION_REPORT_REMARKS_PATH, clean)
 
 
 def _default_translation_terms_config() -> dict[str, object]:
@@ -2005,7 +2066,7 @@ def _load_translation_terms_config() -> dict[str, object]:
 
 def _save_translation_terms_config(config: dict[str, object]) -> None:
     _ensure_parent(TRANSLATION_TERMS_PATH)
-    TRANSLATION_TERMS_PATH.write_text(json.dumps(_normalize_translation_terms_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(TRANSLATION_TERMS_PATH, _normalize_translation_terms_config(config))
 
 
 TRANSLATION_REPORT_TYPE_LABELS = {
@@ -2118,7 +2179,7 @@ def _load_translation_tuning_config() -> dict[str, object]:
 def _save_translation_tuning_config(config: dict[str, object]) -> None:
     _ensure_parent(TRANSLATION_TUNING_PATH)
     normalized = _normalize_translation_tuning_config(config)
-    TRANSLATION_TUNING_PATH.write_text(json.dumps(normalized, ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(TRANSLATION_TUNING_PATH, normalized)
     TRANSLATION_TUNING_PATH.chmod(0o600)
 
 
@@ -2229,7 +2290,7 @@ def _load_ai_model_config() -> dict[str, object]:
 
 def _save_ai_model_config(config: dict[str, object]) -> None:
     _ensure_parent(AI_MODELS_PATH)
-    AI_MODELS_PATH.write_text(json.dumps(_normalize_ai_model_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(AI_MODELS_PATH, _normalize_ai_model_config(config), private=True)
     AI_MODELS_PATH.chmod(0o600)
 
 
@@ -2476,6 +2537,29 @@ def _ai_extraction_catalog() -> dict[str, object]:
             "label": TRANSLATION_REPORT_TYPE_LABELS[report_type],
             "sections": sections,
         })
+    common_sections: list[dict[str, object]] = []
+    section_names = ["report_fields", *REPORT_TABLES[REPORT_TYPE_ORDER[0]]["multi"]]
+    for section in section_names:
+        if section != "report_fields" and not all(section in REPORT_TABLES[item]["multi"] for item in REPORT_TYPE_ORDER):
+            continue
+        field_sets = []
+        for report_type in REPORT_TYPE_ORDER:
+            schema = REPORT_TABLES[report_type]
+            fields = schema["field_columns"] if section == "report_fields" else ROW_COLUMNS.get(section, [])
+            field_sets.append({field for field in fields if field != "record_id"})
+        common = set.intersection(*field_sets) if field_sets else set()
+        reference = REPORT_TABLES[REPORT_TYPE_ORDER[0]]["field_columns"] if section == "report_fields" else ROW_COLUMNS.get(section, [])
+        fields = [
+            {"value": field, "label": TRANSLATION_FIELD_LABELS.get(field, field)}
+            for field in reference if field in common
+        ]
+        if fields:
+            common_sections.append({
+                "value": section,
+                "label": "日报基础信息" if section == "report_fields" else TRANSLATION_SECTION_LABELS.get(section, section),
+                "fields": fields,
+            })
+    report_types.insert(0, {"value": "all", "label": "所有日报类型", "sections": common_sections})
     return {
         "report_types": report_types,
         "target_fields": [{"value": value, "label": label} for value, label in AI_EXTRACTION_TARGET_FIELDS],
@@ -2494,11 +2578,11 @@ def _default_ai_extraction_config() -> dict[str, object]:
         "rules": [{
             "id": "npt-service-line",
             "name": "NPT责任方识别",
-            "report_type": "drilling",
+            "report_type": "all",
             "source_section": "operations",
             "source_field": "operation_details",
-            "condition": "仅处理作业类型为 NPT 的明细；描述中没有明确责任公司时返回空值。",
-            "instruction": "识别NPT描述中被明确表述为责任方的公司或Service Line。优先识别西语 A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE，以及英语 RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO 等责任表达。设备、工具或服务商名称只有在责任关系明确时才可输出。只返回责任方名称；无法确认时返回空值。如果责任公司与井队公司一致，输出完整井队名称。",
+            "condition": "处理所有日报类型中作业类型为 NPT 的明细；按明确归责、故障归属、服务品牌证据的优先级识别，缺少有效证据时返回空值。",
+            "instruction": "提取造成该段NPT的责任公司或Service Line。第一优先级：A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE、RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO等明确归责表达。第二优先级：描述明确指出某公司的设备、工具或服务发生FALLA、ANOMALIA、PERDIDA、CAIDA、FAULT、FAILURE、LOSS等故障，并由该公司处置。第三优先级：故障对象与唯一服务品牌存在明确归属，例如HAL/HALLIBURTON/SPERRY、SLB/SCHLUMBERGER/SLB-RPS、CNLC-WIRELINE。仅出现iCruise、MWD、LWD、BHA或公司参与后续处置，不足以判定责任；故障若明确位于钻杆、套管等其他对象，也不得归责给同段出现的定向服务商。不得仅根据井队上下文猜测，不得把无关的协助或后续作业公司当成责任方。只返回一个责任方名称；没有充分证据返回空字符串。如果责任公司与井队公司一致，输出完整井队名称。",
             "target_field": "service_line",
             "output_format": "company",
             "model_id": "",
@@ -2511,12 +2595,16 @@ def _normalize_ai_extraction_rule(raw: object, index: int) -> dict[str, object] 
     if not isinstance(raw, dict):
         return None
     report_type = str(raw.get("report_type", "") or "").strip().lower()
-    if report_type not in REPORT_TABLES:
+    if report_type not in {*REPORT_TABLES, "all"}:
         return None
     source_section = str(raw.get("source_section", "") or "").strip()
     source_field = str(raw.get("source_field", "") or "").strip()
-    schema = REPORT_TABLES[report_type]
-    valid_fields = schema["field_columns"] if source_section == "report_fields" else ROW_COLUMNS.get(source_section, []) if source_section in schema["multi"] else []
+    schemas = [REPORT_TABLES[item] for item in REPORT_TYPE_ORDER] if report_type == "all" else [REPORT_TABLES[report_type]]
+    field_sets: list[set[str]] = []
+    for schema in schemas:
+        fields = schema["field_columns"] if source_section == "report_fields" else ROW_COLUMNS.get(source_section, []) if source_section in schema["multi"] else []
+        field_sets.append(set(fields))
+    valid_fields = set.intersection(*field_sets) if field_sets else set()
     if source_field not in valid_fields or source_field == "record_id":
         return None
     target_values = {value for value, _ in AI_EXTRACTION_TARGET_FIELDS}
@@ -2584,12 +2672,12 @@ def _load_ai_extraction_config() -> dict[str, object]:
 
 def _save_ai_extraction_config(config: dict[str, object]) -> None:
     _ensure_parent(AI_EXTRACTION_RULES_PATH)
-    AI_EXTRACTION_RULES_PATH.write_text(json.dumps(_normalize_ai_extraction_config(config), ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(AI_EXTRACTION_RULES_PATH, _normalize_ai_extraction_config(config))
     AI_EXTRACTION_RULES_PATH.chmod(0o600)
 
 
 def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], source_text: str) -> dict[str, object]:
-    system_prompt = "你是钻完井生产数据提炼助手。严格按要求提取一个字段值，不翻译、不解释、不补充原文没有的信息。无法确定时返回空字符串。"
+    system_prompt = "你是钻完井生产数据提炼助手。严格按证据优先级提取一个字段值，不翻译、不解释、不输出分析过程。无法确定时返回空字符串。"
     user_prompt = (
         f"规则名称：{rule.get('name', '')}\n"
         f"适用条件：{rule.get('condition', '') or '无额外条件'}\n"
@@ -2639,17 +2727,40 @@ def _explicit_responsible_party(source_text: str) -> str:
     return ""
 
 
+def _evidence_responsible_party(source_text: str) -> str:
+    explicit = _explicit_responsible_party(source_text)
+    if explicit:
+        return explicit
+    text = re.sub(r"\s+", " ", str(source_text or "")).upper()
+    causal = re.search(r"FALL[AO]|FALLA|FAIL(?:URE|ED)?|FAULT|ANOMAL|P[ÉE]RDIDA|LOSS|CA[IÍ]DA|DEFECT|DA[ÑN]O|WASHOUT", text)
+    if not causal:
+        return ""
+    aliases = (
+        (r"\bSINOPEC[- /]+SLB(?:[- /]+RPS)?\b", None),
+        (r"\bSLB[- /]+RPS\b", "SLB-RPS"),
+        (r"\bCNLC[- /]+WIRELINE\b", "CNLC-WIRELINE"),
+        (r"\b(?:HALLIBURTON\s+SPERRY|HAL\s+SPERRY|SPERRY)\b", "HALLIBURTON SPERRY"),
+        (r"\bSCHLUMBERGER\b", "SLB"),
+        (r"\bSLB\b", "SLB"),
+    )
+    for pattern, canonical in aliases:
+        match = re.search(pattern, text)
+        if match:
+            return canonical or re.sub(r"\s*/\s*", "-", match.group(0)).replace(" ", "-")
+    return ""
+
+
 def _normalize_responsible_party(value: str, payload: dict[str, object]) -> str:
     cleaned = re.sub(r"^(?:RESPONSIBLE\s+(?:PARTY|COMPANY)|SERVICE\s+LINE|RESPONSABLE)\s*[:=-]?\s*", "", str(value or "").strip().strip('"'), flags=re.IGNORECASE)
     cleaned = cleaned.strip(" .;:-")
-    if not cleaned:
+    if not cleaned or cleaned.upper() in {"NULL", "NONE", "N/A", "UNKNOWN", "NO IDENTIFICADO", "无法确定", "空字符串"}:
         return ""
     fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
     metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
     rig = str(fields.get("rig", "") or metadata.get("rig", "") or "").strip()
     company = re.sub(r"[^A-Z0-9]", "", cleaned.upper())
     rig_company = re.sub(r"[^A-Z0-9]", "", re.sub(r"[\s_-]*\d+[A-Z]?$", "", rig.upper()))
-    if rig and rig_company and (company == rig_company or company.startswith(rig_company) or rig_company.startswith(company)):
+    if rig and rig_company and company == rig_company:
         return rig
     return cleaned.upper()
 
@@ -2713,13 +2824,13 @@ def _ai_extraction_units(payload: dict[str, object], rule: dict[str, object]) ->
 def _enabled_extraction_rules(report_type: str = "") -> list[dict[str, object]]:
     config = _load_ai_extraction_config()
     rules = config.get("rules") if isinstance(config.get("rules"), list) else []
-    return [rule for rule in rules if isinstance(rule, dict) and rule.get("enabled") and (not report_type or rule.get("report_type") == report_type)]
+    return [rule for rule in rules if isinstance(rule, dict) and rule.get("enabled") and (not report_type or rule.get("report_type") in {report_type, "all"})]
 
 
 def _payload_has_extraction_units(payload: dict[str, object], report_type: str, rules: list[dict[str, object]] | None = None) -> bool:
     candidates = rules if rules is not None else _enabled_extraction_rules(report_type)
     return any(
-        rule.get("report_type") == report_type and bool(_ai_extraction_units(payload, rule))
+        rule.get("report_type") in {report_type, "all"} and bool(_ai_extraction_units(payload, rule))
         for rule in candidates
     )
 
@@ -2766,6 +2877,13 @@ def _extraction_model(rule: dict[str, object]) -> dict[str, object] | None:
 
 
 def _run_extraction_job(record_id: str, generation: int, overwrite: bool = False) -> None:
+    with background_job_lock("extraction", record_id) as acquired:
+        if not acquired:
+            return
+        _run_extraction_job_locked(record_id, generation, overwrite)
+
+
+def _run_extraction_job_locked(record_id: str, generation: int, overwrite: bool = False) -> None:
     config = _load_ai_extraction_config()
     version = str(config.get("version", "") or "")
     try:
@@ -2819,7 +2937,7 @@ def _run_extraction_job(record_id: str, generation: int, overwrite: bool = False
                 if not model:
                     raise RuntimeError("规则没有可用的 AI 模型")
                 source_text = str(unit.get("source_text", "") or "")
-                explicit_value = _explicit_responsible_party(source_text) if str(rule.get("target_field", "") or "") == "service_line" else ""
+                explicit_value = _evidence_responsible_party(source_text) if str(rule.get("target_field", "") or "") == "service_line" else ""
                 if explicit_value:
                     value = explicit_value
                 else:
@@ -2843,6 +2961,8 @@ def _run_extraction_job(record_id: str, generation: int, overwrite: bool = False
         else:
             update_record_extraction_status(DATABASE_PATH, record_id, status="COMPLETED", progress=100, error="", version=version)
     except Exception as exc:  # pragma: no cover - background task must not stop the server.
+        if not _extraction_job_is_current(record_id, generation):
+            return
         update_record_extraction_status(DATABASE_PATH, record_id, status="FAILED", progress=0, error=str(exc), version=version)
         print(f"extraction job failed for {record_id}: {exc}")
 
@@ -3550,43 +3670,9 @@ def _normalize_project_team_config(raw: object) -> dict[str, object]:
     return {"teams": teams, "projects": projects, "pending_wells": pending}
 
 
-def _auto_register_project_well(payload: dict[str, object], report_type: str) -> None:
-    fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
-    rig = _normalize_rig_name(str(fields.get("rig", "") or "").strip())
-    wellbore = str(fields.get("wellbore", "") or "").strip()
-    if not _is_valid_rig_name(rig) or not wellbore:
-        return
-    config = _load_project_team_config()
-    now = datetime.now().isoformat(timespec="seconds")
-    if not any(_team_name_matches(team, rig) for team in config["teams"]):
-        config["teams"].append({"id": str(uuid.uuid4()), "name": rig, "code": "", "contractor": "", "aliases": [], "status": "active", "created_at": now})
-    active_projects = [project for project in config["projects"] if str(project.get("status", "active")) == "active"]
-    report_date = str(fields.get("reportDate", "") or "").strip()
-    project_matches = _project_rig_matches(config, rig, report_date)
-    if len(project_matches) == 1:
-        project, target = project_matches[0]
-        wells = target.setdefault("wells", [])
-        if wellbore not in wells:
-            wells.append(wellbore)
-            wells.sort()
-            project["updated_at"] = now
-    elif len(active_projects) == 1:
-        _add_pending_or_single_project_well(config, active_projects[0], rig, wellbore, now)
-    else:
-        pending_item = _find_pending_well(config, rig, wellbore)
-        if pending_item is not None:
-            if not str(pending_item.get("report_type", "") or "").strip():
-                pending_item["report_type"] = report_type
-        else:
-            config["pending_wells"].append({"rig": rig, "wellbore": wellbore, "report_type": report_type, "source": "report", "created_at": now})
-    _save_project_team_config(config)
-
-
 def _sync_project_wells_from_database(database_path: Path = DATABASE_PATH) -> dict[str, object]:
     config = _load_project_team_config()
-
-    changed = False
-    now = datetime.now().isoformat(timespec="seconds")
+    discovered: dict[tuple[str, str], dict[str, object]] = {}
     for record in list_records(database_path):
         report_type = str(record.get("report_type", "") or "").strip()
         if report_type not in {"drilling", "completion", "workover"}:
@@ -3595,123 +3681,21 @@ def _sync_project_wells_from_database(database_path: Path = DATABASE_PATH) -> di
         wellbore = str(record.get("wellbore", "") or "").strip()
         if not _is_valid_rig_name(rig) or not wellbore:
             continue
-        if not any(_team_name_matches(team, rig) for team in config["teams"]):
-            config["teams"].append({
-                "id": str(uuid.uuid4()),
-                "name": rig,
-                "code": "",
-                "contractor": "",
-                "aliases": [],
-                "status": "active",
-                "created_at": now,
-            })
-            changed = True
-
-        report_date = str(record.get("reportDate", "") or "").strip()
-        project_matches = _project_rig_matches(config, rig, report_date)
-        if len(project_matches) == 1:
-            project, target = project_matches[0]
-            wells = target.setdefault("wells", [])
-            if wellbore not in wells:
-                wells.append(wellbore)
-                wells.sort()
-                project["updated_at"] = now
-                changed = True
-            if _remove_pending_well(config, rig, wellbore):
-                changed = True
+        if _project_assignments_for_record(record, config=config):
             continue
-
-        active_projects = [project for project in config["projects"] if str(project.get("status", "active")) == "active"]
-        if len(active_projects) == 1:
-            before = json.dumps(config, ensure_ascii=False, sort_keys=True)
-            _add_pending_or_single_project_well(config, active_projects[0], rig, wellbore, now)
-            changed = changed or before != json.dumps(config, ensure_ascii=False, sort_keys=True)
-            continue
-
-        if _project_has_well(config, rig, wellbore):
-            continue
-        pending_item = _find_pending_well(config, rig, wellbore)
-        if pending_item is not None:
-            if not str(pending_item.get("report_type", "") or "").strip():
-                pending_item["report_type"] = report_type
-                changed = True
-            continue
-        if not _pending_has_well(config, rig, wellbore):
-            config["pending_wells"].append({
-                "rig": rig,
-                "wellbore": wellbore,
-                "report_type": report_type,
-                "source": "report",
-                "created_at": now,
-            })
-            changed = True
-
-    if changed:
-        _save_project_team_config(config)
-        config = _load_project_team_config()
+        key = (rig, wellbore)
+        discovered.setdefault(key, {
+            "rig": rig,
+            "wellbore": wellbore,
+            "report_type": report_type,
+            "source": "report",
+            "created_at": str(record.get("created_at", "") or ""),
+        })
+    config["pending_wells"] = sorted(
+        discovered.values(),
+        key=lambda item: (str(item.get("rig", "")), str(item.get("wellbore", ""))),
+    )
     return config
-
-
-def _project_has_well(config: dict[str, object], rig: str, wellbore: str) -> bool:
-    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
-        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
-            if not _rig_name_matches(config, str(rig_item.get("rig", "") or "").strip(), rig):
-                continue
-            wells = {str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()}
-            if wellbore in wells:
-                return True
-    return False
-
-
-def _pending_has_well(config: dict[str, object], rig: str, wellbore: str) -> bool:
-    return any(item.get("rig") == rig and item.get("wellbore") == wellbore for item in _list_value(config.get("pending_wells")))
-
-
-def _find_pending_well(config: dict[str, object], rig: str, wellbore: str) -> dict[str, object] | None:
-    for item in _list_value(config.get("pending_wells")):
-        if item.get("rig") == rig and item.get("wellbore") == wellbore:
-            return item
-    return None
-
-
-def _remove_pending_well(config: dict[str, object], rig: str, wellbore: str) -> bool:
-    current = _list_value(config.get("pending_wells"))
-    next_items = [item for item in current if not (item.get("rig") == rig and item.get("wellbore") == wellbore)]
-    if len(next_items) == len(current):
-        return False
-    config["pending_wells"] = next_items
-    return True
-
-
-def _project_rig_matches(config: dict[str, object], rig: str, report_date: str = "") -> list[tuple[dict[str, object], dict[str, object]]]:
-    matches = []
-    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
-        if str(project.get("status", "active") or "active") != "active":
-            continue
-        if not _date_in_range(report_date, str(project.get("start_date", "") or ""), str(project.get("end_date", "") or "")):
-            continue
-        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
-            if _rig_name_matches(config, str(rig_item.get("rig", "") or "").strip(), rig):
-                matches.append((project, rig_item))
-                break
-    return matches
-
-
-def _add_pending_or_single_project_well(config: dict[str, object], project: dict[str, object], rig: str, wellbore: str, now: str) -> None:
-    rigs = project.setdefault("rigs", [])
-    target = next((item for item in rigs if item.get("rig") == rig), None)
-    if target is None:
-        target = {"rig": rig, "start_date": "", "end_date": "", "wells": [], "note": ""}
-        rigs.append(target)
-    wells = target.setdefault("wells", [])
-    if wellbore not in wells:
-        wells.append(wellbore)
-        wells.sort()
-        project["updated_at"] = now
-    config["pending_wells"] = [
-        item for item in _list_value(config.get("pending_wells"))
-        if not (item.get("rig") == rig and item.get("wellbore") == wellbore)
-    ]
 
 
 def _load_users() -> list[dict[str, object]]:
@@ -3726,7 +3710,7 @@ def _load_users() -> list[dict[str, object]]:
 
 def _save_users(users: list[dict[str, object]]) -> None:
     _ensure_parent(USERS_PATH)
-    USERS_PATH.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+    _atomic_write_json(USERS_PATH, users, private=True)
 
 
 def _public_user(user: dict[str, object]) -> dict[str, object]:
@@ -3803,8 +3787,9 @@ def _write_audit(user: dict[str, object] | None, action: str, module: str, targe
         "result": "success" if ok else "failed",
         "note": note,
     }
-    with AUDIT_LOG_PATH.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    with AUDIT_LOG_LOCK:
+        with AUDIT_LOG_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
 def _read_audit_logs(limit: int = 100) -> list[dict[str, object]]:
@@ -3824,6 +3809,20 @@ def _ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def _atomic_write_json(path: Path, value: object, *, private: bool = False) -> None:
+    _ensure_parent(path)
+    data = json.dumps(value, ensure_ascii=False, indent=2)
+    with CONFIG_WRITE_LOCK:
+        temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+        try:
+            temporary.write_text(data, encoding="utf-8")
+            if private:
+                temporary.chmod(0o600)
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the drilling report web form with PDF import.")
     parser.add_argument("--host", default="127.0.0.1")
@@ -3837,6 +3836,7 @@ def main() -> None:
         _reset_admin_password(args.admin_username, password)
         print(f"Admin reset complete. username={args.admin_username} password={password}")
         return
+    _ensure_admin_files()
     initialize_database(DATABASE_PATH)
     _resume_translation_jobs()
     _resume_extraction_jobs()
@@ -4003,8 +4003,6 @@ UNASSIGNED_PROJECT_ID = "__unassigned__"
 
 
 def _production_summary_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
-    if _truthy(_param(params, "project_mode")) or _param_values(params, "project") or _param_values(params, "rig"):
-        _sync_project_wells_from_database(database_path)
     rows = _filtered_fact_rows(database_path, params)
     records = rows["records"]
     operations = rows["operations"]
@@ -4049,7 +4047,7 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
         "by_type": [{"report_type": key, "label": REPORT_TYPE_LABELS[key], "hours": round(value, 2)} for key, value in by_type.items()],
         "monthly": [{"month": month, **{key: round(value, 2) for key, value in values.items()}} for month, values in sorted(monthly.items())],
         "details": details,
-        "scope_note": "基于已保存到 Excel 库的日报解析数据",
+        "scope_note": "基于已保存到 MySQL 的日报解析数据",
     }
 
 
@@ -4471,6 +4469,11 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
     extraction_version = str(_load_ai_extraction_config().get("version", "") or "")
     extraction_index: dict[tuple[str, int], dict[str, Any]] = {}
     raw_records = list_records(database_path)
+    payloads = load_report_payloads(
+        database_path,
+        [str(record.get("record_id", "") or "") for record in raw_records],
+    )
+    project_config = _load_project_team_config()
     translation_index: dict[tuple[str, str], dict[str, str]] = {}
     try:
         translation_index = {
@@ -4498,15 +4501,14 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
             continue
         if well_filter and well_filter.lower() not in str(record.get("wellbore", "") or "").lower():
             continue
-        project_matches = _project_assignments_for_record(record, project_filter)
+        project_matches = _project_assignments_for_record(record, project_filter, project_config)
         if project_filter and not project_matches:
             continue
         if project_mode and not project_matches:
             project_matches = [_unassigned_project_assignment()]
         matched_records = [{**record, **project} for project in project_matches] if project_matches else [record]
-        try:
-            payload = load_report_payload(database_path, str(record.get("record_id") or ""))
-        except (KeyError, FileNotFoundError, ValueError):
+        payload = payloads.get(str(record.get("record_id") or ""))
+        if payload is None:
             continue
         fields = payload.get("report_fields", {}) if isinstance(payload.get("report_fields", {}), dict) else {}
         event = str(fields.get("event", "") or record.get("event", "") or "")
@@ -4518,7 +4520,7 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                 if not isinstance(row, dict):
                     continue
                 hours = _safe_float(row.get("hours"))
-                op_type = str(row.get("confirmed_op_type", "") or row.get("op_type", "") or row.get("system_op_type", "") or "").strip().upper()
+                op_type = _effective_operation_type(row)
                 extraction = extraction_index.get((str(matched_record.get("record_id", "") or ""), row_no), {})
                 operation_details = str(row.get("operation_details", "") or "")
                 record_id = str(matched_record.get("record_id", "") or "")
@@ -4621,13 +4623,17 @@ def _project_filter_options() -> list[dict[str, str]]:
     return options
 
 
-def _project_assignments_for_record(record: dict[str, str], selected_projects: set[str] | None = None) -> list[dict[str, str]]:
+def _project_assignments_for_record(
+    record: dict[str, str],
+    selected_projects: set[str] | None = None,
+    config: dict[str, object] | None = None,
+) -> list[dict[str, str]]:
     rig = _normalize_rig_name(str(record.get("rig", "") or "").strip())
     wellbore = str(record.get("wellbore", "") or "").strip()
     report_date = str(record.get("reportDate", "") or "").strip()
     if not _is_valid_rig_name(rig):
         return []
-    config = _load_project_team_config()
+    config = config or _load_project_team_config()
     matches: list[dict[str, str]] = []
     for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
         project_id = str(project.get("id", "") or "").strip()
@@ -4752,6 +4758,15 @@ def _safe_float(value: object) -> float:
         return float(str(value or "0").replace(",", ""))
     except ValueError:
         return 0.0
+
+
+def _effective_operation_type(row: dict[str, object]) -> str:
+    return str(
+        row.get("confirmed_op_type", "")
+        or row.get("op_type", "")
+        or row.get("system_op_type", "")
+        or ""
+    ).strip().upper()
 
 
 def _truthy(value: object) -> bool:

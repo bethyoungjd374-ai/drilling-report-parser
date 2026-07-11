@@ -1,7 +1,7 @@
 const i18n = {
   zh: {
     ui: {
-      appTitleShort: "厄瓜油田", appSubtitle: "Report Platform", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
+      appTitleShort: "NexoRig", appSubtitle: "智井平台", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
       systemAdmin: "系统后台",
       menuDailyParsing: "日报解析", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
       menuProductionReport: "生产报表", menuRigProductionSummary: "生产时效", menuProductionDetailReport: "生产报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
@@ -76,7 +76,7 @@ const i18n = {
   },
   en: {
     ui: {
-      appTitleShort: "Ecuador Field", appSubtitle: "Report Platform", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
+      appTitleShort: "NexoRig", appSubtitle: "Drilling Intelligence", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
       systemAdmin: "System Admin",
       menuDailyParsing: "Daily Parsing", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
       menuProductionReport: "Production Reports", menuRigProductionSummary: "Production Time", menuProductionDetailReport: "Production Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
@@ -151,7 +151,7 @@ const i18n = {
   },
   es: {
     ui: {
-      appTitleShort: "Campo Ecuador", appSubtitle: "Plataforma de Reportes", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
+      appTitleShort: "NexoRig", appSubtitle: "Inteligencia de Perforación", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
       systemAdmin: "Administración",
       menuDailyParsing: "Análisis de Reportes", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
       menuProductionReport: "Reportes de Producción", menuRigProductionSummary: "Tiempo de Producción", menuProductionDetailReport: "Reporte de Producción", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
@@ -446,11 +446,13 @@ function setDrillingSourceFile(filename = "") {
 function setNptConfirmBreadcrumb(current = "") {
   const currentLabel = document.querySelector("[data-npt-breadcrumb-current]");
   const separator = document.querySelector("[data-npt-breadcrumb-separator]");
+  const backButton = document.querySelector("[data-npt-global-back]");
   if (!currentLabel || !separator) return;
   const hasCurrent = Boolean(String(current || "").trim());
   currentLabel.textContent = hasCurrent ? current : "";
   currentLabel.hidden = !hasCurrent;
   separator.hidden = !hasCurrent;
+  if (backButton) backButton.hidden = !hasCurrent;
 }
 
 function reportName(reportType) {
@@ -664,6 +666,11 @@ function applyLanguage(language) {
   });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.placeholder = ui(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const label = ui(el.dataset.i18nTitle);
+    el.title = label;
+    el.setAttribute("aria-label", label);
   });
   document.querySelectorAll(".page-breadcrumb").forEach((el) => el.setAttribute("aria-label", ui("breadcrumbAria")));
   renderFrontUserBar();
@@ -1753,6 +1760,7 @@ function recordPaginationMarkup(reportType, currentPage, totalPages, totalRows) 
       <span>${totalRows} ${ui("recordsCount")} / ${ui("page")} ${currentPage} / ${totalPages}</span>
       <div class="record-page-buttons">
         <button class="icon-button" type="button" data-record-page="${currentPage - 1}" data-report-type="${reportType}" ${currentPage <= 1 ? "disabled" : ""} aria-label="${ui("prevPage")}">‹</button>
+        <label class="page-jump">第 <input type="number" min="1" max="${totalPages}" value="${currentPage}" inputmode="numeric" data-record-page-jump data-report-type="${reportType}" aria-label="跳转页码" /> / ${totalPages} 页</label>
         <button class="icon-button" type="button" data-record-page="${currentPage + 1}" data-report-type="${reportType}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="${ui("nextPage")}">›</button>
       </div>
     </div>
@@ -1766,6 +1774,7 @@ function analyticsPaginationMarkup(kind, currentPage, totalPages, totalRows) {
       <span>${totalRows} ${ui("recordsCount")} / ${ui("page")} ${currentPage} / ${totalPages}</span>
       <div class="record-page-buttons">
         <button class="icon-button" type="button" data-analytics-page="${currentPage - 1}" data-analytics-kind="${kind}" ${currentPage <= 1 ? "disabled" : ""} aria-label="${ui("prevPage")}">‹</button>
+        <label class="page-jump">第 <input type="number" min="1" max="${totalPages}" value="${currentPage}" inputmode="numeric" data-analytics-page-jump data-analytics-kind="${kind}" aria-label="跳转页码" /> / ${totalPages} 页</label>
         <button class="icon-button" type="button" data-analytics-page="${currentPage + 1}" data-analytics-kind="${kind}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="${ui("nextPage")}">›</button>
       </div>
     </div>
@@ -1783,6 +1792,31 @@ function analyticsPageSlice(kind, rows) {
     currentPage,
     totalPages
   };
+}
+
+function clampPage(value, totalPages) {
+  const page = Number.parseInt(value, 10);
+  return Math.min(Math.max(Number.isFinite(page) ? page : 1, 1), Math.max(1, totalPages));
+}
+
+function renderAnalyticsPage(kind) {
+  if (kind === "npt") return renderNptTable(nptReportVisibleRows(analyticsState.npt.payload?.details || []));
+  if (kind === "productionReport") return renderProductionReportTable(productionReportVisibleRows(analyticsState.productionReport.payload?.details || []));
+  return renderProductionTable(analyticsState.production.payload?.details || []);
+}
+
+function commitRecordPageJump(input) {
+  const reportType = input?.dataset.reportType;
+  if (!recordState[reportType]) return;
+  recordState[reportType].page = clampPage(input.value, Number(input.max || 1));
+  renderRecordDashboard(reportType);
+}
+
+function commitAnalyticsPageJump(input) {
+  const kind = input?.dataset.analyticsKind;
+  if (!analyticsState[kind]) return;
+  analyticsState[kind].detailPage = clampPage(input.value, Number(input.max || 1));
+  renderAnalyticsPage(kind);
 }
 
 function analyticsSortHeader(kind, field, label) {
@@ -2290,7 +2324,6 @@ function projectOptionLabel(item = {}) {
 
 function renderProductionAnalytics(payload) {
   const kpis = payload.kpis || {};
-  const completeness = kpis.completeness || {};
   const note = document.querySelector('[data-analytics-note="production"]');
   if (note) note.textContent = ui("analyticsProductionScope");
   document.querySelector('[data-analytics-kpis="production"]').innerHTML = [
@@ -2298,7 +2331,6 @@ function renderProductionAnalytics(payload) {
     analyticsKpi(ui("kpiWellCount"), kpis.well_count || 0, ""),
     analyticsKpi(ui("kpiTotalHours"), `${formatHours(kpis.total_hours)} h`, ""),
     analyticsKpi(ui("kpiTotalNpt"), `${formatHours(kpis.npt_hours)} h`, ""),
-    analyticsKpi(ui("kpiReportCompleteness"), `${completeness.percent || 0}%`, ui("analyticsCompletenessCaption").replace("{missing}", completeness.missing_days || 0).replace("{warning}", completeness.warning_days || 0)),
   ].join("");
   const reportTypeSeries = Object.keys(REPORT_TYPE_LABELS_JS).map((key) => ({ key, label: reportTypeLabel(key) }));
   renderProductionNptRanking('[data-chart="production-rig"]', payload.npt_by_rig || []);
@@ -5061,9 +5093,7 @@ document.addEventListener("click", (event) => {
     const kind = analyticsPageButton.dataset.analyticsKind;
     if (analyticsState[kind]) {
       analyticsState[kind].detailPage = Number(analyticsPageButton.dataset.analyticsPage) || 1;
-      if (kind === "npt") renderNptTable(nptReportVisibleRows(analyticsState.npt.payload?.details || []));
-      else if (kind === "productionReport") renderProductionReportTable(productionReportVisibleRows(analyticsState.productionReport.payload?.details || []));
-      else renderProductionTable(analyticsState.production.payload?.details || []);
+      renderAnalyticsPage(kind);
     }
     return;
   }
@@ -5153,6 +5183,8 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-record-page-jump]")) return commitRecordPageJump(event.target);
+  if (event.target.matches("[data-analytics-page-jump]")) return commitAnalyticsPageJump(event.target);
   const productionScopeType = event.target.closest("[data-production-scope-type]");
   if (productionScopeType) {
     const payload = analyticsState.production.payload || {};
@@ -5288,6 +5320,14 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && event.target.matches("[data-record-page-jump]")) {
+    event.preventDefault();
+    return commitRecordPageJump(event.target);
+  }
+  if (event.key === "Enter" && event.target.matches("[data-analytics-page-jump]")) {
+    event.preventDefault();
+    return commitAnalyticsPageJump(event.target);
+  }
   if (event.key === "Escape") {
     document.querySelector(".npt-description-popover")?.remove();
   }

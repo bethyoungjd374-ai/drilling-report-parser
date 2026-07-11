@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +8,14 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATABASE_LABEL = Path("mysql")
 _last_mysql_error = ""
+
+
+@contextmanager
+def background_job_lock(kind: str, record_id: str):
+    from . import mysql_database
+
+    with mysql_database.background_job_lock(kind, record_id) as acquired:
+        yield acquired
 
 
 def initialize_database(database_path: str | Path | None = None) -> Path:
@@ -50,6 +59,24 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
     payload = mysql_database.load_report_payload(None, record_id)
     _clear_mysql_failure()
     return payload
+
+
+def load_report_payloads(
+    database_path: str | Path,
+    record_ids: list[str],
+    *,
+    include_translations: bool = False,
+) -> dict[str, dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    payloads = mysql_database.load_report_payloads(
+        None,
+        record_ids,
+        include_translations=include_translations,
+    )
+    _clear_mysql_failure()
+    return payloads
 
 
 def save_translation_content(database_path: str | Path, record_id: str, rows: list[dict[str, Any]]) -> None:

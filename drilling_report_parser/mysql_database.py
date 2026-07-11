@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -61,6 +63,26 @@ def initialize_database() -> None:
         connection.commit()
 
 
+@contextmanager
+def background_job_lock(kind: str, record_id: str):
+    lock_key = hashlib.sha256(f"drp:{kind}:{record_id}".encode("utf-8")).hexdigest()[:60]
+    connection = _connect()
+    acquired = False
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT GET_LOCK(%s, 0) AS acquired", (lock_key,))
+            acquired = bool((cursor.fetchone() or {}).get("acquired"))
+        yield acquired
+    finally:
+        if acquired:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT RELEASE_LOCK(%s)", (lock_key,))
+            except Exception:
+                pass
+        connection.close()
+
+
 def _ensure_report_record_columns(cursor: Any) -> None:
     cursor.execute("SHOW COLUMNS FROM report_records")
     columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
@@ -103,7 +125,10 @@ def save_report_payload(
 
     with _connect() as connection:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT locked, created_at FROM report_records WHERE record_id=%s", (record_id,))
+            cursor.execute(
+                "SELECT locked, created_at FROM report_records WHERE record_id=%s FOR UPDATE",
+                (record_id,),
+            )
             existing = cursor.fetchone() or {}
             if _truthy(existing.get("locked")):
                 raise PermissionError(f"Record is locked after NPT confirmation: {record_id}")
@@ -188,6 +213,73 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
     if translation_content:
         payload["translation_content"] = translation_content
     return payload
+
+
+def load_report_payloads(
+    database_path: str | Path | None,
+    record_ids: list[str],
+    *,
+    include_translations: bool = False,
+) -> dict[str, dict[str, Any]]:
+    del database_path
+    clean_ids = list(dict.fromkeys(str(value or "").strip() for value in record_ids if str(value or "").strip()))
+    if not clean_ids:
+        return {}
+    placeholders = ",".join(["%s"] * len(clean_ids))
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT r.*, f.fields_json
+                FROM report_records r
+                LEFT JOIN report_fields f ON f.record_id=r.record_id
+                WHERE r.record_id IN ({placeholders})
+                """,
+                clean_ids,
+            )
+            records = cursor.fetchall()
+            cursor.execute(
+                f"""
+                SELECT record_id, module_name, row_no, row_json
+                FROM report_rows
+                WHERE record_id IN ({placeholders})
+                ORDER BY record_id, module_name, row_no
+                """,
+                clean_ids,
+            )
+            rows = cursor.fetchall()
+            translations: list[dict[str, Any]] = []
+            if include_translations:
+                cursor.execute(
+                    f"SELECT * FROM translation_content WHERE record_id IN ({placeholders})",
+                    clean_ids,
+                )
+                translations = cursor.fetchall()
+
+    payloads: dict[str, dict[str, Any]] = {}
+    for record in records:
+        record_id = _text(record.get("record_id"))
+        report_type = _normalize_report_type(_text(record.get("report_type")))
+        payloads[record_id] = {
+            "metadata": _payload_metadata(record),
+            "report_fields": _json_loads(record.get("fields_json"), {}),
+            **{module_name: [] for module_name in REPORT_TABLES[report_type]["multi"]},
+        }
+    for row in rows:
+        payload = payloads.get(_text(row.get("record_id")))
+        module_name = _text(row.get("module_name"))
+        if payload is not None and isinstance(payload.get(module_name), list):
+            payload[module_name].append(_json_loads(row.get("row_json"), {}))
+    if include_translations:
+        for row in translations:
+            payload = payloads.get(_text(row.get("record_id")))
+            if payload is not None:
+                payload.setdefault("translation_content", []).append({
+                    key: _text(value)
+                    for key, value in row.items()
+                    if key != "mysql_updated_at"
+                })
+    return payloads
 
 
 def delete_report_payload(database_path: str | Path | None, record_id: str) -> bool:
@@ -597,7 +689,8 @@ def load_npt_confirmation_detail(
                 "op_sub": row.get("op_sub", ""),
                 "operation_details": row.get("operation_details", ""),
                 "system_op_type": system_type,
-                "confirmed_op_type": confirmed_type,
+                "confirmed_op_type": str(row.get("draft_op_type", "") or confirmed_type).strip().upper(),
+                "row_revision": _npt_row_revision(row),
             })
     dates = [str(record.get("reportDate", "") or "") for record in relevant_records if record.get("reportDate")]
     meta = {
@@ -633,6 +726,7 @@ def save_npt_confirmation(
         raise PermissionError(f"Well is locked after NPT confirmation: {wellbore}")
     allowed_record_ids = {str(row.get("record_id", "") or "") for row in detail["operations"]}
     updates: dict[tuple[str, int], str] = {}
+    revisions: dict[tuple[str, int], str] = {}
     for row in operations:
         record_id = str(row.get("record_id", "") or "")
         if record_id not in allowed_record_ids:
@@ -644,12 +738,26 @@ def save_npt_confirmation(
         confirmed_type = str(row.get("confirmed_op_type", "") or "").strip().upper()
         if confirmed_type in {"P", "SC", "NPT"} and row_no > 0:
             updates[(record_id, row_no)] = confirmed_type
+            revisions[(record_id, row_no)] = str(row.get("row_revision", "") or "")
     if not updates:
         raise ValueError("No valid NPT confirmation rows.")
     touched_ids: set[str] = set()
     now = _now()
     with _connect() as connection:
         with connection.cursor() as cursor:
+            record_ids = sorted(allowed_record_ids)
+            placeholders = ",".join(["%s"] * len(record_ids))
+            cursor.execute(
+                f"SELECT record_id, locked FROM report_records WHERE record_id IN ({placeholders}) FOR UPDATE",
+                record_ids,
+            )
+            locked_records = [
+                _text(row.get("record_id"))
+                for row in cursor.fetchall()
+                if _truthy(row.get("locked"))
+            ]
+            if locked_records:
+                raise PermissionError(f"Report is locked after NPT confirmation: {locked_records[0]}")
             for (record_id, row_no), confirmed_type in updates.items():
                 cursor.execute(
                     """
@@ -663,11 +771,17 @@ def save_npt_confirmation(
                 if not row:
                     continue
                 row_json = _json_loads(row.get("row_json"), {})
+                expected_revision = revisions.get((record_id, row_no), "")
+                if expected_revision and expected_revision != _npt_row_revision(row_json):
+                    raise RuntimeError("NPT operation changed after it was loaded; refresh and try again.")
                 current_type = str(row_json.get("op_type", "") or "").strip().upper()
                 row_json.setdefault("system_op_type", current_type)
-                row_json["confirmed_op_type"] = confirmed_type
                 if submit:
+                    row_json["confirmed_op_type"] = confirmed_type
                     row_json["op_type"] = confirmed_type
+                    row_json.pop("draft_op_type", None)
+                else:
+                    row_json["draft_op_type"] = confirmed_type
                 cursor.execute(
                     """
                     UPDATE report_rows
@@ -763,7 +877,19 @@ def _upsert_record(cursor: Any, record: dict[str, str]) -> None:
         "updated_at",
     ]
     placeholders = ", ".join(["%s"] * len(columns))
-    update_clause = ", ".join(f"{column}=VALUES({column})" for column in columns if column != "record_id")
+    immutable_after_insert = {
+        "record_id",
+        "locked",
+        "confirmation_status",
+        "confirmed_at",
+        "confirmed_by",
+        "confirmation_note",
+    }
+    update_clause = ", ".join(
+        f"{column}=VALUES({column})"
+        for column in columns
+        if column not in immutable_after_insert
+    )
     cursor.execute(
         f"""
         INSERT INTO report_records ({", ".join(columns)})
@@ -857,6 +983,31 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _payload_metadata(row: dict[str, Any]) -> dict[str, str]:
+    return {
+        "record_id": _text(row.get("record_id")),
+        "report_type": _text(row.get("report_type")),
+        "source_file": _text(row.get("source_file")),
+        "parser": _text(row.get("parser")),
+        "source_language": _text(row.get("source_language")),
+        "translation_status": _text(row.get("translation_status")),
+        "translation_progress": _text(row.get("translation_progress")),
+        "translation_error": _text(row.get("translation_error")),
+        "translation_version": _text(row.get("translation_version")),
+        "translation_updated_at": _text(row.get("translation_updated_at")),
+        "extraction_status": _text(row.get("extraction_status")),
+        "extraction_progress": _text(row.get("extraction_progress")),
+        "extraction_error": _text(row.get("extraction_error")),
+        "extraction_version": _text(row.get("extraction_version")),
+        "extraction_updated_at": _text(row.get("extraction_updated_at")),
+        "locked": _text(row.get("locked")),
+        "confirmation_status": _text(row.get("confirmation_status")),
+        "confirmed_at": _text(row.get("confirmed_at")),
+        "confirmed_by": _text(row.get("confirmed_by")),
+        "confirmation_note": _text(row.get("confirmation_note")),
+    }
+
+
 def _npt_candidate_records(
     *,
     rig: str = "",
@@ -923,6 +1074,12 @@ def _safe_float(value: Any) -> float:
         return float(str(value or "0").replace(",", ""))
     except ValueError:
         return 0.0
+
+
+def _npt_row_revision(row: dict[str, Any]) -> str:
+    persisted = {key: value for key, value in row.items() if key != "row_no"}
+    value = json.dumps(persisted, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def _operation_hour_summary(rows: list[dict[str, Any]]) -> dict[str, dict[str, float]]:

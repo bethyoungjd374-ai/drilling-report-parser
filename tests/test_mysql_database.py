@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from drilling_report_parser.mysql_database import _ensure_report_record_columns, _operation_hour_summary
+from drilling_report_parser.mysql_database import _ensure_report_record_columns, _npt_row_revision, _operation_hour_summary, _upsert_record
 
 
 class FakeCursor:
@@ -10,7 +10,7 @@ class FakeCursor:
         self.columns = columns
         self.statements: list[str] = []
 
-    def execute(self, statement: str) -> None:
+    def execute(self, statement: str, _args: object = None) -> None:
         self.statements.append(statement)
 
     def fetchall(self) -> list[dict[str, str]]:
@@ -26,6 +26,30 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
         ])
 
         self.assertEqual(summary["r-1"], {"p_hours": 18.0, "sc_hours": 2.5, "npt_hours": 3.5})
+
+    def test_operation_hour_summary_ignores_draft_type(self) -> None:
+        summary = _operation_hour_summary([
+            {"record_id": "r-1", "row_json": '{"hours":"3.5","op_type":"SC","draft_op_type":"NPT"}'},
+        ])
+
+        self.assertEqual(summary["r-1"], {"p_hours": 0.0, "sc_hours": 3.5, "npt_hours": 0.0})
+
+    def test_report_upsert_does_not_overwrite_confirmation_lock(self) -> None:
+        cursor = FakeCursor([])
+
+        _upsert_record(cursor, {"record_id": "r-1"})
+
+        statement = cursor.statements[0]
+        update_clause = statement.split("ON DUPLICATE KEY UPDATE", 1)[1]
+        self.assertNotIn("locked=VALUES(locked)", update_clause)
+        self.assertNotIn("confirmation_status=VALUES(confirmation_status)", update_clause)
+        self.assertIn("translation_status=VALUES(translation_status)", update_clause)
+
+    def test_npt_revision_ignores_query_only_row_number(self) -> None:
+        persisted = {"hours": "3.5", "op_type": "NPT"}
+        loaded = {**persisted, "row_no": "7"}
+
+        self.assertEqual(_npt_row_revision(persisted), _npt_row_revision(loaded))
 
     def test_adds_all_translation_columns_to_an_existing_records_table(self) -> None:
         cursor = FakeCursor(["record_id", "status", "validation_status"])

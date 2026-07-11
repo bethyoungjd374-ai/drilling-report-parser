@@ -3,20 +3,124 @@
     {
       "id": "npt-service-line",
       "name": "NPT责任方识别",
-      "report_type": "drilling",
+      "report_type": "all",
       "source_section": "operations",
       "source_field": "operation_details",
-      "condition": "仅处理作业类型为 NPT 的明细；描述中没有明确责任公司时返回空值。",
-      "instruction": "识别NPT描述中被明确表述为责任方的公司或Service Line。优先识别西语 A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE，以及英语 RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO 等责任表达。设备、工具或服务商名称只有在责任关系明确时才可输出。只返回责任方名称；无法确认时返回空值。如果责任公司与井队公司一致，输出完整井队名称。",
+      "condition": "处理所有日报类型中作业类型为 NPT 的明细；按明确归责、故障归属、服务品牌证据的优先级识别，缺少有效证据时返回空值。",
+      "instruction": "提取造成该段NPT的责任公司或Service Line。第一优先级：A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE、RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO等明确归责表达。第二优先级：描述明确指出某公司的设备、工具或服务发生FALLA、ANOMALIA、PERDIDA、CAIDA、FAULT、FAILURE、LOSS等故障，并由该公司处置。第三优先级：故障对象与唯一服务品牌存在明确归属，例如HAL/HALLIBURTON/SPERRY、SLB/SCHLUMBERGER/SLB-RPS、CNLC-WIRELINE。仅出现iCruise、MWD、LWD、BHA或公司参与后续处置，不足以判定责任；故障若明确位于钻杆、套管等其他对象，也不得归责给同段出现的定向服务商。不得仅根据井队上下文猜测，不得把无关的协助或后续作业公司当成责任方。只返回一个责任方名称；没有充分证据返回空字符串。如果责任公司与井队公司一致，输出完整井队名称。",
       "target_field": "service_line",
       "output_format": "company",
-      "model_id": "cc01c316-5dd1-4a3e-bcf6-933705f031db",
+      "model_id": "7bad1ba9-c961-4407-8f54-1d819b462fb4",
       "enabled": true,
-      "updated_at": "2026-07-11T11:56:17"
+      "updated_at": "2026-07-11T20:58:22"
     }
   ],
+  "auto_execute": true,
+  "version": "ai-extraction-5a397074aee8",
   "catalog": {
     "report_types": [
+      {
+        "value": "all",
+        "label": "所有日报类型",
+        "sections": [
+          {
+            "value": "report_fields",
+            "label": "日报基础信息",
+            "fields": [
+              {
+                "value": "event",
+                "label": "作业事件"
+              },
+              {
+                "value": "reportDate",
+                "label": "reportDate"
+              },
+              {
+                "value": "reportNo",
+                "label": "reportNo"
+              },
+              {
+                "value": "wellbore",
+                "label": "wellbore"
+              },
+              {
+                "value": "rig",
+                "label": "rig"
+              },
+              {
+                "value": "primaryReason",
+                "label": "主要原因"
+              },
+              {
+                "value": "afeNumber",
+                "label": "afeNumber"
+              },
+              {
+                "value": "refDatum",
+                "label": "refDatum"
+              },
+              {
+                "value": "currentOps",
+                "label": "当前作业"
+              },
+              {
+                "value": "summary24h",
+                "label": "24小时作业总结"
+              },
+              {
+                "value": "forecast24h",
+                "label": "未来24小时计划"
+              },
+              {
+                "value": "otherRemarks",
+                "label": "其他备注"
+              }
+            ]
+          },
+          {
+            "value": "operations",
+            "label": "作业明细",
+            "fields": [
+              {
+                "value": "from",
+                "label": "from"
+              },
+              {
+                "value": "to",
+                "label": "to"
+              },
+              {
+                "value": "hours",
+                "label": "hours"
+              },
+              {
+                "value": "op_code",
+                "label": "op_code"
+              },
+              {
+                "value": "op_sub",
+                "label": "作业子类"
+              },
+              {
+                "value": "op_type",
+                "label": "op_type"
+              },
+              {
+                "value": "operation_details",
+                "label": "作业明细"
+              },
+              {
+                "value": "system_op_type",
+                "label": "system_op_type"
+              },
+              {
+                "value": "confirmed_op_type",
+                "label": "confirmed_op_type"
+              }
+            ]
+          }
+        ]
+      },
       {
         "value": "drilling",
         "label": "钻井日报",
@@ -1147,5 +1251,5 @@
       }
     ]
   },
-  "updated_at": "2026-07-11T11:56:17"
+  "updated_at": "2026-07-11T20:58:22"
 }

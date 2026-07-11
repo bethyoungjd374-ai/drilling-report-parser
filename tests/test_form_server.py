@@ -10,12 +10,72 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from drilling_report_parser import form_server
+from drilling_report_parser import excel_database, form_server
 from drilling_report_parser.excel_database import load_report_payload
 from tests.test_pdf_report_parser import sample_pdf
 
 
 class FormServerImportTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.repository_tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.repository_tmp.cleanup)
+        self.repository_path = Path(self.repository_tmp.name) / "report_database.xlsx"
+        original_database_path = form_server.DATABASE_PATH
+        form_server.DATABASE_PATH = self.repository_path
+        self.addCleanup(setattr, form_server, "DATABASE_PATH", original_database_path)
+
+        def repository(path: Path | str | None) -> Path:
+            value = Path(path or self.repository_path)
+            return self.repository_path if value == Path("mysql") else value
+
+        def save_payload(path: Path, payload: dict[str, Any], report_type: str, **kwargs: Any) -> dict[str, Any]:
+            kwargs.pop("invalidate_translations", None)
+            return excel_database.save_report_payload(repository(path), payload, report_type, **kwargs)
+
+        def load_payload(path: Path, record_id: str) -> dict[str, Any]:
+            return excel_database.load_report_payload(repository(path), record_id)
+
+        def load_payloads(path: Path, record_ids: list[str], **_kwargs: Any) -> dict[str, dict[str, Any]]:
+            payloads = {}
+            for record_id in record_ids:
+                try:
+                    payloads[record_id] = excel_database.load_report_payload(repository(path), record_id)
+                except KeyError:
+                    continue
+            return payloads
+
+        def operation_translations(path: Path, record_ids: list[str]) -> list[dict[str, str]]:
+            return [
+                row
+                for record_id in record_ids
+                for row in excel_database.load_translation_content(repository(path), record_id)
+                if str(row.get("entity_type", "")) == "operations"
+            ]
+
+        def records(path: Path | None = None, **filters: str) -> list[dict[str, str]]:
+            values = excel_database.list_records(repository(path))
+            return [
+                row for row in values
+                if (not filters.get("report_type") or row.get("report_type") == filters["report_type"])
+                and (not filters.get("wellbore") or row.get("wellbore") == filters["wellbore"])
+                and (not filters.get("date") or row.get("reportDate") == filters["date"])
+                and (not filters.get("date_from") or str(row.get("reportDate", "")) >= filters["date_from"])
+                and (not filters.get("date_to") or str(row.get("reportDate", "")) <= filters["date_to"])
+            ]
+
+        patchers = [
+            patch.object(form_server, "save_report_payload", side_effect=save_payload),
+            patch.object(form_server, "load_report_payload", side_effect=load_payload),
+            patch.object(form_server, "load_report_payloads", side_effect=load_payloads),
+            patch.object(form_server, "list_records", side_effect=records),
+            patch.object(form_server, "load_operation_translations", side_effect=operation_translations),
+            patch.object(form_server, "load_extraction_results", return_value=[]),
+            patch.object(form_server, "_extraction_jobs_enabled", return_value=False),
+        ]
+        for patcher in patchers:
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def test_report_identity_requires_date_well_and_rig(self) -> None:
         payload = {"report_fields": {"reportDate": "", "wellbore": "PCNC-039", "rig": ""}}
 
@@ -134,6 +194,25 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(units[0]["source_row_no"], 2)
         self.assertIn("WAIT ON SINOPEC", units[0]["prompt_text"])
 
+    def test_all_report_type_rule_accepts_common_operation_field(self) -> None:
+        config = form_server._normalize_ai_extraction_config({
+            "rules": [{
+                "id": "all-npt-owner", "name": "全类型NPT责任方", "report_type": "all",
+                "source_section": "operations", "source_field": "operation_details",
+                "instruction": "提取责任公司", "target_field": "service_line",
+                "output_format": "company", "enabled": True,
+            }],
+        })
+
+        self.assertEqual(config["rules"][0]["report_type"], "all")
+        self.assertEqual(config["catalog"]["report_types"][0]["value"], "all")
+        enabled = [config["rules"][0]]
+        self.assertTrue(form_server._payload_has_extraction_units(
+            {"operations": [{"op_type": "NPT", "operation_details": "NPT A CARGO DE SLB"}]},
+            "completion",
+            enabled,
+        ))
+
     def test_explicit_npt_responsibility_is_extracted_and_expanded_to_rig(self) -> None:
         source = "CONTINUA OPERACION; NPT A CARGO DE SINOPEC;"
         payload = {"report_fields": {"rig": "SINOPEC 248"}}
@@ -142,6 +221,17 @@ class FormServerImportTest(unittest.TestCase):
 
         self.assertEqual(company, "SINOPEC")
         self.assertEqual(form_server._normalize_responsible_party(company, payload), "SINOPEC 248")
+        self.assertEqual(form_server._normalize_responsible_party("SINOPEC-SLB FRACTURA", payload), "SINOPEC-SLB FRACTURA")
+
+    def test_fault_evidence_maps_directional_tool_brand_to_service_line(self) -> None:
+        source = "HALLIBURTON SPERRY REVISA FALLA / COMPORTAMIENTO ANÓMALO DE HERRAMIENTA ICRUISE MWD"
+
+        self.assertEqual(form_server._evidence_responsible_party(source), "HALLIBURTON SPERRY")
+
+    def test_directional_tool_mention_does_not_override_drill_pipe_failure(self) -> None:
+        source = "SACA BHA CON ICRUISE Y M/LWD; OBSERVA WASHOUT EN JUNTA DE DRILL PIPE #171"
+
+        self.assertEqual(form_server._evidence_responsible_party(source), "")
 
     def test_extraction_rule_filters_out_reports_with_only_p_operations(self) -> None:
         rule = {
@@ -272,7 +362,7 @@ class FormServerImportTest(unittest.TestCase):
             finally:
                 form_server.PROJECT_TEAM_PATH = original_project_team_path
 
-    def test_auto_register_well_uses_rig_project_binding_with_multiple_projects(self) -> None:
+    def test_discovered_well_does_not_mutate_project_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             original_project_team_path = form_server.PROJECT_TEAM_PATH
             form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
@@ -287,7 +377,7 @@ class FormServerImportTest(unittest.TestCase):
                             "status": "active",
                             "start_date": "2026-01-01",
                             "end_date": "2026-12-31",
-                            "rigs": [{"rig": "SINOPEC 248", "wells": []}],
+                            "rigs": [{"rig": "SINOPEC 248", "wells": ["EXISTING-001"]}],
                         },
                         {
                             "id": "project-2",
@@ -301,19 +391,23 @@ class FormServerImportTest(unittest.TestCase):
                     ],
                 })
 
-                form_server._auto_register_project_well({
-                    "report_fields": {
-                        "rig": "SINOPEC 248",
-                        "wellbore": "PCNC-040",
-                        "reportDate": "2026-06-11",
-                    },
-                }, "drilling")
+                before = form_server.PROJECT_TEAM_PATH.read_text(encoding="utf-8")
+                with patch.object(form_server, "list_records", return_value=[{
+                    "rig": "SINOPEC 248",
+                    "wellbore": "PCNC-040",
+                    "reportDate": "2026-06-11",
+                    "report_type": "drilling",
+                    "created_at": "2026-06-11T00:00:00",
+                }]):
+                    discovered = form_server._sync_project_wells_from_database(Path("mysql"))
                 config = form_server._load_project_team_config()
                 first_project = next(project for project in config["projects"] if project["id"] == "project-1")
                 second_project = next(project for project in config["projects"] if project["id"] == "project-2")
-                self.assertEqual(first_project["rigs"][0]["wells"], ["PCNC-040"])
+                self.assertEqual(first_project["rigs"][0]["wells"], ["EXISTING-001"])
                 self.assertEqual(second_project["rigs"][0]["wells"], [])
                 self.assertEqual(config["pending_wells"], [])
+                self.assertEqual(discovered["pending_wells"][0]["wellbore"], "PCNC-040")
+                self.assertEqual(form_server.PROJECT_TEAM_PATH.read_text(encoding="utf-8"), before)
             finally:
                 form_server.PROJECT_TEAM_PATH = original_project_team_path
 
@@ -373,7 +467,7 @@ class FormServerImportTest(unittest.TestCase):
             finally:
                 form_server.PROJECT_TEAM_PATH = original_project_team_path
 
-    def test_project_report_query_backfills_completion_and_workover_wells(self) -> None:
+    def test_project_report_keeps_unassigned_wells_pending(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             original_project_team_path = form_server.PROJECT_TEAM_PATH
             database_path = Path(tmp) / "report_database.xlsx"
@@ -408,15 +502,14 @@ class FormServerImportTest(unittest.TestCase):
                     }, report_type)
 
                 payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"], "project": ["project-1"]})
+                discovered = form_server._sync_project_wells_from_database(database_path)
                 config = form_server._load_project_team_config()
                 project = config["projects"][0]
 
-                self.assertEqual(project["rigs"][0]["wells"], ["GCLH-022", "OLD-001"])
+                self.assertEqual(project["rigs"][0]["wells"], ["OLD-001"])
                 self.assertEqual(config["pending_wells"], [])
-                self.assertEqual(len(payload["details"]), 1)
-                self.assertEqual(payload["details"][0]["wellbore"], "GCLH-022")
-                self.assertEqual(payload["details"][0]["completion_date"], "2026-06-11")
-                self.assertEqual(payload["details"][0]["workover_date"], "2026-06-12")
+                self.assertEqual(payload["details"], [])
+                self.assertEqual(discovered["pending_wells"][0]["wellbore"], "GCLH-022")
             finally:
                 form_server.PROJECT_TEAM_PATH = original_project_team_path
 
@@ -863,29 +956,37 @@ class FormServerImportTest(unittest.TestCase):
             thread.start()
             try:
                 cookie = _login(server.server_port, "admin", "admin123")
-                response = _post_json(
-                    server.server_port,
-                    "/api/translate-report",
-                    {
-                        "target_language": "zh",
-                        "payload": {
-                            "metadata": {"source_file": "mixed.pdf"},
-                            "report_fields": {
-                                "wellbore": "EB-D-12",
-                                "currentOps": "ROP 18 m/hr while drilling 12.25 in section.",
+                with patch.object(
+                    form_server,
+                    "_active_translation_config",
+                    return_value=form_server.TranslationConfig(engine="noop"),
+                ):
+                    response = _post_json(
+                        server.server_port,
+                        "/api/translate-report",
+                        {
+                            "target_language": "zh",
+                            "payload": {
+                                "metadata": {"source_file": "mixed.pdf"},
+                                "report_fields": {
+                                    "wellbore": "EB-D-12",
+                                    "currentOps": "ROP 18 m/hr while drilling 12.25 in section.",
+                                },
+                                "operations": [],
                             },
-                            "operations": [],
-                        }
-                    },
-                    cookie,
-                )
+                        },
+                        cookie,
+                    )
                 self.assertEqual(response["status"], 200, response["body"])
                 payload = json.loads(response["body"])
                 self.assertEqual(payload["metadata"]["engine"], "noop")
                 self.assertEqual(payload["metadata"]["target_language"], "zh-CN")
                 self.assertIn("translation_content", payload)
-                self.assertIn("机械钻速", payload["translated_payload"]["report_fields"]["currentOps"])
-                self.assertTrue(any(row["field_code"] == "report_fields.currentOps" for row in payload["translation_content"]))
+                self.assertEqual(
+                    payload["translated_payload"]["report_fields"]["currentOps"],
+                    "ROP 18 m/hr while drilling 12.25 in section.",
+                )
+                self.assertIsInstance(payload["translation_content"], list)
             finally:
                 server.shutdown()
                 server.server_close()
@@ -953,7 +1054,18 @@ def _login(port: int, username: str, password: str) -> str:
         payload = response.read().decode("utf-8")
         if response.status != 200:
             raise AssertionError(payload)
-        return response.getheader("Set-Cookie", "").split(";", 1)[0]
+        cookie = response.getheader("Set-Cookie", "").split(";", 1)[0]
+        login_payload = json.loads(payload)
+        if login_payload.get("user", {}).get("must_change_password"):
+            changed = _post_json(
+                port,
+                "/api/admin/change-password",
+                {"old_password": password, "new_password": f"{password}-changed"},
+                cookie,
+            )
+            if changed["status"] != 200:
+                raise AssertionError(changed["body"])
+        return cookie
     finally:
         connection.close()
 

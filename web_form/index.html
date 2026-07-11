@@ -3,18 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>钻井日报填报工作台</title>
+    <title>NexoRig 智井平台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=well-source-calendar-2" />
+    <link rel="stylesheet" href="./styles.css?v=global-back-1" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="系统功能菜单">
         <div class="brand">
-          <div class="brand-mark">EC</div>
+          <div class="brand-mark brand-logo" aria-label="NexoRig logo">
+            <svg class="brand-logo-svg" viewBox="0 0 64 64" aria-hidden="true">
+              <path class="logo-stroke" d="M15 49V15l34 34V15" />
+              <path class="logo-stroke logo-thin logo-accent" d="M22 16h17c7 0 10 4 10 9s-3 9-10 9H25" />
+              <circle class="logo-fill" cx="15" cy="49" r="4" />
+              <circle class="logo-fill logo-accent" cx="49" cy="15" r="4" />
+            </svg>
+          </div>
           <div>
-            <strong data-i18n="appTitleShort">厄瓜油田</strong>
-            <span data-i18n="appSubtitle">Report Platform</span>
+            <strong data-i18n="appTitleShort">NexoRig</strong>
+            <span data-i18n="appSubtitle">智井平台</span>
           </div>
         </div>
         <nav class="system-nav">
@@ -67,7 +74,10 @@
       <main class="workspace">
         <section id="drillingDailyPage" class="module-page active">
         <header class="topbar">
-          <div>
+          <div class="topbar-leading">
+            <button class="global-back-button" type="button" data-back-records="drilling" data-i18n-title="backRecords" title="返回记录" aria-label="返回记录">
+              <span aria-hidden="true">←</span>
+            </button>
             <nav class="page-breadcrumb" aria-label="页面路径">
               <span data-i18n="menuDailyParsing">日报解析</span>
               <span class="breadcrumb-separator">/</span>
@@ -82,7 +92,6 @@
             </div>
             <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
             <button class="button secondary" type="button" id="importPdf" data-i18n="importPdf">导入 PDF 日报</button>
-            <button class="button secondary" type="button" data-back-records="drilling" data-i18n="backRecords">返回记录</button>
             <button class="button" type="button" data-save-report="drilling" data-i18n="saveDatabase">保存</button>
           </div>
         </header>
@@ -298,7 +307,10 @@
 
         <section id="completionDailyPage" class="module-page" hidden>
           <header class="topbar">
-            <div>
+            <div class="topbar-leading">
+              <button class="global-back-button" type="button" data-back-records="completion" data-i18n-title="backRecords" title="返回记录" aria-label="返回记录">
+                <span aria-hidden="true">←</span>
+              </button>
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuDailyParsing">日报解析</span>
                 <span class="breadcrumb-separator">/</span>
@@ -313,7 +325,6 @@
               </div>
               <input id="completionPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
               <button class="button secondary" type="button" id="importCompletionPdf" data-i18n="importPdf">导入 PDF 日报</button>
-              <button class="button secondary" type="button" data-back-records="completion" data-i18n="backRecords">返回记录</button>
               <button class="button" type="button" data-save-report="completion" data-i18n="saveDatabase">保存</button>
             </div>
           </header>
@@ -453,7 +464,10 @@
 
         <section id="workoverDailyPage" class="module-page" hidden>
           <header class="topbar">
-            <div>
+            <div class="topbar-leading">
+              <button class="global-back-button" type="button" data-back-records="workover" data-i18n-title="backRecords" title="返回记录" aria-label="返回记录">
+                <span aria-hidden="true">←</span>
+              </button>
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuDailyParsing">日报解析</span>
                 <span class="breadcrumb-separator">/</span>
@@ -468,7 +482,6 @@
               </div>
               <input id="workoverPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
               <button class="button secondary" type="button" id="importWorkoverPdf" data-i18n="importPdf">导入 PDF 日报</button>
-              <button class="button secondary" type="button" data-back-records="workover" data-i18n="backRecords">返回记录</button>
               <button class="button" type="button" data-save-report="workover" data-i18n="saveDatabase">保存</button>
             </div>
           </header>
@@ -609,7 +622,10 @@
 
         <section id="moveDailyPage" class="module-page" hidden>
           <header class="topbar">
-            <div>
+            <div class="topbar-leading">
+              <button class="global-back-button" type="button" data-back-records="move" data-i18n-title="backRecords" title="返回记录" aria-label="返回记录">
+                <span aria-hidden="true">←</span>
+              </button>
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuDailyParsing">日报解析</span>
                 <span class="breadcrumb-separator">/</span>
@@ -624,7 +640,6 @@
               </div>
               <input id="movePdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
               <button class="button secondary" type="button" id="importMovePdf" data-i18n="importPdf">导入 PDF 日报</button>
-              <button class="button secondary" type="button" data-back-records="move" data-i18n="backRecords">返回记录</button>
               <button class="button" type="button" data-save-report="move" data-i18n="saveDatabase">保存</button>
             </div>
           </header>
@@ -815,11 +830,14 @@
 
         <section id="nptConfirmPage" class="module-page npt-confirm-page" hidden>
           <header class="topbar placeholder-topbar">
-            <div>
+            <div class="topbar-leading">
+              <button class="global-back-button" type="button" data-npt-back data-npt-global-back data-i18n-title="backRecords" title="返回列表" aria-label="返回列表" hidden>
+                <span aria-hidden="true">←</span>
+              </button>
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuProductionReport">生产报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <button class="breadcrumb-link" type="button" data-npt-back data-i18n="menuRigNptRanking">NPT确认</button>
+                <span data-i18n="menuRigNptRanking">NPT确认</span>
                 <span class="breadcrumb-separator" data-npt-breadcrumb-separator hidden>/</span>
                 <strong data-npt-breadcrumb-current hidden>时效确认</strong>
               </nav>
@@ -891,7 +909,6 @@
               <label class="npt-note-field">备注说明<textarea name="nptConfirmNote" maxlength="200" placeholder="请输入备注内容（选填）" data-i18n-placeholder="nptNotePlaceholder"></textarea><small><span data-npt-note-count>0</span>/200</small></label>
               <div class="calendar-hint">提交确认后，该井将被锁定，日报数据将无法重新上传或修改，请确认无误后再提交。</div>
               <div class="npt-confirm-actions">
-                <button class="button secondary" type="button" data-npt-back>返回列表</button>
                 <button class="button secondary" type="button" data-npt-save>保存</button>
                 <button class="button" type="button" data-npt-submit>提交确认</button>
               </div>
@@ -950,6 +967,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
-    <script src="./app.js?v=well-source-calendar-2"></script>
+    <script src="./app.js?v=global-back-1"></script>
   </body>
 </html>
