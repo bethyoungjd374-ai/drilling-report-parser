@@ -17,11 +17,13 @@ from ..parser import ParseResult
 
 
 DEFAULT_TERMS_PATH = Path(__file__).with_name("drilling_terms.json")
-LANGUAGES = ("zh-CN", "en", "es")
+LANGUAGES = ("zh-CN",)
 TARGET_LANGUAGE = "zh-CN"
 PROMPT_VERSION = "drilling-daily-v4"
 DEFAULT_SYSTEM_PROMPT = "你是石油钻完井日报专业翻译器，熟悉钻井、完井、修井和搬迁作业术语。"
 DEFAULT_TRANSLATION_INSTRUCTION = "不得总结、删减、解释或添加说明；保持原文信息顺序和技术含义。"
+DEFAULT_OLLAMA_CHUNK_CHARS = 900
+DEFAULT_OPENAI_COMPATIBLE_CHUNK_CHARS = 4800
 TRANSLATABLE_REPORT_FIELDS = {
     "currentOps",
     "summary24h",
@@ -65,6 +67,7 @@ class TranslationConfig:
     timeout_seconds: float = 120.0
     model_config_id: str = ""
     retry_count: int = 2
+    chunk_max_chars: int = 0
 
     @classmethod
     def from_env(cls) -> "TranslationConfig":
@@ -84,6 +87,7 @@ class TranslationConfig:
             timeout_seconds=float(os.environ.get("DRP_TRANSLATION_TIMEOUT", "120") or "120"),
             model_config_id=os.environ.get("DRP_TRANSLATION_MODEL_CONFIG_ID", "").strip(),
             retry_count=max(0, int(os.environ.get("DRP_TRANSLATION_RETRY_COUNT", "2") or "2")),
+            chunk_max_chars=max(0, int(os.environ.get("DRP_TRANSLATION_CHUNK_CHARS", "0") or "0")),
         )
 
 
@@ -421,6 +425,8 @@ class DrillingReportTranslator:
         model_config_id: str = "",
         retry_count: int = 2,
         tuning: TranslationTuningConfig | None = None,
+        chunk_max_chars: int = 0,
+        telemetry: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self.engine = engine
         self.terms = terms
@@ -429,7 +435,19 @@ class DrillingReportTranslator:
         self.model_config_id = model_config_id or engine.name
         self.retry_count = max(0, retry_count)
         self.tuning = tuning or TranslationTuningConfig()
+        self.chunk_max_chars = _translation_chunk_max_chars(engine.name, chunk_max_chars)
         self._term_matchers = _compiled_term_matchers(terms.entries, self.target_language)
+        self._term_source_matchers = _compiled_glossary_matchers(terms.entries)
+        self._term_glossary_cache: dict[tuple[str, str], list[dict[str, str]]] = {}
+        self.telemetry = telemetry
+
+    def _emit_telemetry(self, event: str, **fields: Any) -> None:
+        if not self.telemetry:
+            return
+        try:
+            self.telemetry({"event": event, **fields})
+        except Exception:
+            pass
 
     def translate_report_payload(
         self,
@@ -449,6 +467,13 @@ class DrillingReportTranslator:
             report_fields=set(self.tuning.report_fields),
             row_fields=set(self.tuning.row_fields),
             scope_rules=set(self.tuning.scope_rules) if self.tuning.scope_rules else None,
+        )
+        self._emit_telemetry(
+            "payload_units",
+            record_id=record_id,
+            unit_count=len(units),
+            source_chars=sum(len(unit.text or "") for unit in units),
+            target_languages=target_languages,
         )
         rows: list[dict[str, str]] = []
         warnings: list[str] = []
@@ -510,10 +535,15 @@ class DrillingReportTranslator:
         now = _now()
         rows: list[dict[str, str]] = []
         pending: list[dict[str, Any]] = []
+        prepare_started = time.monotonic()
+        glossary_seconds = 0.0
+        glossary_hits = 0
+        source_chars = 0
         for unit in units:
             source_text = _clean_text(unit.text)
             if not source_text:
                 continue
+            source_chars += len(source_text)
             source_language = detect_language(source_text)
             base = {
                 "entity_type": unit.entity_type,
@@ -532,13 +562,17 @@ class DrillingReportTranslator:
             if source_language == target_language:
                 rows.append({**base, "translated_text": source_text, "translation_status": "NOT_REQUIRED", "error_message": ""})
                 continue
+            glossary_started = time.monotonic()
+            glossary = self._term_glossary(source_text, target_language)
+            glossary_seconds += time.monotonic() - glossary_started
+            glossary_hits += len(glossary)
             pending.append({
                 "id": str(len(pending)),
                 "unit": unit,
                 "base": base,
                 "source_text": source_text,
                 "source_language": source_language,
-                "glossary": self._term_glossary(source_text, target_language),
+                "glossary": glossary,
                 "prompt_context": self._prompt_context(),
             })
 
@@ -546,10 +580,45 @@ class DrillingReportTranslator:
         if on_progress:
             on_progress(completed_units, len(units))
 
-        for chunk in _translation_chunks(pending):
+        chunks = _translation_chunks(pending, max_chars=self.chunk_max_chars)
+        self._emit_telemetry(
+            "language_prepare",
+            target_language=target_language,
+            unit_count=len(units),
+            pending_count=len(pending),
+            not_required_count=len(rows),
+            chunk_count=len(chunks),
+            chunk_max_chars=self.chunk_max_chars,
+            source_chars=source_chars,
+            glossary_hits=glossary_hits,
+            glossary_ms=round(glossary_seconds * 1000),
+            elapsed_ms=round((time.monotonic() - prepare_started) * 1000),
+        )
+
+        for chunk_index, chunk in enumerate(chunks, start=1):
+            chunk_started = time.monotonic()
+            self._emit_telemetry(
+                "chunk_start",
+                target_language=target_language,
+                chunk_index=chunk_index,
+                chunk_count=len(chunks),
+                item_count=len(chunk),
+                source_chars=sum(len(str(item.get("source_text", "") or "")) for item in chunk),
+                glossary_count=sum(len(item.get("glossary", []) or []) for item in chunk),
+            )
             try:
                 translated = self._translate_with_retries(chunk, target_language)
             except Exception as exc:
+                self._emit_telemetry(
+                    "chunk_error",
+                    target_language=target_language,
+                    chunk_index=chunk_index,
+                    chunk_count=len(chunks),
+                    item_count=len(chunk),
+                    elapsed_ms=round((time.monotonic() - chunk_started) * 1000),
+                    error=str(exc)[:500],
+                    fallback_one_by_one=len(chunk) > 1,
+                )
                 if len(chunk) > 1:
                     rows.extend(self._translate_items_one_by_one(chunk, target_language, warnings, str(exc)))
                 else:
@@ -564,6 +633,15 @@ class DrillingReportTranslator:
                         rows.append({**item["base"], "translated_text": translated_text, "translation_status": "COMPLETED", "error_message": ""})
                     else:
                         rows.append({**item["base"], "translated_text": "", "translation_status": "FAILED", "error_message": "missing translated_text"})
+                self._emit_telemetry(
+                    "chunk_complete",
+                    target_language=target_language,
+                    chunk_index=chunk_index,
+                    chunk_count=len(chunks),
+                    item_count=len(chunk),
+                    translated_count=len([item for item in chunk if translated.get(item["id"])]),
+                    elapsed_ms=round((time.monotonic() - chunk_started) * 1000),
+                )
             completed_units += len(chunk)
             if on_progress:
                 on_progress(completed_units, len(units))
@@ -607,33 +685,68 @@ class DrillingReportTranslator:
     def _translate_with_retries(self, items: list[dict[str, Any]], target_language: str) -> dict[str, str]:
         last_error: Exception | None = None
         for attempt in range(self.retry_count + 1):
+            started = time.monotonic()
+            self._emit_telemetry(
+                "model_request_start",
+                target_language=target_language,
+                attempt=attempt + 1,
+                max_attempts=self.retry_count + 1,
+                item_count=len(items),
+                source_chars=sum(len(str(item.get("source_text", "") or "")) for item in items),
+                engine=self.engine.name,
+                model_config_id=self.model_config_id,
+            )
             try:
-                return self.engine.translate_items(items, target_language, self.timeout_seconds)
+                result = self.engine.translate_items(items, target_language, self.timeout_seconds)
+                self._emit_telemetry(
+                    "model_request_complete",
+                    target_language=target_language,
+                    attempt=attempt + 1,
+                    item_count=len(items),
+                    translated_count=len(result),
+                    elapsed_ms=round((time.monotonic() - started) * 1000),
+                    engine=self.engine.name,
+                    model_config_id=self.model_config_id,
+                )
+                return result
             except Exception as exc:
                 last_error = exc
+                self._emit_telemetry(
+                    "model_request_error",
+                    target_language=target_language,
+                    attempt=attempt + 1,
+                    item_count=len(items),
+                    elapsed_ms=round((time.monotonic() - started) * 1000),
+                    engine=self.engine.name,
+                    model_config_id=self.model_config_id,
+                    error=str(exc)[:500],
+                )
                 if attempt < self.retry_count:
                     time.sleep(min(0.25 * (2 ** attempt), 2.0))
         assert last_error is not None
         raise last_error
 
     def _term_glossary(self, text: str, target_language: str) -> list[dict[str, str]]:
+        cache_key = (normalize_language(target_language), source_hash(text))
+        cached = self._term_glossary_cache.get(cache_key)
+        if cached is not None:
+            return [dict(item) for item in cached]
         records: list[dict[str, str]] = []
         seen: set[tuple[str, str]] = set()
-        for entry in self.terms.entries:
-            if not entry.enabled:
-                continue
+        for entry, source_value, matcher in self._term_source_matchers:
             target = entry.value(target_language)
             if not target:
                 continue
-            for _, source_value in entry.source_values():
-                if not source_value or not re.search(_term_regex(source_value), text, flags=re.IGNORECASE):
-                    continue
-                key = (source_value.lower(), target)
-                if key in seen:
-                    continue
-                seen.add(key)
-                records.append({"source": source_value, "target": target})
-        return records[:30]
+            if not matcher.search(text):
+                continue
+            key = (source_value.lower(), target)
+            if key in seen:
+                continue
+            seen.add(key)
+            records.append({"source": source_value, "target": target})
+        records = records[:30]
+        self._term_glossary_cache[cache_key] = [dict(item) for item in records]
+        return records
 
     def _prompt_context(self) -> dict[str, object]:
         protected: list[str] = []
@@ -663,6 +776,7 @@ def build_translator(
     terms: TermsConfig | None = None,
     target_language: str | None = None,
     tuning: TranslationTuningConfig | None = None,
+    telemetry: Callable[[dict[str, Any]], None] | None = None,
 ) -> DrillingReportTranslator:
     config = config or TranslationConfig.from_env()
     selected_terms = terms or TermsConfig.load(config.terms_path)
@@ -675,6 +789,8 @@ def build_translator(
         model_config_id=config.model_config_id,
         retry_count=config.retry_count,
         tuning=tuning,
+        chunk_max_chars=config.chunk_max_chars,
+        telemetry=telemetry,
     )
 
 
@@ -868,7 +984,7 @@ def source_hash(text: str) -> str:
 
 
 def _target_languages_from_env() -> list[str]:
-    raw = os.environ.get("DRP_TRANSLATION_TARGET_LANGUAGES", "zh-CN,en,es")
+    raw = os.environ.get("DRP_TRANSLATION_TARGET_LANGUAGES", "zh-CN")
     languages: list[str] = []
     for item in raw.split(","):
         language = normalize_language(item)
@@ -1019,6 +1135,14 @@ def _translation_chunks(items: list[dict[str, Any]], max_chars: int = 900) -> li
     return chunks
 
 
+def _translation_chunk_max_chars(engine_name: str, configured: int = 0) -> int:
+    if configured > 0:
+        return max(300, min(int(configured), 8000))
+    if str(engine_name or "").lower() in {"openai-compatible", "openai_compatible", "openai"}:
+        return DEFAULT_OPENAI_COMPATIBLE_CHUNK_CHARS
+    return DEFAULT_OLLAMA_CHUNK_CHARS
+
+
 def _split_translation_text(text: str, max_chars: int = 180) -> list[str]:
     remaining = _clean_text(text)
     parts: list[str] = []
@@ -1088,6 +1212,23 @@ def _compiled_term_matchers(entries: tuple[TermEntry, ...], target_language: str
             if source_value and source_value != replacement:
                 matchers.append((re.compile(_term_regex(source_value), re.IGNORECASE), replacement))
     return sorted(matchers, key=lambda item: len(item[0].pattern), reverse=True)
+
+
+def _compiled_glossary_matchers(entries: tuple[TermEntry, ...]) -> list[tuple[TermEntry, str, re.Pattern[str]]]:
+    matchers: list[tuple[TermEntry, str, re.Pattern[str]]] = []
+    seen: set[tuple[str, str]] = set()
+    for entry in entries:
+        if not entry.enabled:
+            continue
+        for _, source_value in entry.source_values():
+            if not source_value:
+                continue
+            key = (entry.id, source_value.lower())
+            if key in seen:
+                continue
+            seen.add(key)
+            matchers.append((entry, source_value, re.compile(_term_regex(source_value), re.IGNORECASE)))
+    return sorted(matchers, key=lambda item: len(item[1]), reverse=True)
 
 
 def _term_regex(term: str) -> str:

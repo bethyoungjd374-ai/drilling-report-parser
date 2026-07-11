@@ -69,6 +69,15 @@ def load_translation_content(database_path: str | Path, record_id: str) -> list[
     return rows
 
 
+def load_operation_translations(database_path: str | Path, record_ids: list[str]) -> list[dict[str, str]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.load_operation_translations(None, record_ids)
+    _clear_mysql_failure()
+    return rows
+
+
 def clear_translation_content(database_path: str | Path, record_id: str = "") -> None:
     _validate_mysql_label(database_path)
     from . import mysql_database
@@ -106,6 +115,54 @@ def update_record_translation_status(
         error=error,
         version=version,
     )
+    _clear_mysql_failure()
+
+
+def update_record_extraction_status(
+    database_path: str | Path,
+    record_id: str,
+    *,
+    status: str,
+    progress: int | str = "",
+    error: str = "",
+    version: str = "",
+) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.update_record_extraction_status(
+        None,
+        record_id,
+        status=status,
+        progress=progress,
+        error=error,
+        version=version,
+    )
+    _clear_mysql_failure()
+
+
+def save_extraction_results(database_path: str | Path, rows: list[dict[str, Any]]) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.save_extraction_results(None, rows)
+    _clear_mysql_failure()
+
+
+def load_extraction_results(database_path: str | Path, record_id: str = "") -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.load_extraction_results(None, record_id)
+    _clear_mysql_failure()
+    return rows
+
+
+def clear_extraction_results(database_path: str | Path, record_ids: list[str]) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.clear_extraction_results(None, record_ids)
     _clear_mysql_failure()
 
 

@@ -29,12 +29,32 @@
 - The configured public model parsed two complete synthetic terminology pairs from a flexible three-language worksheet layout.
 - Live in-app browser reload was blocked by the local URL policy during this pass, so the previous visual screenshots remain the latest browser-rendered evidence.
 
+### Terminology follow-up
+
+- Used the 1288 x 895 annotated terminology screenshot as the source for the layout correction.
+- Removed the always-visible term detail editor and moved add/edit into one focused modal.
+- Replaced legacy technical categories with operation-type categories: general, drilling, completion, workover, and move. Categories are organizational only; enabled terms remain global translation rules.
+- Added search, operation-type filtering, 10/20/50-row pagination, Excel template download, and Excel export.
+- Reworked global protections into a full-width three-column section below the table.
+- Isolated DOM verification passed for 10-row pagination, template/export links, modal editing, five operation types, and the protection layout.
+- Template and export endpoints returned valid two-sheet workbooks. A real template upload returned two duplicate review items and did not add test data.
+
+### Terminology toolbar follow-up
+
+- Used the 1288 x 895 annotated toolbar and pagination screenshots as the source of truth.
+- Kept only import/export/create commands in the heading and moved search into a dedicated table toolbar.
+- Replaced the full-width operation-type select with a compact six-option segmented filter.
+- Set pagination controls to fixed flex sizing, a 74px minimum button width, and no-wrap labels.
+- Isolated DOM and computed-style verification passed for search position, six filter segments, filtering behavior, and pagination sizing.
+- Live in-app browser verification passed on `http://127.0.0.1:8081/admin/`: toolbar actions, six-segment filtering, search, 20-row page size, add-term modal, and template/export xlsx endpoints.
+
 ## Visual Evidence
 
 - Full-view source comparison: `outputs/ui-qa/translation-test-result-comparison.png`
 - Test workbench result: `outputs/ui-qa/translation-tuning-test-result.png`
 - Field and Prompt configuration: `outputs/ui-qa/translation-tuning-fields-final.png`
 - Terminology list and editor: `outputs/ui-qa/translation-tuning-terms-final.png`
+- Terminology toolbar browser verification: `outputs/ui-qa/translation-tuning-terms-browser-final.png`
 - Narrow viewport: `outputs/ui-qa/translation-tuning-mobile.png`
 - Reference viewport: 1672 x 941
 - Implementation viewport: 1724 x 998; normalized to the reference size for comparison

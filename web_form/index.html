@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>钻井日报填报工作台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=translation-cache-4" />
+    <link rel="stylesheet" href="./styles.css?v=well-source-calendar-2" />
   </head>
   <body>
     <div class="app-shell">
@@ -78,7 +78,6 @@
             <div class="language-switch" role="group" aria-label="Language">
               <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
               <button type="button" data-lang="zh" class="active">中</button>
-              <button type="button" data-lang="en">EN</button>
               <button type="button" data-lang="es">ES</button>
             </div>
             <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
@@ -166,13 +165,12 @@
             <section class="panel table-panel" id="survey">
               <div class="panel-heading">
                 <h2 data-i18n="sectionSurvey">Survey Data (Last 6)</h2>
-                <button class="button small secondary" type="button" data-add-row="surveyTable" data-i18n="addSurvey">新增测斜</button>
               </div>
               <div class="table-wrap">
                 <table id="surveyTable" data-table="survey_data">
                   <thead>
                     <tr>
-                      <th data-i18n="thMd">MD</th><th data-i18n="thIncl">Incl</th><th data-i18n="thAzi">Azi</th><th data-i18n="thTvd">TVD</th><th data-i18n="thVse">VSE</th><th data-i18n="thNs">N/-S</th><th data-i18n="thDls">DLS</th><th data-i18n="thBuild">Build</th><th></th>
+                      <th data-i18n="thMd">MD</th><th data-i18n="thIncl">Incl</th><th data-i18n="thAzi">Azi</th><th data-i18n="thTvd">TVD</th><th data-i18n="thVse">VSE</th><th data-i18n="thNs">N/-S</th><th data-i18n="thDls">DLS</th><th data-i18n="thBuild">Build</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -212,7 +210,6 @@
             <section class="panel table-panel" id="bit-bha">
               <div class="panel-heading">
                 <h2 data-i18n="sectionBitBha">钻头与 BHA</h2>
-                <button class="button small secondary" type="button" data-add-row="bhaTable" data-i18n="addBha">新增 BHA 组件</button>
               </div>
               <div class="field-grid four compact">
                 <label>Bit No<input name="bitNo" /></label>
@@ -228,7 +225,7 @@
                 <table id="bhaTable" data-table="bha_components">
                   <thead>
                     <tr>
-                      <th data-i18n="thComponent">Component</th><th data-i18n="thOd">OD</th><th data-i18n="thId">ID</th><th data-i18n="thJts">Jts</th><th data-i18n="thLength">Length</th><th></th>
+                      <th data-i18n="thComponent">Component</th><th data-i18n="thOd">OD</th><th data-i18n="thId">ID</th><th data-i18n="thJts">Jts</th><th data-i18n="thLength">Length</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -239,13 +236,12 @@
             <section class="panel table-panel" id="operations">
               <div class="panel-heading">
                 <h2 data-i18n="sectionOperations">Operations</h2>
-                <button class="button small secondary" type="button" data-add-row="operationsTable" data-i18n="addOperation">新增作业行</button>
               </div>
               <div class="table-wrap">
                 <table id="operationsTable" data-table="operations">
                   <thead>
                     <tr>
-                      <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                      <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -256,15 +252,14 @@
             <section class="panel table-panel" id="costs">
               <div class="panel-heading">
                 <h2 data-i18n="sectionCosts">成本与库存</h2>
-                <button class="button small secondary" type="button" data-add-row="costTable" data-i18n="addCost">新增成本</button>
               </div>
               <div class="table-wrap half">
                 <table id="costTable" data-table="daily_costs">
-                  <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th><th></th></tr></thead>
+                  <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th></tr></thead>
                   <tbody></tbody>
                 </table>
                 <table id="bulkTable" data-table="bulks">
-                  <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th><th></th></tr></thead>
+                  <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>
@@ -298,16 +293,6 @@
             </section>
           </form>
 
-          <aside class="rules-panel" aria-label="基础条件限制规则">
-            <div class="rules-card">
-              <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
-              <ul id="rulesList"></ul>
-            </div>
-            <div class="rules-card issue-list">
-              <h2 data-i18n="liveValidation">实时校验</h2>
-              <div id="issues"></div>
-            </div>
-          </aside>
         </div>
         </section>
 
@@ -324,7 +309,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
               <input id="completionPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
@@ -409,13 +393,12 @@
               <section class="panel table-panel" id="completion-operations">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionOperations">Operations</h2>
-                  <button class="button small secondary" type="button" data-add-row="completionOperationsTable" data-i18n="addOperation">新增作业行</button>
                 </div>
                 <div class="table-wrap">
                   <table id="completionOperationsTable" data-table="completion_operations">
                     <thead>
                       <tr>
-                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -426,15 +409,14 @@
               <section class="panel table-panel" id="completion-costs">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionCosts">成本与库存</h2>
-                  <button class="button small secondary" type="button" data-add-row="completionBulkTable" data-i18n="addBulk">新增库存</button>
                 </div>
                 <div class="table-wrap half">
                   <table id="completionBulkTable" data-table="completion_bulks">
-                    <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th><th></th></tr></thead>
+                    <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th></tr></thead>
                     <tbody></tbody>
                   </table>
                   <table id="completionCostTable" data-table="completion_daily_costs">
-                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th><th></th></tr></thead>
+                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -443,13 +425,12 @@
               <section class="panel table-panel" id="completion-intervals">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionPerforationIntervals">射孔区间</h2>
-                  <button class="button small secondary" type="button" data-add-row="perforationIntervalsTable" data-i18n="addInterval">新增区间</button>
                 </div>
                 <div class="table-wrap">
                   <table id="perforationIntervalsTable" data-table="perforation_intervals">
                     <thead>
                       <tr>
-                        <th data-i18n="thFormation">Formation</th><th data-i18n="thTopMd">Top MD</th><th data-i18n="thBaseMd">Base MD</th><th data-i18n="thLength">Length</th><th data-i18n="thDensity">Density</th><th data-i18n="thCharges">Charges</th><th data-i18n="thPhase">Phase</th><th data-i18n="thPenetration">Penetration</th><th data-i18n="thDiameter">Diameter</th><th data-i18n="thDate">Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thComments">Comments</th><th></th>
+                        <th data-i18n="thFormation">Formation</th><th data-i18n="thTopMd">Top MD</th><th data-i18n="thBaseMd">Base MD</th><th data-i18n="thLength">Length</th><th data-i18n="thDensity">Density</th><th data-i18n="thCharges">Charges</th><th data-i18n="thPhase">Phase</th><th data-i18n="thPenetration">Penetration</th><th data-i18n="thDiameter">Diameter</th><th data-i18n="thDate">Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thComments">Comments</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -467,16 +448,6 @@
               </section>
             </form>
 
-            <aside class="rules-panel" aria-label="完井日报基础条件限制规则">
-              <div class="rules-card">
-                <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
-                <ul id="completionRulesList"></ul>
-              </div>
-              <div class="rules-card issue-list">
-                <h2 data-i18n="liveValidation">实时校验</h2>
-                <div id="completionIssues"></div>
-              </div>
-            </aside>
           </div>
         </section>
 
@@ -493,7 +464,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
               <input id="workoverPdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
@@ -579,13 +549,12 @@
               <section class="panel table-panel" id="workover-operations">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionOperations">Operations</h2>
-                  <button class="button small secondary" type="button" data-add-row="workoverOperationsTable" data-i18n="addOperation">新增作业行</button>
                 </div>
                 <div class="table-wrap">
                   <table id="workoverOperationsTable" data-table="workover_operations">
                     <thead>
                       <tr>
-                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -596,15 +565,14 @@
               <section class="panel table-panel" id="workover-costs">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionCosts">成本与库存</h2>
-                  <button class="button small secondary" type="button" data-add-row="workoverBulkTable" data-i18n="addBulk">新增库存</button>
                 </div>
                 <div class="table-wrap half">
                   <table id="workoverBulkTable" data-table="workover_bulks">
-                    <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th><th></th></tr></thead>
+                    <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th></tr></thead>
                     <tbody></tbody>
                   </table>
                   <table id="workoverCostTable" data-table="workover_daily_costs">
-                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th><th></th></tr></thead>
+                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -613,13 +581,12 @@
               <section class="panel table-panel" id="workover-intervals">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionPerforationIntervals">射孔区间</h2>
-                  <button class="button small secondary" type="button" data-add-row="workoverIntervalsTable" data-i18n="addInterval">新增区间</button>
                 </div>
                 <div class="table-wrap">
                   <table id="workoverIntervalsTable" data-table="workover_intervals">
                     <thead>
                       <tr>
-                        <th data-i18n="thFormation">Formation</th><th data-i18n="thTopMd">Top MD</th><th data-i18n="thBaseMd">Base MD</th><th data-i18n="thLength">Length</th><th data-i18n="thDensity">Density</th><th data-i18n="thCharges">Charges</th><th data-i18n="thPhase">Phase</th><th data-i18n="thPenetration">Penetration</th><th data-i18n="thDiameter">Diameter</th><th data-i18n="thDate">Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thComments">Comments</th><th></th>
+                        <th data-i18n="thFormation">Formation</th><th data-i18n="thTopMd">Top MD</th><th data-i18n="thBaseMd">Base MD</th><th data-i18n="thLength">Length</th><th data-i18n="thDensity">Density</th><th data-i18n="thCharges">Charges</th><th data-i18n="thPhase">Phase</th><th data-i18n="thPenetration">Penetration</th><th data-i18n="thDiameter">Diameter</th><th data-i18n="thDate">Date</th><th data-i18n="thStatus">Status</th><th data-i18n="thComments">Comments</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -637,16 +604,6 @@
               </section>
             </form>
 
-            <aside class="rules-panel" aria-label="修井日报基础条件限制规则">
-              <div class="rules-card">
-                <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
-                <ul id="workoverRulesList"></ul>
-              </div>
-              <div class="rules-card issue-list">
-                <h2 data-i18n="liveValidation">实时校验</h2>
-                <div id="workoverIssues"></div>
-              </div>
-            </aside>
           </div>
         </section>
 
@@ -663,7 +620,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
               <input id="movePdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
@@ -730,13 +686,12 @@
               <section class="panel table-panel" id="move-operations">
                 <div class="panel-heading">
                   <h2 data-i18n="sectionOperations">Operations</h2>
-                  <button class="button small secondary" type="button" data-add-row="moveOperationsTable" data-i18n="addOperation">新增作业行</button>
                 </div>
                 <div class="table-wrap">
                   <table id="moveOperationsTable" data-table="move_operations">
                     <thead>
                       <tr>
-                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th><th></th>
+                        <th data-i18n="thFrom">From</th><th data-i18n="thTo">To</th><th data-i18n="thHrs">Hrs</th><th data-i18n="thOpCode">Op Code</th><th data-i18n="thOpSub">Op Sub</th><th data-i18n="thType">Type</th><th data-i18n="thOperationDetails">Operation Details</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -753,16 +708,6 @@
               </section>
             </form>
 
-            <aside class="rules-panel" aria-label="搬迁日报基础条件限制规则">
-              <div class="rules-card">
-                <h2 data-i18n="rulesTitle">基础条件限制规则</h2>
-                <ul id="moveRulesList"></ul>
-              </div>
-              <div class="rules-card issue-list">
-                <h2 data-i18n="liveValidation">实时校验</h2>
-                <div id="moveIssues"></div>
-              </div>
-            </aside>
           </div>
         </section>
 
@@ -779,7 +724,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
@@ -787,8 +731,8 @@
           <section class="panel analytics-filter production-time-filter" data-analytics-filter="production">
             <label>日期起<input type="date" name="date_from" /></label>
             <label>日期止<input type="date" name="date_to" /></label>
-            <label>筛选方式<select name="scope_type" data-production-scope-type><option value="rig">按井队</option><option value="project">按项目</option></select></label>
-            <label data-production-scope-field><span data-production-scope-label>井队</span><select name="scope_value" data-production-scope-value><option value="">全部井队</option></select></label>
+            <label>筛选方式<select name="scope_type" data-production-scope-type><option value="rig" data-i18n="scopeByRig">按井队</option><option value="project" data-i18n="scopeByProject">按项目</option></select></label>
+            <label data-production-scope-field><span data-production-scope-label>井队</span><select name="scope_value" data-production-scope-value><option value="" data-i18n="allRigs">全部井队</option></select></label>
             <button class="button" type="button" data-analytics-search="production" data-i18n="search">查询</button>
             <button class="button secondary" type="button" data-analytics-reset="production" data-i18n="reset">重置</button>
             <button class="button secondary" type="button" data-analytics-export="production" data-i18n="exportList">导出</button>
@@ -814,7 +758,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
@@ -849,7 +792,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
@@ -886,7 +828,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
@@ -947,7 +888,7 @@
                   <tbody data-npt-detail-rows></tbody>
                 </table>
               </div>
-              <label class="npt-note-field">备注说明<textarea name="nptConfirmNote" maxlength="200" placeholder="请输入备注内容（选填）"></textarea><small><span data-npt-note-count>0</span>/200</small></label>
+              <label class="npt-note-field">备注说明<textarea name="nptConfirmNote" maxlength="200" placeholder="请输入备注内容（选填）" data-i18n-placeholder="nptNotePlaceholder"></textarea><small><span data-npt-note-count>0</span>/200</small></label>
               <div class="calendar-hint">提交确认后，该井将被锁定，日报数据将无法重新上传或修改，请确认无误后再提交。</div>
               <div class="npt-confirm-actions">
                 <button class="button secondary" type="button" data-npt-back>返回列表</button>
@@ -971,7 +912,6 @@
               <div class="language-switch" role="group" aria-label="Language">
                 <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
                 <button type="button" data-lang="zh" class="active">中</button>
-                <button type="button" data-lang="en">EN</button>
                 <button type="button" data-lang="es">ES</button>
               </div>
             </div>
@@ -1010,6 +950,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
-    <script src="./app.js?v=translation-cache-6"></script>
+    <script src="./app.js?v=well-source-calendar-2"></script>
   </body>
 </html>

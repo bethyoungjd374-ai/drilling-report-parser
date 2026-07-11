@@ -7,18 +7,6 @@
   const SURFACE_SELECTOR = [
     ".auth-card",
     ".auth-feature-strip",
-    ".topbar",
-    ".panel",
-    ".rules-card",
-    ".status-card",
-    ".well-panel",
-    ".calendar-month",
-    ".record-summary-card",
-    ".analytics-kpi",
-    ".analytics-card",
-    ".admin-panel",
-    ".admin-kpi-card",
-    ".admin-note-grid",
     ".pdf-modal-panel",
     ".toast",
   ].join(",");

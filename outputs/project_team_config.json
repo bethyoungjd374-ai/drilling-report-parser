@@ -1,103 +1,97 @@
 {
   "teams": [
     {
-      "id": "a1209acd-e2d2-47c0-85a3-2b61aefb900b",
-      "name": "SINOPEC 248",
-      "code": "",
-      "contractor": "",
-      "aliases": [
-        "00 SINOPEC 248"
-      ],
-      "status": "active",
-      "created_at": "2026-07-04T16:48:44"
-    },
-    {
-      "id": "7b202850-5a27-4392-ac7c-1bb0466f865c",
-      "name": "SINOPEC 168",
-      "code": "",
-      "contractor": "",
-      "aliases": [
-        "00 SINOPEC 168"
-      ],
-      "status": "active",
-      "created_at": "2026-07-06T19:39:53"
-    },
-    {
-      "id": "6e952d31-69ee-4d01-8957-f953a0aae3a8",
+      "id": "61a07ede-6bad-41c0-b7b5-1244e4dc3765",
       "name": "SINOPEC 129",
       "code": "",
       "contractor": "",
-      "aliases": [
-        "00 SINOPEC 129"
-      ],
+      "aliases": [],
       "status": "active",
-      "created_at": "2026-07-06T19:40:08"
+      "created_at": "2026-07-11T15:25:34"
     },
     {
-      "id": "a61af04d-45e1-481c-bfaa-d5be7411cc71",
-      "name": "SINOPEC 933",
+      "id": "644db4c6-f61c-45da-8832-107fc25eccd2",
+      "name": "SINOPEC 248",
       "code": "",
       "contractor": "",
       "aliases": [],
       "status": "active",
-      "created_at": "2026-07-06T21:36:56"
+      "created_at": "2026-07-11T15:25:35"
     },
     {
-      "id": "15ace5a6-24bb-445a-b36e-d6dfe0632e9d",
-      "name": "SINOPEC 905",
-      "code": "",
-      "contractor": "",
-      "aliases": [],
-      "status": "active",
-      "created_at": "2026-07-06T21:36:56"
-    },
-    {
-      "id": "9b229547-63a7-4aac-9864-7291e9324f20",
-      "name": "SINOPEC 219",
-      "code": "",
-      "contractor": "",
-      "aliases": [],
-      "status": "active",
-      "created_at": "2026-07-06T21:37:18"
-    },
-    {
-      "id": "d6d42aa5-18b9-44c7-a5ac-a3ca9f138508",
+      "id": "a7757474-301f-4051-9e7d-46cba3ddb01d",
       "name": "SINOPEC 127",
       "code": "",
       "contractor": "",
       "aliases": [],
       "status": "active",
-      "created_at": "2026-07-06T21:37:19"
+      "created_at": "2026-07-11T15:27:23"
     },
     {
-      "id": "d9d24d1c-7d19-4cae-adbe-e2f478b27d25",
+      "id": "925cee9e-b6ed-4828-9380-376d6b493ba8",
+      "name": "SINOPEC 219",
+      "code": "",
+      "contractor": "",
+      "aliases": [],
+      "status": "active",
+      "created_at": "2026-07-11T15:27:24"
+    },
+    {
+      "id": "7a886101-0239-40c1-8d37-fe7d1738f701",
       "name": "SINOPEC 183",
       "code": "",
       "contractor": "",
       "aliases": [],
       "status": "active",
-      "created_at": "2026-07-06T21:37:37"
+      "created_at": "2026-07-11T15:27:32"
     },
     {
-      "id": "5ccf2da2-ef88-4098-976f-672e0795bf4f",
-      "name": "DRPPLACEHOLDER A 248",
+      "id": "c7584828-05c9-4608-9c44-be78246cbd53",
+      "name": "SINOPEC 905",
       "code": "",
       "contractor": "",
       "aliases": [],
       "status": "active",
-      "created_at": "2026-07-10T11:48:11"
+      "created_at": "2026-07-11T15:27:59"
+    },
+    {
+      "id": "fd0147d7-84be-4d44-8c37-fb4b67168900",
+      "name": "SINOPEC 933",
+      "code": "",
+      "contractor": "",
+      "aliases": [],
+      "status": "active",
+      "created_at": "2026-07-11T15:28:00"
+    },
+    {
+      "id": "b78d994d-a8b1-4325-851a-5eef9ab0e093",
+      "name": "SINOPEC 168",
+      "code": "",
+      "contractor": "",
+      "aliases": [],
+      "status": "active",
+      "created_at": "2026-07-11T15:28:15"
     }
   ],
   "projects": [
     {
-      "id": "d6744bc8-1e2a-43ab-9a7c-8bcee4b39515",
-      "contract_no": "厄瓜多尔2026年钻井合同001",
-      "project_name": "厄瓜多尔2026年钻井合同001",
+      "id": "3567d4ef-ee96-4283-a507-558220e9bd2c",
+      "contract_no": "EC-2026-项目1",
+      "project_name": "EC-2026-001",
       "status": "active",
-      "start_date": "2026-01-01",
-      "end_date": "2026-08-01",
+      "start_date": "2026-03-01",
+      "end_date": "2026-07-31",
       "note": "",
       "rigs": [
+        {
+          "rig": "SINOPEC 129",
+          "start_date": "",
+          "end_date": "",
+          "wells": [
+            "SCHAO-611"
+          ],
+          "note": ""
+        },
         {
           "rig": "SINOPEC 248",
           "start_date": "",
@@ -109,20 +103,11 @@
           "note": ""
         },
         {
-          "rig": "SINOPEC 168",
+          "rig": "SINOPEC 127",
           "start_date": "",
           "end_date": "",
           "wells": [
-            "TCHA-006I"
-          ],
-          "note": ""
-        },
-        {
-          "rig": "SINOPEC 129",
-          "start_date": "",
-          "end_date": "",
-          "wells": [
-            "SCHAO-611"
+            "LOBC-010"
           ],
           "note": ""
         },
@@ -136,42 +121,20 @@
           "note": ""
         },
         {
-          "rig": "SINOPEC 127",
-          "start_date": "",
-          "end_date": "",
-          "wells": [
-            "LOBC-010"
-          ],
-          "note": ""
-        }
-      ],
-      "created_at": "2026-07-04T13:57:37",
-      "updated_at": "2026-07-10T11:49:47"
-    },
-    {
-      "id": "5dd3ca68-c885-4701-a498-d4d31c9b7e4e",
-      "contract_no": "新SACHA项目钻完井总包合同",
-      "project_name": "新SACHA项目钻完井总包合同",
-      "status": "active",
-      "start_date": "2026-04-06",
-      "end_date": "2026-09-09",
-      "note": "测试使用",
-      "rigs": [
-        {
-          "rig": "SINOPEC 129",
-          "start_date": "",
-          "end_date": "",
-          "wells": [
-            "SCHAO-611"
-          ],
-          "note": ""
-        },
-        {
           "rig": "SINOPEC 905",
           "start_date": "",
           "end_date": "",
           "wells": [
             "SHSG-160"
+          ],
+          "note": ""
+        },
+        {
+          "rig": "SINOPEC 168",
+          "start_date": "",
+          "end_date": "",
+          "wells": [
+            "TCHA-006I"
           ],
           "note": ""
         },
@@ -194,8 +157,42 @@
           "note": ""
         }
       ],
-      "created_at": "2026-07-06T16:57:00",
-      "updated_at": "2026-07-10T13:23:34"
+      "created_at": "2026-07-11T12:40:10",
+      "updated_at": "2026-07-11T12:41:29"
+    },
+    {
+      "id": "1eb844a9-ac59-4ee5-8148-f497dd3efded",
+      "contract_no": "EC-2026-项目22",
+      "project_name": "EC-2026-022",
+      "status": "active",
+      "start_date": "2026-04-01",
+      "end_date": "2026-07-31",
+      "note": "",
+      "rigs": [
+        {
+          "rig": "SINOPEC 905",
+          "start_date": "",
+          "end_date": "",
+          "wells": [],
+          "note": ""
+        },
+        {
+          "rig": "SINOPEC 933",
+          "start_date": "",
+          "end_date": "",
+          "wells": [],
+          "note": ""
+        },
+        {
+          "rig": "SINOPEC 168",
+          "start_date": "",
+          "end_date": "",
+          "wells": [],
+          "note": ""
+        }
+      ],
+      "created_at": "2026-07-11T12:41:02",
+      "updated_at": "2026-07-11T12:41:02"
     }
   ],
   "pending_wells": []

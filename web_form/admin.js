@@ -8,15 +8,25 @@ const adminState = {
   roles: [],
   config: {},
   aiModels: { models: [], default_model_id: "" },
+  aiExtraction: { rules: [], catalog: { report_types: [], target_fields: [], output_formats: [] } },
+  aiExtractionQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
+  aiExtractionView: "rules",
+  selectedAiExtractionRuleId: "",
+  aiExtractionTestRecordId: "",
+  aiExtractionTestSource: "",
+  aiExtractionTestResult: null,
+  aiExtractionTestRunning: false,
   selectedAiModelId: "",
   aiModelTestResult: null,
   projectTeams: { teams: [], projects: [], pending_wells: [] },
   translationTerms: { terms: [], protected_terms: {} },
-  translationTuning: { scope_rules: [], scope_catalog: { report_types: [] }, target_languages: ["zh-CN", "en", "es"], prompt: {}, protections: {} },
+  translationTuning: { scope_rules: [], scope_catalog: { report_types: [] }, target_languages: ["zh-CN"], prompt: {}, protections: {} },
   translationTuningView: "fields",
   translationScopeDraft: { report_type: "drilling", section: "report_fields", field_name: "currentOps" },
-  selectedTranslationTermId: "",
   translationTermImport: { running: false, result: null, duplicates: [] },
+  translationTermCategory: "all",
+  translationTermPage: 1,
+  translationTermPageSize: 10,
   translationQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
   translationTestResult: null,
   translationTestRunning: false,
@@ -76,10 +86,12 @@ async function loadAdminSession() {
 
 async function loadAdminData() {
   try {
-    const [users, config, aiModels, projectTeams, translationTerms, translationTuning, translationQueue, dataStatus, records, logs] = await Promise.all([
+    const [users, config, aiModels, aiExtraction, aiExtractionQueue, projectTeams, translationTerms, translationTuning, translationQueue, dataStatus, records, logs] = await Promise.all([
       adminRequest("/api/admin/users"),
       adminRequest("/api/admin/config"),
       adminRequest("/api/admin/ai-models"),
+      adminRequest("/api/admin/ai-extraction-rules"),
+      adminRequest("/api/admin/ai-extractions"),
       adminRequest("/api/admin/project-teams"),
       adminRequest("/api/admin/translation-terms"),
       adminRequest("/api/admin/translation-tuning"),
@@ -92,12 +104,14 @@ async function loadAdminData() {
     adminState.roles = users.roles || [];
     adminState.config = config.config || {};
     adminState.aiModels = { models: aiModels.models || [], default_model_id: aiModels.default_model_id || "" };
+    adminState.aiExtraction = aiExtraction || adminState.aiExtraction;
+    adminState.aiExtractionQueue = aiExtractionQueue || adminState.aiExtractionQueue;
+    adminState.selectedAiExtractionRuleId = adminState.aiExtraction.rules?.[0]?.id || "";
     adminState.selectedAiModelId = adminState.aiModels.default_model_id || adminState.aiModels.models?.[0]?.id || "";
     adminState.projectTeams = { teams: projectTeams.teams || [], projects: projectTeams.projects || [], pending_wells: projectTeams.pending_wells || [] };
     adminState.translationTerms = { terms: translationTerms.terms || [], protected_terms: translationTerms.protected_terms || {} };
     adminState.translationTuning = translationTuning || adminState.translationTuning;
     adminState.translationQueue = translationQueue || adminState.translationQueue;
-    adminState.selectedTranslationTermId = adminState.selectedTranslationTermId || adminState.translationTerms.terms?.[0]?.id || "";
     adminState.dataStatus = dataStatus;
     adminState.records = records.records || [];
     adminState.logs = logs.logs || [];
@@ -120,6 +134,7 @@ function renderAdminPanels() {
   renderAdminUsers();
   renderAdminRoles();
   renderAdminAiModels();
+  renderAdminAiExtraction();
   renderAdminProjects();
   renderAdminTranslationTuning();
   renderAdminConfig();
@@ -325,6 +340,131 @@ function defaultAiModelName() {
   return found?.name || "-";
 }
 
+function renderAdminAiExtraction() {
+  const host = document.querySelector('[data-admin-panel="aiExtraction"]');
+  if (!host) return;
+  const config = adminState.aiExtraction || { rules: [], catalog: {} };
+  const rules = config.rules || [];
+  let selected = rules.find((item) => item.id === adminState.selectedAiExtractionRuleId) || rules[0] || emptyAiExtractionRule();
+  adminState.selectedAiExtractionRuleId = selected.id;
+  const enabledCount = rules.filter((item) => item.enabled !== false).length;
+  const queue = adminState.aiExtractionQueue || {};
+  const view = adminState.aiExtractionView || "rules";
+  const content = view === "queue" ? aiExtractionQueueMarkup() : view === "test" ? `
+    <section class="panel"><div class="panel-heading"><h2>测试工作台</h2><span class="panel-note">只展示提炼结果，不写入生产报表</span></div>${aiExtractionTestMarkup()}</section>` : `
+    <section class="panel">
+      <div class="panel-heading">
+        <div><h2>AI 数据提炼规则</h2><span class="panel-note">从指定日报字段提炼关键数据，并映射到生产报表目标字段</span></div>
+        <div class="admin-actions"><label class="inline-check"><input type="checkbox" name="aiExtractionAutoExecute" ${config.auto_execute !== false ? "checked" : ""} /> 上传后自动执行</label><button class="button small" type="button" data-admin-new-extraction-rule>新增规则</button></div>
+      </div>
+      <div class="table-wrap"><table class="record-table admin-table extraction-rule-table">
+        <thead><tr><th>规则名称</th><th>日报类型</th><th>来源字段</th><th>目标字段</th><th>输出</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>${rules.map(aiExtractionRuleRow).join("") || `<tr><td colspan="7">暂无提炼规则</td></tr>`}</tbody>
+      </table></div>
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><h2>规则配置</h2><span class="panel-note">保存后历史结果标记为规则已更新，可在任务队列重新提炼</span></div>
+      ${aiExtractionRuleForm(selected)}
+    </section>`;
+  host.innerHTML = `
+    <section class="admin-kpi-grid compact">
+      ${adminKpi("提炼规则", rules.length, `${enabledCount} 条启用`, "sliders")}
+      ${adminKpi("待处理日报", queue.pending_count || 0, "可继续或覆盖提炼", "logs", 'role="button" tabindex="0" data-ai-extraction-view="queue"')}
+      ${adminKpi("执行中", queue.processing_count || 0, `${queue.worker_count || 0} 个并发任务`, "overview")}
+      ${adminKpi("默认模型", defaultAiModelName(), "可按规则覆盖", "shield")}
+    </section>
+    <nav class="tuning-tabs" aria-label="数据提炼视图">
+      ${aiExtractionTab("rules", "规则配置")}${aiExtractionTab("queue", "任务队列")}${aiExtractionTab("test", "测试工作台")}
+    </nav>
+    <div class="translation-tuning-content">${content}</div>`;
+}
+
+function aiExtractionTab(value, label) {
+  return `<button type="button" class="${adminState.aiExtractionView === value ? "active" : ""}" data-ai-extraction-view="${value}">${label}</button>`;
+}
+
+function aiExtractionQueueMarkup() {
+  const queue = adminState.aiExtractionQueue || {};
+  const rows = queue.records || [];
+  return `<section class="panel">
+    <div class="panel-heading"><div><h2>数据提炼任务</h2><span class="panel-note">规则版本 ${escapeHtml(queue.current_version || "-")}；失败重试不会清除上次成功值</span></div>
+      <div class="admin-actions"><button class="button small" type="button" data-admin-queue-extractions="continue">执行待处理</button><button class="button secondary small" type="button" data-admin-queue-extractions="overwrite">按当前规则覆盖执行</button></div>
+    </div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
+      <tbody>${rows.map((row) => `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${row.needs_extraction ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td><span class="status-pill ${aiQueueStatusTone(row.status)}" title="${escapeHtml(row.error || "")}">${escapeHtml(aiQueueStatusLabel(row.status))}</span></td><td>${escapeHtml(row.progress || "0")}%</td><td>${escapeHtml(row.updated_at || "-")}</td></tr>`).join("") || `<tr><td colspan="6">当前没有符合启用规则的日报</td></tr>`}</tbody>
+    </table></div></section>`;
+}
+
+function aiQueueStatusLabel(status = "") {
+  return ({ PENDING: "待提炼", QUEUED: "排队中", IN_PROGRESS: "提炼中", COMPLETED: "已提炼", FAILED: "失败", STALE: "规则已更新", NOT_REQUIRED: "无需提炼" })[String(status).toUpperCase()] || "待提炼";
+}
+
+function aiQueueStatusTone(status = "") {
+  const value = String(status).toUpperCase();
+  return value === "COMPLETED" ? "uploaded" : value === "FAILED" ? "failed" : value === "IN_PROGRESS" || value === "QUEUED" ? "processing" : "pending";
+}
+
+function aiExtractionRuleRow(rule = {}) {
+  const catalog = adminState.aiExtraction.catalog || {};
+  return `<tr class="${rule.id === adminState.selectedAiExtractionRuleId ? "selected-row" : ""}">
+    <td><strong>${escapeHtml(rule.name)}</strong></td>
+    <td>${escapeHtml(aiExtractionReportLabel(rule.report_type))}</td>
+    <td><code>${escapeHtml(`${rule.source_section}.${rule.source_field}`)}</code></td>
+    <td>${escapeHtml(aiExtractionCatalogLabel(catalog.target_fields, rule.target_field))}</td>
+    <td>${escapeHtml(aiExtractionCatalogLabel(catalog.output_formats, rule.output_format))}</td>
+    <td><span class="status-pill ${rule.enabled !== false ? "uploaded" : "failed"}">${rule.enabled !== false ? "启用" : "停用"}</span></td>
+    <td><button class="link-button" type="button" data-admin-edit-extraction-rule="${escapeHtml(rule.id)}">编辑</button></td>
+  </tr>`;
+}
+
+function aiExtractionRuleForm(rule = {}) {
+  const catalog = adminState.aiExtraction.catalog || {};
+  const report = (catalog.report_types || []).find((item) => item.value === rule.report_type) || catalog.report_types?.[0] || { sections: [] };
+  const section = (report.sections || []).find((item) => item.value === rule.source_section) || report.sections?.[0] || { fields: [] };
+  const field = (section.fields || []).find((item) => item.value === rule.source_field) || section.fields?.[0] || {};
+  return `<div class="ai-extraction-form">
+    <input type="hidden" name="aiExtractionRuleId" value="${escapeHtml(rule.id || "")}" />
+    <label class="wide">规则名称<input name="aiExtractionRuleName" value="${escapeHtml(rule.name || "")}" placeholder="例如：NPT责任方识别" /></label>
+    <label>日报类型<select name="aiExtractionReportType">${(catalog.report_types || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === report.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>来源模块<select name="aiExtractionSourceSection">${(report.sections || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === section.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>来源字段<select name="aiExtractionSourceField">${(section.fields || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === field.value ? "selected" : ""}>${escapeHtml(item.label)} (${escapeHtml(item.value)})</option>`).join("")}</select></label>
+    <label>目标生产报表字段<select name="aiExtractionTargetField">${(catalog.target_fields || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === rule.target_field ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>输出格式<select name="aiExtractionOutputFormat">${(catalog.output_formats || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === rule.output_format ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>使用模型<select name="aiExtractionModelId"><option value="">默认模型</option>${(adminState.aiModels.models || []).filter((item) => item.enabled !== false).map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === rule.model_id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}</select></label>
+    <label>状态<select name="aiExtractionEnabled"><option value="true" ${rule.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${rule.enabled === false ? "selected" : ""}>停用</option></select></label>
+    <label class="wide">适用条件<textarea name="aiExtractionCondition" rows="3" placeholder="例如：仅处理作业类型为 NPT 的明细">${escapeHtml(rule.condition || "")}</textarea></label>
+    <label class="wide">提炼要求<textarea name="aiExtractionInstruction" rows="4" placeholder="说明需要识别什么、无法判断时如何处理">${escapeHtml(rule.instruction || "")}</textarea></label>
+    <div class="admin-actions wide"><button class="button" type="button" data-admin-save-extraction-rules>保存规则</button><button class="button secondary" type="button" data-admin-delete-extraction-rule>删除规则</button></div>
+  </div>`;
+}
+
+function aiExtractionTestMarkup() {
+  const selectedRule = (adminState.aiExtraction.rules || []).find((item) => item.id === adminState.selectedAiExtractionRuleId) || {};
+  const matchingRecords = (adminState.records || []).filter((record) => !selectedRule.report_type || record.report_type === selectedRule.report_type);
+  if (!matchingRecords.some((record) => record.record_id === adminState.aiExtractionTestRecordId)) {
+    adminState.aiExtractionTestRecordId = matchingRecords[0]?.record_id || "";
+  }
+  const result = adminState.aiExtractionTestResult;
+  const output = !result ? `<div class="admin-empty-panel"><p>默认读取所选日报的来源字段；也可以粘贴原文覆盖测试数据。</p></div>` : result.ok === false ? `<div class="ai-test-result failed"><strong>提炼失败</strong><small>${escapeHtml(result.error || "未知错误")}</small></div>` : `<div class="ai-test-result success"><strong>${escapeHtml(result.target_field)} = ${escapeHtml(result.result || "(空值)")}</strong><small>模型：${escapeHtml(result.model_name || "-")}，耗时 ${escapeHtml(result.elapsed_ms || 0)} ms，读取 ${escapeHtml(result.source_count || 0)} 条来源内容</small>${result.source_preview ? `<details><summary>查看测试原文</summary><pre>${escapeHtml(result.source_preview)}</pre></details>` : ""}</div>`;
+  return `<div class="ai-extraction-test">
+    <label>测试日报<select name="aiExtractionTestRecord">${matchingRecords.map((record) => `<option value="${escapeHtml(record.record_id)}" ${record.record_id === adminState.aiExtractionTestRecordId ? "selected" : ""}>${escapeHtml([record.reportDate, record.wellbore, record.rig, record.reportNo].filter(Boolean).join(" / ") || record.record_id)}</option>`).join("") || `<option value="">没有匹配的已入库日报</option>`}</select></label>
+    <label>临时测试原文（可选）<textarea name="aiExtractionTestSource" rows="7" placeholder="留空时自动读取所选日报的来源字段">${escapeHtml(adminState.aiExtractionTestSource || "")}</textarea></label>
+    <button class="button" type="button" data-admin-test-extraction-rule ${adminState.aiExtractionTestRunning ? "disabled" : ""}>${adminState.aiExtractionTestRunning ? "提炼中..." : "试运行"}</button>${output}
+  </div>`;
+}
+
+function aiExtractionReportLabel(value) {
+  return aiExtractionCatalogLabel(adminState.aiExtraction.catalog?.report_types, value);
+}
+
+function aiExtractionCatalogLabel(items = [], value = "") {
+  return (items || []).find((item) => item.value === value)?.label || value || "-";
+}
+
+function emptyAiExtractionRule() {
+  return { id: newClientId(), name: "新提炼规则", report_type: "drilling", source_section: "report_fields", source_field: "currentOps", condition: "", instruction: "", target_field: "remarks", output_format: "text", model_id: "", enabled: false };
+}
+
 function renderAdminProjects() {
   const host = document.querySelector('[data-admin-panel="projects"]');
   const config = adminState.projectTeams || { teams: [], projects: [], pending_wells: [] };
@@ -503,7 +643,7 @@ function renderAdminTranslationTuning() {
   const enabledFields = (tuning.scope_rules || []).filter((item) => item.enabled !== false).length;
   const pendingCount = adminState.records.filter(translationNeedsProcessing).length;
   const view = adminState.translationTuningView || "fields";
-  const content = view === "terms" ? translationTermsMarkup() : view === "test" ? translationTestWorkbenchMarkup() : translationFieldPoliciesMarkup();
+  const content = view === "terms" ? translationTermsMarkup() : view === "queue" ? translationQueuePanelMarkup() : view === "test" ? translationTestWorkbenchMarkup() : translationFieldPoliciesMarkup();
   host.innerHTML = `
     <section class="admin-kpi-grid compact tuning-kpis">
       ${adminKpi("翻译范围", enabledFields, `共 ${(tuning.scope_rules || []).length} 条精确规则`, "sliders")}
@@ -514,6 +654,7 @@ function renderAdminTranslationTuning() {
     <nav class="tuning-tabs" aria-label="翻译调优视图">
       ${translationTuningTab("fields", "字段与 Prompt")}
       ${translationTuningTab("terms", "术语词库")}
+      ${translationTuningTab("queue", "任务队列")}
       ${translationTuningTab("test", "测试工作台")}
     </nav>
     <div class="translation-tuning-content">${content}</div>`;
@@ -524,7 +665,7 @@ function translationTuningTab(value, label) {
 }
 
 function translationLanguageNames(values = []) {
-  const labels = { "zh-CN": "中文", en: "英文", es: "西班牙语" };
+  const labels = { "zh-CN": "中文" };
   return values.map((value) => labels[value] || value).join(" / ") || "未配置";
 }
 
@@ -532,7 +673,15 @@ function translationNeedsProcessing(record = {}) {
   const status = String(record.translation_status || "").toUpperCase();
   const version = String(record.translation_version || "");
   const currentVersion = String(adminState.translationTuning?.version || "");
+  if (["QUEUED", "IN_PROGRESS", "NOT_REQUIRED"].includes(status)) return false;
   return ["PENDING", "FAILED"].includes(status) || Boolean(currentVersion && version !== currentVersion);
+}
+
+function translationQueuePanelMarkup() {
+  const queue = adminState.translationQueue || {};
+  const records = queue.records || [];
+  return `<section class="panel"><div class="panel-heading"><div><h2>日报翻译任务</h2><span class="panel-note">当前策略版本 ${escapeHtml(queue.current_version || "-")}</span></div><div class="admin-actions"><button class="button secondary small" type="button" data-admin-queue-selected="overwrite">覆盖重译选中</button><button class="button small" type="button" data-admin-queue-selected="continue">继续翻译选中</button></div></div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th><input type="checkbox" data-translation-queue-select-all /></th><th>类型</th><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>原因</th></tr></thead><tbody>${records.map(translationQueueRowMarkup).join("") || `<tr><td colspan="7">暂无日报记录</td></tr>`}</tbody></table></div></section>`;
 }
 
 function translationFieldPoliciesMarkup() {
@@ -591,7 +740,7 @@ function translationScopeBuilderMarkup() {
 }
 
 function translationTargetOptions(selected = []) {
-  return [["zh-CN", "中文"], ["en", "英文"], ["es", "西班牙语"]].map(([value, label]) => `<label><input type="checkbox" name="translationTargetLanguage" value="${value}" ${selected.includes(value) ? "checked" : ""} />${label}</label>`).join("");
+  return [["zh-CN", "中文"]].map(([value, label]) => `<label><input type="checkbox" name="translationTargetLanguage" value="${value}" ${selected.includes(value) ? "checked" : ""} />${label}</label>`).join("");
 }
 
 function translationProtectionOptions(protections = {}) {
@@ -601,30 +750,49 @@ function translationProtectionOptions(protections = {}) {
 function translationTermsMarkup() {
   const terms = adminState.translationTerms?.terms || [];
   const query = String(adminState.translationTermSearch || "").trim().toLowerCase();
-  const visibleTerms = terms.filter((term) => !query || [term.zh, term.en, term.es, term.category].some((value) => String(value || "").toLowerCase().includes(query)));
-  const selected = selectedTranslationTerm();
+  const category = adminState.translationTermCategory || "all";
+  const filteredTerms = terms.filter((term) => {
+    const categoryMatches = category === "all" || term.category === category;
+    const queryMatches = !query || [term.zh, term.en, term.es, translationTermCategoryLabel(term.category)].some((value) => String(value || "").toLowerCase().includes(query));
+    return categoryMatches && queryMatches;
+  });
+  const pageSize = Number(adminState.translationTermPageSize || 10);
+  const pageCount = Math.max(1, Math.ceil(filteredTerms.length / pageSize));
+  adminState.translationTermPage = Math.min(Math.max(1, adminState.translationTermPage || 1), pageCount);
+  const start = (adminState.translationTermPage - 1) * pageSize;
+  const visibleTerms = filteredTerms.slice(start, start + pageSize);
   return `
     <section class="panel">
       <div class="panel-heading tuning-term-heading">
-        <div><h2>术语词库</h2><span class="panel-note">锁定术语会强制映射；普通术语作为 glossary 提供给模型参考</span></div>
-        <div class="admin-actions"><input class="tuning-term-search" type="search" value="${escapeHtml(adminState.translationTermSearch)}" placeholder="搜索中文、英文或西班牙语" data-translation-term-search /><input type="file" accept=".xlsx,.xls,.xlsm,.xltx,.xltm" data-translation-term-file hidden /><button class="button secondary small" type="button" data-admin-import-translation-terms ${adminState.translationTermImport.running ? "disabled" : ""}>${adminState.translationTermImport.running ? "AI 分析中..." : "导入 Excel"}</button><button class="button small" type="button" data-admin-add-translation-term>新增术语</button></div>
+        <div><h2>术语词库</h2><span class="panel-note">术语对全部日报字段生效，作业类型仅用于分类管理</span></div>
+        <div class="admin-actions tuning-term-actions"><input type="file" accept=".xlsx,.xls,.xlsm,.xltx,.xltm" data-translation-term-file hidden /><a class="button secondary small" href="/api/admin/translation-terms/template">下载模板</a><button class="button secondary small" type="button" data-admin-import-translation-terms ${adminState.translationTermImport.running ? "disabled" : ""}>${adminState.translationTermImport.running ? "分析中..." : "导入 Excel"}</button><a class="button secondary small" href="/api/admin/translation-terms/export">导出 Excel</a><button class="button small" type="button" data-admin-add-translation-term>新增术语</button></div>
       </div>
       ${translationTermImportSummaryMarkup()}
+      <div class="translation-term-toolbar"><input class="tuning-term-search" type="search" value="${escapeHtml(adminState.translationTermSearch)}" placeholder="搜索中文、英文或西班牙语" aria-label="搜索术语" data-translation-term-search /><div class="translation-term-segments" role="group" aria-label="作业类型筛选">${translationTermCategorySegments(category)}</div></div>
       <div class="table-wrap tuning-term-table-wrap"><table class="record-table admin-table tuning-term-table">
-        <thead><tr><th>分类</th><th>中文</th><th>English</th><th>Español</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>作业类型</th><th>中文</th><th>English</th><th>Español</th><th>状态</th><th>操作</th></tr></thead>
         <tbody>${visibleTerms.map(translationTermListRow).join("") || `<tr><td colspan="6">没有匹配的术语</td></tr>`}</tbody>
       </table></div>
+      <div class="translation-term-pagination"><span>共 ${filteredTerms.length} 条，第 ${adminState.translationTermPage} / ${pageCount} 页</span><div><select aria-label="每页术语数量" data-translation-term-page-size><option value="10" ${pageSize === 10 ? "selected" : ""}>10 条/页</option><option value="20" ${pageSize === 20 ? "selected" : ""}>20 条/页</option><option value="50" ${pageSize === 50 ? "selected" : ""}>50 条/页</option></select><button class="button secondary small term-page-button" type="button" title="上一页" data-translation-term-page="${adminState.translationTermPage - 1}" ${adminState.translationTermPage <= 1 ? "disabled" : ""}><span aria-hidden="true">‹</span>上一页</button><button class="button secondary small term-page-button" type="button" title="下一页" data-translation-term-page="${adminState.translationTermPage + 1}" ${adminState.translationTermPage >= pageCount ? "disabled" : ""}>下一页<span aria-hidden="true">›</span></button></div></div>
     </section>
-    <section class="tuning-term-editor-layout">
-      <section class="panel">
-        <div class="panel-heading"><h2>术语详情</h2><span class="panel-note">别名可用换行或逗号分隔</span></div>
-        ${translationTermDetailMarkup(selected)}
-      </section>
-      <section class="panel">
-        <div class="panel-heading"><h2>全局保护项</h2><span class="panel-note">这些内容会随 Prompt 一并发送给模型并要求保持原样</span></div>
-        ${protectedTermsMarkup()}
-      </section>
+    <section class="panel tuning-protection-panel">
+      <div class="panel-heading"><div><h2>全局保护项</h2><span class="panel-note">缩写、单位和专名会随 Prompt 发送给模型并要求保持原样</span></div><button class="button small" type="button" data-admin-save-translation-terms>保存保护项</button></div>
+      ${protectedTermsMarkup()}
     </section>`;
+}
+
+function translationTermCategoryLabel(value = "general") {
+  return { general: "通用", drilling: "钻井", completion: "完井", workover: "修井", move: "搬迁" }[value] || "通用";
+}
+
+function translationTermCategoryOptions(selected = "general", includeAll = false) {
+  const options = [["general", "通用"], ["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"], ["move", "搬迁"]];
+  return `${includeAll ? `<option value="all" ${selected === "all" ? "selected" : ""}>全部作业类型</option>` : ""}${options.map(([value, label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("")}`;
+}
+
+function translationTermCategorySegments(selected = "all") {
+  const options = [["all", "全部"], ["general", "通用"], ["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"], ["move", "搬迁"]];
+  return options.map(([value, label]) => `<button type="button" class="${selected === value ? "active" : ""}" aria-pressed="${selected === value ? "true" : "false"}" data-translation-term-category-value="${value}">${label}</button>`).join("");
 }
 
 function translationTermImportSummaryMarkup() {
@@ -638,33 +806,11 @@ function translationTermImportSummaryMarkup() {
 }
 
 function translationTermListRow(term = {}) {
-  const selected = term.id === adminState.selectedTranslationTermId;
-  return `<tr class="${selected ? "selected-row" : ""}">
-    <td>${escapeHtml(term.category || "drilling")}</td><td><strong>${escapeHtml(term.zh || "-")}</strong></td><td>${escapeHtml(term.en || "-")}</td><td>${escapeHtml(term.es || "-")}</td>
+  return `<tr>
+    <td><span class="type-pill">${escapeHtml(translationTermCategoryLabel(term.category))}</span></td><td><strong>${escapeHtml(term.zh || "-")}</strong></td><td>${escapeHtml(term.en || "-")}</td><td>${escapeHtml(term.es || "-")}</td>
     <td><span class="status-pill ${term.enabled !== false ? "uploaded" : "failed"}">${term.enabled !== false ? (term.protected !== false ? "启用 / 锁定" : "启用") : "停用"}</span></td>
     <td><button class="link-button" type="button" data-admin-edit-translation-term="${escapeHtml(term.id)}">编辑</button><button class="link-button danger-link" type="button" data-admin-delete-translation-term="${escapeHtml(term.id)}">删除</button></td>
   </tr>`;
-}
-
-function selectedTranslationTerm() {
-  const terms = adminState.translationTerms?.terms || [];
-  return terms.find((term) => term.id === adminState.selectedTranslationTermId) || terms[0] || null;
-}
-
-function translationTermDetailMarkup(term) {
-  if (!term) return `<div class="admin-empty-panel"><p>新增一条术语后即可编辑。</p></div>`;
-  const aliases = term.aliases || {};
-  return `<div class="tuning-term-form" data-translation-term-detail data-term-id="${escapeHtml(term.id)}">
-    <label>分类<input name="termCategory" value="${escapeHtml(term.category || "drilling")}" /></label>
-    <label>中文<input name="termZh" value="${escapeHtml(term.zh || "")}" /></label>
-    <label>English<input name="termEn" value="${escapeHtml(term.en || "")}" /></label>
-    <label>Español<input name="termEs" value="${escapeHtml(term.es || "")}" /></label>
-    <label>中文别名<textarea name="termAliasesZh" rows="3">${escapeHtml(aliasInputValue(aliases.zh))}</textarea></label>
-    <label>英文别名<textarea name="termAliasesEn" rows="3">${escapeHtml(aliasInputValue(aliases.en))}</textarea></label>
-    <label>西语别名<textarea name="termAliasesEs" rows="3">${escapeHtml(aliasInputValue(aliases.es))}</textarea></label>
-    <div class="tuning-term-switches"><label><input type="checkbox" name="termEnabled" ${term.enabled !== false ? "checked" : ""} />启用</label><label><input type="checkbox" name="termProtected" ${term.protected !== false ? "checked" : ""} />锁定译法</label></div>
-    <div class="admin-actions wide"><button class="button" type="button" data-admin-save-translation-terms>保存词库</button></div>
-  </div>`;
 }
 
 function protectedTermsMarkup() {
@@ -685,7 +831,7 @@ function translationTestWorkbenchMarkup() {
       <div class="panel-heading"><h2>测试输入</h2><span class="panel-note">测试会调用模型，但不会写入日报数据库</span></div>
       <div class="tuning-test-controls">
         <label>模型<select name="translationTestModel">${models.map((model) => `<option value="${escapeHtml(model.id)}" ${model.id === (adminState.translationTestModelId || adminState.aiModels.default_model_id) ? "selected" : ""}>${escapeHtml(model.name)} / ${escapeHtml(model.model)}</option>`).join("")}</select></label>
-        <label>目标语言<select name="translationTestLanguage"><option value="zh-CN" ${adminState.translationTestLanguage === "zh-CN" ? "selected" : ""}>中文</option><option value="en" ${adminState.translationTestLanguage === "en" ? "selected" : ""}>英文</option><option value="es" ${adminState.translationTestLanguage === "es" ? "selected" : ""}>西班牙语</option></select></label>
+        <label>目标语言<select name="translationTestLanguage"><option value="zh-CN" selected>中文</option></select></label>
         <label>模拟字段<select name="translationTestField">${policies.map((policy) => `<option value="${escapeHtml(policy.id)}" ${policy.id === adminState.translationTestFieldCode ? "selected" : ""}>${escapeHtml(policy.report_type_label)} / ${escapeHtml(policy.section_label)} / ${escapeHtml(policy.label)}</option>`).join("")}</select></label>
       </div>
       <label class="tuning-test-source">日报原文<textarea name="translationTestSource" rows="10" maxlength="8000">${escapeHtml(adminState.translationTestSource || "")}</textarea></label>
@@ -861,7 +1007,7 @@ function renderAdminConfig() {
       <div class="panel-heading"><h2>系统配置</h2><span class="panel-note">保存基础配置和日报运行参数</span></div>
       <div class="admin-config-grid">
         <label>系统名称<input name="system_name" value="${escapeHtml(config.system_name)}" /></label>
-        <label>默认语言<select name="default_language"><option value="zh">中文</option><option value="en">EN</option><option value="es">ES</option></select></label>
+        <label>默认语言<select name="default_language"><option value="zh">中文</option><option value="es">ES</option></select></label>
         <label>每页记录数<input name="records_per_page" type="number" min="5" max="100" value="${escapeHtml(config.records_per_page)}" /></label>
         <label>数据库类型<input name="database_engine" value="${escapeHtml(config.database_engine || "mysql")}" readonly /></label>
         <label>数据库名<input name="database_name" value="${escapeHtml(config.database_name || "")}" readonly /></label>
@@ -1272,26 +1418,6 @@ function removeTranslationScope(id) {
   renderAdminTranslationTuning();
 }
 
-function syncTranslationTermDetail() {
-  const detail = document.querySelector("[data-translation-term-detail]");
-  if (!detail) return;
-  const terms = adminState.translationTerms?.terms || [];
-  const term = terms.find((item) => item.id === detail.dataset.termId);
-  if (!term) return;
-  term.category = detail.querySelector('[name="termCategory"]')?.value.trim() || "drilling";
-  term.zh = detail.querySelector('[name="termZh"]')?.value.trim() || "";
-  term.en = detail.querySelector('[name="termEn"]')?.value.trim() || "";
-  term.es = detail.querySelector('[name="termEs"]')?.value.trim() || "";
-  term.aliases = {
-    zh: parseAliasList(detail.querySelector('[name="termAliasesZh"]')?.value || ""),
-    en: parseAliasList(detail.querySelector('[name="termAliasesEn"]')?.value || ""),
-    es: parseAliasList(detail.querySelector('[name="termAliasesEs"]')?.value || ""),
-  };
-  term.enabled = detail.querySelector('[name="termEnabled"]')?.checked ?? true;
-  term.protected = detail.querySelector('[name="termProtected"]')?.checked ?? true;
-  term.updated_at = new Date().toISOString().slice(0, 19);
-}
-
 function captureProtectedTerms() {
   const host = document.querySelector('[data-admin-panel="translationTuning"]');
   if (!host || adminState.translationTuningView !== "terms") return adminState.translationTerms?.protected_terms || {};
@@ -1303,16 +1429,65 @@ function captureProtectedTerms() {
 }
 
 function addTranslationTerm() {
-  syncTranslationTermDetail();
-  adminState.translationTerms = adminState.translationTerms || { terms: [], protected_terms: {} };
-  const term = { id: newClientId(), category: "drilling", zh: "", en: "", es: "", aliases: { zh: [], en: [], es: [] }, protected: true, enabled: true, updated_at: new Date().toISOString().slice(0, 19) };
-  adminState.translationTerms.terms = [...(adminState.translationTerms.terms || []), term];
-  adminState.selectedTranslationTermId = term.id;
-  renderAdminTranslationTuning();
+  openTranslationTermModal();
+}
+
+function openTranslationTermModal(id = "") {
+  const existing = (adminState.translationTerms?.terms || []).find((term) => term.id === id);
+  const term = existing || { id: "", category: "general", zh: "", en: "", es: "", aliases: { zh: [], en: [], es: [] }, protected: true, enabled: true };
+  const aliases = term.aliases || {};
+  openAdminModal(
+    existing ? "编辑术语" : "新增术语",
+    `<div class="translation-term-modal-form">
+      <input type="hidden" name="termModalId" value="${escapeHtml(term.id)}" />
+      <label>作业类型<select name="termModalCategory">${translationTermCategoryOptions(term.category || "general")}</select></label>
+      <label>中文<input name="termModalZh" value="${escapeHtml(term.zh || "")}" /></label>
+      <label>English<input name="termModalEn" value="${escapeHtml(term.en || "")}" /></label>
+      <label>Español<input name="termModalEs" value="${escapeHtml(term.es || "")}" /></label>
+      <label>中文别名<textarea name="termModalAliasesZh" rows="3">${escapeHtml(aliasInputValue(aliases.zh))}</textarea></label>
+      <label>英文别名<textarea name="termModalAliasesEn" rows="3">${escapeHtml(aliasInputValue(aliases.en))}</textarea></label>
+      <label>西语别名<textarea name="termModalAliasesEs" rows="3">${escapeHtml(aliasInputValue(aliases.es))}</textarea></label>
+      <div class="tuning-term-switches"><label><input type="checkbox" name="termModalEnabled" ${term.enabled !== false ? "checked" : ""} />启用</label><label><input type="checkbox" name="termModalProtected" ${term.protected !== false ? "checked" : ""} />锁定译法</label></div>
+    </div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button" type="button" data-admin-save-translation-term-modal>保存术语</button>`
+  );
+}
+
+function saveTranslationTermModal() {
+  const modal = document.querySelector(".admin-modal");
+  const id = modal?.querySelector('[name="termModalId"]')?.value || "";
+  const zh = modal?.querySelector('[name="termModalZh"]')?.value.trim() || "";
+  const en = modal?.querySelector('[name="termModalEn"]')?.value.trim() || "";
+  const es = modal?.querySelector('[name="termModalEs"]')?.value.trim() || "";
+  if (sumTruthy([zh, en, es]) < 2) return showToast("每条术语至少填写两种语言");
+  const terms = adminState.translationTerms?.terms || [];
+  let term = terms.find((item) => item.id === id);
+  if (!term) {
+    term = { id: newClientId() };
+    terms.push(term);
+  }
+  term.category = modal.querySelector('[name="termModalCategory"]')?.value || "general";
+  term.zh = zh;
+  term.en = en;
+  term.es = es;
+  term.aliases = {
+    zh: parseAliasList(modal.querySelector('[name="termModalAliasesZh"]')?.value || ""),
+    en: parseAliasList(modal.querySelector('[name="termModalAliasesEn"]')?.value || ""),
+    es: parseAliasList(modal.querySelector('[name="termModalAliasesEs"]')?.value || ""),
+  };
+  term.enabled = modal.querySelector('[name="termModalEnabled"]')?.checked ?? true;
+  term.protected = modal.querySelector('[name="termModalProtected"]')?.checked ?? true;
+  term.updated_at = new Date().toISOString().slice(0, 19);
+  adminState.translationTerms.terms = terms;
+  closeAdminModal();
+  return saveTranslationTerms();
+}
+
+function sumTruthy(values = []) {
+  return values.reduce((sum, value) => sum + (value ? 1 : 0), 0);
 }
 
 async function saveTranslationTerms() {
-  syncTranslationTermDetail();
   const payload = {
     terms: (adminState.translationTerms?.terms || []).filter((term) => term.zh || term.en || term.es),
     protected_terms: captureProtectedTerms(),
@@ -1320,7 +1495,6 @@ async function saveTranslationTerms() {
   try {
     const response = await adminRequest("/api/admin/translation-terms", { method: "POST", body: JSON.stringify(payload) });
     adminState.translationTerms = { terms: response.terms || [], protected_terms: response.protected_terms || {} };
-    adminState.selectedTranslationTermId = adminState.translationTerms.terms.find((term) => term.id === adminState.selectedTranslationTermId)?.id || adminState.translationTerms.terms[0]?.id || "";
     showToast("术语词库已保存");
     renderAdminTranslationTuning();
     renderAdminOverview();
@@ -1337,7 +1511,6 @@ async function importTranslationTermWorkbook(file) {
   if (!file) return;
   const allowed = /\.(xlsx|xlsm|xltx|xltm|xls)$/i.test(file.name || "");
   if (!allowed) return showToast("仅支持 Excel 文件");
-  syncTranslationTermDetail();
   adminState.translationTermImport = { running: true, result: null, duplicates: [] };
   renderAdminTranslationTuning();
   const form = new FormData();
@@ -1346,7 +1519,9 @@ async function importTranslationTermWorkbook(file) {
     const result = await adminRequest("/api/admin/translation-terms/import", { method: "POST", body: form });
     adminState.translationTerms = { terms: result.terms || [], protected_terms: result.protected_terms || {} };
     adminState.translationTermImport = { running: false, result, duplicates: result.duplicates || [] };
-    adminState.selectedTranslationTermId = adminState.translationTerms.terms[0]?.id || "";
+    adminState.translationTermSearch = "";
+    adminState.translationTermCategory = "all";
+    adminState.translationTermPage = Math.max(1, Math.ceil(adminState.translationTerms.terms.length / adminState.translationTermPageSize));
     showToast(`已导入 ${result.imported_count || 0} 条术语，跳过 ${result.duplicate_count || 0} 条重复项`);
   } catch (error) {
     adminState.translationTermImport = { running: false, result: null, duplicates: [] };
@@ -1410,10 +1585,139 @@ async function saveTranslationTuning() {
   }
 }
 
+function captureAiExtractionRuleForm() {
+  const host = document.querySelector('[data-admin-panel="aiExtraction"]');
+  if (!host) return null;
+  return {
+    id: host.querySelector('[name="aiExtractionRuleId"]')?.value || newClientId(),
+    name: host.querySelector('[name="aiExtractionRuleName"]')?.value.trim() || "未命名提炼规则",
+    report_type: host.querySelector('[name="aiExtractionReportType"]')?.value || "drilling",
+    source_section: host.querySelector('[name="aiExtractionSourceSection"]')?.value || "report_fields",
+    source_field: host.querySelector('[name="aiExtractionSourceField"]')?.value || "currentOps",
+    condition: host.querySelector('[name="aiExtractionCondition"]')?.value.trim() || "",
+    instruction: host.querySelector('[name="aiExtractionInstruction"]')?.value.trim() || "",
+    target_field: host.querySelector('[name="aiExtractionTargetField"]')?.value || "remarks",
+    output_format: host.querySelector('[name="aiExtractionOutputFormat"]')?.value || "text",
+    model_id: host.querySelector('[name="aiExtractionModelId"]')?.value || "",
+    enabled: host.querySelector('[name="aiExtractionEnabled"]')?.value === "true",
+  };
+}
+
+function updateAiExtractionDraft() {
+  const rule = captureAiExtractionRuleForm();
+  if (!rule) return null;
+  const rules = [...(adminState.aiExtraction.rules || [])];
+  const index = rules.findIndex((item) => item.id === rule.id);
+  if (index >= 0) rules[index] = rule;
+  else rules.push(rule);
+  adminState.aiExtraction.rules = rules;
+  adminState.selectedAiExtractionRuleId = rule.id;
+  return rule;
+}
+
+async function saveAiExtractionRules() {
+  const rule = updateAiExtractionDraft();
+  if (!rule?.instruction) return showToast("请填写提炼要求");
+  try {
+    const autoExecute = document.querySelector('[name="aiExtractionAutoExecute"]')?.checked ?? adminState.aiExtraction.auto_execute !== false;
+    const response = await adminRequest("/api/admin/ai-extraction-rules", { method: "POST", body: JSON.stringify({ rules: adminState.aiExtraction.rules, auto_execute: autoExecute }) });
+    adminState.aiExtraction = response;
+    adminState.aiExtractionQueue = await adminRequest("/api/admin/ai-extractions");
+    adminState.selectedAiExtractionRuleId = rule.id;
+    renderAdminAiExtraction();
+    showToast("AI提炼规则已保存");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function queueAiExtractions(mode = "continue") {
+  const recordIds = [...document.querySelectorAll("[data-ai-extraction-record]:checked")].map((input) => input.value);
+  if (!recordIds.length) return showToast("请至少选择一条日报");
+  const action = mode === "overwrite" ? "按当前规则覆盖提炼" : "执行待处理提炼";
+  if (!window.confirm(`确认对 ${recordIds.length} 条日报${action}？`)) return;
+  try {
+    const result = await adminRequest("/api/admin/ai-extractions/queue", { method: "POST", body: JSON.stringify({ mode, record_ids: recordIds }) });
+    showToast(`已加入提炼队列：${result.queued_records || 0} 条`);
+    adminState.aiExtractionQueue = await adminRequest("/api/admin/ai-extractions");
+    renderAdminAiExtraction();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function newAiExtractionRule() {
+  updateAiExtractionDraft();
+  const rule = emptyAiExtractionRule();
+  adminState.aiExtraction.rules = [...(adminState.aiExtraction.rules || []), rule];
+  adminState.selectedAiExtractionRuleId = rule.id;
+  adminState.aiExtractionTestResult = null;
+  renderAdminAiExtraction();
+}
+
+function editAiExtractionRule(id) {
+  updateAiExtractionDraft();
+  adminState.selectedAiExtractionRuleId = id;
+  adminState.aiExtractionTestResult = null;
+  renderAdminAiExtraction();
+}
+
+function deleteAiExtractionRule() {
+  const id = document.querySelector('[name="aiExtractionRuleId"]')?.value || adminState.selectedAiExtractionRuleId;
+  if (!id || !window.confirm("确认删除这条AI提炼规则？")) return;
+  adminState.aiExtraction.rules = (adminState.aiExtraction.rules || []).filter((item) => item.id !== id);
+  adminState.selectedAiExtractionRuleId = adminState.aiExtraction.rules[0]?.id || "";
+  adminState.aiExtractionTestResult = null;
+  renderAdminAiExtraction();
+}
+
+function refreshAiExtractionSource(changedName) {
+  const rule = updateAiExtractionDraft();
+  if (!rule) return;
+  const catalog = adminState.aiExtraction.catalog || {};
+  const report = (catalog.report_types || []).find((item) => item.value === rule.report_type) || catalog.report_types?.[0];
+  if (changedName === "aiExtractionReportType") {
+    rule.source_section = report?.sections?.[0]?.value || "report_fields";
+    rule.source_field = report?.sections?.[0]?.fields?.[0]?.value || "event";
+  } else if (changedName === "aiExtractionSourceSection") {
+    const section = report?.sections?.find((item) => item.value === rule.source_section) || report?.sections?.[0];
+    rule.source_field = section?.fields?.[0]?.value || "event";
+  }
+  const index = adminState.aiExtraction.rules.findIndex((item) => item.id === rule.id);
+  if (index >= 0) adminState.aiExtraction.rules[index] = rule;
+  renderAdminAiExtraction();
+}
+
+async function runAiExtractionTest() {
+  const source = document.querySelector('[name="aiExtractionTestSource"]')?.value.trim() || "";
+  const recordId = document.querySelector('[name="aiExtractionTestRecord"]')?.value || "";
+  if (!source && !recordId) {
+    adminState.aiExtractionTestResult = { ok: false, error: "没有匹配的已入库日报，请粘贴临时测试原文。" };
+    return renderAdminAiExtraction();
+  }
+  const rule = updateAiExtractionDraft();
+  if (!rule?.instruction) {
+    adminState.aiExtractionTestResult = { ok: false, error: "请先填写提炼要求。" };
+    return renderAdminAiExtraction();
+  }
+  adminState.aiExtractionTestRecordId = recordId;
+  adminState.aiExtractionTestSource = source;
+  adminState.aiExtractionTestRunning = true;
+  adminState.aiExtractionTestResult = null;
+  renderAdminAiExtraction();
+  try {
+    adminState.aiExtractionTestResult = await adminRequest("/api/admin/ai-extraction-rules/test", { method: "POST", body: JSON.stringify({ rule, record_id: recordId, source_text: source, model_id: rule.model_id || adminState.aiModels.default_model_id }) });
+  } catch (error) {
+    adminState.aiExtractionTestResult = { ok: false, error: error.message };
+  } finally {
+    adminState.aiExtractionTestRunning = false;
+    renderAdminAiExtraction();
+  }
+}
+
 function switchTranslationTuningView(view) {
   if (adminState.translationTuningView === "fields") captureTranslationTuningForm();
   if (adminState.translationTuningView === "terms") {
-    syncTranslationTermDetail();
     adminState.translationTerms.protected_terms = captureProtectedTerms();
   }
   adminState.translationTuningView = view;
@@ -1636,6 +1940,19 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-test-ai-model]")) return testAiModel();
   if (event.target.closest("[data-admin-save-ai-models]")) return saveAiModels();
   if (event.target.closest("[data-admin-delete-ai-model]")) return deleteSelectedAiModel();
+  if (event.target.closest("[data-admin-new-extraction-rule]")) return newAiExtractionRule();
+  const editExtraction = event.target.closest("[data-admin-edit-extraction-rule]");
+  if (editExtraction) return editAiExtractionRule(editExtraction.dataset.adminEditExtractionRule);
+  if (event.target.closest("[data-admin-save-extraction-rules]")) return saveAiExtractionRules();
+  if (event.target.closest("[data-admin-delete-extraction-rule]")) return deleteAiExtractionRule();
+  if (event.target.closest("[data-admin-test-extraction-rule]")) return runAiExtractionTest();
+  const extractionView = event.target.closest("[data-ai-extraction-view]");
+  if (extractionView) {
+    adminState.aiExtractionView = extractionView.dataset.aiExtractionView || "rules";
+    return renderAdminAiExtraction();
+  }
+  const queueExtraction = event.target.closest("[data-admin-queue-extractions]");
+  if (queueExtraction) return queueAiExtractions(queueExtraction.dataset.adminQueueExtractions || "continue");
   if (event.target.closest("[data-admin-reset-translations]")) return resetTranslations();
   if (event.target.closest("[data-admin-queue-translations]")) return queueTranslations();
   if (event.target.closest("[data-admin-open-translation-queue]")) return openTranslationQueue();
@@ -1652,19 +1969,28 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-review-term-duplicates]")) return openTranslationTermDuplicateReview();
   if (event.target.closest("[data-admin-resolve-term-duplicates]")) return resolveTranslationTermDuplicates();
   if (event.target.closest("[data-admin-add-translation-term]")) return addTranslationTerm();
+  if (event.target.closest("[data-admin-save-translation-term-modal]")) return saveTranslationTermModal();
+  const termCategory = event.target.closest("[data-translation-term-category-value]");
+  if (termCategory) {
+    adminState.translationTermCategory = termCategory.dataset.translationTermCategoryValue || "all";
+    adminState.translationTermPage = 1;
+    return renderAdminTranslationTuning();
+  }
+  const termPage = event.target.closest("[data-translation-term-page]");
+  if (termPage) {
+    adminState.translationTermPage = Math.max(1, Number(termPage.dataset.translationTermPage || 1));
+    return renderAdminTranslationTuning();
+  }
   const editTranslationTerm = event.target.closest("[data-admin-edit-translation-term]");
   if (editTranslationTerm) {
-    syncTranslationTermDetail();
-    adminState.selectedTranslationTermId = editTranslationTerm.dataset.adminEditTranslationTerm;
-    return renderAdminTranslationTuning();
+    return openTranslationTermModal(editTranslationTerm.dataset.adminEditTranslationTerm);
   }
   const deleteTranslationTerm = event.target.closest("[data-admin-delete-translation-term]");
   if (deleteTranslationTerm) {
-    syncTranslationTermDetail();
+    if (!window.confirm("确认删除这条术语？")) return;
     const id = deleteTranslationTerm.dataset.adminDeleteTranslationTerm;
     adminState.translationTerms.terms = (adminState.translationTerms.terms || []).filter((term) => term.id !== id);
-    adminState.selectedTranslationTermId = adminState.translationTerms.terms[0]?.id || "";
-    return renderAdminTranslationTuning();
+    return saveTranslationTerms();
   }
   const addProjectRig = event.target.closest("[data-admin-add-project-rig]");
   if (addProjectRig) {
@@ -1711,6 +2037,16 @@ document.addEventListener("change", (event) => {
   if (event.target.matches('[name="translationScopeReportType"], [name="translationScopeSection"], [name="translationScopeField"]')) {
     return refreshTranslationScopeBuilder(event.target.name);
   }
+  if (event.target.matches('[name="aiExtractionReportType"], [name="aiExtractionSourceSection"]')) {
+    return refreshAiExtractionSource(event.target.name);
+  }
+  if (event.target.matches('[name="aiExtractionTestRecord"]')) {
+    adminState.aiExtractionTestRecordId = event.target.value || "";
+    adminState.aiExtractionTestResult = null;
+  }
+  if (event.target.matches("[data-ai-extraction-check-all]")) {
+    document.querySelectorAll("[data-ai-extraction-record]:not(:disabled)").forEach((input) => { input.checked = event.target.checked; });
+  }
   if (event.target.matches("[data-translation-term-file]")) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -1719,13 +2055,18 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-translation-queue-select-all]")) {
     document.querySelectorAll('[name="translationQueueRecord"]:not(:disabled)').forEach((input) => { input.checked = event.target.checked; });
   }
+  if (event.target.matches("[data-translation-term-page-size]")) {
+    adminState.translationTermPageSize = Number(event.target.value || 10);
+    adminState.translationTermPage = 1;
+    return renderAdminTranslationTuning();
+  }
 });
 
 document.addEventListener("input", (event) => {
   if (event.target.matches("[data-translation-term-search]")) {
-    syncTranslationTermDetail();
     adminState.translationTerms.protected_terms = captureProtectedTerms();
     adminState.translationTermSearch = event.target.value;
+    adminState.translationTermPage = 1;
     renderAdminTranslationTuning();
     const search = document.querySelector("[data-translation-term-search]");
     search?.focus();

@@ -8,6 +8,7 @@ import threading
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from drilling_report_parser import form_server
 from drilling_report_parser.excel_database import load_report_payload
@@ -15,6 +16,145 @@ from tests.test_pdf_report_parser import sample_pdf
 
 
 class FormServerImportTest(unittest.TestCase):
+    def test_report_identity_requires_date_well_and_rig(self) -> None:
+        payload = {"report_fields": {"reportDate": "", "wellbore": "PCNC-039", "rig": ""}}
+
+        self.assertEqual(form_server._report_identity_errors(payload), ["日报日期", "井队"])
+        self.assertEqual(form_server._report_identity_errors({"report_fields": {
+            "reportDate": "2026-05-22", "wellbore": "PCNC-039", "rig": "SINOPEC 248",
+        }}), [])
+
+    def test_operation_translation_accepts_whitespace_normalization_and_rejects_stale_source(self) -> None:
+        source = "WAIT ON SERVICE\nCOMPANY"
+        stored_source = "WAIT ON SERVICE COMPANY"
+        translation = {
+            "source_text": stored_source,
+            "source_hash": form_server.hashlib.sha256(stored_source.encode("utf-8")).hexdigest(),
+            "translated_text": "等待服务公司",
+            "translation_status": "COMPLETED",
+        }
+
+        self.assertEqual(form_server._current_operation_translation(source, translation), ("等待服务公司", "COMPLETED"))
+        self.assertEqual(form_server._current_operation_translation("DIFFERENT SOURCE", translation), ("", "COMPLETED"))
+
+    def test_production_npt_ranking_includes_rigs_with_zero_npt(self) -> None:
+        records = [
+            {"rig": "RIG A", "wellbore": "WELL A", "reportDate": "2026-05-22", "report_type": "drilling", "validation_status": "ok"},
+            {"rig": "RIG B", "wellbore": "WELL B", "reportDate": "2026-05-22", "report_type": "drilling", "validation_status": "ok"},
+        ]
+        operations = [
+            {**records[0], "hours": 2.0, "op_type": "NPT"},
+            {**records[1], "hours": 24.0, "op_type": "P"},
+        ]
+
+        with patch.object(form_server, "_filtered_fact_rows", return_value={"records": records, "operations": operations}):
+            payload = form_server._production_summary_payload(Path("mysql"), {})
+
+        self.assertEqual(payload["npt_by_rig"], [
+            {"label": "RIG A", "hours": 2.0},
+            {"label": "RIG B", "hours": 0.0},
+        ])
+
+    def test_ai_extraction_rules_validate_source_and_target_fields(self) -> None:
+        config = form_server._normalize_ai_extraction_config({
+            "rules": [
+                {
+                    "id": "npt-owner",
+                    "name": "NPT责任方",
+                    "report_type": "drilling",
+                    "source_section": "operations",
+                    "source_field": "operation_details",
+                    "condition": "仅NPT",
+                    "instruction": "提取责任公司",
+                    "target_field": "service_line",
+                    "output_format": "company",
+                    "enabled": True,
+                },
+                {
+                    "id": "invalid-target",
+                    "name": "覆盖井号",
+                    "report_type": "drilling",
+                    "source_section": "report_fields",
+                    "source_field": "currentOps",
+                    "instruction": "错误规则",
+                    "target_field": "wellbore",
+                },
+            ],
+        })
+
+        self.assertEqual(len(config["rules"]), 1)
+        self.assertEqual(config["rules"][0]["target_field"], "service_line")
+        self.assertIn("target_fields", config["catalog"])
+
+    def test_default_ai_extraction_rule_is_disabled_until_reviewed(self) -> None:
+        config = form_server._default_ai_extraction_config()
+
+        self.assertEqual(config["rules"][0]["id"], "npt-service-line")
+        self.assertFalse(config["rules"][0]["enabled"])
+
+    def test_ai_extraction_source_includes_row_context(self) -> None:
+        source, count = form_server._ai_extraction_source_from_payload({
+            "operations": [
+                {"from": "08:00", "to": "09:30", "hours": "1.5", "op_type": "NPT", "operation_details": "WAIT ON SERVICE COMPANY"},
+                {"from": "09:30", "to": "10:00", "hours": "0.5", "op_type": "P", "operation_details": "RESUME DRILLING"},
+            ],
+        }, {"source_section": "operations", "source_field": "operation_details"})
+
+        self.assertEqual(count, 2)
+        self.assertIn('"op_type": "NPT"', source)
+        self.assertIn("WAIT ON SERVICE COMPANY", source)
+
+    def test_ai_extraction_version_is_stable_and_changes_with_rules(self) -> None:
+        raw = {
+            "auto_execute": True,
+            "rules": [{
+                "id": "npt-owner", "name": "NPT责任方", "report_type": "drilling",
+                "source_section": "operations", "source_field": "operation_details",
+                "instruction": "提取责任公司", "target_field": "service_line",
+                "output_format": "company", "enabled": True,
+            }],
+        }
+        first = form_server._normalize_ai_extraction_config(raw)
+        second = form_server._normalize_ai_extraction_config(raw)
+        changed = form_server._normalize_ai_extraction_config({**raw, "auto_execute": False})
+
+        self.assertEqual(first["version"], second["version"])
+        self.assertNotEqual(first["version"], changed["version"])
+
+    def test_ai_extraction_units_only_include_npt_rows_for_service_line(self) -> None:
+        units = form_server._ai_extraction_units({"operations": [
+            {"op_type": "P", "operation_details": "DRILLING"},
+            {"op_type": "NPT", "from": "08:00", "to": "09:00", "operation_details": "WAIT ON SINOPEC"},
+        ]}, {
+            "source_section": "operations", "source_field": "operation_details",
+            "target_field": "service_line", "condition": "仅处理 NPT",
+        })
+
+        self.assertEqual(len(units), 1)
+        self.assertEqual(units[0]["source_row_no"], 2)
+        self.assertIn("WAIT ON SINOPEC", units[0]["prompt_text"])
+
+    def test_explicit_npt_responsibility_is_extracted_and_expanded_to_rig(self) -> None:
+        source = "CONTINUA OPERACION; NPT A CARGO DE SINOPEC;"
+        payload = {"report_fields": {"rig": "SINOPEC 248"}}
+
+        company = form_server._explicit_responsible_party(source)
+
+        self.assertEqual(company, "SINOPEC")
+        self.assertEqual(form_server._normalize_responsible_party(company, payload), "SINOPEC 248")
+
+    def test_extraction_rule_filters_out_reports_with_only_p_operations(self) -> None:
+        rule = {
+            "report_type": "drilling", "source_section": "operations",
+            "source_field": "operation_details", "target_field": "service_line",
+            "condition": "仅处理 NPT", "enabled": True,
+        }
+        p_only = {"operations": [{"op_type": "P", "operation_details": "DRILLING"}]}
+        with_npt = {"operations": [{"op_type": "NPT", "operation_details": "WAIT ON SERVICE"}]}
+
+        self.assertFalse(form_server._payload_has_extraction_units(p_only, "drilling", [rule]))
+        self.assertTrue(form_server._payload_has_extraction_units(with_npt, "drilling", [rule]))
+
     def test_project_team_normalization_preserves_rig_binding_metadata(self) -> None:
         normalized = form_server._normalize_project_team_config({
             "teams": [{"name": "00 SINOPEC 248"}],
@@ -39,6 +179,61 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(rig["end_date"], "2026-08-04")
         self.assertEqual(rig["note"], "phase 1")
         self.assertEqual(rig["wells"], ["PCNC-040"])
+
+    def test_project_team_normalization_drops_placeholder_rigs(self) -> None:
+        normalized = form_server._normalize_project_team_config({
+            "teams": [
+                {"name": "DRPPLACEHOLDER A 248"},
+                {"name": "SINOPEC 248"},
+            ],
+            "projects": [{
+                "contract_no": "EC-2026-001",
+                "project_name": "Test Project",
+                "rigs": [
+                    {"rig": "DRPPLACEHOLDER A 248", "wells": ["BAD-001"]},
+                    {"rig": "SINOPEC 248", "wells": ["PCNC-040"]},
+                ],
+            }],
+            "pending_wells": [
+                {"rig": "DRPPLACEHOLDER A 248", "wellbore": "BAD-001"},
+                {"rig": "SINOPEC 248", "wellbore": "PCNC-040"},
+            ],
+        })
+
+        self.assertEqual([team["name"] for team in normalized["teams"]], ["SINOPEC 248"])
+        self.assertEqual([rig["rig"] for rig in normalized["projects"][0]["rigs"]], ["SINOPEC 248"])
+        self.assertEqual([item["rig"] for item in normalized["pending_wells"]], ["SINOPEC 248"])
+
+    def test_production_filter_rigs_excludes_placeholder_and_unbound_global_teams(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            original_project_team_path = form_server.PROJECT_TEAM_PATH
+            original_list_records = form_server.list_records
+            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
+            try:
+                form_server._save_project_team_config({
+                    "teams": [
+                        {"name": "DRPPLACEHOLDER A 248"},
+                        {"name": "SINOPEC 999"},
+                    ],
+                    "projects": [{
+                        "id": "project-1",
+                        "contract_no": "EC-2026-001",
+                        "project_name": "Test Project",
+                        "status": "active",
+                        "rigs": [{"rig": "SINOPEC 933", "wells": []}],
+                    }],
+                })
+                form_server.list_records = lambda database_path: [
+                    {"rig": "DRPPLACEHOLDER A 248"},
+                    {"rig": "SINOPEC 127"},
+                ]
+
+                rigs = form_server._production_filter_rigs([{"rig": "SINOPEC 248"}], Path(tmp) / "unused.xlsx")
+
+                self.assertEqual(rigs, ["SINOPEC 127", "SINOPEC 248", "SINOPEC 933"])
+            finally:
+                form_server.PROJECT_TEAM_PATH = original_project_team_path
+                form_server.list_records = original_list_records
 
     def test_project_assignment_matches_project_period_rig_and_well(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

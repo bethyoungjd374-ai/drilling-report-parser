@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>系统后台 - 厄瓜油田 Report Platform</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/web_form/styles.css" />
+    <link rel="stylesheet" href="/web_form/styles.css?v=ai-workflows-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -41,6 +41,7 @@
             </button>
             <div class="menu-items">
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiModels"><span class="admin-menu-icon icon-sliders" aria-hidden="true"></span><span>模型接入配置</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiExtraction"><span class="admin-menu-icon icon-database" aria-hidden="true"></span><span>AI 数据提炼</span></a>
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="translationTuning"><span class="admin-menu-icon icon-sliders" aria-hidden="true"></span><span>翻译调优</span></a>
             </div>
           </div>
@@ -80,6 +81,7 @@
           <section class="admin-panel" data-admin-panel="users" hidden></section>
           <section class="admin-panel" data-admin-panel="roles" hidden></section>
           <section class="admin-panel" data-admin-panel="aiModels" hidden></section>
+          <section class="admin-panel" data-admin-panel="aiExtraction" hidden></section>
           <section class="admin-panel" data-admin-panel="projects" hidden></section>
           <section class="admin-panel" data-admin-panel="translationTuning" hidden></section>
           <section class="admin-panel" data-admin-panel="config" hidden></section>
@@ -90,6 +92,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/web_form/liquid-glass.js"></script>
-    <script src="/web_form/admin.js"></script>
+    <script src="/web_form/admin.js?v=ai-workflows-1"></script>
   </body>
 </html>

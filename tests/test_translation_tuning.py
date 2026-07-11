@@ -7,9 +7,14 @@ from openpyxl import Workbook
 
 from drilling_report_parser.form_server import (
     UploadedFile,
+    _decode_ai_terms_json,
     _extract_excel_term_source,
     _merge_imported_translation_terms,
     _normalize_translation_tuning_config,
+    _normalize_translation_terms_config,
+    _parse_standard_translation_terms,
+    _translation_record_needs_processing,
+    _translation_terms_workbook_bytes,
 )
 
 
@@ -79,6 +84,42 @@ class TranslationTuningConfigTest(unittest.TestCase):
         self.assertEqual(len(imported), 1)
         self.assertEqual(len(duplicates), 1)
         self.assertEqual(duplicates[0]["existing_id"], "existing")
+
+    def test_migrates_legacy_categories_to_operation_types(self) -> None:
+        config = _normalize_translation_terms_config({
+            "terms": [
+                {"zh": "钻进", "en": "drilling", "category": "operation"},
+                {"zh": "立管压力", "en": "standpipe pressure", "category": "通用"},
+            ]
+        })
+
+        self.assertEqual([term["category"] for term in config["terms"]], ["drilling", "general"])
+
+    def test_template_round_trips_through_standard_parser(self) -> None:
+        data = _translation_terms_workbook_bytes({"terms": [], "protected_terms": {}}, template=True)
+
+        terms = _parse_standard_translation_terms(UploadedFile("template.xlsx", data))
+
+        self.assertEqual(len(terms), 2)
+        self.assertEqual(terms[0]["category"], "drilling")
+        self.assertTrue(all(sum(bool(term.get(language)) for language in ("zh", "en", "es")) >= 2 for term in terms))
+
+    def test_decodes_fenced_or_array_ai_json(self) -> None:
+        fenced = 'analysis\n```json\n{"terms":[{"zh":"钻进","en":"drilling"}]}\n```'
+        array = '[{"zh":"循环","en":"circulate"}] trailing text'
+
+        self.assertIsInstance(_decode_ai_terms_json(fenced), dict)
+        self.assertIsInstance(_decode_ai_terms_json(array), list)
+
+    def test_only_actionable_translation_states_count_as_pending(self) -> None:
+        current_version = "prompt-v2"
+
+        self.assertTrue(_translation_record_needs_processing({"translation_status": "PENDING"}, current_version))
+        self.assertTrue(_translation_record_needs_processing({"translation_status": "FAILED"}, current_version))
+        self.assertTrue(_translation_record_needs_processing({"translation_status": "COMPLETED", "translation_version": "prompt-v1"}, current_version))
+        self.assertFalse(_translation_record_needs_processing({"translation_status": "QUEUED"}, current_version))
+        self.assertFalse(_translation_record_needs_processing({"translation_status": "IN_PROGRESS"}, current_version))
+        self.assertFalse(_translation_record_needs_processing({"translation_status": "NOT_REQUIRED"}, current_version))
 
 
 if __name__ == "__main__":

@@ -37,6 +37,20 @@ class FlakyEngine:
         return {str(item["id"]): "已完成翻译" for item in items}
 
 
+class CountingEngine:
+    name = "openai-compatible"
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.batch_sizes = []
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        self.batch_sizes.append(len(items))
+        return {str(item["id"]): "已完成翻译" for item in items}
+
+
 class TranslationServiceTest(unittest.TestCase):
     def setUp(self) -> None:
         self.terms = TermsConfig.load()
@@ -241,6 +255,24 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("现场钻井翻译审核员", preview)
         self.assertIn("逐句翻译，禁止合并句子", preview)
         self.assertIn("ROP", preview)
+
+    def test_openai_compatible_batches_larger_translation_chunks(self) -> None:
+        engine = CountingEngine()
+        translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", chunk_max_chars=2400)
+        text = "PERFORA SECCION CON BHA DIRECCIONAL Y CIRCULA RETORNOS LIMPIOS. " * 10
+        payload = {
+            "report_fields": {
+                "currentOps": text,
+                "summary24h": text,
+                "forecast24h": text,
+            }
+        }
+
+        result = translator.translate_report_payload(payload)
+
+        self.assertEqual(len(result["translation_content"]), 3)
+        self.assertEqual(engine.calls, 1)
+        self.assertEqual(engine.batch_sizes, [3])
 
     def test_scope_rules_separate_report_types_and_modules(self) -> None:
         tuning = TranslationTuningConfig.from_data({

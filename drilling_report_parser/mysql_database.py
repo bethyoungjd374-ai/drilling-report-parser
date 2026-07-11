@@ -29,6 +29,7 @@ BASE_RECORD_COLUMNS = [
     "translation_error",
     "translation_version",
     "translation_updated_at",
+    "extraction_status", "extraction_progress", "extraction_error", "extraction_version", "extraction_updated_at",
     "validation_status",
     "validation_warnings",
     "locked",
@@ -70,6 +71,11 @@ def _ensure_report_record_columns(cursor: Any) -> None:
         ("translation_error", "TEXT NULL AFTER translation_progress"),
         ("translation_version", "VARCHAR(64) NOT NULL DEFAULT '' AFTER translation_error"),
         ("translation_updated_at", "VARCHAR(64) NOT NULL DEFAULT '' AFTER translation_version"),
+        ("extraction_status", "VARCHAR(64) NOT NULL DEFAULT '' AFTER translation_updated_at"),
+        ("extraction_progress", "VARCHAR(16) NOT NULL DEFAULT '' AFTER extraction_status"),
+        ("extraction_error", "TEXT NULL AFTER extraction_progress"),
+        ("extraction_version", "VARCHAR(64) NOT NULL DEFAULT '' AFTER extraction_error"),
+        ("extraction_updated_at", "VARCHAR(64) NOT NULL DEFAULT '' AFTER extraction_version"),
     )
     for column, definition in migrations:
         if column in columns:
@@ -154,6 +160,11 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
                     "translation_error": record.get("translation_error", ""),
                     "translation_version": record.get("translation_version", ""),
                     "translation_updated_at": record.get("translation_updated_at", ""),
+                    "extraction_status": record.get("extraction_status", ""),
+                    "extraction_progress": record.get("extraction_progress", ""),
+                    "extraction_error": record.get("extraction_error", ""),
+                    "extraction_version": record.get("extraction_version", ""),
+                    "extraction_updated_at": record.get("extraction_updated_at", ""),
                     "locked": record.get("locked", ""),
                     "confirmation_status": record.get("confirmation_status", ""),
                     "confirmed_at": record.get("confirmed_at", ""),
@@ -248,6 +259,30 @@ def load_translation_content(database_path: str | Path | None, record_id: str) -
     return [{key: _text(value) for key, value in row.items() if key != "mysql_updated_at"} for row in rows]
 
 
+def load_operation_translations(database_path: str | Path | None, record_ids: list[str]) -> list[dict[str, str]]:
+    del database_path
+    clean_ids = list(dict.fromkeys(record_id for record_id in record_ids if record_id))
+    if not clean_ids:
+        return []
+    placeholders = ",".join(["%s"] * len(clean_ids))
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT record_id, entity_id, source_text, translated_text, source_hash,
+                       target_language, translation_status, error_message
+                FROM translation_content
+                WHERE record_id IN ({placeholders})
+                  AND entity_type='operations'
+                  AND field_code='operations.operation_details'
+                  AND target_language='zh-CN'
+                """,
+                clean_ids,
+            )
+            rows = cursor.fetchall()
+    return [{key: _text(value) for key, value in row.items()} for row in rows]
+
+
 def clear_translation_content(database_path: str | Path | None, record_id: str = "") -> None:
     del database_path
     initialize_database()
@@ -330,6 +365,73 @@ def update_record_translation_status(
             connection.commit()
 
 
+def update_record_extraction_status(database_path: str | Path | None, record_id: str, *, status: str, progress: int | str = "", error: str = "", version: str = "") -> None:
+    del database_path
+    if not record_id:
+        return
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE report_records SET extraction_status=%s, extraction_progress=%s,
+                   extraction_error=%s, extraction_version=IF(%s='', extraction_version, %s), extraction_updated_at=%s
+                   WHERE record_id=%s""",
+                (_text(status), _text(progress), _text(error)[:500], _text(version), _text(version), _now(), record_id),
+            )
+        connection.commit()
+
+
+def save_extraction_results(database_path: str | Path | None, rows: list[dict[str, Any]]) -> None:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            for row in rows:
+                cursor.execute(
+                    """INSERT INTO ai_extraction_results
+                    (record_id, rule_id, source_section, source_row_no, source_field, target_field,
+                     source_hash, result_text, extraction_status, error_message, model_config_id,
+                     rule_version, attempt_count, started_at, completed_at, updated_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON DUPLICATE KEY UPDATE source_hash=VALUES(source_hash), result_text=VALUES(result_text),
+                    extraction_status=VALUES(extraction_status), error_message=VALUES(error_message),
+                    model_config_id=VALUES(model_config_id), rule_version=VALUES(rule_version),
+                    attempt_count=VALUES(attempt_count), started_at=VALUES(started_at),
+                    completed_at=VALUES(completed_at), updated_at=VALUES(updated_at)""",
+                    (_text(row.get("record_id")), _text(row.get("rule_id")), _text(row.get("source_section")), int(row.get("source_row_no", 0) or 0),
+                     _text(row.get("source_field")), _text(row.get("target_field")), _text(row.get("source_hash")), _text(row.get("result_text")),
+                     _text(row.get("extraction_status")), _text(row.get("error_message"))[:500], _text(row.get("model_config_id")), _text(row.get("rule_version")),
+                     int(row.get("attempt_count", 0) or 0), _text(row.get("started_at")), _text(row.get("completed_at")), _text(row.get("updated_at"))))
+        connection.commit()
+
+
+def load_extraction_results(database_path: str | Path | None, record_id: str = "") -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    sql = "SELECT * FROM ai_extraction_results"
+    args: tuple[object, ...] = ()
+    if record_id:
+        sql += " WHERE record_id=%s"
+        args = (record_id,)
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, args)
+            rows = cursor.fetchall()
+    return [{key: (_text(value) if key != "source_row_no" and key != "attempt_count" else int(value or 0)) for key, value in row.items() if key != "mysql_updated_at"} for row in rows]
+
+
+def clear_extraction_results(database_path: str | Path | None, record_ids: list[str]) -> None:
+    del database_path
+    if not record_ids:
+        return
+    initialize_database()
+    placeholders = ",".join(["%s"] * len(record_ids))
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(f"DELETE FROM ai_extraction_results WHERE record_id IN ({placeholders})", record_ids)
+        connection.commit()
+
+
 def list_records(
     database_path: str | Path | None = None,
     *,
@@ -369,6 +471,21 @@ def list_records(
         with connection.cursor() as cursor:
             cursor.execute(sql, args)
             rows = cursor.fetchall()
+            record_ids = [_text(row.get("record_id")) for row in rows if row.get("record_id")]
+            operation_rows: list[dict[str, Any]] = []
+            if record_ids:
+                placeholders = ",".join(["%s"] * len(record_ids))
+                cursor.execute(
+                    f"SELECT record_id, row_json FROM report_rows WHERE module_name='operations' AND record_id IN ({placeholders})",
+                    record_ids,
+                )
+                operation_rows = cursor.fetchall()
+    operation_stats = _operation_hour_summary(operation_rows)
+    for row in rows:
+        values = operation_stats.get(_text(row.get("record_id")), {})
+        row["p_hours"] = round(float(values.get("p_hours", 0.0)), 2)
+        row["sc_hours"] = round(float(values.get("sc_hours", 0.0)), 2)
+        row["npt_hours"] = round(float(values.get("npt_hours", 0.0)), 2)
     return [_record_to_public(row) for row in rows]
 
 
@@ -634,6 +751,7 @@ def _upsert_record(cursor: Any, record: dict[str, str]) -> None:
         "translation_error",
         "translation_version",
         "translation_updated_at",
+        "extraction_status", "extraction_progress", "extraction_error", "extraction_version", "extraction_updated_at",
         "validation_status",
         "validation_warnings",
         "locked",
@@ -681,6 +799,11 @@ def _record_from_payload(
         "translation_error": metadata.get("translation_error", ""),
         "translation_version": metadata.get("translation_version", ""),
         "translation_updated_at": metadata.get("translation_updated_at", ""),
+        "extraction_status": metadata.get("extraction_status", ""),
+        "extraction_progress": metadata.get("extraction_progress", ""),
+        "extraction_error": metadata.get("extraction_error", ""),
+        "extraction_version": metadata.get("extraction_version", ""),
+        "extraction_updated_at": metadata.get("extraction_updated_at", ""),
         "validation_status": metadata.get("validation_status", "ok"),
         "validation_warnings": metadata.get("validation_warnings", ""),
         "locked": metadata.get("locked", ""),
@@ -712,6 +835,11 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
         "translation_error": _text(row.get("translation_error")),
         "translation_version": _text(row.get("translation_version")),
         "translation_updated_at": _text(row.get("translation_updated_at")),
+        "extraction_status": _text(row.get("extraction_status")),
+        "extraction_progress": _text(row.get("extraction_progress")),
+        "extraction_error": _text(row.get("extraction_error")),
+        "extraction_version": _text(row.get("extraction_version")),
+        "extraction_updated_at": _text(row.get("extraction_updated_at")),
         "validation_status": _text(row.get("validation_status")),
         "validation_warnings": _text(row.get("validation_warnings")),
         "locked": _text(row.get("locked")),
@@ -723,6 +851,9 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
         "updated_at": _text(row.get("updated_at")),
         "afeNumber": _text(fields.get("afeNumber")),
         "event": _text(fields.get("event")),
+        "p_hours": _text(row.get("p_hours")),
+        "sc_hours": _text(row.get("sc_hours")),
+        "npt_hours": _text(row.get("npt_hours")),
     }
 
 
@@ -792,6 +923,24 @@ def _safe_float(value: Any) -> float:
         return float(str(value or "0").replace(",", ""))
     except ValueError:
         return 0.0
+
+
+def _operation_hour_summary(rows: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
+    stats: dict[str, dict[str, float]] = {}
+    for row in rows:
+        record_id = _text(row.get("record_id"))
+        if not record_id:
+            continue
+        values = stats.setdefault(record_id, {"p_hours": 0.0, "sc_hours": 0.0, "npt_hours": 0.0})
+        operation = _json_loads(row.get("row_json"), {})
+        op_type = str(operation.get("confirmed_op_type", "") or operation.get("op_type", "") or operation.get("system_op_type", "")).strip().upper()
+        key = {"P": "p_hours", "SC": "sc_hours", "NPT": "npt_hours"}.get(op_type)
+        if key:
+            values[key] += _safe_float(operation.get("hours"))
+    return {
+        record_id: {key: round(value, 2) for key, value in values.items()}
+        for record_id, values in stats.items()
+    }
 
 
 def _system_type(row: dict[str, Any]) -> str:

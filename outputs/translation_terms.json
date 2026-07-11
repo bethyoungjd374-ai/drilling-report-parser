@@ -2,7 +2,7 @@
   "terms": [
     {
       "id": "term-rop",
-      "category": "drilling_metric",
+      "category": "drilling",
       "zh": "机械钻速",
       "en": "ROP",
       "es": "ROP",
@@ -21,7 +21,7 @@
     },
     {
       "id": "term-wob",
-      "category": "drilling_metric",
+      "category": "drilling",
       "zh": "钻压",
       "en": "WOB",
       "es": "WOB",
@@ -40,7 +40,7 @@
     },
     {
       "id": "term-rpm",
-      "category": "drilling_metric",
+      "category": "drilling",
       "zh": "转速",
       "en": "RPM",
       "es": "RPM",
@@ -55,7 +55,7 @@
     },
     {
       "id": "term-spp",
-      "category": "drilling_metric",
+      "category": "drilling",
       "zh": "立管压力",
       "en": "SPP",
       "es": "SPP",
@@ -74,7 +74,7 @@
     },
     {
       "id": "term-mw",
-      "category": "mud",
+      "category": "drilling",
       "zh": "泥浆密度",
       "en": "MW",
       "es": "MW",
@@ -93,7 +93,7 @@
     },
     {
       "id": "term-tvd",
-      "category": "well_depth",
+      "category": "drilling",
       "zh": "垂深",
       "en": "TVD",
       "es": "TVD",
@@ -112,7 +112,7 @@
     },
     {
       "id": "term-md",
-      "category": "well_depth",
+      "category": "drilling",
       "zh": "测深",
       "en": "MD",
       "es": "MD",
@@ -131,7 +131,7 @@
     },
     {
       "id": "term-bha",
-      "category": "equipment",
+      "category": "drilling",
       "zh": "底部钻具组合",
       "en": "BHA",
       "es": "BHA",
@@ -150,7 +150,7 @@
     },
     {
       "id": "term-bop",
-      "category": "equipment",
+      "category": "drilling",
       "zh": "防喷器",
       "en": "BOP",
       "es": "BOP",
@@ -169,7 +169,7 @@
     },
     {
       "id": "term-casing",
-      "category": "operation",
+      "category": "drilling",
       "zh": "套管",
       "en": "casing",
       "es": "revestimiento",
@@ -184,7 +184,7 @@
     },
     {
       "id": "term-cementing",
-      "category": "operation",
+      "category": "drilling",
       "zh": "固井",
       "en": "cementing",
       "es": "cementación",
@@ -201,7 +201,7 @@
     },
     {
       "id": "term-tripping-in",
-      "category": "operation",
+      "category": "drilling",
       "zh": "下钻",
       "en": "tripping in",
       "es": "bajando tubería",
@@ -220,7 +220,7 @@
     },
     {
       "id": "term-tripping-out",
-      "category": "operation",
+      "category": "drilling",
       "zh": "起钻",
       "en": "tripping out",
       "es": "sacando tubería",
@@ -239,7 +239,7 @@
     },
     {
       "id": "term-lost-circulation",
-      "category": "event",
+      "category": "drilling",
       "zh": "井漏",
       "en": "lost circulation",
       "es": "pérdida de circulación",
@@ -256,7 +256,7 @@
     },
     {
       "id": "term-kick",
-      "category": "event",
+      "category": "drilling",
       "zh": "井涌",
       "en": "kick",
       "es": "amago",
@@ -273,7 +273,7 @@
     },
     {
       "id": "term-stuck-pipe",
-      "category": "event",
+      "category": "drilling",
       "zh": "卡钻",
       "en": "stuck pipe",
       "es": "tubería pegada",
@@ -290,7 +290,7 @@
     },
     {
       "id": "term-reaming",
-      "category": "operation",
+      "category": "drilling",
       "zh": "划眼/扩眼",
       "en": "reaming",
       "es": "rimado",
@@ -308,7 +308,7 @@
     },
     {
       "id": "term-circulate",
-      "category": "operation",
+      "category": "drilling",
       "zh": "循环",
       "en": "circulate",
       "es": "circular",
@@ -327,7 +327,7 @@
     },
     {
       "id": "term-drilling",
-      "category": "operation",
+      "category": "drilling",
       "zh": "钻进",
       "en": "drilling",
       "es": "perforación",
@@ -343,6 +343,7925 @@
       "protected": true,
       "enabled": true,
       "updated_at": "2026-07-06T17:44:26"
+    },
+    {
+      "id": "3b1f67a5-cfee-4b95-b4fe-488fc91819d3",
+      "category": "general",
+      "zh": "井",
+      "en": "well",
+      "es": "pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "hoyo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "47df5b23-8995-4075-9d03-5c2bcd7fdce9",
+      "category": "general",
+      "zh": "探井",
+      "en": "exploration well",
+      "es": "pozo exploratorio",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo de exploración"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "7f3dcf17-7a2c-431e-b57e-7c935909acfe",
+      "category": "general",
+      "zh": "开发井",
+      "en": "development well",
+      "es": "pozo de desarrollo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo de explotación"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "10a9409e-d4e7-486b-bdd6-caa5988010fa",
+      "category": "general",
+      "zh": "生产井",
+      "en": "producing well",
+      "es": "pozo productor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo de producción"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "15c2c9c7-03d5-4a84-abd0-ed75c62e41c2",
+      "category": "general",
+      "zh": "注入井",
+      "en": "injection well",
+      "es": "pozo inyector",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo de inyección"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1146ff88-5975-4ae3-8fec-8edc34c7c84e",
+      "category": "general",
+      "zh": "直井",
+      "en": "vertical well",
+      "es": "pozo vertical",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a4e0ae13-100b-43b5-a18d-2eebb79ebd45",
+      "category": "general",
+      "zh": "定向井",
+      "en": "directional well",
+      "es": "pozo direccional",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo desviado"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f6f35ea8-ead0-450e-8874-833abf8a76d3",
+      "category": "general",
+      "zh": "水平井",
+      "en": "horizontal well",
+      "es": "pozo horizontal",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e9ccde5a-3a36-4a48-bac6-6c2324f47182",
+      "category": "general",
+      "zh": "多分支井",
+      "en": "multilateral well",
+      "es": "pozo multilateral",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6626ab36-f038-4abe-9550-daa2dff5bccb",
+      "category": "general",
+      "zh": "救援井",
+      "en": "relief well",
+      "es": "pozo de alivio",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "85c63195-5dce-4d84-abd2-5ae9ccd624dd",
+      "category": "general",
+      "zh": "先导井",
+      "en": "pilot well",
+      "es": "pozo piloto",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "42f1f1cf-780d-458a-9db9-75921a2dc047",
+      "category": "general",
+      "zh": "孪生井",
+      "en": "twin well",
+      "es": "pozo gemelo",
+      "aliases": {
+        "zh": [
+          "双井"
+        ],
+        "en": [],
+        "es": [
+          "sidetrack paralelo（依场景）"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b83d7d60-55f2-48d7-aadc-df20f4ca2fd5",
+      "category": "general",
+      "zh": "裸眼井段",
+      "en": "open hole",
+      "es": "agujero abierto",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "OH"
+        ],
+        "es": [
+          "hoyo abierto",
+          "OH"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "7fd1e9fd-9712-4fbe-a319-0922bdbf97fd",
+      "category": "general",
+      "zh": "套管井段",
+      "en": "cased hole",
+      "es": "agujero entubado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "hoyo revestido"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "959d8def-56dd-4f90-b19e-3125fda5112a",
+      "category": "general",
+      "zh": "井眼直径",
+      "en": "hole size",
+      "es": "diámetro del agujero",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "hole diameter"
+        ],
+        "es": [
+          "diámetro del hoyo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "561be833-0e42-41f5-8b77-85e0e7a9f8a0",
+      "category": "general",
+      "zh": "测量井深",
+      "en": "measured depth",
+      "es": "profundidad medida",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "MD"
+        ],
+        "es": [
+          "profundidad desarrollada",
+          "MD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "14818612-a0eb-4ec0-8e36-a970742e240d",
+      "category": "general",
+      "zh": "真垂深",
+      "en": "true vertical depth",
+      "es": "profundidad vertical verdadera",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TVD"
+        ],
+        "es": [
+          "TVD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0ab03d8b-9216-46d0-8257-a8258489f6e6",
+      "category": "general",
+      "zh": "完钻井深",
+      "en": "total depth",
+      "es": "profundidad final",
+      "aliases": {
+        "zh": [
+          "最终井深"
+        ],
+        "en": [
+          "TD"
+        ],
+        "es": [
+          "profundidad total",
+          "TD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "38deadd6-a349-4668-9030-135d265aa5c6",
+      "category": "general",
+      "zh": "井底",
+      "en": "bottomhole",
+      "es": "fondo del pozo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "bottom of well",
+          "BH"
+        ],
+        "es": [
+          "fondo",
+          "BH"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "67cca279-cdd7-4d63-abbb-00b253fa57e0",
+      "category": "general",
+      "zh": "井口开口",
+      "en": "well mouth",
+      "es": "boca del pozo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "well opening"
+        ],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ddc86efc-3da0-45ac-8965-0923606e0e1d",
+      "category": "general",
+      "zh": "表层井段",
+      "en": "surface hole section",
+      "es": "sección superficial",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4cdb6a14-f34f-444c-ac49-d5836a7f07d9",
+      "category": "general",
+      "zh": "中间井段",
+      "en": "intermediate hole section",
+      "es": "sección intermedia",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "81f6da3e-5170-45c6-9c43-d0b903efa0e9",
+      "category": "general",
+      "zh": "生产井段",
+      "en": "production hole section",
+      "es": "sección de producción",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "447fe839-000d-4ddd-8db6-a4f792ac1797",
+      "category": "general",
+      "zh": "目的层段",
+      "en": "target interval",
+      "es": "intervalo objetivo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "target zone"
+        ],
+        "es": [
+          "zona objetivo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ffd9fb69-6a92-4030-8ee8-c81c2694a575",
+      "category": "general",
+      "zh": "产层段",
+      "en": "producing interval",
+      "es": "intervalo productor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "zona productora"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "56541be2-6008-4d05-a3e7-016ba39b5d69",
+      "category": "general",
+      "zh": "漏失层",
+      "en": "loss zone",
+      "es": "zona de pérdida",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "thief zone"
+        ],
+        "es": [
+          "zona ladrona"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2e55904e-58b6-43b5-abeb-a2c590055c2c",
+      "category": "general",
+      "zh": "异常压力层",
+      "en": "abnormally pressured zone",
+      "es": "zona de presión anormal",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ae5241b7-3d52-4bfd-8bf0-7f29139b68b9",
+      "category": "general",
+      "zh": "作业井",
+      "en": "active well",
+      "es": "pozo activo",
+      "aliases": {
+        "zh": [
+          "活动井"
+        ],
+        "en": [],
+        "es": [
+          "pozo en operación"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e8376e60-305f-4d15-904b-cddb7c17f1b9",
+      "category": "general",
+      "zh": "暂停井",
+      "en": "suspended well",
+      "es": "pozo suspendido",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo en suspensión"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f2fe5c20-4565-4341-9dde-e8f992426249",
+      "category": "general",
+      "zh": "废弃井",
+      "en": "abandoned well",
+      "es": "pozo abandonado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d5aa935c-8fea-44f7-898d-74a5c36954c0",
+      "category": "drilling",
+      "zh": "钻机",
+      "en": "drilling rig",
+      "es": "equipo de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "rig"
+        ],
+        "es": [
+          "taladro",
+          "rig"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "38cd9e0d-b35c-41d1-a27d-97904649d561",
+      "category": "drilling",
+      "zh": "修井机",
+      "en": "workover rig",
+      "es": "equipo de reparación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "equipo de workover",
+          "taladro de reparación"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "fd66b3bd-0776-4c48-bb23-d9649455d77a",
+      "category": "drilling",
+      "zh": "作业机",
+      "en": "service rig",
+      "es": "unidad de servicio",
+      "aliases": {
+        "zh": [
+          "小修机"
+        ],
+        "en": [
+          "pulling unit"
+        ],
+        "es": [
+          "pulling unit",
+          "unidad de varilleo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "06709c62-debc-4fcc-a1ec-090818f0ff27",
+      "category": "drilling",
+      "zh": "井架",
+      "en": "derrick",
+      "es": "torre de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "derrick"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d8119db5-6ad5-4bb9-9c7c-7c09c417580c",
+      "category": "drilling",
+      "zh": "桅型井架",
+      "en": "mast",
+      "es": "mástil",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4e50973f-206d-4d1a-acd5-06e3429fc786",
+      "category": "drilling",
+      "zh": "钻台底座",
+      "en": "substructure",
+      "es": "subestructura",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4739d963-fb68-40f6-ab37-81939b4c8822",
+      "category": "drilling",
+      "zh": "钻台",
+      "en": "rig floor",
+      "es": "piso de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "drill floor"
+        ],
+        "es": [
+          "piso del taladro"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9d4096cd-ddb5-4df8-b3b7-f080260f7c60",
+      "category": "drilling",
+      "zh": "二层台",
+      "en": "monkeyboard",
+      "es": "plataforma del enganchador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "monkey board",
+          "tabla del encuellador"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "801b4f26-4cc3-42a8-91cc-6da54251b2a7",
+      "category": "drilling",
+      "zh": "井架工",
+      "en": "derrickman",
+      "es": "encuellador",
+      "aliases": {
+        "zh": [
+          "二层台工"
+        ],
+        "en": [],
+        "es": [
+          "enganchador"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "fccc962a-2afd-48b3-b073-5e3e8e608e37",
+      "category": "drilling",
+      "zh": "绞车",
+      "en": "drawworks",
+      "es": "malacate",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a334d3fa-7a12-4645-9d8c-fcd29566bba1",
+      "category": "drilling",
+      "zh": "天车",
+      "en": "crown block",
+      "es": "bloque corona",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "corona"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "30bd464a-40e3-456d-8e01-a47fe6b48498",
+      "category": "drilling",
+      "zh": "游车",
+      "en": "traveling block",
+      "es": "bloque viajero",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "polea viajera"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b4c2b5d0-a235-45dc-9b22-17ce51045c61",
+      "category": "drilling",
+      "zh": "大钩",
+      "en": "hook",
+      "es": "gancho",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ccedbb4d-b151-4a0f-acef-5645f869587c",
+      "category": "drilling",
+      "zh": "钻井钢丝绳",
+      "en": "drilling line",
+      "es": "cable de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "cable de izaje"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c768a578-deea-4092-8321-32dd3cdffe23",
+      "category": "drilling",
+      "zh": "死绳固定器",
+      "en": "deadline anchor",
+      "es": "ancla de línea muerta",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ec0a5cc3-e3ba-4079-9046-4840db63816d",
+      "category": "drilling",
+      "zh": "指重表",
+      "en": "weight indicator",
+      "es": "indicador de peso",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1ca5f2e9-e2b3-439e-9377-8e0ce8466bf4",
+      "category": "drilling",
+      "zh": "转盘",
+      "en": "rotary table",
+      "es": "mesa rotaria",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "RT"
+        ],
+        "es": [
+          "mesa rotary",
+          "RT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f7b18220-604c-418c-bbe9-f643edbe9efc",
+      "category": "drilling",
+      "zh": "转盘主补芯",
+      "en": "master bushing",
+      "es": "buje maestro",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "73feb95a-34b9-425b-ba62-c58b6ffe4d30",
+      "category": "drilling",
+      "zh": "方钻杆补芯",
+      "en": "kelly bushing",
+      "es": "buje del cuadrante",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "KB"
+        ],
+        "es": [
+          "buje Kelly",
+          "KB"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "64c22d8c-6b06-4781-8064-4c99a1f8f99b",
+      "category": "drilling",
+      "zh": "方钻杆",
+      "en": "kelly",
+      "es": "cuadrante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "flecha",
+          "barra Kelly"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a8440c70-fc21-40c6-a733-748e5d3edb41",
+      "category": "drilling",
+      "zh": "顶驱",
+      "en": "top drive",
+      "es": "sistema de accionamiento superior",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TDS"
+        ],
+        "es": [
+          "top drive",
+          "TDS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3d6064ad-d4d5-4de0-b1c0-7b89ccfb8a69",
+      "category": "drilling",
+      "zh": "吊卡",
+      "en": "elevator",
+      "es": "elevador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d425e3be-b6a4-4873-a0bd-7247bbd3f097",
+      "category": "drilling",
+      "zh": "卡瓦",
+      "en": "slips",
+      "es": "cuñas",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "927fb271-2ea2-49d6-8e3e-6bf2ff86ca40",
+      "category": "drilling",
+      "zh": "动力大钳",
+      "en": "power tongs",
+      "es": "llaves de potencia",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tenazas",
+          "power tong"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "84aabde6-8542-4a91-8561-6e456098d49b",
+      "category": "drilling",
+      "zh": "液压钳",
+      "en": "hydraulic tong",
+      "es": "llave hidráulica",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "da8ea372-1ea2-4986-a716-9e4457b6d52c",
+      "category": "drilling",
+      "zh": "链钳",
+      "en": "chain tong",
+      "es": "llave de cadena",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c63c612f-dde3-4c05-b655-cbc04413e752",
+      "category": "drilling",
+      "zh": "铁钻工",
+      "en": "iron roughneck",
+      "es": "iron roughneck",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "brazo de llaves automático"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "56eb574c-4509-468d-a45f-37c96fab2a55",
+      "category": "drilling",
+      "zh": "管具坡道",
+      "en": "catwalk",
+      "es": "rampa de tuberías",
+      "aliases": {
+        "zh": [
+          "猫道"
+        ],
+        "en": [],
+        "es": [
+          "catwalk"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e6362fce-0e44-4e5f-8449-45beda4a5d75",
+      "category": "drilling",
+      "zh": "管架",
+      "en": "pipe rack",
+      "es": "corredor de tuberías",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pipe rack"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "641f6103-6837-4676-8836-1a81629b58be",
+      "category": "drilling",
+      "zh": "鼠洞",
+      "en": "mousehole",
+      "es": "hueco del ratón",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "mousehole"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "55890a91-912e-4868-b75c-327a30b7851e",
+      "category": "drilling",
+      "zh": "方钻杆大鼠洞",
+      "en": "rathole",
+      "es": "hoyo de rata",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "rathole"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ffb625fb-5eb1-4e0f-93ab-55a8afd35997",
+      "category": "drilling",
+      "zh": "泥浆泵",
+      "en": "mud pump",
+      "es": "bomba de lodo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "74abef00-53d7-4d2d-a809-6280cf9b51d5",
+      "category": "drilling",
+      "zh": "高压排出管线",
+      "en": "discharge line",
+      "es": "línea de descarga",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "línea de alta presión"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6e90290c-bdb6-499d-8f6c-3dbae394a754",
+      "category": "drilling",
+      "zh": "水龙带",
+      "en": "rotary hose",
+      "es": "manguera rotaria",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "kelly hose"
+        ],
+        "es": [
+          "manguera Kelly"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ab9ff71c-9910-4e77-a270-c193d5f935ae",
+      "category": "drilling",
+      "zh": "立管",
+      "en": "standpipe",
+      "es": "tubo vertical",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "standpipe"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f8a59d78-3f91-429f-9c51-996e9b06cc0f",
+      "category": "drilling",
+      "zh": "水龙头",
+      "en": "swivel",
+      "es": "cabeza giratoria",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "swivel"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c2647c76-f097-4d28-999b-79e37bb2970a",
+      "category": "drilling",
+      "zh": "发电机",
+      "en": "generator",
+      "es": "generador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b98ca0e0-ae51-43ea-b425-d247994e0a34",
+      "category": "drilling",
+      "zh": "柴油机",
+      "en": "diesel engine",
+      "es": "motor diésel",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6e5b4d5d-a18f-4462-9352-5c8250d2b9c1",
+      "category": "drilling",
+      "zh": "司钻房",
+      "en": "driller's cabin",
+      "es": "cabina del perforador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "doghouse",
+          "driller's cabin"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3c25c005-7c0e-4272-a40a-8e25b6fae91d",
+      "category": "drilling",
+      "zh": "司钻控制台",
+      "en": "driller's console",
+      "es": "consola del perforador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "77a98638-c09c-4dea-a93d-1feafdb6bea4",
+      "category": "drilling",
+      "zh": "钻柱",
+      "en": "drillstring",
+      "es": "sarta de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6f8df5ff-4cc8-48d0-972b-1066520b4bc6",
+      "category": "drilling",
+      "zh": "钻杆",
+      "en": "drill pipe",
+      "es": "tubería de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "DP"
+        ],
+        "es": [
+          "tubo de perforación",
+          "DP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8556cf70-deee-41b5-8161-f24b4459a910",
+      "category": "drilling",
+      "zh": "加重钻杆",
+      "en": "heavy-weight drill pipe",
+      "es": "tubería pesada de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "HWDP"
+        ],
+        "es": [
+          "heavy weight",
+          "HWDP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "fe3081cf-9762-4608-8ca1-c562da2bade1",
+      "category": "drilling",
+      "zh": "钻铤",
+      "en": "drill collar",
+      "es": "lastrabarrena",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "DC"
+        ],
+        "es": [
+          "collarín",
+          "drill collar",
+          "DC"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ae48e842-e065-4475-9b05-8235b4668cb3",
+      "category": "drilling",
+      "zh": "单根",
+      "en": "pipe joint",
+      "es": "junta de tubería",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tubo",
+          "joint"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3c309138-c814-4909-a831-2cd4dbd518e5",
+      "category": "drilling",
+      "zh": "立柱",
+      "en": "stand of pipe",
+      "es": "parada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tramo",
+          "stand"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5f3ab2bd-9dd9-4d49-917c-594ca0c3a15a",
+      "category": "drilling",
+      "zh": "螺纹连接",
+      "en": "threaded connection",
+      "es": "conexión roscada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "conexión"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ebb50128-892b-40f8-a141-6e2fcea14ce4",
+      "category": "drilling",
+      "zh": "母扣",
+      "en": "box connection",
+      "es": "caja",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "hembra"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "187c91d9-3822-45e8-a856-177296092d50",
+      "category": "drilling",
+      "zh": "公扣",
+      "en": "pin connection",
+      "es": "pin",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "macho"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3e9bc2cd-678e-4f9c-9503-a56eb4c86bd9",
+      "category": "drilling",
+      "zh": "钻杆接头",
+      "en": "tool joint",
+      "es": "junta de herramienta",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TJ"
+        ],
+        "es": [
+          "tool joint",
+          "TJ"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "47f56a51-6ee7-4515-ae23-f4fc0e303bd6",
+      "category": "drilling",
+      "zh": "护丝",
+      "en": "thread protector",
+      "es": "protector de rosca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6c7ad2c6-acbd-4416-a101-ebd07477b727",
+      "category": "drilling",
+      "zh": "钢级",
+      "en": "pipe grade",
+      "es": "grado de tubería",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "40e85879-43f1-459c-83e4-1ab3af420dd9",
+      "category": "drilling",
+      "zh": "外径",
+      "en": "outside diameter",
+      "es": "diámetro exterior",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "OD"
+        ],
+        "es": [
+          "OD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "08cdef71-bdb5-4a87-936c-9c4d71a0ab71",
+      "category": "drilling",
+      "zh": "内径",
+      "en": "inside diameter",
+      "es": "diámetro interior",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "ID"
+        ],
+        "es": [
+          "ID"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1879aef0-c9c3-45ad-a43a-86a278a0171b",
+      "category": "drilling",
+      "zh": "井底钻具组合",
+      "en": "bottomhole assembly",
+      "es": "arreglo de fondo de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "BHA"
+        ],
+        "es": [
+          "ensamblaje de fondo",
+          "BHA"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8a568237-ee1e-4064-aad2-e13a3abb71e2",
+      "category": "drilling",
+      "zh": "钻头接头",
+      "en": "bit sub",
+      "es": "sub de broca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bit sub"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "46815456-f142-47c1-8720-e2c8ff58b6a3",
+      "category": "drilling",
+      "zh": "稳定器",
+      "en": "stabilizer",
+      "es": "estabilizador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1cb29cbe-8d4d-4a22-b014-e4c53bea7769",
+      "category": "drilling",
+      "zh": "整体翼片稳定器",
+      "en": "integral blade stabilizer",
+      "es": "estabilizador integral de aletas",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "IBS"
+        ],
+        "es": [
+          "IBS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "960e493f-6316-428c-b5a1-70ce081020a7",
+      "category": "drilling",
+      "zh": "近钻头稳定器",
+      "en": "near-bit stabilizer",
+      "es": "estabilizador cercano a la broca",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "NBS"
+        ],
+        "es": [
+          "near-bit stabilizer",
+          "NBS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "463bbb59-9261-49db-a9ab-6bf125524f02",
+      "category": "drilling",
+      "zh": "扩眼器",
+      "en": "reamer",
+      "es": "escariador",
+      "aliases": {
+        "zh": [
+          "划眼器"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "385c3ec1-4f3c-4f7d-8773-d126e8c1b853",
+      "category": "drilling",
+      "zh": "扩孔器",
+      "en": "hole opener",
+      "es": "ensanchador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b4a22b25-a82e-4808-9ee1-8d3c215d23bc",
+      "category": "drilling",
+      "zh": "滚轮扶正扩眼器",
+      "en": "roller reamer",
+      "es": "reamer de rodillos",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "escariador de rodillos"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e24f4467-717f-46de-ade8-de2456075e59",
+      "category": "drilling",
+      "zh": "螺杆钻具",
+      "en": "mud motor",
+      "es": "motor de lodo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PDM"
+        ],
+        "es": [
+          "motor de fondo",
+          "PDM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9e28ea8a-2b02-4556-a106-8028854d5998",
+      "category": "drilling",
+      "zh": "弯壳体",
+      "en": "bent housing",
+      "es": "sección acodada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "codo ajustable",
+          "bent housing"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "73c7a3a2-c022-4598-941a-a22859aeec83",
+      "category": "drilling",
+      "zh": "弯角",
+      "en": "bend angle",
+      "es": "ángulo de la sección acodada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bend setting"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2761004d-55b2-481a-a3b9-35df505f5b94",
+      "category": "drilling",
+      "zh": "涡轮钻具",
+      "en": "turbodrill",
+      "es": "turbina de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "turbodrill"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3cf2a5f4-fc29-497d-a955-983124594160",
+      "category": "drilling",
+      "zh": "旋转导向系统",
+      "en": "rotary steerable system",
+      "es": "sistema rotativo direccional",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "RSS"
+        ],
+        "es": [
+          "RSS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "024380b0-cb12-49d2-86e7-c78f529e4054",
+      "category": "drilling",
+      "zh": "减震器",
+      "en": "shock sub",
+      "es": "amortiguador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "shock sub"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1318067e-061a-4e8a-bc2b-533cb92668f4",
+      "category": "drilling",
+      "zh": "震击加速器",
+      "en": "jar accelerator",
+      "es": "acelerador de percusión",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "intensificador"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "929cf15f-7bb6-4e97-9497-7e82ee3ab550",
+      "category": "drilling",
+      "zh": "随钻震击器",
+      "en": "drilling jar",
+      "es": "tijera de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "percutor",
+          "jar"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e777259c-1f87-47ff-9bc1-b15400b04c68",
+      "category": "drilling",
+      "zh": "转换接头",
+      "en": "crossover sub",
+      "es": "substituto de cruce",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "XO"
+        ],
+        "es": [
+          "cross-over",
+          "X-over",
+          "XO"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "69a3526f-be0d-4089-839a-a4a2cb331b34",
+      "category": "drilling",
+      "zh": "浮阀",
+      "en": "float valve",
+      "es": "válvula flotante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "float valve"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9fd72766-9362-4acc-8fed-4916d2af2397",
+      "category": "drilling",
+      "zh": "止回阀",
+      "en": "check valve",
+      "es": "válvula de retención",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "check valve"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "968bca0c-b45c-4c5e-8e54-624274936910",
+      "category": "drilling",
+      "zh": "全开式安全阀",
+      "en": "full-opening safety valve",
+      "es": "válvula de seguridad de apertura total",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "FOSV"
+        ],
+        "es": [
+          "FOSV"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5b652875-681d-49ec-8892-c0820ed8eca8",
+      "category": "drilling",
+      "zh": "上旋塞",
+      "en": "upper kelly cock",
+      "es": "válvula Kelly superior",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "70943494-4152-4549-87aa-b5052538808f",
+      "category": "drilling",
+      "zh": "下旋塞",
+      "en": "lower kelly cock",
+      "es": "válvula Kelly inferior",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1895dfa4-681f-4067-bd34-71642607ef0b",
+      "category": "drilling",
+      "zh": "循环接头",
+      "en": "circulating sub",
+      "es": "sub de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "circulating sub"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "30778230-f5ae-4485-89fc-5ffca34cd016",
+      "category": "drilling",
+      "zh": "投球接头",
+      "en": "drop-ball sub",
+      "es": "sub de caída de bola",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "drop-ball sub"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5aa36f0e-d8f8-4fea-bdfa-a1bceeb4ab3e",
+      "category": "drilling",
+      "zh": "钻柱过滤器",
+      "en": "drillstring filter",
+      "es": "filtro de sarta",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "drillstring filter"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d57c2a55-cfd4-49ab-9a36-8927110a4dd6",
+      "category": "drilling",
+      "zh": "扶正器",
+      "en": "centralizer",
+      "es": "centralizador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e9f2f71a-51af-4832-96a2-e41fe9f4cc3e",
+      "category": "drilling",
+      "zh": "刮管器",
+      "en": "casing scraper",
+      "es": "raspador de revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "casing scraper"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "256c6484-b526-4d72-abfa-932821f7e8f2",
+      "category": "drilling",
+      "zh": "套管刷",
+      "en": "casing brush",
+      "es": "cepillo de revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d124da5a-380e-4396-981e-afb059d6f8e9",
+      "category": "drilling",
+      "zh": "井筒清洁工具",
+      "en": "wellbore cleanup tool",
+      "es": "limpiador de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "wellbore cleanup tool"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2654aefa-d315-418f-bfd7-ae6573abf8c8",
+      "category": "drilling",
+      "zh": "井下磁铁",
+      "en": "downhole magnet",
+      "es": "imán de fondo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "imán de pesca"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "85fefc66-2fc7-48cc-aebf-3eb4d6dcdc40",
+      "category": "drilling",
+      "zh": "钻头",
+      "en": "drill bit",
+      "es": "broca de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "bit"
+        ],
+        "es": [
+          "barrena",
+          "mecha",
+          "trépano",
+          "bit"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b2660fa9-b5d5-404c-ad59-dfcc579ae29d",
+      "category": "drilling",
+      "zh": "牙轮钻头",
+      "en": "tricone bit",
+      "es": "broca tricónica",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tricono",
+          "broca de conos"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ad529bbb-ec14-4259-bd9a-a6709994dfd4",
+      "category": "drilling",
+      "zh": "PDC钻头",
+      "en": "PDC bit",
+      "es": "broca PDC",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PDC"
+        ],
+        "es": [
+          "PDC"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e8a82210-df91-4328-894f-ac70bb84b9c3",
+      "category": "drilling",
+      "zh": "孕镶金刚石钻头",
+      "en": "impregnated diamond bit",
+      "es": "broca de diamante impregnado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "99cb3d6d-4927-45f1-bf95-9401a0b21eaa",
+      "category": "drilling",
+      "zh": "PDC切削齿",
+      "en": "PDC cutter",
+      "es": "cortador PDC",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a37a803f-18a7-45ad-8e6e-50ffcbeaa384",
+      "category": "drilling",
+      "zh": "牙轮",
+      "en": "cone",
+      "es": "cono",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1e284f64-52b4-4eb6-b1fe-afca3f9818ba",
+      "category": "drilling",
+      "zh": "喷嘴",
+      "en": "nozzle",
+      "es": "boquilla",
+      "aliases": {
+        "zh": [
+          "水眼"
+        ],
+        "en": [],
+        "es": [
+          "chorro",
+          "nozzle"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d4a08e24-2217-44ba-bf4b-a4bb2456b2e7",
+      "category": "drilling",
+      "zh": "钻头保径",
+      "en": "bit gauge",
+      "es": "calibre de la broca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "gauge"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "26f5628c-efa1-4881-9627-4eadbec7e31b",
+      "category": "drilling",
+      "zh": "钻头磨损",
+      "en": "bit wear",
+      "es": "desgaste de la broca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1de017dd-ebc2-4a5e-bcc0-17e2c3da08fb",
+      "category": "drilling",
+      "zh": "钻头欠径",
+      "en": "under-gauge bit",
+      "es": "broca fuera de calibre",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "broca subcalibrada"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "acb38091-a186-44de-82c1-446506c931d8",
+      "category": "drilling",
+      "zh": "IADC钻头磨损分级",
+      "en": "IADC dull grading",
+      "es": "registro IADC de broca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "dull grading"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "097a38e8-f3d1-4d9f-a071-8f358b278d23",
+      "category": "drilling",
+      "zh": "定向钻井",
+      "en": "directional drilling",
+      "es": "perforación direccional",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "7e93f026-6b5b-4679-b9ce-291bd69f6739",
+      "category": "drilling",
+      "zh": "水平钻井",
+      "en": "horizontal drilling",
+      "es": "perforación horizontal",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "19cfdfa8-493b-469c-a38e-6e99766443a1",
+      "category": "drilling",
+      "zh": "旋转钻进",
+      "en": "rotary drilling",
+      "es": "perforación rotatoria",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "7416d84f-5973-45c3-ac02-b38f6da88d01",
+      "category": "drilling",
+      "zh": "滑动钻进",
+      "en": "slide drilling",
+      "es": "perforación por deslizamiento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "modo deslizante",
+          "sliding"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ed9071fd-2275-4b07-a6ed-57ff908fbc58",
+      "category": "drilling",
+      "zh": "工具面定向",
+      "en": "toolface orientation",
+      "es": "orientación de herramienta",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TF"
+        ],
+        "es": [
+          "toolface orientation",
+          "TF"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9d91de26-838c-48e3-98f2-a6f52648641a",
+      "category": "drilling",
+      "zh": "工具面",
+      "en": "toolface",
+      "es": "cara de herramienta",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TF"
+        ],
+        "es": [
+          "toolface",
+          "TF"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b56854d9-8ae2-4194-b526-8687ab169d00",
+      "category": "drilling",
+      "zh": "高边",
+      "en": "high side",
+      "es": "lado alto",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "HS"
+        ],
+        "es": [
+          "HS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4a2252a9-8c6a-4d7c-999d-2a2e034bee32",
+      "category": "drilling",
+      "zh": "井斜角",
+      "en": "inclination",
+      "es": "inclinación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "INC"
+        ],
+        "es": [
+          "INC"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "459b62c5-acec-4b6e-aca5-98540156870d",
+      "category": "drilling",
+      "zh": "方位角",
+      "en": "azimuth",
+      "es": "azimut",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "AZI"
+        ],
+        "es": [
+          "acimut",
+          "AZI"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0ab1f195-da54-4d2d-b0d8-8b9a96bc70e2",
+      "category": "drilling",
+      "zh": "井眼曲率变化",
+      "en": "dogleg",
+      "es": "cambio angular",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "DLS"
+        ],
+        "es": [
+          "dogleg",
+          "DLS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e1dea3c0-9921-47aa-a2dc-98cc85bf4981",
+      "category": "drilling",
+      "zh": "狗腿度",
+      "en": "dogleg severity",
+      "es": "severidad de pata de perro",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "DLS"
+        ],
+        "es": [
+          "dogleg severity",
+          "DLS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "34ef36e7-d2d5-419a-a7d0-fbaf2e209fa5",
+      "category": "drilling",
+      "zh": "增斜",
+      "en": "angle build",
+      "es": "construcción de ángulo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "BUR"
+        ],
+        "es": [
+          "build-up",
+          "BUR"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5096b6fe-b99c-4fdd-ab11-bd2ed1189464",
+      "category": "drilling",
+      "zh": "降斜",
+      "en": "angle drop",
+      "es": "caída de ángulo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "DOR"
+        ],
+        "es": [
+          "drop-off",
+          "DOR"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "06e25871-2743-49db-8201-7102eb739aa6",
+      "category": "drilling",
+      "zh": "方位变化率",
+      "en": "turn rate",
+      "es": "giro de azimut",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TR"
+        ],
+        "es": [
+          "turn rate",
+          "TR"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1ba4c779-6a63-40b7-aeae-5581e97c86be",
+      "category": "drilling",
+      "zh": "造斜点",
+      "en": "kickoff point",
+      "es": "punto de inicio de desviación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "KOP"
+        ],
+        "es": [
+          "KOP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6722c3ce-4e1d-4bf8-aab1-dd37270a3f70",
+      "category": "drilling",
+      "zh": "稳斜段",
+      "en": "tangent",
+      "es": "sección tangente",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "hold section"
+        ],
+        "es": [
+          "hold section"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b329d5a4-a4c0-44df-8a01-8b7adb84aa09",
+      "category": "drilling",
+      "zh": "水平位移",
+      "en": "horizontal displacement",
+      "es": "desplazamiento horizontal",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "departure"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0b47cb86-bd8d-4b36-9702-7829ba032525",
+      "category": "drilling",
+      "zh": "测斜",
+      "en": "directional survey",
+      "es": "levantamiento direccional",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "survey"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3475a6ed-78ab-4074-a1ba-be5e445ef873",
+      "category": "drilling",
+      "zh": "随钻测量",
+      "en": "measurement while drilling",
+      "es": "medición durante la perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "MWD"
+        ],
+        "es": [
+          "MWD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f6814399-50dd-47e4-837c-7f53b5624c01",
+      "category": "drilling",
+      "zh": "随钻测井",
+      "en": "logging while drilling",
+      "es": "registro durante la perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "LWD"
+        ],
+        "es": [
+          "LWD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a2347451-8c8e-432a-b79e-8c24e95048f1",
+      "category": "drilling",
+      "zh": "泥浆脉冲传输",
+      "en": "mud pulse telemetry",
+      "es": "pulso de lodo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "35d391c9-e2ca-4008-81eb-cb720f3c8d0c",
+      "category": "drilling",
+      "zh": "陀螺测斜仪",
+      "en": "gyroscopic survey tool",
+      "es": "herramienta giroscópica",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "gyro"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2665c906-3cc7-41b9-84ff-0be5f190f6e3",
+      "category": "drilling",
+      "zh": "磁干扰",
+      "en": "magnetic interference",
+      "es": "interferencia magnética",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "06f9f5be-98b7-4659-9a48-0c3749e4ec95",
+      "category": "drilling",
+      "zh": "下垂校正",
+      "en": "sag correction",
+      "es": "corrección de sag",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b65f8e4b-c5a3-4dbd-b7bb-81638a0bd8a9",
+      "category": "drilling",
+      "zh": "地质导向",
+      "en": "geosteering",
+      "es": "geonavegación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "geosteering"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d44c062f-bad9-46d0-af0d-ffb183989693",
+      "category": "drilling",
+      "zh": "方位电阻率",
+      "en": "azimuthal resistivity",
+      "es": "resistividad azimutal",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ff8311f0-e214-462a-82ba-f5afa067071e",
+      "category": "drilling",
+      "zh": "开钻",
+      "en": "spud the well",
+      "es": "iniciar la perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SPUD"
+        ],
+        "es": [
+          "arrancar el pozo",
+          "spudear",
+          "SPUD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6c969921-5218-4b64-898e-6e337ad33407",
+      "category": "drilling",
+      "zh": "继续钻进",
+      "en": "drill ahead",
+      "es": "perforar adelante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "continuar perforando",
+          "drill ahead"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0576da51-4219-4ec2-a152-f13500e4ee87",
+      "category": "drilling",
+      "zh": "探到井底",
+      "en": "tag bottom",
+      "es": "tocar fondo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "taguear fondo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "92899219-3932-4e21-aab0-5091a413ffc4",
+      "category": "drilling",
+      "zh": "建立循环",
+      "en": "break circulation",
+      "es": "romper circulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "establecer circulación"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "966ed42d-818b-4c96-b1c4-a411a0dd81fa",
+      "category": "drilling",
+      "zh": "循环一个迟到时间",
+      "en": "circulate bottoms up",
+      "es": "circular fondos arriba",
+      "aliases": {
+        "zh": [
+          "井底返出"
+        ],
+        "en": [
+          "BU"
+        ],
+        "es": [
+          "circular bottoms up",
+          "BU"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9db51a73-3138-4dcf-b485-ada12c38a663",
+      "category": "drilling",
+      "zh": "循环至返出清洁",
+      "en": "circulate until clean returns",
+      "es": "circular hasta retornos limpios",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "circular limpio"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "121e9f94-5530-4104-b892-e438d51bff4f",
+      "category": "drilling",
+      "zh": "冲洗下放",
+      "en": "wash down",
+      "es": "lavar hacia abajo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bajar lavando"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2061cd62-0e7d-4d17-af79-eebca0b6bf45",
+      "category": "drilling",
+      "zh": "下划眼",
+      "en": "ream down",
+      "es": "escariar hacia abajo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bajar rimando"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "25160ced-676e-4110-a48d-4ebe02fd64d7",
+      "category": "drilling",
+      "zh": "倒划眼",
+      "en": "backream",
+      "es": "escariar hacia arriba",
+      "aliases": {
+        "zh": [
+          "上划眼"
+        ],
+        "en": [],
+        "es": [
+          "repasar arriba",
+          "backream"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9be39a46-3828-4291-9ffc-59772b175708",
+      "category": "drilling",
+      "zh": "划眼",
+      "en": "ream the hole",
+      "es": "repasar el agujero",
+      "aliases": {
+        "zh": [
+          "修整井眼"
+        ],
+        "en": [],
+        "es": [
+          "reamer",
+          "acondicionar el hoyo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "86f35845-b9ee-4896-8c9c-2143d3ab8496",
+      "category": "drilling",
+      "zh": "短起下",
+      "en": "wiper trip",
+      "es": "viaje de limpieza",
+      "aliases": {
+        "zh": [
+          "通井"
+        ],
+        "en": [],
+        "es": [
+          "wiper trip"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "52af44c4-9279-4750-9054-dc2978cda3fc",
+      "category": "drilling",
+      "zh": "下入BHA",
+      "en": "run BHA in hole",
+      "es": "bajar BHA",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "RIH"
+        ],
+        "es": [
+          "RIH"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ddc49e5b-7284-4f6e-9ce6-f076b4be6141",
+      "category": "drilling",
+      "zh": "起出BHA",
+      "en": "pull BHA out of hole",
+      "es": "sacar BHA",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "POOH"
+        ],
+        "es": [
+          "POOH"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1629a6cc-b889-4b13-8e3f-2f2f4e55f563",
+      "category": "drilling",
+      "zh": "提起管具",
+      "en": "pick up pipe",
+      "es": "levantar tubería",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pick up"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "22fa8d90-1ac6-4841-9fd1-8e6f6aa0552f",
+      "category": "drilling",
+      "zh": "甩钻具",
+      "en": "lay down pipe",
+      "es": "acostar tubería",
+      "aliases": {
+        "zh": [
+          "平放管具"
+        ],
+        "en": [],
+        "es": [
+          "lay down"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d978364f-863a-41bf-a1b0-56b4df72304d",
+      "category": "drilling",
+      "zh": "立放管具",
+      "en": "stand back pipe",
+      "es": "parar tubería",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "stand back"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "93cdecfc-4075-4d58-ad0b-928aa0bbfe0e",
+      "category": "drilling",
+      "zh": "组装",
+      "en": "make up",
+      "es": "armar",
+      "aliases": {
+        "zh": [
+          "上扣"
+        ],
+        "en": [],
+        "es": [
+          "ensamblar",
+          "make up"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "41798536-aa51-461f-9df7-14963d64dd00",
+      "category": "drilling",
+      "zh": "拆卸",
+      "en": "break down",
+      "es": "desarmar",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "disassemble"
+        ],
+        "es": [
+          "desensamblar"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e15d7ee6-1796-4d45-8e25-45f6c5929caf",
+      "category": "drilling",
+      "zh": "上扣",
+      "en": "make up connection",
+      "es": "enroscar",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "hacer conexión"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "46c32762-f286-4be4-afb7-89120a23a5bb",
+      "category": "drilling",
+      "zh": "卸扣",
+      "en": "break out connection",
+      "es": "desenroscar",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "quebrar conexión",
+          "break out"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3152a4e4-1f54-46dc-be3d-ae83c5c27731",
+      "category": "drilling",
+      "zh": "施加扭矩",
+      "en": "apply torque",
+      "es": "aplicar torque",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "62c604c4-1ea6-486d-a45d-b9bfee6387f4",
+      "category": "drilling",
+      "zh": "按规定扭矩上扣",
+      "en": "torque to specification",
+      "es": "torquear a especificación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "dar torque"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e7875e24-769a-45f3-8a9b-575122a2caf8",
+      "category": "drilling",
+      "zh": "接单根",
+      "en": "make a connection",
+      "es": "hacer conexión",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8f08e3c4-724e-40f1-a483-86a28413da93",
+      "category": "drilling",
+      "zh": "接立柱",
+      "en": "add a stand",
+      "es": "agregar una parada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f1110008-94a5-4168-8590-78a1a4c45949",
+      "category": "drilling",
+      "zh": "泵入高黏扫孔液",
+      "en": "pump a high-vis pill",
+      "es": "bombear píldora viscosa",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bache viscoso"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0d12e4c0-8794-4733-b083-5c0473c2f658",
+      "category": "drilling",
+      "zh": "泵入加重稠液",
+      "en": "pump a weighted pill",
+      "es": "bombear píldora pesada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bache pesado"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e81192fc-6f8a-44b2-b842-37d2f000db0d",
+      "category": "drilling",
+      "zh": "泵入组合扫孔液",
+      "en": "pump a pill train",
+      "es": "bombear tren de píldoras",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1f819c17-9f29-43f7-9ab3-e9e92fc94051",
+      "category": "drilling",
+      "zh": "顶替扫孔液",
+      "en": "displace the pill",
+      "es": "desplazar la píldora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "04b6d411-62e1-4df2-a9ea-6907951bc55b",
+      "category": "drilling",
+      "zh": "清洁井眼",
+      "en": "clean the hole",
+      "es": "limpiar el agujero",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "limpiar hoyo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ec629cee-1e02-4ca5-98e4-55e459b6fcfb",
+      "category": "drilling",
+      "zh": "清除岩屑",
+      "en": "remove cuttings",
+      "es": "remover recortes",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2fe30990-25d9-4a64-aef0-ff07fd8dc32b",
+      "category": "drilling",
+      "zh": "停泵观察",
+      "en": "flow check",
+      "es": "verificar flujo",
+      "aliases": {
+        "zh": [
+          "溢流检查"
+        ],
+        "en": [],
+        "es": [
+          "hacer flow check"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "42893f29-a541-4fef-8bd1-754bdd0c9083",
+      "category": "drilling",
+      "zh": "井静止无流动",
+      "en": "well static",
+      "es": "pozo estático",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pozo muerto"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6f671dc3-e125-4c2e-a188-37f0ed197ced",
+      "category": "drilling",
+      "zh": "压力试验",
+      "en": "pressure test",
+      "es": "prueba de presión",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PT"
+        ],
+        "es": [
+          "PT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "88a1ef13-eb15-4e8c-a530-45f5eefbc8cf",
+      "category": "drilling",
+      "zh": "正压试验",
+      "en": "positive pressure test",
+      "es": "prueba positiva",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "eab823b2-47fd-4844-86e8-bf646c1bab7f",
+      "category": "drilling",
+      "zh": "负压试验",
+      "en": "negative pressure test",
+      "es": "prueba negativa",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "37748d42-1482-4dae-a82a-a1e9387c963e",
+      "category": "drilling",
+      "zh": "遇到沉砂",
+      "en": "tag fill",
+      "es": "encontrar relleno",
+      "aliases": {
+        "zh": [
+          "假底"
+        ],
+        "en": [],
+        "es": [
+          "tener relleno"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "12c84867-ff14-46fc-b6e9-bdf96e845266",
+      "category": "drilling",
+      "zh": "遇阻点",
+      "en": "tight spot",
+      "es": "punto apretado",
+      "aliases": {
+        "zh": [
+          "紧点"
+        ],
+        "en": [],
+        "es": [
+          "hoyo apretado"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8d340de8-5185-4fb4-9682-35cf4009660d",
+      "category": "drilling",
+      "zh": "摩阻",
+      "en": "drag",
+      "es": "arrastre",
+      "aliases": {
+        "zh": [
+          "拖曳"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d1113649-710e-42a6-a997-73ef64e4355d",
+      "category": "drilling",
+      "zh": "上提超拉力",
+      "en": "overpull",
+      "es": "sobrejalón",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "sobretensión",
+          "overpull"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5fc7973c-36f7-4c4f-8fe9-4b50c42808e5",
+      "category": "drilling",
+      "zh": "承重",
+      "en": "take weight",
+      "es": "tomar peso",
+      "aliases": {
+        "zh": [
+          "显示遇阻"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ff54ab1b-7e24-4251-802a-316428c65527",
+      "category": "drilling",
+      "zh": "失重",
+      "en": "lose weight",
+      "es": "perder peso",
+      "aliases": {
+        "zh": [
+          "重量下降"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "db3d9159-400a-4915-b1b9-9e323ff2c7af",
+      "category": "drilling",
+      "zh": "开展作业前安全会",
+      "en": "hold pre-job safety meeting",
+      "es": "realizar reunión de seguridad preoperacional",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "JSA"
+        ],
+        "es": [
+          "dar charla de seguridad",
+          "JSA"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6a017e17-e1fc-4490-83e5-fd9031bd1f9e",
+      "category": "drilling",
+      "zh": "安装设备",
+      "en": "rig up",
+      "es": "instalar equipo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "RU"
+        ],
+        "es": [
+          "rig up",
+          "RU"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "db11e09f-25f7-4ca2-87b6-fc74048e8787",
+      "category": "drilling",
+      "zh": "拆卸设备",
+      "en": "rig down",
+      "es": "desmontar equipo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "RD"
+        ],
+        "es": [
+          "rig down",
+          "RD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "77672c50-e256-47a3-89b5-0e23b6f95a91",
+      "category": "drilling",
+      "zh": "扭矩",
+      "en": "torque",
+      "es": "torque",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TQ"
+        ],
+        "es": [
+          "TQ"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9e393ee0-4554-414e-b31e-c64ed5cf5ca1",
+      "category": "drilling",
+      "zh": "排量",
+      "en": "flow rate",
+      "es": "caudal",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "Q"
+        ],
+        "es": [
+          "gasto",
+          "rata de bombeo",
+          "Q"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9b69369c-84f9-4b2e-b1ac-8b026ecc05f3",
+      "category": "drilling",
+      "zh": "泵压",
+      "en": "pump pressure",
+      "es": "presión de bomba",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SPP"
+        ],
+        "es": [
+          "presión de circulación",
+          "SPP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c34feda3-d724-42f2-8962-5683ce139c73",
+      "category": "drilling",
+      "zh": "泵冲",
+      "en": "strokes per minute",
+      "es": "golpes por minuto",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SPM"
+        ],
+        "es": [
+          "emboladas por minuto",
+          "SPM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f318cc42-bb94-419c-9332-c1f94fdec2eb",
+      "category": "drilling",
+      "zh": "上提悬重",
+      "en": "pick-up weight",
+      "es": "peso al levantar",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PUW"
+        ],
+        "es": [
+          "pick-up weight",
+          "PUW"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "465f833e-b3f3-4fbf-9503-1ed061197866",
+      "category": "drilling",
+      "zh": "下放悬重",
+      "en": "slack-off weight",
+      "es": "peso al bajar",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SOW"
+        ],
+        "es": [
+          "slack-off weight",
+          "SOW"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "75ef1994-582c-44fc-b455-2edb022119a1",
+      "category": "drilling",
+      "zh": "旋转悬重",
+      "en": "rotating weight",
+      "es": "peso rotando",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "RW"
+        ],
+        "es": [
+          "rotating weight",
+          "RW"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6cfc6aba-4e08-4fac-b49a-1ba48764ac57",
+      "category": "drilling",
+      "zh": "静液柱压力",
+      "en": "hydrostatic pressure",
+      "es": "presión hidrostática",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f0ebd32e-94be-40ac-bc1d-f2d46bdcbb24",
+      "category": "drilling",
+      "zh": "井底压力",
+      "en": "bottomhole pressure",
+      "es": "presión de fondo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "BHP"
+        ],
+        "es": [
+          "BHP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2573c9f7-6009-4e42-b10b-6093b4071c1e",
+      "category": "drilling",
+      "zh": "当量循环密度",
+      "en": "equivalent circulating density",
+      "es": "densidad equivalente de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "ECD"
+        ],
+        "es": [
+          "ECD"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ce09bad2-42c9-4ef4-8269-e86c435d2949",
+      "category": "drilling",
+      "zh": "压力损失",
+      "en": "pressure loss",
+      "es": "pérdida de presión",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "324afbcb-cb64-438c-b698-190661491b38",
+      "category": "drilling",
+      "zh": "环空压耗",
+      "en": "annular pressure loss",
+      "es": "pérdida de presión anular",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "APL"
+        ],
+        "es": [
+          "APL"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2b76d23d-c200-4b2b-9a4d-45855e04ba9b",
+      "category": "drilling",
+      "zh": "环空返速",
+      "en": "annular velocity",
+      "es": "velocidad anular",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "AV"
+        ],
+        "es": [
+          "AV"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d9512a3e-6568-4d80-9e40-cb10bd2b5d29",
+      "category": "drilling",
+      "zh": "钻头水功率",
+      "en": "bit hydraulic horsepower",
+      "es": "potencia hidráulica en la broca",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "HHP"
+        ],
+        "es": [
+          "HHP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ff4bf2a4-870a-4264-9c0c-c3e63f1834f1",
+      "category": "drilling",
+      "zh": "射流冲击力",
+      "en": "jet impact force",
+      "es": "fuerza de impacto del chorro",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "JIF"
+        ],
+        "es": [
+          "JIF"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ab1e30d5-47c5-47f8-add5-5bdb4b4fe0e2",
+      "category": "drilling",
+      "zh": "总喷嘴流通面积",
+      "en": "total flow area",
+      "es": "área total de flujo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TFA"
+        ],
+        "es": [
+          "área total de boquillas",
+          "TFA"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "37b68bfb-4563-43b3-a279-a70b53d3d919",
+      "category": "drilling",
+      "zh": "孔隙压力",
+      "en": "pore pressure",
+      "es": "presión de poro",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PP"
+        ],
+        "es": [
+          "PP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f9e8fe46-b232-4fe1-a66e-0a76550af17c",
+      "category": "drilling",
+      "zh": "破裂压力梯度",
+      "en": "fracture gradient",
+      "es": "gradiente de fractura",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "FG"
+        ],
+        "es": [
+          "FG"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b4abaf18-ed56-4fa3-8006-e624b0bcc6ae",
+      "category": "drilling",
+      "zh": "上覆地层压力",
+      "en": "overburden pressure",
+      "es": "presión de sobrecarga",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0c22ec3d-a29b-461e-afc7-4234bd533078",
+      "category": "drilling",
+      "zh": "安全泥重窗口",
+      "en": "mud window",
+      "es": "ventana de lodo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a5b5af98-5ed4-4920-a070-060d5b0f704d",
+      "category": "drilling",
+      "zh": "纯钻时间",
+      "en": "on-bottom time",
+      "es": "tiempo en fondo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d7d40797-020a-416c-85ec-0a325d2f5f18",
+      "category": "drilling",
+      "zh": "非进尺作业时间",
+      "en": "flat time",
+      "es": "tiempo plano",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tiempo por conexión"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4449a84d-e335-4a00-a094-19f5cc38269a",
+      "category": "drilling",
+      "zh": "非生产时间",
+      "en": "non-productive time",
+      "es": "tiempo no productivo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "NPT"
+        ],
+        "es": [
+          "NPT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2871609b-592e-4abb-806f-11dc99be76af",
+      "category": "drilling",
+      "zh": "隐性损失时间",
+      "en": "invisible lost time",
+      "es": "tiempo invisible perdido",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "ILT"
+        ],
+        "es": [
+          "ILT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "552cdf2d-166f-4bfe-b3bc-4e2ae16594bd",
+      "category": "drilling",
+      "zh": "钻井液",
+      "en": "drilling fluid",
+      "es": "fluido de perforación",
+      "aliases": {
+        "zh": [
+          "泥浆"
+        ],
+        "en": [
+          "drilling mud"
+        ],
+        "es": [
+          "lodo de perforación",
+          "lodo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "748ac8bf-626d-450a-b1b0-63b8e367c1b5",
+      "category": "drilling",
+      "zh": "水基钻井液",
+      "en": "water-based mud",
+      "es": "lodo a base de agua",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "WBM"
+        ],
+        "es": [
+          "WBM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "23cca666-44a3-4e3e-90a2-0a7a605f4fff",
+      "category": "drilling",
+      "zh": "油基钻井液",
+      "en": "oil-based mud",
+      "es": "lodo a base de aceite",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "OBM"
+        ],
+        "es": [
+          "OBM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "faad1da7-3d2e-4303-94b4-20fc74e3531d",
+      "category": "drilling",
+      "zh": "合成基钻井液",
+      "en": "synthetic-based mud",
+      "es": "lodo de base sintética",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SBM"
+        ],
+        "es": [
+          "SBM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "602b5bd1-c592-4573-957b-8b7bc902cb4b",
+      "category": "drilling",
+      "zh": "反相乳化钻井液",
+      "en": "invert emulsion",
+      "es": "emulsión inversa",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "7220b368-bfce-42c3-a423-bd6d37955c89",
+      "category": "drilling",
+      "zh": "盐水",
+      "en": "brine",
+      "es": "salmuera",
+      "aliases": {
+        "zh": [
+          "卤水"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "eb9bb364-126b-4d19-ad9e-32fcb6fc9e08",
+      "category": "drilling",
+      "zh": "漏斗黏度",
+      "en": "funnel viscosity",
+      "es": "viscosidad de embudo",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "FV"
+        ],
+        "es": [
+          "FV"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bf64c57f-dd7b-4609-ae48-8468b078b956",
+      "category": "drilling",
+      "zh": "塑性黏度",
+      "en": "plastic viscosity",
+      "es": "viscosidad plástica",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PV"
+        ],
+        "es": [
+          "PV"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3e3ec740-555b-40df-9e49-eee68c8f5fe3",
+      "category": "drilling",
+      "zh": "动切力",
+      "en": "yield point",
+      "es": "punto de cedencia",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "YP"
+        ],
+        "es": [
+          "punto cedente",
+          "YP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "723ec284-96d9-4515-b15a-63d96048dac1",
+      "category": "drilling",
+      "zh": "静切力",
+      "en": "gel strength",
+      "es": "resistencia de gel",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "Gel"
+        ],
+        "es": [
+          "geles",
+          "Gel"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d93fd405-b92b-48c1-85c1-6f127acb7d0b",
+      "category": "drilling",
+      "zh": "API滤失量",
+      "en": "API fluid loss",
+      "es": "filtrado API",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pérdida de filtrado"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "68c32067-29c0-4a3b-be1d-0329f4703b88",
+      "category": "drilling",
+      "zh": "高温高压滤失量",
+      "en": "HPHT fluid loss",
+      "es": "filtrado HPHT",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "HPHT"
+        ],
+        "es": [
+          "HPHT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1cf181df-c0bb-4267-9ad0-7633fc153138",
+      "category": "drilling",
+      "zh": "泥饼",
+      "en": "filter cake",
+      "es": "revoque",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "mud cake"
+        ],
+        "es": [
+          "costra de lodo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "edb99529-c32d-45ce-8085-98c92fd1f141",
+      "category": "drilling",
+      "zh": "固相含量",
+      "en": "solids content",
+      "es": "contenido de sólidos",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "fe49b596-26bc-44c8-8ae9-988fd30cc5b6",
+      "category": "drilling",
+      "zh": "含砂量",
+      "en": "sand content",
+      "es": "contenido de arena",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "189c7782-ea3f-4a4d-bc78-a8aaddedae48",
+      "category": "drilling",
+      "zh": "酸碱度",
+      "en": "pH",
+      "es": "pH",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "690352ad-d757-4e41-bdce-b962b8c6a293",
+      "category": "drilling",
+      "zh": "碱度",
+      "en": "alkalinity",
+      "es": "alcalinidad",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "36c13158-ba87-45ff-aba2-e215cdbd1481",
+      "category": "drilling",
+      "zh": "氯离子含量",
+      "en": "chlorides",
+      "es": "cloruros",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "Cl⁻"
+        ],
+        "es": [
+          "Cl⁻"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "24ad6642-923b-45fb-b9ff-c95e837c2d21",
+      "category": "drilling",
+      "zh": "水活度",
+      "en": "water activity",
+      "es": "actividad del agua",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "Aw"
+        ],
+        "es": [
+          "Aw"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e1526bd1-5026-4556-9b96-4402bd0e31f3",
+      "category": "drilling",
+      "zh": "油水比",
+      "en": "oil-water ratio",
+      "es": "relación aceite-agua",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "OWR"
+        ],
+        "es": [
+          "OWR"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5bf725bd-d197-444b-93ea-61ee510a254a",
+      "category": "drilling",
+      "zh": "电稳定性",
+      "en": "electrical stability",
+      "es": "estabilidad eléctrica",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "ES"
+        ],
+        "es": [
+          "ES"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e53faa3c-8a0e-4902-906a-114c2f615790",
+      "category": "drilling",
+      "zh": "重晶石",
+      "en": "barite",
+      "es": "barita",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "09f9fc65-4744-4ff2-9db7-d37fcf790f6b",
+      "category": "drilling",
+      "zh": "膨润土",
+      "en": "bentonite",
+      "es": "bentonita",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0ded0165-a49e-465e-b710-bda50b1bb370",
+      "category": "drilling",
+      "zh": "碳酸钙",
+      "en": "calcium carbonate",
+      "es": "carbonato de calcio",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "CaCO3"
+        ],
+        "es": [
+          "CaCO3"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d97b3fc8-d081-444c-b920-dab12a7b4c01",
+      "category": "drilling",
+      "zh": "氯化钾",
+      "en": "potassium chloride",
+      "es": "cloruro de potasio",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "KCl"
+        ],
+        "es": [
+          "KCl"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "add621d2-0132-49f0-84a6-41faa091fcc7",
+      "category": "drilling",
+      "zh": "氯化钙",
+      "en": "calcium chloride",
+      "es": "cloruro de calcio",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "CaCl2"
+        ],
+        "es": [
+          "CaCl2"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bfe77a9d-4f48-4183-9806-1772d56ea779",
+      "category": "drilling",
+      "zh": "烧碱",
+      "en": "caustic soda",
+      "es": "soda cáustica",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "NaOH"
+        ],
+        "es": [
+          "NaOH"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f66502c1-5c11-42ad-b25d-77171aa97a2f",
+      "category": "drilling",
+      "zh": "纯碱",
+      "en": "soda ash",
+      "es": "carbonato de sodio",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "Na2CO3"
+        ],
+        "es": [
+          "soda ash",
+          "Na2CO3"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b8f5ba03-39cf-445d-8659-7d0ac3a0c664",
+      "category": "drilling",
+      "zh": "木质素磺酸盐",
+      "en": "lignosulfonate",
+      "es": "lignosulfonato",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6dafa7aa-ab5b-40d5-a4e4-a90cb6a2ee07",
+      "category": "drilling",
+      "zh": "增黏聚合物",
+      "en": "viscosifying polymer",
+      "es": "polímero viscosificante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b6effb41-56f2-47b1-b682-42c9c61f5c37",
+      "category": "drilling",
+      "zh": "降滤失剂",
+      "en": "fluid-loss reducer",
+      "es": "reductor de filtrado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d70a98d1-ecb3-404f-8c0c-3e7fc1a8661d",
+      "category": "drilling",
+      "zh": "页岩抑制剂",
+      "en": "shale inhibitor",
+      "es": "inhibidor de lutita",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6baadeca-cf37-483a-90bf-89373b83767f",
+      "category": "drilling",
+      "zh": "润滑剂",
+      "en": "lubricant",
+      "es": "lubricante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "07dd2fa4-7d21-45e3-b356-15ca26310a28",
+      "category": "drilling",
+      "zh": "堵漏材料",
+      "en": "lost circulation material",
+      "es": "material de pérdida de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "LCM"
+        ],
+        "es": [
+          "material obturante",
+          "LCM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "db74a24f-3174-4af7-865a-3c769c7b40ca",
+      "category": "drilling",
+      "zh": "堵漏浆",
+      "en": "LCM pill",
+      "es": "píldora de pérdida de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bache LCM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f90c574b-54ef-44a8-a9e4-91d030216202",
+      "category": "drilling",
+      "zh": "部分漏失",
+      "en": "partial losses",
+      "es": "pérdida parcial",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4eb250c3-33a9-4547-b596-ca16ba33b02e",
+      "category": "drilling",
+      "zh": "完全漏失",
+      "en": "total losses",
+      "es": "pérdida total",
+      "aliases": {
+        "zh": [
+          "无返出"
+        ],
+        "en": [
+          "no returns"
+        ],
+        "es": [
+          "sin retorno"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9a409567-219b-49aa-9a0b-378b2250ffff",
+      "category": "drilling",
+      "zh": "泥浆池增量",
+      "en": "pit gain",
+      "es": "ganancia en tanques",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "aumento de volumen"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "750867ab-cf71-4a58-bc91-2314556c9f96",
+      "category": "drilling",
+      "zh": "泥浆污染",
+      "en": "mud contamination",
+      "es": "contaminación del lodo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0c08119a-5661-4a6a-b561-f90e5f6b649a",
+      "category": "drilling",
+      "zh": "振动筛",
+      "en": "shale shaker",
+      "es": "zaranda vibratoria",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "shaker"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "59d1be23-58b1-4394-ab29-5e656466f9f7",
+      "category": "drilling",
+      "zh": "筛布",
+      "en": "shaker screen",
+      "es": "malla de zaranda",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "screen"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d280ad72-5760-4845-8db6-fe246e597d30",
+      "category": "drilling",
+      "zh": "除砂器",
+      "en": "desander",
+      "es": "desarenador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "43ad0f8c-9051-413e-8401-ba21417e5d5d",
+      "category": "drilling",
+      "zh": "除泥器",
+      "en": "desilter",
+      "es": "deslimador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b3ce8679-153c-4eb2-85ae-846c83cd32a9",
+      "category": "drilling",
+      "zh": "泥浆清洁器",
+      "en": "mud cleaner",
+      "es": "limpiador de lodo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c14a651f-cc6d-4ed7-bf1d-9ecfa56f9d79",
+      "category": "drilling",
+      "zh": "卧螺离心机",
+      "en": "decanter centrifuge",
+      "es": "centrífuga decantadora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3549715f-e260-44c7-a565-23f5cb154d26",
+      "category": "drilling",
+      "zh": "除气器",
+      "en": "degasser",
+      "es": "desgasificador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f762ddb6-fcca-4ca4-81dd-44376e6b612d",
+      "category": "drilling",
+      "zh": "泥气分离器",
+      "en": "mud-gas separator",
+      "es": "separador lodo-gas",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "MGS"
+        ],
+        "es": [
+          "poor boy degasser",
+          "MGS"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3e2f470c-d34c-473f-96bb-26cdca2f566c",
+      "category": "drilling",
+      "zh": "泥浆池",
+      "en": "mud pit",
+      "es": "tanque de lodo",
+      "aliases": {
+        "zh": [
+          "罐"
+        ],
+        "en": [
+          "mud tank"
+        ],
+        "es": [
+          "pileta",
+          "tanque activo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bb61ad3e-a9d0-44ab-ac1d-4152a0812f93",
+      "category": "drilling",
+      "zh": "计量罐",
+      "en": "trip tank",
+      "es": "tanque de viaje",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9347d8f2-9b23-4663-b2bb-94d9dcf76d9b",
+      "category": "drilling",
+      "zh": "混浆漏斗",
+      "en": "mixing hopper",
+      "es": "tolva mezcladora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "hopper"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e692281e-9311-4fe4-9dbc-885c181fa967",
+      "category": "drilling",
+      "zh": "导管",
+      "en": "conductor casing",
+      "es": "tubería conductora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "conductor"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3dd01ebb-c12f-4dc1-b99b-6a0d7354ffac",
+      "category": "drilling",
+      "zh": "表层套管",
+      "en": "surface casing",
+      "es": "revestidor superficial",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "40f52546-077a-465e-99b0-22ef5198b36a",
+      "category": "drilling",
+      "zh": "技术套管",
+      "en": "intermediate casing",
+      "es": "revestidor intermedio",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "42308b98-7d0f-40ac-80af-878eaba80d3d",
+      "category": "drilling",
+      "zh": "生产套管",
+      "en": "production casing",
+      "es": "revestidor de producción",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "20db2ec2-3e51-49c7-b455-d218bac0b598",
+      "category": "drilling",
+      "zh": "尾管",
+      "en": "liner",
+      "es": "liner",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "revestidor corto"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "41671801-39c0-44b9-8580-e7ca8e47768a",
+      "category": "drilling",
+      "zh": "尾管悬挂器",
+      "en": "liner hanger",
+      "es": "colgador de liner",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0620e5b9-d121-4c4e-8059-f5d7348ae58f",
+      "category": "drilling",
+      "zh": "尾管回接",
+      "en": "liner tieback",
+      "es": "extensión de liner",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tieback"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3dfbbaeb-aa0d-4fe8-bb79-47e4e6c01433",
+      "category": "drilling",
+      "zh": "引鞋",
+      "en": "guide shoe",
+      "es": "zapato guía",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c2654acc-46b6-4cc5-b02a-ca569f3f2784",
+      "category": "drilling",
+      "zh": "浮鞋",
+      "en": "float shoe",
+      "es": "zapato flotador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4428c818-5ef9-46e4-bc60-abea5208145d",
+      "category": "drilling",
+      "zh": "浮箍",
+      "en": "float collar",
+      "es": "collar flotador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8498561e-a2c3-4040-9a63-7f54b9b22398",
+      "category": "drilling",
+      "zh": "分级箍",
+      "en": "stage collar",
+      "es": "collar de etapa",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "327c2dd4-36ae-4e00-b6d9-f4fb6a7db0fc",
+      "category": "drilling",
+      "zh": "套管扶正器",
+      "en": "casing centralizer",
+      "es": "centralizador de revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "243457ce-7f5d-4db4-a559-2e88c3874d46",
+      "category": "drilling",
+      "zh": "刮壁器",
+      "en": "wall scratcher",
+      "es": "raspador de pared",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a0779574-770b-4e9a-8ade-4d05cb6d9e66",
+      "category": "drilling",
+      "zh": "固井头",
+      "en": "cementing head",
+      "es": "cabeza de cementación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1bd08bb8-80ac-4094-b91b-bb90fafb6cc4",
+      "category": "drilling",
+      "zh": "下胶塞",
+      "en": "bottom cementing plug",
+      "es": "tapón inferior",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "25767241-df82-4fb6-a426-8b718af82fdd",
+      "category": "drilling",
+      "zh": "上胶塞",
+      "en": "top cementing plug",
+      "es": "tapón superior",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f2ea2edd-6531-4f43-bc73-1d676d51b459",
+      "category": "drilling",
+      "zh": "下套管",
+      "en": "run casing",
+      "es": "correr revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bajar casing"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "27d91eac-1f28-464d-a40a-b7c4c5299900",
+      "category": "drilling",
+      "zh": "坐放套管",
+      "en": "land casing",
+      "es": "asentar el revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4f157b57-0c36-4409-80a2-4afd1fec9e54",
+      "category": "drilling",
+      "zh": "一次固井",
+      "en": "primary cementing",
+      "es": "cementación primaria",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8190d632-7b6c-4a8c-9a77-530525583b50",
+      "category": "drilling",
+      "zh": "水泥浆",
+      "en": "cement slurry",
+      "es": "lechada de cemento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "891c6023-d44c-4c41-9431-5928774a06a8",
+      "category": "drilling",
+      "zh": "隔离液",
+      "en": "spacer",
+      "es": "espaciador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e031dd5a-e5d6-49e6-b0ed-bf9df2c98fe7",
+      "category": "drilling",
+      "zh": "前置液",
+      "en": "chemical wash",
+      "es": "lavador químico",
+      "aliases": {
+        "zh": [
+          "冲洗液"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d4a0434e-636e-4533-b7f1-0d9e8f355c2b",
+      "category": "drilling",
+      "zh": "水泥浆造浆率",
+      "en": "cement yield",
+      "es": "rendimiento del cemento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1a426c81-456d-4ca9-8c04-e599e6fce814",
+      "category": "drilling",
+      "zh": "稠化时间",
+      "en": "thickening time",
+      "es": "tiempo de espesamiento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9f03383a-3e31-41a1-94d4-601165e89e57",
+      "category": "drilling",
+      "zh": "游离水",
+      "en": "free water",
+      "es": "agua libre",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "39d83885-1eec-4ab6-9120-e110dc40c30b",
+      "category": "drilling",
+      "zh": "水泥浆失水",
+      "en": "cement fluid loss",
+      "es": "pérdida de fluido del cemento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9c58a576-10fc-42cb-b20f-ed8b00ba4c69",
+      "category": "drilling",
+      "zh": "顶替水泥浆",
+      "en": "displace cement",
+      "es": "desplazar cemento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "75e1f65a-280d-4450-b805-6ff113c77144",
+      "category": "drilling",
+      "zh": "候凝",
+      "en": "wait on cement",
+      "es": "esperar fraguado del cemento",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "WOC"
+        ],
+        "es": [
+          "WOC"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "aa010561-a03f-42e1-bdef-8d28eed1c50a",
+      "category": "drilling",
+      "zh": "水泥返高",
+      "en": "top of cement",
+      "es": "tope de cemento",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "TOC"
+        ],
+        "es": [
+          "TOC"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2e74dc0b-6403-4282-b4b1-29045670dfb7",
+      "category": "drilling",
+      "zh": "挤水泥",
+      "en": "squeeze cementing",
+      "es": "cementación forzada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "squeeze"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "521c1ea5-00e4-4541-a473-a404fc2f15e5",
+      "category": "drilling",
+      "zh": "水泥塞",
+      "en": "cement plug",
+      "es": "tapón de cemento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3343e4a4-748d-4e04-9dba-530f79e35894",
+      "category": "drilling",
+      "zh": "水泥胶结测井",
+      "en": "cement bond log",
+      "es": "registro de adherencia del cemento",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "CBL"
+        ],
+        "es": [
+          "CBL"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "fa42cc2f-3aa8-48b8-8728-b8dc22b02a30",
+      "category": "drilling",
+      "zh": "变密度测井",
+      "en": "variable density log",
+      "es": "registro de densidad variable",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "VDL"
+        ],
+        "es": [
+          "VDL"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "040e6425-0ffe-41f5-bf95-d90ed22bf076",
+      "category": "drilling",
+      "zh": "地层完整性试验",
+      "en": "formation integrity test",
+      "es": "prueba de integridad de formación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "FIT"
+        ],
+        "es": [
+          "FIT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "74f512b8-0ed6-4303-b6cc-499729aa141e",
+      "category": "drilling",
+      "zh": "地层漏失试验",
+      "en": "leak-off test",
+      "es": "prueba de fuga",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "LOT"
+        ],
+        "es": [
+          "prueba LOT",
+          "LOT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4295ee48-526f-4df1-8552-75b955dc5227",
+      "category": "drilling",
+      "zh": "套管试压",
+      "en": "pressure-test casing",
+      "es": "probar revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "aeeedd99-b62e-4622-b408-728c197961d2",
+      "category": "drilling",
+      "zh": "钻水泥塞",
+      "en": "drill out cement",
+      "es": "perforar cemento",
+      "aliases": {
+        "zh": [
+          "附件"
+        ],
+        "en": [],
+        "es": [
+          "drill out cement"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "549f1992-7f11-4198-a8c3-ddbde69420af",
+      "category": "drilling",
+      "zh": "钻穿套管鞋",
+      "en": "drill out shoe",
+      "es": "perforar zapato",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bed8f74d-1347-43fe-9b44-07747962571d",
+      "category": "completion",
+      "zh": "完井",
+      "en": "well completion",
+      "es": "terminación de pozos",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "completación"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e8cafb09-f508-4a47-8488-6f95814edb8a",
+      "category": "completion",
+      "zh": "完井管柱",
+      "en": "completion string",
+      "es": "sarta de terminación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "ensamblaje de completación"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4a1704cd-8ac8-4aac-8a45-5befb742790a",
+      "category": "completion",
+      "zh": "油管",
+      "en": "production tubing",
+      "es": "tubería de producción",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "tubing"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "38b040c3-bd4a-40c8-886a-0601b460f803",
+      "category": "completion",
+      "zh": "封隔器",
+      "en": "packer",
+      "es": "empacador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "packer"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "75cd44d0-d708-41b6-8075-cfdf86802924",
+      "category": "completion",
+      "zh": "生产封隔器",
+      "en": "production packer",
+      "es": "empacador de producción",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4c58e792-bd8d-423e-8bbe-73ffeaf7b485",
+      "category": "completion",
+      "zh": "坐落接头",
+      "en": "landing nipple",
+      "es": "niple de asiento",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "landing nipple"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "34543694-0a4b-4e99-9526-22f02939ab05",
+      "category": "completion",
+      "zh": "滑套",
+      "en": "sliding sleeve",
+      "es": "camisa deslizante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b7838974-ef95-45f6-aba0-7f97232d8462",
+      "category": "completion",
+      "zh": "偏心工作筒",
+      "en": "side-pocket mandrel",
+      "es": "mandril de bolsillo lateral",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SPM"
+        ],
+        "es": [
+          "SPM"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1c4da6b9-8e0f-4dc4-b386-63e985bf12b3",
+      "category": "completion",
+      "zh": "井下安全阀",
+      "en": "subsurface safety valve",
+      "es": "válvula de seguridad subsuperficial",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SSSV"
+        ],
+        "es": [
+          "SSSV"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "905c3f8e-3252-4dee-b68c-42fa95cc35ec",
+      "category": "completion",
+      "zh": "油管悬挂器",
+      "en": "tubing hanger",
+      "es": "colgador de tubería",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "efdb0f2e-bc90-46b5-a9ee-416e429103d6",
+      "category": "completion",
+      "zh": "井口装置",
+      "en": "wellhead",
+      "es": "cabezal de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4c650cee-0cba-40bb-a63d-d3deed068d1b",
+      "category": "completion",
+      "zh": "采油树",
+      "en": "Christmas tree",
+      "es": "árbol de navidad",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "X-tree"
+        ],
+        "es": [
+          "árbol de producción",
+          "X-tree"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9aac1f33-a1b8-41a9-92b7-9232105939fc",
+      "category": "completion",
+      "zh": "主阀",
+      "en": "master valve",
+      "es": "válvula maestra",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6f169952-7016-4724-85d2-48c3cb6c3690",
+      "category": "completion",
+      "zh": "翼阀",
+      "en": "wing valve",
+      "es": "válvula lateral",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "válvula de ala"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1ed1c255-eb9c-442d-9f9e-4df610a64175",
+      "category": "completion",
+      "zh": "生产油嘴",
+      "en": "production choke",
+      "es": "estrangulador de producción",
+      "aliases": {
+        "zh": [
+          "节流阀"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4a9734da-d905-4612-a269-a7f7b87ef9dd",
+      "category": "completion",
+      "zh": "砾石充填",
+      "en": "gravel pack",
+      "es": "empaque de grava",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "GP"
+        ],
+        "es": [
+          "GP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "42ed612b-0858-4e72-99db-4771f14b10c2",
+      "category": "completion",
+      "zh": "防砂筛管",
+      "en": "sand-control screen",
+      "es": "rejilla de control de arena",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "filtro",
+          "screen"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c0aeaea5-961c-4404-8eda-3491b0a718ad",
+      "category": "completion",
+      "zh": "割缝衬管",
+      "en": "slotted liner",
+      "es": "tubo ranurado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bf53e2c8-e22c-4f77-9dea-c345650f7c5d",
+      "category": "completion",
+      "zh": "射孔枪",
+      "en": "perforating gun",
+      "es": "cañón de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pistola de disparos"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a6d0e5c3-65d4-4ffb-9a86-a81b987d3199",
+      "category": "completion",
+      "zh": "射孔",
+      "en": "perforate the interval",
+      "es": "disparar el intervalo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "cañonear",
+          "perforar"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "501a8e11-72d5-40d9-ae3e-c256d19ac80b",
+      "category": "completion",
+      "zh": "孔密",
+      "en": "shot density",
+      "es": "densidad de disparos",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SPF"
+        ],
+        "es": [
+          "SPF"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6afc8c7d-f4cc-4d41-b7dc-907772f5d173",
+      "category": "completion",
+      "zh": "射孔相位",
+      "en": "shot phasing",
+      "es": "fase de disparo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "408e7ac8-3dbe-41b8-ac39-88f41670aea5",
+      "category": "completion",
+      "zh": "射孔穿深",
+      "en": "perforation penetration",
+      "es": "penetración del disparo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2f3f0baa-2267-462c-898a-68a43bdf698c",
+      "category": "completion",
+      "zh": "欠平衡射孔",
+      "en": "underbalanced perforating",
+      "es": "disparo bajo balance",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "151b4473-e264-4e87-abd9-cc6205271bc9",
+      "category": "completion",
+      "zh": "试井",
+      "en": "well test",
+      "es": "prueba de pozo",
+      "aliases": {
+        "zh": [
+          "试油"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8bf29afe-6746-407f-9c1a-6a5aec0ec0c0",
+      "category": "completion",
+      "zh": "钻杆地层测试",
+      "en": "drillstem test",
+      "es": "prueba de formación con sarta",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "DST"
+        ],
+        "es": [
+          "DST"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f44e47d9-3529-4b1a-8934-c52513c5eb75",
+      "category": "completion",
+      "zh": "返排",
+      "en": "flowback",
+      "es": "flujo de limpieza",
+      "aliases": {
+        "zh": [
+          "放喷清洗"
+        ],
+        "en": [],
+        "es": [
+          "flowback"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bf4b318c-6631-40a2-99ad-547141597d27",
+      "category": "completion",
+      "zh": "井筒清洗",
+      "en": "well cleanup",
+      "es": "limpieza del pozo",
+      "aliases": {
+        "zh": [
+          "排液"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "22460373-b72e-4f36-a310-cb5b3533256f",
+      "category": "completion",
+      "zh": "测试分离器",
+      "en": "test separator",
+      "es": "separador de prueba",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a8a9151a-12b6-4f6d-a570-3e3d1713604c",
+      "category": "completion",
+      "zh": "火炬",
+      "en": "flare",
+      "es": "quemador",
+      "aliases": {
+        "zh": [
+          "燃烧器"
+        ],
+        "en": [],
+        "es": [
+          "mechero",
+          "flare"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "78410f8d-aa71-4e6f-b74f-952766872efa",
+      "category": "completion",
+      "zh": "关井压力",
+      "en": "shut-in pressure",
+      "es": "presión de cierre",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "28299a58-41ff-49ba-a835-beffc21f5fec",
+      "category": "completion",
+      "zh": "采液指数",
+      "en": "productivity index",
+      "es": "índice de productividad",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PI"
+        ],
+        "es": [
+          "PI"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "40e01a2a-7ca1-42b7-98d8-df0228eb7d0c",
+      "category": "completion",
+      "zh": "酸化",
+      "en": "acidizing",
+      "es": "acidificación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "48d83bc1-2d0a-4881-b619-816ff3d6da86",
+      "category": "completion",
+      "zh": "酸洗",
+      "en": "acid wash",
+      "es": "lavado ácido",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ebecae30-2234-4102-8498-1a8ff5852011",
+      "category": "completion",
+      "zh": "基质酸化",
+      "en": "matrix acidizing",
+      "es": "acidificación matricial",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "eeea2b51-8bc1-4839-9628-73f03961e492",
+      "category": "completion",
+      "zh": "水力压裂",
+      "en": "hydraulic fracturing",
+      "es": "fracturamiento hidráulico",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "HF"
+        ],
+        "es": [
+          "fractura hidráulica",
+          "HF"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9b3c2ea0-5930-49e9-85dc-7a9cdb5f3f77",
+      "category": "completion",
+      "zh": "支撑剂",
+      "en": "proppant",
+      "es": "apuntalante",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "propante"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ce622d42-7548-481a-bd83-33d4d92ebf0a",
+      "category": "completion",
+      "zh": "压裂液",
+      "en": "fracturing fluid",
+      "es": "fluido de fractura",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "096c73c2-24aa-4c0c-af7e-b7ee64744cd0",
+      "category": "completion",
+      "zh": "破裂压力",
+      "en": "breakdown pressure",
+      "es": "presión de ruptura",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "604ee28a-87fc-41e2-8601-0b62514e8de7",
+      "category": "completion",
+      "zh": "裂缝闭合压力",
+      "en": "fracture closure pressure",
+      "es": "presión de cierre de fractura",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f38c597c-b5c4-4f1a-8a68-5045cf3598f8",
+      "category": "completion",
+      "zh": "生产测井",
+      "en": "production logging",
+      "es": "registro de producción",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "PLT"
+        ],
+        "es": [
+          "PLT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e27ebe20-1a36-4360-9eb5-e0914dc10954",
+      "category": "completion",
+      "zh": "井下流量计",
+      "en": "downhole flowmeter",
+      "es": "medidor de flujo de fondo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "97b2f7c2-b526-4946-974a-94f35f4067b0",
+      "category": "general",
+      "zh": "井控",
+      "en": "well control",
+      "es": "control de pozos",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "50446816-49e3-4a4c-95a4-fa86a32d113e",
+      "category": "general",
+      "zh": "井喷失控",
+      "en": "blowout",
+      "es": "reventón",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c63ed66f-ad75-42d1-9e82-43aa43c6553b",
+      "category": "general",
+      "zh": "压井",
+      "en": "kill the well",
+      "es": "matar el pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "controlar el pozo"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b6c56d0b-8c80-427b-a363-834cd2a97be3",
+      "category": "general",
+      "zh": "关井",
+      "en": "shut in the well",
+      "es": "cerrar el pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "shut in"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "80a5a261-d42f-43b9-bbcc-d50cfaf75b88",
+      "category": "general",
+      "zh": "井已受控",
+      "en": "well under control",
+      "es": "pozo bajo control",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "898168f7-4499-49a6-9107-1a7fc9419091",
+      "category": "general",
+      "zh": "井屏障",
+      "en": "well barrier",
+      "es": "barrera de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "46439c1c-514d-4cda-93c1-83d72d549af7",
+      "category": "general",
+      "zh": "环形防喷器",
+      "en": "annular preventer",
+      "es": "preventor anular",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5ba163b8-6a1b-4d3a-802b-9aa5a58bdd50",
+      "category": "general",
+      "zh": "闸板防喷器",
+      "en": "ram preventer",
+      "es": "preventor de arietes",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e1ae7dca-a41c-4426-aae6-3ba70cc4ff05",
+      "category": "general",
+      "zh": "管子闸板",
+      "en": "pipe ram",
+      "es": "ariete para tubería",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ff0d533a-2533-4415-b1ac-5cc4287ffb40",
+      "category": "general",
+      "zh": "全封闸板",
+      "en": "blind ram",
+      "es": "ariete ciego",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "83fdee4e-159a-4bc3-8087-df19c7c54f87",
+      "category": "general",
+      "zh": "剪切闸板",
+      "en": "shear ram",
+      "es": "ariete de corte",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "blind shear ram",
+          "BSR"
+        ],
+        "es": [
+          "ariete ciego-cortante",
+          "BSR"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a392ca2a-27e7-4176-bf2c-07dc853cfd5b",
+      "category": "general",
+      "zh": "防喷器控制装置",
+      "en": "BOP accumulator unit",
+      "es": "unidad acumuladora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "64e0e1a3-cd86-4170-a69d-775abd3f33e9",
+      "category": "general",
+      "zh": "节流管汇",
+      "en": "choke manifold",
+      "es": "múltiple de estrangulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "manifold de choke"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6a5e4d7e-9215-466e-a8c4-034cd529a72a",
+      "category": "general",
+      "zh": "压井管汇",
+      "en": "kill manifold",
+      "es": "múltiple de matar",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "kill manifold"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6d6d78b9-54a7-4e26-9618-7cd205e89c43",
+      "category": "general",
+      "zh": "节流管线",
+      "en": "choke line",
+      "es": "línea de estrangulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "700d1dc9-b556-4cfa-a8c3-db984c81c9f9",
+      "category": "general",
+      "zh": "压井管线",
+      "en": "kill line",
+      "es": "línea de matar",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "41a99d00-9c69-4fb0-adf8-54a5ef42688e",
+      "category": "general",
+      "zh": "可调节流阀",
+      "en": "adjustable choke",
+      "es": "estrangulador ajustable",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "90395411-36c1-4b56-8096-b2288958e373",
+      "category": "general",
+      "zh": "固定油嘴",
+      "en": "fixed choke",
+      "es": "estrangulador fijo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0b3328b5-802f-4498-9224-bec22b2e85f9",
+      "category": "general",
+      "zh": "喇叭口",
+      "en": "bell nipple",
+      "es": "campana de flujo",
+      "aliases": {
+        "zh": [
+          "溢流管短节"
+        ],
+        "en": [
+          "flow nipple"
+        ],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "af076f5e-dc51-4500-a261-2f257600adf7",
+      "category": "general",
+      "zh": "流量传感器",
+      "en": "flow sensor",
+      "es": "detector de flujo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3dc3bd71-9a3a-44cb-a09d-1a3f4a40dc5a",
+      "category": "general",
+      "zh": "停泵后仍有流动",
+      "en": "flow with pumps off",
+      "es": "flujo con bombas apagadas",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "67ae8029-c529-491a-ad28-594d4b56f3dc",
+      "category": "general",
+      "zh": "关井钻杆压力",
+      "en": "shut-in drillpipe pressure",
+      "es": "presión de cierre en tubería de perforación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SIDPP"
+        ],
+        "es": [
+          "SIDPP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "179bf307-a281-4a11-92f5-da305dcc2b8b",
+      "category": "general",
+      "zh": "关井套压",
+      "en": "shut-in casing pressure",
+      "es": "presión de cierre en revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "SICP"
+        ],
+        "es": [
+          "SICP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "53ead1a6-7a14-4fa8-bd92-dd4be3de7465",
+      "category": "general",
+      "zh": "最大允许环空地面压力",
+      "en": "maximum allowable annular surface pressure",
+      "es": "presión máxima permisible en superficie",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "MAASP"
+        ],
+        "es": [
+          "MAASP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "56b5134c-f95b-4b1a-9fc1-7cef7059cd22",
+      "category": "general",
+      "zh": "初始循环压力",
+      "en": "initial circulating pressure",
+      "es": "presión inicial de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "ICP"
+        ],
+        "es": [
+          "ICP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "09bc3618-618c-42ce-95c2-7b7dc836c8d2",
+      "category": "general",
+      "zh": "最终循环压力",
+      "en": "final circulating pressure",
+      "es": "presión final de circulación",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "FCP"
+        ],
+        "es": [
+          "FCP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "dcadbb79-def0-429c-9453-ece597a9209a",
+      "category": "general",
+      "zh": "司钻法",
+      "en": "driller's method",
+      "es": "método del perforador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "36e6e8e6-a240-411a-af7f-db64831d53ff",
+      "category": "general",
+      "zh": "等待加重法",
+      "en": "wait and weight method",
+      "es": "método de esperar y pesar",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "W&W"
+        ],
+        "es": [
+          "W&W"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d6665440-c509-4b23-89d3-a560982b7469",
+      "category": "general",
+      "zh": "反循环",
+      "en": "reverse circulation",
+      "es": "circulación inversa",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "aa4ad1e4-c555-4270-9a6c-cf1da4955e20",
+      "category": "general",
+      "zh": "强行压入法",
+      "en": "bullheading",
+      "es": "inyección forzada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bullheading"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "49ae4850-0029-4258-9e3e-e9b85de1c0a0",
+      "category": "general",
+      "zh": "压井泥浆密度",
+      "en": "kill mud weight",
+      "es": "densidad de lodo de control",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "KMW"
+        ],
+        "es": [
+          "KMW"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "55cb9540-30ed-4aeb-a7b4-3ae6d319c17c",
+      "category": "general",
+      "zh": "压井计算表",
+      "en": "kill sheet",
+      "es": "hoja de control de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "kill sheet"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d1f550de-403f-4219-a81d-9f542e1aa6ac",
+      "category": "general",
+      "zh": "接单根气",
+      "en": "connection gas",
+      "es": "gas de conexión",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "600d56ca-ed32-4522-917e-de673b30a7de",
+      "category": "general",
+      "zh": "起下钻气",
+      "en": "trip gas",
+      "es": "gas de viaje",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1cec879a-8750-4786-a57a-59b8bb2ec7fc",
+      "category": "general",
+      "zh": "背景气",
+      "en": "background gas",
+      "es": "gas de fondo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "82d704a9-babe-419b-ab6f-fffc82bd0c27",
+      "category": "general",
+      "zh": "地层气",
+      "en": "formation gas",
+      "es": "gas de formación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bde62546-efc6-4c1a-a4bf-f5d58f2d999a",
+      "category": "general",
+      "zh": "气体上窜",
+      "en": "gas migration",
+      "es": "migración de gas",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bd3ac266-d266-4b0f-947d-830cc47c2c65",
+      "category": "general",
+      "zh": "井控演练",
+      "en": "well-control drill",
+      "es": "simulacro de cierre de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "simulacro de kick"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1d668561-7cce-42c1-b651-8d35cf3d2d97",
+      "category": "drilling",
+      "zh": "压差卡钻",
+      "en": "differential sticking",
+      "es": "pegadura diferencial",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e5196b1f-5d3d-4443-a891-bd24f7f740e8",
+      "category": "drilling",
+      "zh": "岩屑床堵塞",
+      "en": "packoff",
+      "es": "empaquetamiento",
+      "aliases": {
+        "zh": [
+          "包裹卡钻"
+        ],
+        "en": [],
+        "es": [
+          "pack-off"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c3b64bea-835e-4dce-8e65-3206624fc7e9",
+      "category": "drilling",
+      "zh": "井眼桥堵",
+      "en": "bridging",
+      "es": "puenteo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "22d072f1-4c48-4046-86e3-d687d0a50548",
+      "category": "drilling",
+      "zh": "键槽",
+      "en": "keyseat",
+      "es": "ojo de llave",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "canal de llave"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5de78fe8-43ad-4ebf-b4f9-ecd97d6f2583",
+      "category": "drilling",
+      "zh": "井壁台阶",
+      "en": "ledge",
+      "es": "escalón",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "47febfa6-cbdf-424c-8859-8d8bec661c0a",
+      "category": "drilling",
+      "zh": "缩径井眼",
+      "en": "under-gauge hole",
+      "es": "hoyo subcalibrado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "agujero estrecho"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "c65096ee-1b64-4d5e-8616-bac0fed53c51",
+      "category": "drilling",
+      "zh": "页岩膨胀",
+      "en": "shale swelling",
+      "es": "hinchamiento de lutita",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "bd9fadbf-83e0-42e3-b070-71a6f26efeb5",
+      "category": "drilling",
+      "zh": "井壁垮塌掉块",
+      "en": "cavings",
+      "es": "derrumbes",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "sloughing"
+        ],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3924957a-542c-43a4-89ca-9d35d8d393ea",
+      "category": "drilling",
+      "zh": "岩屑床",
+      "en": "cuttings bed",
+      "es": "asentamiento de recortes",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "70b6b970-c216-495e-8d1f-74b0bf1baf94",
+      "category": "drilling",
+      "zh": "解卡",
+      "en": "free the string",
+      "es": "liberar la sarta",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "despegar tubería"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3ff623d4-4e18-488f-8042-ec21254c7b8f",
+      "category": "drilling",
+      "zh": "施加上提力",
+      "en": "apply overpull",
+      "es": "aplicar sobretensión",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "jalar con overpull"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1f837da1-106c-462f-8cf1-92c981def6e9",
+      "category": "drilling",
+      "zh": "向上震击",
+      "en": "jar upward",
+      "es": "martillar hacia arriba",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "jar up"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2fb5675e-57af-43c0-a25b-9d080c6add89",
+      "category": "drilling",
+      "zh": "向下震击",
+      "en": "jar downward",
+      "es": "martillar hacia abajo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "jar down"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "badb9f9d-fa4b-44e8-bf99-808c57389b8d",
+      "category": "drilling",
+      "zh": "泵入解卡液",
+      "en": "spot a freeing pill",
+      "es": "bombear píldora liberadora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "píldora de spotting"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1643bd7f-a30c-4d72-be8c-c705fee9b75c",
+      "category": "drilling",
+      "zh": "将解卡液置于卡点",
+      "en": "spot pill across stuck zone",
+      "es": "colocar píldora en la zona pegada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d0faa7a9-d7a2-4ecf-bcf9-7eb3cdf35d1b",
+      "category": "drilling",
+      "zh": "自由点",
+      "en": "free point",
+      "es": "punto libre",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "88addd99-7e37-472f-9ad9-c42acc382dcc",
+      "category": "drilling",
+      "zh": "测定自由点",
+      "en": "free-point determination",
+      "es": "determinar punto libre",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ce7df12c-940b-4969-94c5-de035ce23cc4",
+      "category": "drilling",
+      "zh": "倒扣",
+      "en": "backoff",
+      "es": "desenrosque controlado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "backoff"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f9997fee-5c4d-40e8-8b6d-74db036b25d1",
+      "category": "drilling",
+      "zh": "打捞作业",
+      "en": "fishing operation",
+      "es": "operación de pesca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "pesca"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d8a1d932-60ce-4524-b58b-9198786a49cd",
+      "category": "drilling",
+      "zh": "落鱼",
+      "en": "fish",
+      "es": "pescado",
+      "aliases": {
+        "zh": [
+          "井下落物"
+        ],
+        "en": [],
+        "es": [
+          "pez",
+          "objeto perdido"
+        ]
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3541639d-083b-4adb-8313-4e9ed33e3b9c",
+      "category": "drilling",
+      "zh": "外捞筒",
+      "en": "overshot",
+      "es": "pescante exterior",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "overshot"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5473afbf-14bb-432e-8ea5-f5973d8ffdaf",
+      "category": "drilling",
+      "zh": "内捞矛",
+      "en": "spear",
+      "es": "pescante interior",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "spear"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "93099802-3381-45cf-9dfa-53e383f838ea",
+      "category": "drilling",
+      "zh": "打捞矛",
+      "en": "fishing spear",
+      "es": "arpón de pesca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a781e0e4-b70c-49c1-827e-a88e9bd56e2b",
+      "category": "drilling",
+      "zh": "打捞篮",
+      "en": "junk basket",
+      "es": "canasta de desperdicios",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "canasta de basura",
+          "junk basket"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5133813e-be28-4f06-80ab-9d6cfad7f141",
+      "category": "drilling",
+      "zh": "打捞磁铁",
+      "en": "fishing magnet",
+      "es": "imán de pesca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3eb4fe8f-f38b-428c-973e-0d267b363a60",
+      "category": "drilling",
+      "zh": "铅模",
+      "en": "impression block",
+      "es": "bloque de impresión",
+      "aliases": {
+        "zh": [
+          "印模"
+        ],
+        "en": [],
+        "es": [
+          "impression block"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4deff480-4d1d-4b60-98c5-fc3f7b1bb524",
+      "category": "drilling",
+      "zh": "公锥",
+      "en": "taper tap",
+      "es": "macho cónico",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "taper tap"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "af60cd62-831e-4914-983a-ff13caa77357",
+      "category": "drilling",
+      "zh": "母锥",
+      "en": "die collar",
+      "es": "terraja de pesca",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "die collar"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d1f45578-b8da-4072-ad5a-14e1696e725a",
+      "category": "drilling",
+      "zh": "套铣筒",
+      "en": "washover pipe",
+      "es": "tubería de lavado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "washover pipe"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "76fda28e-b90d-44b4-ba77-bf1ef8eb5d1b",
+      "category": "drilling",
+      "zh": "套铣",
+      "en": "wash over",
+      "es": "lavar por fuera",
+      "aliases": {
+        "zh": [
+          "外部冲洗"
+        ],
+        "en": [],
+        "es": [
+          "wash over"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "7b0a090d-95e3-425f-833e-8c5d6e423b17",
+      "category": "drilling",
+      "zh": "磨鞋",
+      "en": "mill",
+      "es": "molino",
+      "aliases": {
+        "zh": [
+          "铣磨工具"
+        ],
+        "en": [],
+        "es": [
+          "fresa",
+          "mill"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "faa5c9b9-283d-40b3-8603-c3a627d771ac",
+      "category": "drilling",
+      "zh": "平底磨鞋",
+      "en": "flat-bottom mill",
+      "es": "molino plano",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "6ee05888-713d-4234-aa85-83fbdffc852a",
+      "category": "drilling",
+      "zh": "锥形磨鞋",
+      "en": "taper mill",
+      "es": "molino cónico",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3e92d612-c28a-4b35-b4ea-3ee51c121d17",
+      "category": "drilling",
+      "zh": "铣落物磨鞋",
+      "en": "junk mill",
+      "es": "molino para chatarra",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "junk mill"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "da0c28a8-ad37-483d-aac7-41f601d70161",
+      "category": "drilling",
+      "zh": "捞获落鱼",
+      "en": "recover the fish",
+      "es": "recuperar el pescado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5b617083-b885-44b2-9402-56eadfa8dca8",
+      "category": "drilling",
+      "zh": "未捞获落鱼",
+      "en": "fish not recovered",
+      "es": "no se recuperó el pescado",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": false,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3343770a-b414-4d46-b015-27d830082de3",
+      "category": "workover",
+      "zh": "修井",
+      "en": "well workover",
+      "es": "reparación de pozo",
+      "aliases": {
+        "zh": [
+          "大修"
+        ],
+        "en": [
+          "WO"
+        ],
+        "es": [
+          "reacondicionamiento",
+          "workover",
+          "WO"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "5721464e-29db-47a6-a15f-7bdb183149ad",
+      "category": "workover",
+      "zh": "井下作业",
+      "en": "well servicing",
+      "es": "servicio de pozo",
+      "aliases": {
+        "zh": [
+          "维护"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a7118b0b-741c-4f01-bf7f-4ddad62ef13f",
+      "category": "workover",
+      "zh": "井筒干预",
+      "en": "well intervention",
+      "es": "intervención de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "36779fdb-4e64-47c2-8044-e0b2d9d74419",
+      "category": "workover",
+      "zh": "无修井机作业",
+      "en": "rigless intervention",
+      "es": "intervención sin equipo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "rigless intervention"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b31f0491-1be4-4a79-a226-537a2b467d55",
+      "category": "workover",
+      "zh": "起油管",
+      "en": "pull tubing",
+      "es": "sacar tubería de producción",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "extraer tubing"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "266bc7a8-ce69-4af0-be98-837cb817a247",
+      "category": "workover",
+      "zh": "下油管",
+      "en": "run tubing",
+      "es": "correr tubería de producción",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "bajar tubing"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b1f0ad84-1851-4945-96ff-2a6f38035653",
+      "category": "workover",
+      "zh": "更换封隔器",
+      "en": "replace packer",
+      "es": "cambiar empacador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d0b012ce-75ac-4ee6-bc01-7b3e9ec1252e",
+      "category": "workover",
+      "zh": "冲砂",
+      "en": "clean out sand",
+      "es": "limpiar arena",
+      "aliases": {
+        "zh": [
+          "清砂"
+        ],
+        "en": [],
+        "es": [
+          "sacar arena"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "d545e6b9-9c2d-45f4-9966-988fdfe4384e",
+      "category": "workover",
+      "zh": "洗井",
+      "en": "well wash",
+      "es": "lavado de pozo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "0b9bb77c-7047-4aff-9e03-09d753dbb913",
+      "category": "workover",
+      "zh": "抽汲",
+      "en": "swabbing",
+      "es": "pistoneo",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "suabeo",
+          "swabbing"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "78db6a20-39bf-4899-9c88-e96a76f3e530",
+      "category": "workover",
+      "zh": "捞砂",
+      "en": "bailing",
+      "es": "achique",
+      "aliases": {
+        "zh": [
+          "汲取井液"
+        ],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "26a5e42c-16cd-4781-ba55-245ef063ec81",
+      "category": "workover",
+      "zh": "增产措施",
+      "en": "stimulation",
+      "es": "estimulación",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "ddffbe0c-7b2f-43e8-bc38-24cdffe0f337",
+      "category": "workover",
+      "zh": "连续油管",
+      "en": "coiled tubing",
+      "es": "tubería flexible",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "CT"
+        ],
+        "es": [
+          "coiled tubing",
+          "CT"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "a8204479-1030-4909-8c27-a8f7886f967f",
+      "category": "workover",
+      "zh": "连续油管注入头",
+      "en": "coiled-tubing injector",
+      "es": "inyector de tubería flexible",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "9a4e3485-073d-4058-8277-e58cb5268dca",
+      "category": "workover",
+      "zh": "注入头",
+      "en": "injector head",
+      "es": "cabeza inyectora",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4ff7bf3b-7137-4d68-b86a-2569918db58a",
+      "category": "workover",
+      "zh": "鹅颈管",
+      "en": "gooseneck",
+      "es": "cuello de ganso",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "891cc95c-6d60-4417-a01d-8a9fe2fddfe5",
+      "category": "workover",
+      "zh": "连续油管密封器",
+      "en": "CT stripper",
+      "es": "stripper de tubería flexible",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "empaque stripper"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4478bba8-77e8-42a5-80cd-2df7de797562",
+      "category": "workover",
+      "zh": "液压动力单元",
+      "en": "hydraulic power unit",
+      "es": "unidad de potencia hidráulica",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "HPU"
+        ],
+        "es": [
+          "HPU"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "55e64b01-6e3b-47fa-97c0-cdb0229f94db",
+      "category": "workover",
+      "zh": "钢丝作业",
+      "en": "slickline",
+      "es": "línea de acero",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "slickline"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "35800ea8-170f-48fa-9648-69c5a6dcd572",
+      "category": "workover",
+      "zh": "电缆作业",
+      "en": "electric wireline",
+      "es": "línea eléctrica",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "E-line"
+        ],
+        "es": [
+          "electric line",
+          "e-line"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "53dc2e50-e419-4a59-a61d-3acff09be2cf",
+      "category": "workover",
+      "zh": "钢丝",
+      "en": "wireline unit",
+      "es": "unidad de wireline",
+      "aliases": {
+        "zh": [
+          "电缆作业车"
+        ],
+        "en": [],
+        "es": [
+          "unidad de línea"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "57b3d0f8-a4a8-4a2c-95c0-9e353e26d947",
+      "category": "workover",
+      "zh": "防喷管",
+      "en": "lubricator",
+      "es": "lubricador",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "b2007c26-26a4-42e4-a7e6-5f11462f76f6",
+      "category": "workover",
+      "zh": "盘根盒",
+      "en": "stuffing box",
+      "es": "prensaestopa",
+      "aliases": {
+        "zh": [
+          "密封盒"
+        ],
+        "en": [],
+        "es": [
+          "stuffing box"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "3eb79df2-46de-49be-9265-497793ad10f6",
+      "category": "workover",
+      "zh": "压力控制阀",
+      "en": "pressure control valve",
+      "es": "válvula de control de presión",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "20ad2ee2-519e-47f7-ba64-4965352f8052",
+      "category": "workover",
+      "zh": "钢丝打捞工具",
+      "en": "wireline fishing tool",
+      "es": "herramienta de pesca de wireline",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "cfd6b010-3cdd-45e4-9c27-d67649229c61",
+      "category": "workover",
+      "zh": "带压起下管柱",
+      "en": "snubbing",
+      "es": "snubbing",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "intervención a presión"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "35a47d68-5fd1-4499-8426-9770c7350e7e",
+      "category": "workover",
+      "zh": "带压作业机",
+      "en": "snubbing unit",
+      "es": "unidad de snubbing",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1b477500-a936-4b0d-878e-3ce6ccff687e",
+      "category": "workover",
+      "zh": "轻管状态",
+      "en": "light pipe",
+      "es": "tubería ligera",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "2a140c73-7b30-42e2-8f76-f97c2536964e",
+      "category": "workover",
+      "zh": "重管状态",
+      "en": "heavy pipe",
+      "es": "tubería pesada",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "1b9418df-6946-46a3-ada9-4800b4c80bc4",
+      "category": "workover",
+      "zh": "压井液",
+      "en": "kill fluid",
+      "es": "fluido de control",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": [
+          "kill fluid"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "e2620ec8-96cd-45d1-9c3b-e65224cfbd93",
+      "category": "workover",
+      "zh": "替换为盐水",
+      "en": "displace well to brine",
+      "es": "desplazar el pozo a salmuera",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "f61b1319-714c-46c4-8c40-53efdd253d00",
+      "category": "workover",
+      "zh": "循环洗井",
+      "en": "cleanup circulation",
+      "es": "circulación de limpieza",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4e11083d-b837-443a-adc9-d3a916cdc006",
+      "category": "workover",
+      "zh": "套管补贴",
+      "en": "casing patch",
+      "es": "parche de revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "8febf627-ee43-457f-b63b-4ab7ca014998",
+      "category": "workover",
+      "zh": "套管漏失修复",
+      "en": "casing leak repair",
+      "es": "reparación de fuga de revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "99548452-9c68-4cbf-a49d-a1ddb6b64b99",
+      "category": "workover",
+      "zh": "桥塞",
+      "en": "bridge plug",
+      "es": "tapón puente",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "BP"
+        ],
+        "es": [
+          "BP"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "76e005f9-8a75-4a19-8137-862b45b69f68",
+      "category": "workover",
+      "zh": "可回收堵塞器",
+      "en": "retrievable plug",
+      "es": "tapón recuperable",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "4186e213-eff0-46ad-9c0f-461f5465eeb7",
+      "category": "workover",
+      "zh": "封堵弃井",
+      "en": "plug and abandonment",
+      "es": "taponamiento y abandono",
+      "aliases": {
+        "zh": [],
+        "en": [
+          "P&A"
+        ],
+        "es": [
+          "abandono definitivo",
+          "P&A"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "285f5aaa-d0be-4df2-898b-15e0874fc0dd",
+      "category": "workover",
+      "zh": "临时弃井",
+      "en": "temporary abandonment",
+      "es": "abandono temporal",
+      "aliases": {
+        "zh": [
+          "暂停"
+        ],
+        "en": [
+          "TA"
+        ],
+        "es": [
+          "suspensión temporal",
+          "TA"
+        ]
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "165d0918-63c5-4f61-bed3-dd5dc9147304",
+      "category": "workover",
+      "zh": "切割并回收套管",
+      "en": "cut and pull casing",
+      "es": "cortar y recuperar revestidor",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
+    },
+    {
+      "id": "13357117-4180-4d1a-bda9-b2195290633b",
+      "category": "workover",
+      "zh": "永久屏障",
+      "en": "permanent barrier",
+      "es": "barrera permanente",
+      "aliases": {
+        "zh": [],
+        "en": [],
+        "es": []
+      },
+      "protected": true,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     }
   ],
   "protected_terms": {
