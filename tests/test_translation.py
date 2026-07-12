@@ -5,10 +5,13 @@ import unittest
 from drilling_report_parser.translation import TermsConfig, apply_translation_content
 from drilling_report_parser.translation.service import (
     DrillingReportTranslator,
+    TranslationTuningConfig,
     _split_translation_text,
     _translation_quality_error,
     detect_language,
     iter_payload_text_units,
+    source_hash,
+    translation_coverage,
 )
 
 
@@ -18,6 +21,34 @@ class FakeLocalEngine:
     def translate_items(self, items, target_language, timeout_seconds):
         del target_language, timeout_seconds
         return {str(item["id"]): f"local {item['source_text']}" for item in items}
+
+
+class FlakyEngine:
+    name = "flaky"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("temporary failure")
+        return {str(item["id"]): "已完成翻译" for item in items}
+
+
+class CountingEngine:
+    name = "openai-compatible"
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.batch_sizes = []
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        self.batch_sizes.append(len(items))
+        return {str(item["id"]): "已完成翻译" for item in items}
 
 
 class TranslationServiceTest(unittest.TestCase):
@@ -140,6 +171,131 @@ class TranslationServiceTest(unittest.TestCase):
 
         self.assertEqual(translated["report_fields"]["currentOps"], "起出 BHA")
         self.assertEqual(translated["operations"][0]["operation_details"], "钻进井段")
+
+    def test_ignores_translation_when_source_hash_is_stale(self) -> None:
+        payload = {
+            "metadata": {"record_id": "drilling:A:1"},
+            "report_fields": {"currentOps": "Drilling new section"},
+        }
+        rows = [{
+            "entity_id": "drilling:A:1",
+            "field_code": "report_fields.currentOps",
+            "target_language": "zh-CN",
+            "translated_text": "旧井段译文",
+            "translation_status": "COMPLETED",
+            "source_hash": source_hash("Drilling old section"),
+        }]
+
+        translated = apply_translation_content(payload, rows, "zh-CN")
+
+        self.assertEqual(translated["report_fields"]["currentOps"], "Drilling new section")
+        self.assertFalse(translation_coverage(payload, rows, "zh-CN")["ready"])
+
+    def test_requires_complete_translation_coverage(self) -> None:
+        payload = {
+            "metadata": {"record_id": "drilling:A:1"},
+            "report_fields": {"currentOps": "Drilling ahead"},
+            "operations": [{"operation_details": "Circulate bottoms up"}],
+        }
+        rows = [{
+            "entity_id": "drilling:A:1",
+            "field_code": "report_fields.currentOps",
+            "target_language": "zh-CN",
+            "translated_text": "继续钻进",
+            "translation_status": "COMPLETED",
+            "source_hash": source_hash("Drilling ahead"),
+        }]
+
+        coverage = translation_coverage(payload, rows, "zh-CN")
+
+        self.assertFalse(coverage["ready"])
+        self.assertEqual(coverage["required_count"], 2)
+        self.assertEqual(coverage["completed_count"], 1)
+
+    def test_retries_model_calls_and_records_model_config_id(self) -> None:
+        engine = FlakyEngine()
+        translator = DrillingReportTranslator(
+            engine,
+            self.terms,
+            target_language="zh-CN",
+            model_config_id="model-primary",
+            retry_count=1,
+        )
+
+        result = translator.translate_report_payload({"report_fields": {"currentOps": "Drilling ahead"}})
+
+        self.assertEqual(engine.calls, 2)
+        self.assertEqual(result["translation_content"][0]["model_config_id"], "model-primary")
+
+    def test_tuning_limits_fields_and_changes_prompt(self) -> None:
+        tuning = TranslationTuningConfig.from_data({
+            "field_policies": [
+                {"field_code": "report_fields.currentOps", "enabled": True},
+                {"field_code": "rows.operation_details", "enabled": False},
+            ],
+            "prompt": {
+                "system_prompt": "你是现场钻井翻译审核员。",
+                "translation_instruction": "逐句翻译，禁止合并句子。",
+            },
+            "protections": {"numbers": True, "units": True, "acronyms": True, "proper_nouns": False},
+            "version": "test-tuning-v1",
+        })
+        translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, tuning=tuning)
+        payload = {
+            "report_fields": {"currentOps": "Drilling ahead", "otherRemarks": "Standby cement unit"},
+            "operations": [{"operation_details": "Circulate bottoms up"}],
+        }
+
+        result = translator.translate_report_payload(payload)
+        preview = translator.prompt_preview("ROP 18 m/hr while drilling", "zh-CN")
+
+        self.assertEqual(len(result["translation_content"]), 1)
+        self.assertEqual(result["translation_content"][0]["field_code"], "report_fields.currentOps")
+        self.assertEqual(result["translation_content"][0]["prompt_version"], "test-tuning-v1")
+        self.assertIn("现场钻井翻译审核员", preview)
+        self.assertIn("逐句翻译，禁止合并句子", preview)
+        self.assertIn("ROP", preview)
+
+    def test_openai_compatible_batches_larger_translation_chunks(self) -> None:
+        engine = CountingEngine()
+        translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", chunk_max_chars=2400)
+        text = "PERFORA SECCION CON BHA DIRECCIONAL Y CIRCULA RETORNOS LIMPIOS. " * 10
+        payload = {
+            "report_fields": {
+                "currentOps": text,
+                "summary24h": text,
+                "forecast24h": text,
+            }
+        }
+
+        result = translator.translate_report_payload(payload)
+
+        self.assertEqual(len(result["translation_content"]), 3)
+        self.assertEqual(engine.calls, 1)
+        self.assertEqual(engine.batch_sizes, [3])
+
+    def test_scope_rules_separate_report_types_and_modules(self) -> None:
+        tuning = TranslationTuningConfig.from_data({
+            "scope_rules": [
+                {"report_type": "completion", "section": "report_fields", "field_name": "description", "enabled": True},
+                {"report_type": "completion", "section": "operations", "field_name": "operation_details", "enabled": True},
+            ]
+        })
+        translator = DrillingReportTranslator(FakeLocalEngine(), self.terms, tuning=tuning)
+        drilling = {
+            "metadata": {"report_type": "drilling"},
+            "report_fields": {"description": "Drilling description"},
+            "operations": [{"operation_details": "Drill ahead"}],
+        }
+        completion = {
+            "metadata": {"report_type": "completion"},
+            "report_fields": {"description": "Run completion string"},
+            "operations": [{"operation_details": "Pressure test tubing"}],
+        }
+
+        self.assertEqual(translator.translate_report_payload(drilling)["translation_content"], [])
+        rows = translator.translate_report_payload(completion)["translation_content"]
+        self.assertEqual({row["field_code"] for row in rows}, {"report_fields.description", "operations.operation_details"})
 
 
 if __name__ == "__main__":

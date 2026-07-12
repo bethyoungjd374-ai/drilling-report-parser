@@ -1,0 +1,1255 @@
+{
+  "rules": [
+    {
+      "id": "npt-service-line",
+      "name": "NPT责任方识别",
+      "report_type": "all",
+      "source_section": "operations",
+      "source_field": "operation_details",
+      "condition": "处理所有日报类型中作业类型为 NPT 的明细；按明确归责、故障归属、服务品牌证据的优先级识别，缺少有效证据时返回空值。",
+      "instruction": "提取造成该段NPT的责任公司或Service Line。第一优先级：A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE、RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO等明确归责表达。第二优先级：描述明确指出某公司的设备、工具或服务发生FALLA、ANOMALIA、PERDIDA、CAIDA、FAULT、FAILURE、LOSS等故障，并由该公司处置。第三优先级：故障对象与唯一服务品牌存在明确归属，例如HAL/HALLIBURTON/SPERRY、SLB/SCHLUMBERGER/SLB-RPS、CNLC-WIRELINE。仅出现iCruise、MWD、LWD、BHA或公司参与后续处置，不足以判定责任；故障若明确位于钻杆、套管等其他对象，也不得归责给同段出现的定向服务商。不得仅根据井队上下文猜测，不得把无关的协助或后续作业公司当成责任方。只返回一个责任方名称；没有充分证据返回空字符串。如果责任公司与井队公司一致，输出完整井队名称。",
+      "target_field": "service_line",
+      "output_format": "company",
+      "model_id": "7bad1ba9-c961-4407-8f54-1d819b462fb4",
+      "enabled": true,
+      "updated_at": "2026-07-11T20:58:22"
+    }
+  ],
+  "auto_execute": true,
+  "version": "ai-extraction-5a397074aee8",
+  "catalog": {
+    "report_types": [
+      {
+        "value": "all",
+        "label": "所有日报类型",
+        "sections": [
+          {
+            "value": "report_fields",
+            "label": "日报基础信息",
+            "fields": [
+              {
+                "value": "event",
+                "label": "作业事件"
+              },
+              {
+                "value": "reportDate",
+                "label": "reportDate"
+              },
+              {
+                "value": "reportNo",
+                "label": "reportNo"
+              },
+              {
+                "value": "wellbore",
+                "label": "wellbore"
+              },
+              {
+                "value": "rig",
+                "label": "rig"
+              },
+              {
+                "value": "primaryReason",
+                "label": "主要原因"
+              },
+              {
+                "value": "afeNumber",
+                "label": "afeNumber"
+              },
+              {
+                "value": "refDatum",
+                "label": "refDatum"
+              },
+              {
+                "value": "currentOps",
+                "label": "当前作业"
+              },
+              {
+                "value": "summary24h",
+                "label": "24小时作业总结"
+              },
+              {
+                "value": "forecast24h",
+                "label": "未来24小时计划"
+              },
+              {
+                "value": "otherRemarks",
+                "label": "其他备注"
+              }
+            ]
+          },
+          {
+            "value": "operations",
+            "label": "作业明细",
+            "fields": [
+              {
+                "value": "from",
+                "label": "from"
+              },
+              {
+                "value": "to",
+                "label": "to"
+              },
+              {
+                "value": "hours",
+                "label": "hours"
+              },
+              {
+                "value": "op_code",
+                "label": "op_code"
+              },
+              {
+                "value": "op_sub",
+                "label": "作业子类"
+              },
+              {
+                "value": "op_type",
+                "label": "op_type"
+              },
+              {
+                "value": "operation_details",
+                "label": "作业明细"
+              },
+              {
+                "value": "system_op_type",
+                "label": "system_op_type"
+              },
+              {
+                "value": "confirmed_op_type",
+                "label": "confirmed_op_type"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "value": "drilling",
+        "label": "钻井日报",
+        "sections": [
+          {
+            "value": "report_fields",
+            "label": "日报基础信息",
+            "fields": [
+              {
+                "value": "event",
+                "label": "作业事件"
+              },
+              {
+                "value": "reportDate",
+                "label": "reportDate"
+              },
+              {
+                "value": "reportNo",
+                "label": "reportNo"
+              },
+              {
+                "value": "wellbore",
+                "label": "wellbore"
+              },
+              {
+                "value": "rig",
+                "label": "rig"
+              },
+              {
+                "value": "primaryReason",
+                "label": "主要原因"
+              },
+              {
+                "value": "afeNumber",
+                "label": "afeNumber"
+              },
+              {
+                "value": "refDatum",
+                "label": "refDatum"
+              },
+              {
+                "value": "currentOps",
+                "label": "当前作业"
+              },
+              {
+                "value": "summary24h",
+                "label": "24小时作业总结"
+              },
+              {
+                "value": "forecast24h",
+                "label": "未来24小时计划"
+              },
+              {
+                "value": "otherRemarks",
+                "label": "其他备注"
+              },
+              {
+                "value": "todayMd",
+                "label": "todayMd"
+              },
+              {
+                "value": "prevMd",
+                "label": "prevMd"
+              },
+              {
+                "value": "progress",
+                "label": "progress"
+              },
+              {
+                "value": "rotHrsToday",
+                "label": "rotHrsToday"
+              },
+              {
+                "value": "lastCasing",
+                "label": "上层套管"
+              },
+              {
+                "value": "lastCasingSize",
+                "label": "lastCasingSize"
+              },
+              {
+                "value": "lastCasingDepth",
+                "label": "lastCasingDepth"
+              },
+              {
+                "value": "nextCasing",
+                "label": "下层套管"
+              },
+              {
+                "value": "nextCasingSize",
+                "label": "nextCasingSize"
+              },
+              {
+                "value": "nextCasingDepth",
+                "label": "nextCasingDepth"
+              },
+              {
+                "value": "formTestEmw",
+                "label": "formTestEmw"
+              },
+              {
+                "value": "lastBopPressTest",
+                "label": "lastBopPressTest"
+              },
+              {
+                "value": "pumpRate",
+                "label": "pumpRate"
+              },
+              {
+                "value": "pumpPress",
+                "label": "pumpPress"
+              },
+              {
+                "value": "stringWeightUpDown",
+                "label": "stringWeightUpDown"
+              },
+              {
+                "value": "torqueOnBottom",
+                "label": "torqueOnBottom"
+              },
+              {
+                "value": "mudEngineer",
+                "label": "泥浆工程师"
+              },
+              {
+                "value": "sampleFrom",
+                "label": "sampleFrom"
+              },
+              {
+                "value": "mudType",
+                "label": "泥浆类型"
+              },
+              {
+                "value": "mudTime",
+                "label": "mudTime"
+              },
+              {
+                "value": "mudMd",
+                "label": "mudMd"
+              },
+              {
+                "value": "mudDensity",
+                "label": "mudDensity"
+              },
+              {
+                "value": "mudTemperature",
+                "label": "mudTemperature"
+              },
+              {
+                "value": "rheologyTemp",
+                "label": "rheologyTemp"
+              },
+              {
+                "value": "viscosity",
+                "label": "viscosity"
+              },
+              {
+                "value": "pv",
+                "label": "pv"
+              },
+              {
+                "value": "yp",
+                "label": "yp"
+              },
+              {
+                "value": "gel10s",
+                "label": "gel10s"
+              },
+              {
+                "value": "gel10m",
+                "label": "gel10m"
+              },
+              {
+                "value": "gel30m",
+                "label": "gel30m"
+              },
+              {
+                "value": "apiWl",
+                "label": "apiWl"
+              },
+              {
+                "value": "oilPercent",
+                "label": "oilPercent"
+              },
+              {
+                "value": "waterPercent",
+                "label": "waterPercent"
+              },
+              {
+                "value": "sand",
+                "label": "sand"
+              },
+              {
+                "value": "ecd",
+                "label": "ecd"
+              },
+              {
+                "value": "mudComments",
+                "label": "泥浆备注"
+              },
+              {
+                "value": "bitNo",
+                "label": "bitNo"
+              },
+              {
+                "value": "bitSize",
+                "label": "bitSize"
+              },
+              {
+                "value": "bitManufacturer",
+                "label": "钻头制造商"
+              },
+              {
+                "value": "bitSerial",
+                "label": "bitSerial"
+              },
+              {
+                "value": "bhaNo",
+                "label": "bhaNo"
+              },
+              {
+                "value": "bhaMdIn",
+                "label": "bhaMdIn"
+              },
+              {
+                "value": "bhaMdOut",
+                "label": "bhaMdOut"
+              },
+              {
+                "value": "bhaTotalLength",
+                "label": "bhaTotalLength"
+              },
+              {
+                "value": "safetyIncident",
+                "label": "safetyIncident"
+              },
+              {
+                "value": "environmentIncident",
+                "label": "environmentIncident"
+              },
+              {
+                "value": "daysSinceRi",
+                "label": "daysSinceRi"
+              },
+              {
+                "value": "daysSinceLta",
+                "label": "daysSinceLta"
+              },
+              {
+                "value": "incidentComments",
+                "label": "事故备注"
+              }
+            ]
+          },
+          {
+            "value": "survey_data",
+            "label": "survey_data",
+            "fields": [
+              {
+                "value": "md",
+                "label": "md"
+              },
+              {
+                "value": "incl",
+                "label": "incl"
+              },
+              {
+                "value": "azi",
+                "label": "azi"
+              },
+              {
+                "value": "tvd",
+                "label": "tvd"
+              },
+              {
+                "value": "vse",
+                "label": "vse"
+              },
+              {
+                "value": "ns",
+                "label": "ns"
+              },
+              {
+                "value": "dls",
+                "label": "dls"
+              },
+              {
+                "value": "build",
+                "label": "build"
+              }
+            ]
+          },
+          {
+            "value": "bha_components",
+            "label": "BHA 组件",
+            "fields": [
+              {
+                "value": "component",
+                "label": "组件名称"
+              },
+              {
+                "value": "od",
+                "label": "od"
+              },
+              {
+                "value": "id",
+                "label": "id"
+              },
+              {
+                "value": "joints",
+                "label": "joints"
+              },
+              {
+                "value": "length",
+                "label": "length"
+              }
+            ]
+          },
+          {
+            "value": "operations",
+            "label": "作业明细",
+            "fields": [
+              {
+                "value": "from",
+                "label": "from"
+              },
+              {
+                "value": "to",
+                "label": "to"
+              },
+              {
+                "value": "hours",
+                "label": "hours"
+              },
+              {
+                "value": "op_code",
+                "label": "op_code"
+              },
+              {
+                "value": "op_sub",
+                "label": "作业子类"
+              },
+              {
+                "value": "op_type",
+                "label": "op_type"
+              },
+              {
+                "value": "operation_details",
+                "label": "作业明细"
+              },
+              {
+                "value": "system_op_type",
+                "label": "system_op_type"
+              },
+              {
+                "value": "confirmed_op_type",
+                "label": "confirmed_op_type"
+              }
+            ]
+          },
+          {
+            "value": "daily_costs",
+            "label": "日费用",
+            "fields": [
+              {
+                "value": "cost_description",
+                "label": "费用描述"
+              },
+              {
+                "value": "vendor",
+                "label": "供应商"
+              },
+              {
+                "value": "amount",
+                "label": "amount"
+              }
+            ]
+          },
+          {
+            "value": "bulks",
+            "label": "批量物料",
+            "fields": [
+              {
+                "value": "bulk",
+                "label": "物料名称"
+              },
+              {
+                "value": "qty_start",
+                "label": "qty_start"
+              },
+              {
+                "value": "qty_used",
+                "label": "qty_used"
+              },
+              {
+                "value": "qty_end",
+                "label": "qty_end"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "value": "completion",
+        "label": "完井日报",
+        "sections": [
+          {
+            "value": "report_fields",
+            "label": "日报基础信息",
+            "fields": [
+              {
+                "value": "event",
+                "label": "作业事件"
+              },
+              {
+                "value": "reportDate",
+                "label": "reportDate"
+              },
+              {
+                "value": "reportNo",
+                "label": "reportNo"
+              },
+              {
+                "value": "wellbore",
+                "label": "wellbore"
+              },
+              {
+                "value": "rig",
+                "label": "rig"
+              },
+              {
+                "value": "primaryReason",
+                "label": "主要原因"
+              },
+              {
+                "value": "afeNumber",
+                "label": "afeNumber"
+              },
+              {
+                "value": "refDatum",
+                "label": "refDatum"
+              },
+              {
+                "value": "currentOps",
+                "label": "当前作业"
+              },
+              {
+                "value": "summary24h",
+                "label": "24小时作业总结"
+              },
+              {
+                "value": "forecast24h",
+                "label": "未来24小时计划"
+              },
+              {
+                "value": "otherRemarks",
+                "label": "其他备注"
+              },
+              {
+                "value": "description",
+                "label": "作业描述"
+              },
+              {
+                "value": "operationStartDate",
+                "label": "operationStartDate"
+              },
+              {
+                "value": "afeCost",
+                "label": "afeCost"
+              },
+              {
+                "value": "dailyCost",
+                "label": "dailyCost"
+              },
+              {
+                "value": "cumulativeCost",
+                "label": "cumulativeCost"
+              },
+              {
+                "value": "supervisor1",
+                "label": "主管 1"
+              },
+              {
+                "value": "supervisor2",
+                "label": "主管 2"
+              },
+              {
+                "value": "engineer",
+                "label": "工程师"
+              },
+              {
+                "value": "pamEngineer",
+                "label": "PAM 工程师"
+              },
+              {
+                "value": "geologist",
+                "label": "地质师"
+              },
+              {
+                "value": "totalPersonnel",
+                "label": "totalPersonnel"
+              },
+              {
+                "value": "safetyComments",
+                "label": "安全备注"
+              }
+            ]
+          },
+          {
+            "value": "operations",
+            "label": "作业明细",
+            "fields": [
+              {
+                "value": "from",
+                "label": "from"
+              },
+              {
+                "value": "to",
+                "label": "to"
+              },
+              {
+                "value": "hours",
+                "label": "hours"
+              },
+              {
+                "value": "op_code",
+                "label": "op_code"
+              },
+              {
+                "value": "op_sub",
+                "label": "作业子类"
+              },
+              {
+                "value": "op_type",
+                "label": "op_type"
+              },
+              {
+                "value": "operation_details",
+                "label": "作业明细"
+              },
+              {
+                "value": "system_op_type",
+                "label": "system_op_type"
+              },
+              {
+                "value": "confirmed_op_type",
+                "label": "confirmed_op_type"
+              }
+            ]
+          },
+          {
+            "value": "bulks",
+            "label": "批量物料",
+            "fields": [
+              {
+                "value": "bulk",
+                "label": "物料名称"
+              },
+              {
+                "value": "qty_start",
+                "label": "qty_start"
+              },
+              {
+                "value": "qty_used",
+                "label": "qty_used"
+              },
+              {
+                "value": "qty_end",
+                "label": "qty_end"
+              }
+            ]
+          },
+          {
+            "value": "daily_costs",
+            "label": "日费用",
+            "fields": [
+              {
+                "value": "cost_description",
+                "label": "费用描述"
+              },
+              {
+                "value": "vendor",
+                "label": "供应商"
+              },
+              {
+                "value": "amount",
+                "label": "amount"
+              }
+            ]
+          },
+          {
+            "value": "mud_products",
+            "label": "泥浆产品",
+            "fields": [
+              {
+                "value": "product",
+                "label": "产品名称"
+              },
+              {
+                "value": "unit",
+                "label": "unit"
+              },
+              {
+                "value": "received",
+                "label": "received"
+              },
+              {
+                "value": "used",
+                "label": "used"
+              },
+              {
+                "value": "returned",
+                "label": "returned"
+              },
+              {
+                "value": "ending",
+                "label": "ending"
+              }
+            ]
+          },
+          {
+            "value": "perforation_intervals",
+            "label": "射孔井段",
+            "fields": [
+              {
+                "value": "formation",
+                "label": "地层"
+              },
+              {
+                "value": "top_md",
+                "label": "top_md"
+              },
+              {
+                "value": "base_md",
+                "label": "base_md"
+              },
+              {
+                "value": "length",
+                "label": "length"
+              },
+              {
+                "value": "density",
+                "label": "density"
+              },
+              {
+                "value": "charges",
+                "label": "射孔弹"
+              },
+              {
+                "value": "phase",
+                "label": "phase"
+              },
+              {
+                "value": "penetration",
+                "label": "penetration"
+              },
+              {
+                "value": "diameter",
+                "label": "diameter"
+              },
+              {
+                "value": "date",
+                "label": "date"
+              },
+              {
+                "value": "status",
+                "label": "状态说明"
+              },
+              {
+                "value": "comments",
+                "label": "明细备注"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "value": "workover",
+        "label": "修井日报",
+        "sections": [
+          {
+            "value": "report_fields",
+            "label": "日报基础信息",
+            "fields": [
+              {
+                "value": "event",
+                "label": "作业事件"
+              },
+              {
+                "value": "reportDate",
+                "label": "reportDate"
+              },
+              {
+                "value": "reportNo",
+                "label": "reportNo"
+              },
+              {
+                "value": "wellbore",
+                "label": "wellbore"
+              },
+              {
+                "value": "rig",
+                "label": "rig"
+              },
+              {
+                "value": "primaryReason",
+                "label": "主要原因"
+              },
+              {
+                "value": "afeNumber",
+                "label": "afeNumber"
+              },
+              {
+                "value": "refDatum",
+                "label": "refDatum"
+              },
+              {
+                "value": "currentOps",
+                "label": "当前作业"
+              },
+              {
+                "value": "summary24h",
+                "label": "24小时作业总结"
+              },
+              {
+                "value": "forecast24h",
+                "label": "未来24小时计划"
+              },
+              {
+                "value": "otherRemarks",
+                "label": "其他备注"
+              },
+              {
+                "value": "workoverNo",
+                "label": "workoverNo"
+              },
+              {
+                "value": "description",
+                "label": "作业描述"
+              },
+              {
+                "value": "operationStartDate",
+                "label": "operationStartDate"
+              },
+              {
+                "value": "afeCost",
+                "label": "afeCost"
+              },
+              {
+                "value": "dailyCost",
+                "label": "dailyCost"
+              },
+              {
+                "value": "cumulativeCost",
+                "label": "cumulativeCost"
+              },
+              {
+                "value": "supervisor1",
+                "label": "主管 1"
+              },
+              {
+                "value": "supervisor2",
+                "label": "主管 2"
+              },
+              {
+                "value": "engineer",
+                "label": "工程师"
+              },
+              {
+                "value": "pamEngineer",
+                "label": "PAM 工程师"
+              },
+              {
+                "value": "geologist",
+                "label": "地质师"
+              },
+              {
+                "value": "totalPersonnel",
+                "label": "totalPersonnel"
+              },
+              {
+                "value": "safetyComments",
+                "label": "安全备注"
+              }
+            ]
+          },
+          {
+            "value": "operations",
+            "label": "作业明细",
+            "fields": [
+              {
+                "value": "from",
+                "label": "from"
+              },
+              {
+                "value": "to",
+                "label": "to"
+              },
+              {
+                "value": "hours",
+                "label": "hours"
+              },
+              {
+                "value": "op_code",
+                "label": "op_code"
+              },
+              {
+                "value": "op_sub",
+                "label": "作业子类"
+              },
+              {
+                "value": "op_type",
+                "label": "op_type"
+              },
+              {
+                "value": "operation_details",
+                "label": "作业明细"
+              },
+              {
+                "value": "system_op_type",
+                "label": "system_op_type"
+              },
+              {
+                "value": "confirmed_op_type",
+                "label": "confirmed_op_type"
+              }
+            ]
+          },
+          {
+            "value": "bulks",
+            "label": "批量物料",
+            "fields": [
+              {
+                "value": "bulk",
+                "label": "物料名称"
+              },
+              {
+                "value": "qty_start",
+                "label": "qty_start"
+              },
+              {
+                "value": "qty_used",
+                "label": "qty_used"
+              },
+              {
+                "value": "qty_end",
+                "label": "qty_end"
+              }
+            ]
+          },
+          {
+            "value": "daily_costs",
+            "label": "日费用",
+            "fields": [
+              {
+                "value": "cost_description",
+                "label": "费用描述"
+              },
+              {
+                "value": "vendor",
+                "label": "供应商"
+              },
+              {
+                "value": "amount",
+                "label": "amount"
+              }
+            ]
+          },
+          {
+            "value": "mud_products",
+            "label": "泥浆产品",
+            "fields": [
+              {
+                "value": "product",
+                "label": "产品名称"
+              },
+              {
+                "value": "unit",
+                "label": "unit"
+              },
+              {
+                "value": "received",
+                "label": "received"
+              },
+              {
+                "value": "used",
+                "label": "used"
+              },
+              {
+                "value": "returned",
+                "label": "returned"
+              },
+              {
+                "value": "ending",
+                "label": "ending"
+              }
+            ]
+          },
+          {
+            "value": "perforation_intervals",
+            "label": "射孔井段",
+            "fields": [
+              {
+                "value": "formation",
+                "label": "地层"
+              },
+              {
+                "value": "top_md",
+                "label": "top_md"
+              },
+              {
+                "value": "base_md",
+                "label": "base_md"
+              },
+              {
+                "value": "length",
+                "label": "length"
+              },
+              {
+                "value": "density",
+                "label": "density"
+              },
+              {
+                "value": "charges",
+                "label": "射孔弹"
+              },
+              {
+                "value": "phase",
+                "label": "phase"
+              },
+              {
+                "value": "penetration",
+                "label": "penetration"
+              },
+              {
+                "value": "diameter",
+                "label": "diameter"
+              },
+              {
+                "value": "date",
+                "label": "date"
+              },
+              {
+                "value": "status",
+                "label": "状态说明"
+              },
+              {
+                "value": "comments",
+                "label": "明细备注"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "value": "move",
+        "label": "搬迁日报",
+        "sections": [
+          {
+            "value": "report_fields",
+            "label": "日报基础信息",
+            "fields": [
+              {
+                "value": "event",
+                "label": "作业事件"
+              },
+              {
+                "value": "reportDate",
+                "label": "reportDate"
+              },
+              {
+                "value": "reportNo",
+                "label": "reportNo"
+              },
+              {
+                "value": "wellbore",
+                "label": "wellbore"
+              },
+              {
+                "value": "rig",
+                "label": "rig"
+              },
+              {
+                "value": "primaryReason",
+                "label": "主要原因"
+              },
+              {
+                "value": "afeNumber",
+                "label": "afeNumber"
+              },
+              {
+                "value": "refDatum",
+                "label": "refDatum"
+              },
+              {
+                "value": "currentOps",
+                "label": "当前作业"
+              },
+              {
+                "value": "summary24h",
+                "label": "24小时作业总结"
+              },
+              {
+                "value": "forecast24h",
+                "label": "未来24小时计划"
+              },
+              {
+                "value": "otherRemarks",
+                "label": "其他备注"
+              },
+              {
+                "value": "todayMd",
+                "label": "todayMd"
+              },
+              {
+                "value": "prevMd",
+                "label": "prevMd"
+              },
+              {
+                "value": "progress",
+                "label": "progress"
+              },
+              {
+                "value": "rotHrsToday",
+                "label": "rotHrsToday"
+              },
+              {
+                "value": "groundElev",
+                "label": "groundElev"
+              },
+              {
+                "value": "afeMdDays",
+                "label": "afeMdDays"
+              },
+              {
+                "value": "wellborePrefix",
+                "label": "wellborePrefix"
+              }
+            ]
+          },
+          {
+            "value": "operations",
+            "label": "作业明细",
+            "fields": [
+              {
+                "value": "from",
+                "label": "from"
+              },
+              {
+                "value": "to",
+                "label": "to"
+              },
+              {
+                "value": "hours",
+                "label": "hours"
+              },
+              {
+                "value": "op_code",
+                "label": "op_code"
+              },
+              {
+                "value": "op_sub",
+                "label": "作业子类"
+              },
+              {
+                "value": "op_type",
+                "label": "op_type"
+              },
+              {
+                "value": "operation_details",
+                "label": "作业明细"
+              },
+              {
+                "value": "system_op_type",
+                "label": "system_op_type"
+              },
+              {
+                "value": "confirmed_op_type",
+                "label": "confirmed_op_type"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "target_fields": [
+      {
+        "value": "remarks",
+        "label": "备注"
+      },
+      {
+        "value": "service_line",
+        "label": "责任方 Service Line"
+      },
+      {
+        "value": "key_progress",
+        "label": "关键进展"
+      },
+      {
+        "value": "risk_summary",
+        "label": "风险摘要"
+      },
+      {
+        "value": "next_milestone",
+        "label": "下一里程碑"
+      },
+      {
+        "value": "exception_summary",
+        "label": "异常摘要"
+      }
+    ],
+    "output_formats": [
+      {
+        "value": "text",
+        "label": "文本"
+      },
+      {
+        "value": "number",
+        "label": "数值"
+      },
+      {
+        "value": "date",
+        "label": "日期"
+      },
+      {
+        "value": "company",
+        "label": "公司 / 责任方"
+      }
+    ]
+  },
+  "updated_at": "2026-07-11T20:58:22"
+}

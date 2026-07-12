@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS report_records (
   translation_progress VARCHAR(16) NOT NULL DEFAULT '',
   translation_error TEXT NULL,
   translation_version VARCHAR(64) NOT NULL DEFAULT '',
+  translation_updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  extraction_status VARCHAR(64) NOT NULL DEFAULT '',
+  extraction_progress VARCHAR(16) NOT NULL DEFAULT '',
+  extraction_error TEXT NULL,
+  extraction_version VARCHAR(64) NOT NULL DEFAULT '',
+  extraction_updated_at VARCHAR(64) NOT NULL DEFAULT '',
   validation_status VARCHAR(64) NOT NULL DEFAULT '',
   validation_warnings TEXT NULL,
   locked VARCHAR(32) NOT NULL DEFAULT '',
@@ -86,4 +92,27 @@ CREATE TABLE IF NOT EXISTS translation_content (
   CONSTRAINT fk_translation_content_record
     FOREIGN KEY (record_id) REFERENCES report_records(record_id)
     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_extraction_results (
+  record_id VARCHAR(191) NOT NULL,
+  rule_id VARCHAR(80) NOT NULL,
+  source_section VARCHAR(64) NOT NULL,
+  source_row_no INT NOT NULL DEFAULT 0,
+  source_field VARCHAR(128) NOT NULL,
+  target_field VARCHAR(128) NOT NULL,
+  source_hash VARCHAR(64) NOT NULL DEFAULT '',
+  result_text TEXT NULL,
+  extraction_status VARCHAR(64) NOT NULL DEFAULT '',
+  error_message TEXT NULL,
+  model_config_id VARCHAR(128) NOT NULL DEFAULT '',
+  rule_version VARCHAR(64) NOT NULL DEFAULT '',
+  attempt_count INT NOT NULL DEFAULT 0,
+  started_at VARCHAR(64) NOT NULL DEFAULT '',
+  completed_at VARCHAR(64) NOT NULL DEFAULT '',
+  updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (record_id, rule_id, source_section, source_row_no, target_field),
+  KEY idx_ai_extraction_status (extraction_status),
+  CONSTRAINT fk_ai_extraction_record FOREIGN KEY (record_id) REFERENCES report_records(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

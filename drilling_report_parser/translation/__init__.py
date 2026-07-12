@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from .service import (
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_TRANSLATION_INSTRUCTION,
     DrillingReportTranslator,
     NoopTranslationEngine,
     OllamaTranslationEngine,
@@ -9,6 +11,8 @@ from .service import (
     TermsConfig,
     TranslationConfig,
     TranslationEngine,
+    TranslationError,
+    TranslationTuningConfig,
     apply_translation_content,
     build_engine,
     build_translator,
@@ -16,9 +20,12 @@ from .service import (
     iter_parse_result_text_units,
     iter_payload_text_units,
     normalize_language,
+    translation_coverage,
 )
 
 __all__ = [
+    "DEFAULT_SYSTEM_PROMPT",
+    "DEFAULT_TRANSLATION_INSTRUCTION",
     "DrillingReportTranslator",
     "NoopTranslationEngine",
     "OllamaTranslationEngine",
@@ -27,6 +34,8 @@ __all__ = [
     "TermsConfig",
     "TranslationConfig",
     "TranslationEngine",
+    "TranslationError",
+    "TranslationTuningConfig",
     "apply_translation_content",
     "build_engine",
     "build_translator",
@@ -34,4 +43,5 @@ __all__ = [
     "iter_parse_result_text_units",
     "iter_payload_text_units",
     "normalize_language",
+    "translation_coverage",
 ]

@@ -4,9 +4,9 @@ let currentLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
 
 const loginI18n = {
   zh: {
-    pageTitle: "登录 - 钻完井日报分析系统",
-    systemName: "钻完井日报分析系统",
-    systemSubtitle: "面向钻井、完井、修井业务的日报智能解析、生产统计与运营分析统一入口",
+    pageTitle: "登录 - NexoRig",
+    systemName: "NexoRig 智井平台",
+    systemSubtitle: "面向钻井、完井、修井业务的日报智能解析、生产统计与运营分析平台",
     featureParse: "日报智能解析",
     featureStats: "生产数据统计",
     featureNpt: "NPT分析与趋势跟踪",
@@ -27,9 +27,9 @@ const loginI18n = {
     passwordChanged: "密码已修改，欢迎 {name}",
   },
   en: {
-    pageTitle: "Login - Drilling & Completion Daily Report Analytics",
-    systemName: "Drilling & Completion Daily Report Analytics",
-    systemSubtitle: "A unified entry for daily report parsing, production statistics, and operations analysis across drilling, completion, and workover.",
+    pageTitle: "Login - NexoRig",
+    systemName: "NexoRig",
+    systemSubtitle: "Drilling intelligence for daily report parsing, production statistics, and operations analysis.",
     featureParse: "Smart report parsing",
     featureStats: "Production statistics",
     featureNpt: "NPT trend analysis",
@@ -50,9 +50,9 @@ const loginI18n = {
     passwordChanged: "Password changed. Welcome, {name}",
   },
   es: {
-    pageTitle: "Inicio de sesión - Analítica de reportes diarios de perforación y completación",
-    systemName: "Analítica de reportes diarios de perforación y completación",
-    systemSubtitle: "Entrada unificada para análisis inteligente de reportes, estadísticas de producción y análisis operativo de perforación, completación y workover.",
+    pageTitle: "Inicio de sesión - NexoRig",
+    systemName: "NexoRig",
+    systemSubtitle: "Inteligencia de perforación para análisis de reportes diarios, estadísticas de producción y operación.",
     featureParse: "Análisis inteligente",
     featureStats: "Estadísticas de producción",
     featureNpt: "Tendencias NPT",
