@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS translation_content (
   mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (record_id, entity_id, field_code, target_language),
   KEY idx_translation_content_status (translation_status),
+  KEY idx_translation_memory_lookup (target_language, prompt_version, translation_status, source_hash),
   CONSTRAINT fk_translation_content_record
     FOREIGN KEY (record_id) REFERENCES report_records(record_id)
     ON DELETE CASCADE

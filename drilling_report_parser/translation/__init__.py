@@ -12,6 +12,10 @@ from .service import (
     TranslationConfig,
     TranslationEngine,
     TranslationError,
+    TranslationCircuitOpen,
+    TranslationQualityError,
+    TranslationResponseError,
+    TranslationTransportError,
     TranslationTuningConfig,
     apply_translation_content,
     build_engine,
@@ -20,7 +24,10 @@ from .service import (
     iter_parse_result_text_units,
     iter_payload_text_units,
     normalize_language,
+    source_hash,
+    text_needs_translation,
     translation_coverage,
+    translation_memory_version,
 )
 
 __all__ = [
@@ -35,6 +42,10 @@ __all__ = [
     "TranslationConfig",
     "TranslationEngine",
     "TranslationError",
+    "TranslationCircuitOpen",
+    "TranslationQualityError",
+    "TranslationResponseError",
+    "TranslationTransportError",
     "TranslationTuningConfig",
     "apply_translation_content",
     "build_engine",
@@ -43,5 +54,8 @@ __all__ = [
     "iter_parse_result_text_units",
     "iter_payload_text_units",
     "normalize_language",
+    "source_hash",
+    "text_needs_translation",
     "translation_coverage",
+    "translation_memory_version",
 ]

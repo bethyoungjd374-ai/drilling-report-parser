@@ -14,7 +14,7 @@ import uuid
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from email.parser import BytesParser
 from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,23 +24,28 @@ from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 import urllib.error
 import urllib.request
+from collections import deque
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from .completion_pdf_parser import parse_completion_pdf_daily_report
 from .db_config import mysql_settings
+from .text_structure import normalize_multiline
 from .storage import (
     background_job_lock,
     initialize_database,
     list_npt_confirmation_wells,
+    list_ai_job_status,
     list_records,
+    list_translation_queue_records,
     load_npt_confirmation_detail,
     load_operation_translations,
     load_report_payload,
     load_report_payloads,
     load_extraction_results,
     load_translation_content,
+    load_translation_memory,
     mysql_status,
     reset_translation_state,
     save_npt_confirmation,
@@ -49,6 +54,7 @@ from .storage import (
     save_translation_content,
     update_record_translation_status,
     update_record_extraction_status,
+    upsert_translation_content,
 )
 from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_report_parser import parse_pdf_daily_report
@@ -66,7 +72,9 @@ from .translation import (
     detect_language,
     iter_payload_text_units,
     normalize_language,
+    source_hash,
     translation_coverage,
+    translation_memory_version,
 )
 from .workover_pdf_parser import parse_workover_pdf_daily_report
 
@@ -87,6 +95,7 @@ DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation"
 PRODUCTION_REPORT_REMARKS_PATH = ROOT / "outputs" / "production_report_remarks.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 TRANSLATION_METRICS_PATH = ROOT / "outputs" / "translation_metrics.jsonl"
+AI_JOB_MONITOR_PATH = ROOT / "outputs" / "ai_job_monitor.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
 CONFIG_WRITE_LOCK = threading.RLock()
@@ -108,6 +117,12 @@ TRANSLATION_WORKERS = _bounded_env_int("DRP_TRANSLATION_WORKERS", 2, 1, 4)
 TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=TRANSLATION_WORKERS, thread_name_prefix="drp-translation")
 TRANSLATION_STATE_LOCK = threading.Lock()
 TRANSLATION_METRICS_LOCK = threading.Lock()
+AI_JOB_MONITOR_LOCK = threading.Lock()
+AI_JOB_MONITOR_CACHE: dict[str, deque[dict[str, object]]] = {
+    "translation": deque(maxlen=100),
+    "extraction": deque(maxlen=100),
+}
+AI_JOB_MONITOR_CACHE_PATH = ""
 TRANSLATION_JOB_GENERATIONS: dict[str, int] = {}
 EXTRACTION_WORKERS = _bounded_env_int("DRP_EXTRACTION_WORKERS", 2, 1, 4)
 EXTRACTION_EXECUTOR = ThreadPoolExecutor(max_workers=EXTRACTION_WORKERS, thread_name_prefix="drp-extraction")
@@ -250,6 +265,9 @@ class FormHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/translations":
             self._admin_translation_records()
             return
+        if parsed.path == "/api/admin/translations/status":
+            self._admin_translation_status()
+            return
         if parsed.path == "/api/admin/ai-models":
             self._admin_ai_models()
             return
@@ -258,6 +276,12 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/admin/ai-extractions":
             self._admin_ai_extractions()
+            return
+        if parsed.path == "/api/admin/ai-extractions/status":
+            self._admin_ai_extraction_status()
+            return
+        if parsed.path == "/api/admin/ai-jobs/monitor":
+            self._admin_ai_job_monitor(parsed)
             return
         if parsed.path == "/api/admin/data-status":
             self._admin_data_status()
@@ -319,11 +343,17 @@ class FormHandler(BaseHTTPRequestHandler):
         if self.path == "/api/admin/ai-extractions/queue":
             self._admin_queue_ai_extractions()
             return
+        if self.path == "/api/admin/ai-extractions/stop":
+            self._admin_stop_ai_extractions()
+            return
         if self.path == "/api/admin/translations/reset":
             self._admin_reset_translations()
             return
         if self.path == "/api/admin/translations/queue":
             self._admin_queue_translations()
+            return
+        if self.path == "/api/admin/translations/stop":
+            self._admin_stop_translations()
             return
         if self.path == "/api/import-pdf":
             if not self._require_permission("import"):
@@ -550,6 +580,13 @@ class FormHandler(BaseHTTPRequestHandler):
         user = self._require_admin()
         if not user:
             return
+        active = _active_ai_job_counts()
+        if active["translation"]:
+            self._send_json({
+                "error": "翻译任务正在运行，请先停止翻译再修改术语词库。",
+                "active_jobs": active,
+            }, status=409)
+            return
         payload = self._read_json_body()
         config = _normalize_translation_terms_config(payload)
         _save_translation_terms_config(config)
@@ -575,6 +612,13 @@ class FormHandler(BaseHTTPRequestHandler):
     def _admin_import_translation_terms(self) -> None:
         user = self._require_admin()
         if not user:
+            return
+        active = _active_ai_job_counts()
+        if active["translation"]:
+            self._send_json({
+                "error": "翻译任务正在运行，请先停止翻译再导入术语词库。",
+                "active_jobs": active,
+            }, status=409)
             return
         try:
             upload = self._read_multipart_file("workbook")
@@ -624,6 +668,13 @@ class FormHandler(BaseHTTPRequestHandler):
         user = self._require_admin()
         if not user:
             return
+        active = _active_ai_job_counts()
+        if active["translation"]:
+            self._send_json({
+                "error": "翻译任务正在运行，请先停止翻译再覆盖术语。",
+                "active_jobs": active,
+            }, status=409)
+            return
         payload = self._read_json_body()
         replacements = payload.get("replacements") if isinstance(payload.get("replacements"), list) else []
         config = _load_translation_terms_config()
@@ -672,17 +723,26 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         self._send_json(_translation_queue_snapshot())
 
+    def _admin_translation_status(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json(_ai_job_status_snapshot("translation"))
+
     def _admin_save_translation_tuning(self) -> None:
         user = self._require_admin()
         if not user:
+            return
+        active = _active_ai_job_counts()
+        if active["translation"]:
+            self._send_json({"error": "翻译任务正在运行，请先停止翻译再修改翻译策略。", "active_jobs": active}, status=409)
             return
         raw = self._read_json_body()
         raw["updated_at"] = datetime.now().isoformat(timespec="seconds")
         config = _normalize_translation_tuning_config(raw)
         _save_translation_tuning_config(config)
-        paused = _pause_active_translation_jobs()
-        _write_audit(user, "save_translation_tuning", "ai_service", "translation_tuning", True, f"{paused} jobs paused / {config['version']}")
-        self._send_json({"ok": True, "paused_translation_jobs": paused, **config})
+        _write_audit(user, "save_translation_tuning", "ai_service", "translation_tuning", True, str(config["version"]))
+        self._send_json({"ok": True, **config})
 
     def _admin_test_translation_tuning(self) -> None:
         user = self._require_admin()
@@ -707,6 +767,7 @@ class FormHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "请选择可用模型。"}, status=409)
             return
         raw_tuning = payload.get("tuning")
+        batch_mode = bool(payload.get("batch_mode"))
         tuning_config = _normalize_translation_tuning_config(raw_tuning) if isinstance(raw_tuning, dict) else _load_translation_tuning_config()
         tuning = TranslationTuningConfig.from_data(tuning_config)
         terms = TermsConfig.from_data(_load_translation_terms_config())
@@ -719,8 +780,12 @@ class FormHandler(BaseHTTPRequestHandler):
                 tuning=tuning,
             )
             prompt_preview = translator.prompt_preview(source_text, target_language)
-            result = translator.translate_plain_text(source_text)
-            rows = result.get("translation_content") if isinstance(result.get("translation_content"), list) else []
+            if batch_mode:
+                rows = translator.translate_text_batch([source_text] * 6, target_language)
+                result = {"translation_content": rows}
+            else:
+                result = translator.translate_plain_text(source_text)
+                rows = result.get("translation_content") if isinstance(result.get("translation_content"), list) else []
             row = rows[0] if rows and isinstance(rows[0], dict) else {}
             translated_text = str(row.get("translated_text", "") or "")
             status = str(row.get("translation_status", "") or "")
@@ -728,12 +793,12 @@ class FormHandler(BaseHTTPRequestHandler):
             source_numbers = re.findall(r"\d+(?:[.,]\d+)?", source_text)
             missing_numbers = [number for number in source_numbers if number not in translated_text]
             checks = [
-                {"label": "模型返回译文", "status": "passed" if status in {"COMPLETED", "NOT_REQUIRED"} else "failed"},
+                {"label": "模型返回译文", "status": "passed" if rows and all(str(item.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"} for item in rows) else "failed"},
                 {"label": "译文未照抄原文", "status": "passed" if translated_text and translated_text.casefold() != source_text.casefold() else "warning"},
                 {"label": "数字与数值精度保留", "status": "passed" if not missing_numbers else "warning", "detail": ", ".join(missing_numbers[:8])},
             ]
             response = {
-                "ok": status in {"COMPLETED", "NOT_REQUIRED"},
+                "ok": bool(rows) and all(str(item.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"} for item in rows),
                 "translated_text": translated_text,
                 "source_language": detect_language(source_text),
                 "target_language": target_language,
@@ -742,6 +807,9 @@ class FormHandler(BaseHTTPRequestHandler):
                 "elapsed_ms": elapsed_ms,
                 "prompt_version": tuning.version,
                 "prompt_preview": prompt_preview,
+                "batch_mode": batch_mode,
+                "batch_size": len(rows),
+                "prompt_chars": len(prompt_preview),
                 "checks": checks,
                 "error": str(row.get("error_message", "") or ""),
             }
@@ -769,13 +837,34 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         self._send_json(_extraction_queue_snapshot())
 
+    def _admin_ai_extraction_status(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        self._send_json(_ai_job_status_snapshot("extraction"))
+
+    def _admin_ai_job_monitor(self, parsed: object) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        query = parse_qs(getattr(parsed, "query", ""))
+        kind = str((query.get("kind") or [""])[0] or "").strip().lower()
+        if kind not in {"translation", "extraction"}:
+            self._send_json({"error": "监控类型必须是 translation 或 extraction。"}, status=400)
+            return
+        limit = _bounded_int((query.get("limit") or [30])[0], 1, 100, 30)
+        self._send_json(_ai_job_monitor_snapshot(kind, limit))
+
     def _admin_save_ai_extraction_rules(self) -> None:
         user = self._require_admin()
         if not user:
             return
+        active = _active_ai_job_counts()
+        if active["extraction"]:
+            self._send_json({"error": "数据提炼任务正在运行，请先停止提炼再修改规则或切换规则模型。", "active_jobs": active}, status=409)
+            return
         config = _normalize_ai_extraction_config(self._read_json_body())
         _save_ai_extraction_config(config)
-        paused = _pause_active_extraction_jobs()
         stale = 0
         for record in list_records(DATABASE_PATH):
             record_id = str(record.get("record_id", "") or "")
@@ -784,7 +873,7 @@ class FormHandler(BaseHTTPRequestHandler):
                 update_record_extraction_status(DATABASE_PATH, record_id, status="STALE", progress=record.get("extraction_progress", ""), error="")
                 stale += 1
         _write_audit(user, "save_ai_extraction_rules", "ai_service", "field_extraction", True, f"{len(config['rules'])} rules / {stale} stale")
-        self._send_json({"ok": True, "paused_extraction_jobs": paused, "stale_records": stale, **config})
+        self._send_json({"ok": True, "stale_records": stale, **config})
 
     def _admin_test_ai_extraction_rule(self) -> None:
         user = self._require_admin()
@@ -828,13 +917,26 @@ class FormHandler(BaseHTTPRequestHandler):
         user = self._require_admin()
         if not user:
             return
+        active = _active_ai_job_counts()
+        if active["total"]:
+            self._send_json({
+                "error": "翻译或数据提炼任务正在运行，请先停止全部运行任务再切换模型。",
+                "active_jobs": active,
+            }, status=409)
+            return
         payload = self._read_json_body()
         config = _normalize_ai_model_config(payload, existing=_load_ai_model_config())
         _save_ai_model_config(config)
-        paused = _pause_active_translation_jobs()
-        paused_extraction = _pause_active_extraction_jobs()
-        _write_audit(user, "save_ai_models", "ai_service", "model_configs", True, f"{len(config['models'])} models / {paused} translation / {paused_extraction} extraction paused")
-        self._send_json({"ok": True, "paused_translation_jobs": paused, "paused_extraction_jobs": paused_extraction, **_public_ai_model_config(config)})
+        _write_audit(user, "save_ai_models", "ai_service", "model_configs", True, f"{len(config['models'])} models")
+        self._send_json({"ok": True, **_public_ai_model_config(config)})
+
+    def _admin_stop_ai_extractions(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        stopped = _stop_active_extraction_jobs()
+        _write_audit(user, "stop_ai_extractions", "ai_service", "extraction_queue", True, f"{stopped} stopped")
+        self._send_json({"ok": True, "stopped_records": stopped, **_extraction_queue_snapshot()})
 
     def _admin_queue_ai_extractions(self) -> None:
         user = self._require_admin()
@@ -883,6 +985,14 @@ class FormHandler(BaseHTTPRequestHandler):
         _write_audit(user, "queue_ai_extractions", "ai_service", mode, True, f"{queued} queued / {skipped} skipped")
         self._send_json({"ok": True, "mode": mode, "queued_records": queued, "skipped_records": skipped})
 
+    def _admin_stop_translations(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        stopped = _stop_active_translation_jobs()
+        _write_audit(user, "stop_translations", "ai_service", "translation_queue", True, f"{stopped} stopped")
+        self._send_json({"ok": True, "stopped_records": stopped, **_translation_queue_snapshot()})
+
     def _admin_test_ai_model(self) -> None:
         user = self._require_admin()
         if not user:
@@ -910,6 +1020,10 @@ class FormHandler(BaseHTTPRequestHandler):
         user = self._require_admin()
         if not user:
             return
+        active = _active_ai_job_counts()
+        if active["translation"]:
+            self._send_json({"error": "翻译任务正在运行，请先停止翻译再清空译文。", "active_jobs": active}, status=409)
+            return
         records = list_records(DATABASE_PATH)
         _invalidate_translation_jobs(str(record.get("record_id", "") or "") for record in records)
         result = reset_translation_state(DATABASE_PATH)
@@ -933,7 +1047,7 @@ class FormHandler(BaseHTTPRequestHandler):
         if requested_ids is not None and not selected_ids:
             self._send_json({"error": "请至少选择一条日报。"}, status=400)
             return
-        current_version = str(_load_translation_tuning_config().get("version", "") or "")
+        current_version = _current_translation_revision()
         queued = 0
         skipped = 0
         for record in list_records(DATABASE_PATH):
@@ -1630,17 +1744,99 @@ def _translation_jobs_enabled() -> bool:
     return _active_ai_model() is not None
 
 
+def _current_translation_revision(
+    *,
+    model: dict[str, object] | None = None,
+    terms_config: dict[str, object] | None = None,
+    tuning_config: dict[str, object] | None = None,
+    target_language: str = "zh-CN",
+) -> str:
+    """Return the immutable revision that determines reusable translation output."""
+    selected_model = model if model is not None else _active_ai_model()
+    terms = TermsConfig.from_data(terms_config if terms_config is not None else _load_translation_terms_config())
+    tuning = TranslationTuningConfig.from_data(tuning_config if tuning_config is not None else _load_translation_tuning_config())
+    if selected_model:
+        api_type = str(selected_model.get("api_type", "") or "openai-compatible").strip().lower()
+        engine_name = "ollama" if api_type == "ollama" else "openai-compatible"
+        model_identity = (
+            f"{engine_name}:{str(selected_model.get('model', '') or '')}:"
+            f"{str(selected_model.get('id', '') or '')}"
+        )
+    else:
+        model_identity = "unconfigured"
+    return translation_memory_version(terms, tuning, target_language, model_identity)
+
+
 def _write_translation_metric(event: str, **fields: object) -> None:
     _ensure_parent(TRANSLATION_METRICS_PATH)
     record = {
-        "time": f"{datetime.utcnow().isoformat(timespec='milliseconds')}Z",
+        "time": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         "event": event,
         **fields,
     }
     line = json.dumps(record, ensure_ascii=False, sort_keys=True)
     with TRANSLATION_METRICS_LOCK:
+        _rotate_jsonl_if_needed(TRANSLATION_METRICS_PATH, 10 * 1024 * 1024)
         with TRANSLATION_METRICS_PATH.open("a", encoding="utf-8") as handle:
             handle.write(line + "\n")
+
+
+def _write_ai_job_monitor(kind: str, event: str, **fields: object) -> None:
+    if kind not in {"translation", "extraction"}:
+        return
+    _ensure_parent(AI_JOB_MONITOR_PATH)
+    record = {
+        "time": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        "kind": kind,
+        "event": event,
+        **fields,
+    }
+    line = json.dumps(record, ensure_ascii=False, sort_keys=True)
+    with AI_JOB_MONITOR_LOCK:
+        _load_ai_job_monitor_cache_locked()
+        _rotate_jsonl_if_needed(AI_JOB_MONITOR_PATH, 5 * 1024 * 1024)
+        with AI_JOB_MONITOR_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(line + "\n")
+        AI_JOB_MONITOR_CACHE[kind].append(record)
+
+
+def _ai_job_monitor_snapshot(kind: str, limit: int = 30) -> dict[str, object]:
+    selected_limit = max(1, min(100, limit))
+    with AI_JOB_MONITOR_LOCK:
+        _load_ai_job_monitor_cache_locked()
+        events = list(AI_JOB_MONITOR_CACHE[kind])[-selected_limit:]
+    return {"kind": kind, "events": events, "updated_at": datetime.now().isoformat(timespec="seconds")}
+
+
+def _load_ai_job_monitor_cache_locked() -> None:
+    global AI_JOB_MONITOR_CACHE_PATH
+    current_path = str(AI_JOB_MONITOR_PATH.resolve())
+    if AI_JOB_MONITOR_CACHE_PATH == current_path:
+        return
+    for events in AI_JOB_MONITOR_CACHE.values():
+        events.clear()
+    if AI_JOB_MONITOR_PATH.exists():
+        with AI_JOB_MONITOR_PATH.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                kind = str(row.get("kind", "") or "") if isinstance(row, dict) else ""
+                if kind in AI_JOB_MONITOR_CACHE:
+                    AI_JOB_MONITOR_CACHE[kind].append(row)
+    AI_JOB_MONITOR_CACHE_PATH = current_path
+
+
+def _rotate_jsonl_if_needed(path: Path, max_bytes: int) -> None:
+    try:
+        if not path.exists() or path.stat().st_size < max_bytes:
+            return
+        rotated = path.with_suffix(path.suffix + ".1")
+        rotated.unlink(missing_ok=True)
+        path.replace(rotated)
+    except OSError:
+        return
 
 
 def _translation_telemetry(record_id: str, generation: int, language: str = ""):
@@ -1648,6 +1844,20 @@ def _translation_telemetry(record_id: str, generation: int, language: str = ""):
         event = str(payload.get("event", "translation_event") or "translation_event")
         fields = {key: value for key, value in payload.items() if key != "event"}
         _write_translation_metric(event, record_id=record_id, generation=generation, language=language, **fields)
+        if event in {"model_request_start", "model_request_complete", "model_request_retry", "model_request_error"}:
+            monitor_event = {
+                "model_request_start": "request",
+                "model_request_complete": "response",
+                "model_request_retry": "retry",
+                "model_request_error": "error",
+            }[event]
+            _write_ai_job_monitor(
+                "translation",
+                monitor_event,
+                record_id=record_id,
+                language=language,
+                **fields,
+            )
     return emit
 
 
@@ -1657,8 +1867,9 @@ def _schedule_translation_job(record_id: str) -> None:
     with TRANSLATION_STATE_LOCK:
         generation = TRANSLATION_JOB_GENERATIONS.get(record_id, 0) + 1
         TRANSLATION_JOB_GENERATIONS[record_id] = generation
+        executor = TRANSLATION_EXECUTOR
     _write_translation_metric("job_scheduled", record_id=record_id, generation=generation, workers=TRANSLATION_WORKERS)
-    TRANSLATION_EXECUTOR.submit(_run_translation_job, record_id, generation)
+    executor.submit(_run_translation_job, record_id, generation)
 
 
 def _invalidate_translation_jobs(record_ids: Iterable[str]) -> None:
@@ -1669,15 +1880,58 @@ def _invalidate_translation_jobs(record_ids: Iterable[str]) -> None:
                 TRANSLATION_JOB_GENERATIONS[value] = TRANSLATION_JOB_GENERATIONS.get(value, 0) + 1
 
 
-def _pause_active_translation_jobs() -> int:
+def _active_ai_job_counts() -> dict[str, int]:
+    translation = sum(
+        1 for record in list_ai_job_status("translation")
+        if str(record.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
+    )
+    extraction = sum(
+        1 for record in list_ai_job_status("extraction")
+        if str(record.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
+    )
+    return {"translation": translation, "extraction": extraction, "total": translation + extraction}
+
+
+def _ai_job_status_snapshot(kind: str) -> dict[str, object]:
+    if kind not in {"translation", "extraction"}:
+        raise ValueError("Unsupported AI job kind")
+    records = [{
+        "record_id": record.get("record_id", ""),
+        "status": str(record.get("status", "") or "PENDING").strip().upper(),
+        "progress": record.get("progress", "") or "0",
+        "error": record.get("error", "") or "",
+        "updated_at": record.get("updated_at", "") or "",
+    } for record in list_ai_job_status(kind)]
+    return {
+        "kind": kind,
+        "processing_count": sum(1 for record in records if record["status"] in {"QUEUED", "IN_PROGRESS"}),
+        "records": records,
+    }
+
+
+def _stop_active_translation_jobs() -> int:
+    global TRANSLATION_EXECUTOR
     active_records = [
-        record for record in list_records(DATABASE_PATH)
-        if str(record.get("translation_status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
+        record for record in list_ai_job_status("translation")
+        if str(record.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
     ]
     record_ids = [str(record.get("record_id", "") or "") for record in active_records]
-    _invalidate_translation_jobs(record_ids)
-    for record_id in record_ids:
-        update_record_translation_status(DATABASE_PATH, record_id, status="PENDING", progress=0, error="")
+    with TRANSLATION_STATE_LOCK:
+        for record_id in record_ids:
+            TRANSLATION_JOB_GENERATIONS[record_id] = TRANSLATION_JOB_GENERATIONS.get(record_id, 0) + 1
+        old_executor = TRANSLATION_EXECUTOR
+        TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=TRANSLATION_WORKERS, thread_name_prefix="drp-translation")
+    old_executor.shutdown(wait=False, cancel_futures=True)
+    for record in active_records:
+        record_id = str(record.get("record_id", "") or "")
+        update_record_translation_status(
+            DATABASE_PATH,
+            record_id,
+            status="STOPPED",
+            progress=record.get("progress", "") or 0,
+            error="",
+        )
+        _write_translation_metric("job_stopped", record_id=record_id, reason="user_requested")
     return len(record_ids)
 
 
@@ -1695,8 +1949,22 @@ def _run_translation_job(record_id: str, generation: int) -> None:
                 generation=generation,
                 reason="claimed_by_other_process",
             )
+            _retry_translation_job_after_lock(record_id, generation)
             return
         _run_translation_job_locked(record_id, generation)
+
+
+def _retry_translation_job_after_lock(record_id: str, generation: int) -> None:
+    def retry() -> None:
+        with TRANSLATION_STATE_LOCK:
+            if TRANSLATION_JOB_GENERATIONS.get(record_id) != generation:
+                return
+            executor = TRANSLATION_EXECUTOR
+        executor.submit(_run_translation_job, record_id, generation)
+
+    timer = threading.Timer(1.0, retry)
+    timer.daemon = True
+    timer.start()
 
 
 def _run_translation_job_locked(record_id: str, generation: int) -> None:
@@ -1712,7 +1980,7 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
         target_languages = _translation_target_languages()
         translation_config = _active_translation_config()
         tuning = TranslationTuningConfig.from_data(_load_translation_tuning_config())
-        prompt_version = tuning.version
+        prompt_version = _current_translation_revision()
         all_rows: list[dict[str, object]] = []
         update_record_translation_status(DATABASE_PATH, record_id, status="IN_PROGRESS", progress=1, error="")
         _write_translation_metric(
@@ -1731,6 +1999,8 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
             _write_translation_metric("language_start", record_id=record_id, generation=generation, language=language, language_index=index, language_count=len(target_languages))
 
             def update_language_progress(_language: str, completed: int, total: int) -> None:
+                if not _translation_job_is_current(record_id, generation):
+                    raise TranslationError("翻译任务已停止")
                 language_fraction = completed / max(total, 1)
                 progress = max(1, min(94, round(((index - 1) + language_fraction) / max(len(target_languages), 1) * 95)))
                 update_record_translation_status(
@@ -1741,17 +2011,42 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
                     error="",
                 )
 
-            result = build_translator(
+            translator = build_translator(
                 config=translation_config,
                 terms=terms,
                 target_language=language,
                 tuning=tuning,
                 telemetry=_translation_telemetry(record_id, generation, language),
-            ).translate_report_payload(
+            )
+            prompt_version = translator.prompt_version
+            source_hashes = [
+                source_hash(normalize_multiline(unit.text))
+                for unit in iter_payload_text_units(
+                    payload,
+                    record_id=record_id,
+                    report_fields=set(tuning.report_fields),
+                    row_fields=set(tuning.row_fields),
+                    scope_rules=set(tuning.scope_rules) if tuning.scope_rules else None,
+                )
+            ]
+            translator.translation_memory.update(load_translation_memory(
+                DATABASE_PATH,
+                language,
+                translator.prompt_version,
+                source_hashes,
+            ))
+
+            def persist_language_rows(_language: str, completed_rows: list[dict[str, str]]) -> None:
+                if not _translation_job_is_current(record_id, generation):
+                    raise TranslationError("翻译任务已停止")
+                upsert_translation_content(DATABASE_PATH, record_id, completed_rows)
+
+            result = translator.translate_report_payload(
                 payload,
                 record_id=record_id,
                 target_languages=[language],
                 on_progress=update_language_progress,
+                on_rows=persist_language_rows,
             )
             if not _translation_job_is_current(record_id, generation):
                 _write_translation_metric("job_cancelled", record_id=record_id, generation=generation, reason="stale_after_language", language=language)
@@ -1763,7 +2058,6 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
                     if normalize_language(row.get("target_language", "")) != normalize_language(language)
                 ]
                 all_rows.extend(rows)
-                save_translation_content(DATABASE_PATH, record_id, all_rows)  # type: ignore[arg-type]
             progress = max(1, min(99, round(index / max(len(target_languages), 1) * 95)))
             update_record_translation_status(DATABASE_PATH, record_id, status="IN_PROGRESS", progress=progress, error="")
             _write_translation_metric(
@@ -1869,7 +2163,7 @@ def _resume_translation_jobs() -> None:
 def _default_config() -> dict[str, object]:
     settings = mysql_settings()
     return {
-        "system_name": "钻完井日报分析系统",
+        "system_name": "钻完井管理平台",
         "default_language": "zh",
         "records_per_page": 10,
         "database_engine": "mysql",
@@ -2266,8 +2560,8 @@ def _default_ai_model_config() -> dict[str, object]:
                 "api_key": "",
                 "model": os.environ.get("DRP_OLLAMA_MODEL", "qwen3.5:9b"),
                 "timeout_seconds": int(float(os.environ.get("DRP_TRANSLATION_TIMEOUT", "120") or "120")),
-                "temperature": float(os.environ.get("DRP_OLLAMA_TEMPERATURE", "0") or "0"),
                 "retry_count": 2,
+                "thinking_mode": "disabled",
                 "enabled": True,
                 "is_default": True,
                 "updated_at": datetime.now().isoformat(timespec="seconds"),
@@ -2334,6 +2628,13 @@ def _normalize_ai_model(raw: dict[str, object], existing: dict[str, object] | No
     api_key = str(raw.get("api_key", "") or "")
     if not api_key or set(api_key) == {"*"}:
         api_key = str(existing.get("api_key", "") or "")
+    try:
+        raw_chunk_max_chars = int(raw.get("chunk_max_chars", existing.get("chunk_max_chars", 0)) or 0)
+    except (TypeError, ValueError):
+        raw_chunk_max_chars = 0
+    chunk_max_chars = 0 if raw_chunk_max_chars <= 0 else max(300, min(8000, raw_chunk_max_chars))
+    thinking_mode = _normalize_thinking_mode(raw.get("thinking_mode", existing.get("thinking_mode", "auto")))
+    request_options = _normalize_model_request_options(raw.get("request_options", existing.get("request_options", {})))
     now = datetime.now().isoformat(timespec="seconds")
     return {
         "id": model_id,
@@ -2343,8 +2644,10 @@ def _normalize_ai_model(raw: dict[str, object], existing: dict[str, object] | No
         "api_key": api_key,
         "model": str(raw.get("model", "") or existing.get("model", "") or "").strip(),
         "timeout_seconds": _bounded_int(raw.get("timeout_seconds", existing.get("timeout_seconds", 120)), 5, 600, 120),
-        "temperature": _bounded_float(raw.get("temperature", existing.get("temperature", 0)), 0, 2, 0),
         "retry_count": _bounded_int(raw.get("retry_count", existing.get("retry_count", 2)), 0, 10, 2),
+        "chunk_max_chars": chunk_max_chars,
+        "thinking_mode": thinking_mode,
+        "request_options": request_options,
         "enabled": _truthy(raw.get("enabled", existing.get("enabled", True))),
         "is_default": _truthy(raw.get("is_default", existing.get("is_default", False))),
         "updated_at": now,
@@ -2407,22 +2710,26 @@ def _translation_config_for_model(model: dict[str, object]) -> TranslationConfig
             engine="ollama",
             ollama_url=str(model.get("base_url", "") or "http://127.0.0.1:11434"),
             ollama_model=str(model.get("model", "") or "qwen3.5:9b"),
-            ollama_temperature=float(model.get("temperature", 0) or 0),
+            ollama_temperature=0.0,
             timeout_seconds=float(model.get("timeout_seconds", 120) or 120),
             model_config_id=str(model.get("id", "") or ""),
             retry_count=int(model.get("retry_count", 2) or 0),
             chunk_max_chars=chunk_max_chars,
+            thinking_mode=str(model.get("thinking_mode", "auto") or "auto"),
+            request_options=_normalize_model_request_options(model.get("request_options", {})),
         )
     return TranslationConfig(
         engine="openai-compatible",
         openai_base_url=str(model.get("base_url", "") or ""),
         openai_api_key=str(model.get("api_key", "") or ""),
         openai_model=str(model.get("model", "") or ""),
-        openai_temperature=float(model.get("temperature", 0) or 0),
+        openai_temperature=0.0,
         timeout_seconds=float(model.get("timeout_seconds", 120) or 120),
         model_config_id=str(model.get("id", "") or ""),
         retry_count=int(model.get("retry_count", 2) or 0),
         chunk_max_chars=chunk_max_chars,
+        thinking_mode=str(model.get("thinking_mode", "auto") or "auto"),
+        request_options=_normalize_model_request_options(model.get("request_options", {})),
     )
 
 
@@ -2430,40 +2737,29 @@ def _test_ai_model_connection(model: dict[str, object]) -> dict[str, object]:
     api_type = str(model.get("api_type", "") or "openai-compatible")
     base_url = str(model.get("base_url", "") or "").rstrip("/")
     model_name = str(model.get("model", "") or "").strip()
-    timeout = float(model.get("timeout_seconds", 60) or 60)
     if not base_url or not model_name:
         raise ValueError("API地址和模型名称不能为空。")
     parsed_url = urlparse(base_url)
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
         raise ValueError("API地址必须是有效的 http:// 或 https:// 地址。")
     started = time.monotonic()
-    if api_type == "ollama":
-        url = f"{base_url}/api/generate"
-        payload = {"model": model_name, "stream": False, "prompt": "Return the word OK.", "options": {"temperature": 0, "num_predict": 16}}
-        data = _post_json_for_ai(url, payload, timeout)
-        content = str(data.get("response", "") if isinstance(data, dict) else "")
-        status = "200 OK"
-    else:
-        url = _chat_url(base_url)
-        payload = {
-            "model": model_name,
-            "temperature": 0,
-            "messages": [
-                {"role": "system", "content": "Return a short plain response."},
-                {"role": "user", "content": "Connection test. Reply OK."},
-            ],
-            "max_tokens": 32,
-        }
-        headers = {"Authorization": f"Bearer {model.get('api_key')}"} if model.get("api_key") else {}
-        data = _post_json_for_ai(url, payload, timeout, headers=headers)
-        choices = data.get("choices") if isinstance(data, dict) else []
-        first = choices[0] if isinstance(choices, list) and choices else {}
-        message = first.get("message") if isinstance(first, dict) else {}
-        content = str(message.get("content", "") if isinstance(message, dict) else first.get("text", "") if isinstance(first, dict) else "")
-        status = "200 OK"
+    translator = build_translator(
+        config=_translation_config_for_model(model),
+        terms=TermsConfig.from_data({}),
+        target_language="zh-CN",
+        tuning=TranslationTuningConfig(),
+    )
+    result = translator.translate_plain_text("DRILL AHEAD WITH STABLE RETURNS.")
+    rows = result.get("translation_content") if isinstance(result.get("translation_content"), list) else []
+    row = rows[0] if rows and isinstance(rows[0], dict) else {}
+    if str(row.get("translation_status", "") or "") != "COMPLETED":
+        raise TranslationError(str(row.get("error_message", "") or "模型未返回合格的结构化译文。"))
+    content = str(row.get("translated_text", "") or "")
+    url = f"{base_url}/api/generate" if api_type == "ollama" else _chat_url(base_url)
+    status = "200 OK"
     elapsed = round(time.monotonic() - started, 2)
     return {
-        "message": "连接成功",
+        "message": "连接及真实翻译格式验证成功",
         "tested_at": datetime.now().isoformat(timespec="seconds"),
         "api_url": url,
         "model": model_name,
@@ -2499,6 +2795,69 @@ def _post_json_for_ai(url: str, payload: dict[str, object], timeout_seconds: flo
 def _chat_url(base_url: str) -> str:
     base = str(base_url or "").rstrip("/")
     return base if base.endswith("/chat/completions") else f"{base}/chat/completions"
+
+
+def _normalize_thinking_mode(value: object) -> str:
+    mode = str(value or "auto").strip().lower()
+    mode = {"off": "disabled", "false": "disabled", "on": "enabled", "true": "enabled"}.get(mode, mode)
+    return mode if mode in {"auto", "disabled", "enabled"} else "auto"
+
+
+_MODEL_REQUEST_OPTION_RESERVED_KEYS = {
+    "authorization", "api_key", "apikey", "base_url", "messages", "model", "prompt", "stream",
+}
+
+
+def _normalize_model_request_options(value: object) -> dict[str, object]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(value, dict):
+        return {}
+    filtered = {
+        str(key): item
+        for key, item in value.items()
+        if str(key).strip().lower() not in _MODEL_REQUEST_OPTION_RESERVED_KEYS
+    }
+    try:
+        encoded = json.dumps(filtered, ensure_ascii=False, separators=(",", ":"))
+        if len(encoded.encode("utf-8")) > 12_000:
+            return {}
+        normalized = json.loads(encoded)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return normalized if isinstance(normalized, dict) else {}
+
+
+def _openai_payload_for_model(model: dict[str, object], payload: dict[str, object]) -> dict[str, object]:
+    configured = dict(payload)
+    mode = _normalize_thinking_mode(model.get("thinking_mode", "auto"))
+    if mode != "auto":
+        if _is_deepseek_model(model):
+            configured["thinking"] = {"type": mode}
+        else:
+            configured["chat_template_kwargs"] = {"enable_thinking": mode == "enabled"}
+    if mode == "disabled" and _needs_qwen_no_think_prefill(model):
+        messages = list(configured.get("messages", [])) if isinstance(configured.get("messages"), list) else []
+        messages.append({"role": "assistant", "content": "<think>\n\n</think>\n\n"})
+        configured["messages"] = messages
+    configured.update(_normalize_model_request_options(model.get("request_options", {})))
+    return configured
+
+
+def _is_deepseek_model(model: dict[str, object]) -> bool:
+    parsed = urlparse(str(model.get("base_url", "") or ""))
+    model_name = str(model.get("model", "") or "").lower()
+    return parsed.hostname in {"api.deepseek.com", "www.api.deepseek.com"} or model_name.startswith("deepseek-")
+
+
+def _needs_qwen_no_think_prefill(model: dict[str, object]) -> bool:
+    parsed = urlparse(str(model.get("base_url", "") or ""))
+    local_lm_studio = parsed.hostname in {"127.0.0.1", "localhost", "::1"} and (parsed.port in {None, 1234})
+    normalized_model = re.sub(r"[^a-z0-9]", "", str(model.get("model", "") or "").lower())
+    return local_lm_studio and "qwen35" in normalized_model
 
 
 AI_EXTRACTION_TARGET_FIELDS = (
@@ -2690,9 +3049,14 @@ def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], s
     base_url = str(model.get("base_url", "") or "").rstrip("/")
     timeout = float(model.get("timeout_seconds", 120) or 120)
     if api_type == "ollama":
+        thinking_mode = _normalize_thinking_mode(model.get("thinking_mode", "auto"))
+        ollama_payload = {"model": model.get("model", ""), "stream": False, "prompt": f"{system_prompt}\n\n{user_prompt}", "options": {"temperature": 0, "num_predict": 256}}
+        if thinking_mode != "auto":
+            ollama_payload["think"] = thinking_mode == "enabled"
+        ollama_payload.update(_normalize_model_request_options(model.get("request_options", {})))
         data = _post_json_for_ai(
             f"{base_url}/api/generate",
-            {"model": model.get("model", ""), "stream": False, "prompt": f"{system_prompt}\n\n{user_prompt}", "options": {"temperature": 0, "num_predict": 256}},
+            ollama_payload,
             timeout,
         )
         content = str(data.get("response", "") if isinstance(data, dict) else "")
@@ -2700,7 +3064,7 @@ def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], s
         headers = {"Authorization": f"Bearer {model.get('api_key')}"} if model.get("api_key") else {}
         data = _post_json_for_ai(
             _chat_url(base_url),
-            {"model": model.get("model", ""), "temperature": 0, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "max_tokens": 256},
+            _openai_payload_for_model(model, {"model": model.get("model", ""), "temperature": 0, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "max_tokens": 256}),
             timeout,
             headers=headers,
         )
@@ -2845,7 +3209,8 @@ def _schedule_extraction_job(record_id: str, *, overwrite: bool = False) -> None
     with EXTRACTION_STATE_LOCK:
         generation = EXTRACTION_JOB_GENERATIONS.get(record_id, 0) + 1
         EXTRACTION_JOB_GENERATIONS[record_id] = generation
-    EXTRACTION_EXECUTOR.submit(_run_extraction_job, record_id, generation, overwrite)
+        executor = EXTRACTION_EXECUTOR
+    executor.submit(_run_extraction_job, record_id, generation, overwrite)
 
 
 def _invalidate_extraction_jobs(record_ids: Iterable[str]) -> None:
@@ -2856,12 +3221,25 @@ def _invalidate_extraction_jobs(record_ids: Iterable[str]) -> None:
                 EXTRACTION_JOB_GENERATIONS[value] = EXTRACTION_JOB_GENERATIONS.get(value, 0) + 1
 
 
-def _pause_active_extraction_jobs() -> int:
+def _stop_active_extraction_jobs() -> int:
+    global EXTRACTION_EXECUTOR
     active = [record for record in list_records(DATABASE_PATH) if str(record.get("extraction_status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}]
     record_ids = [str(record.get("record_id", "") or "") for record in active]
-    _invalidate_extraction_jobs(record_ids)
-    for record_id in record_ids:
-        update_record_extraction_status(DATABASE_PATH, record_id, status="PENDING", progress=0, error="")
+    with EXTRACTION_STATE_LOCK:
+        for record_id in record_ids:
+            EXTRACTION_JOB_GENERATIONS[record_id] = EXTRACTION_JOB_GENERATIONS.get(record_id, 0) + 1
+        old_executor = EXTRACTION_EXECUTOR
+        EXTRACTION_EXECUTOR = ThreadPoolExecutor(max_workers=EXTRACTION_WORKERS, thread_name_prefix="drp-extraction")
+    old_executor.shutdown(wait=False, cancel_futures=True)
+    for record in active:
+        record_id = str(record.get("record_id", "") or "")
+        update_record_extraction_status(
+            DATABASE_PATH,
+            record_id,
+            status="STOPPED",
+            progress=record.get("extraction_progress", "") or 0,
+            error="",
+        )
     return len(record_ids)
 
 
@@ -2879,8 +3257,22 @@ def _extraction_model(rule: dict[str, object]) -> dict[str, object] | None:
 def _run_extraction_job(record_id: str, generation: int, overwrite: bool = False) -> None:
     with background_job_lock("extraction", record_id) as acquired:
         if not acquired:
+            _retry_extraction_job_after_lock(record_id, generation, overwrite)
             return
         _run_extraction_job_locked(record_id, generation, overwrite)
+
+
+def _retry_extraction_job_after_lock(record_id: str, generation: int, overwrite: bool) -> None:
+    def retry() -> None:
+        with EXTRACTION_STATE_LOCK:
+            if EXTRACTION_JOB_GENERATIONS.get(record_id) != generation:
+                return
+            executor = EXTRACTION_EXECUTOR
+        executor.submit(_run_extraction_job, record_id, generation, overwrite)
+
+    timer = threading.Timer(1.0, retry)
+    timer.daemon = True
+    timer.start()
 
 
 def _run_extraction_job_locked(record_id: str, generation: int, overwrite: bool = False) -> None:
@@ -2932,24 +3324,77 @@ def _run_extraction_job_locked(record_id: str, generation: int, overwrite: bool 
                 "error_message": "",
             }
             save_extraction_results(DATABASE_PATH, [base_row])
+            monitor_started: float | None = None
+            monitor_source = ""
+            monitor_model: dict[str, object] = {}
             try:
                 model = _extraction_model(rule)
                 if not model:
                     raise RuntimeError("规则没有可用的 AI 模型")
+                monitor_model = model
                 source_text = str(unit.get("source_text", "") or "")
                 explicit_value = _evidence_responsible_party(source_text) if str(rule.get("target_field", "") or "") == "service_line" else ""
                 if explicit_value:
                     value = explicit_value
                 else:
-                    result = _run_ai_extraction_test(model, rule, str(unit.get("prompt_text", "") or source_text))
+                    monitor_source = str(unit.get("prompt_text", "") or source_text)
+                    monitor_started = time.monotonic()
+                    _write_ai_job_monitor(
+                        "extraction",
+                        "request",
+                        record_id=record_id,
+                        rule_id=rule.get("id", ""),
+                        rule_name=rule.get("name", ""),
+                        model_config_id=model.get("id", ""),
+                        model_name=model.get("model", ""),
+                        engine=model.get("api_type", ""),
+                        source_chars=len(monitor_source),
+                        source_preview=monitor_source[:600],
+                    )
+                    result = _run_ai_extraction_test(model, rule, monitor_source)
                     value = str(result.get("result", "") or "").strip()
+                if not _extraction_job_is_current(record_id, generation):
+                    if monitor_started is not None:
+                        _write_ai_job_monitor(
+                            "extraction", "error", record_id=record_id, rule_id=rule.get("id", ""),
+                            model_config_id=model.get("id", ""), model_name=model.get("model", ""),
+                            elapsed_ms=round((time.monotonic() - monitor_started) * 1000), error="任务已停止，返回结果已丢弃",
+                        )
+                    return
                 if str(rule.get("target_field", "") or "") == "service_line":
                     value = _normalize_responsible_party(value, payload)
+                if monitor_started is not None:
+                    _write_ai_job_monitor(
+                        "extraction",
+                        "response",
+                        record_id=record_id,
+                        rule_id=rule.get("id", ""),
+                        rule_name=rule.get("name", ""),
+                        model_config_id=model.get("id", ""),
+                        model_name=model.get("model", ""),
+                        engine=model.get("api_type", ""),
+                        elapsed_ms=round((time.monotonic() - monitor_started) * 1000),
+                        response_preview=value[:600],
+                    )
                 finished = datetime.now().isoformat(timespec="seconds")
                 saved = {**base_row, "result_text": value, "extraction_status": "COMPLETED", "completed_at": finished, "updated_at": finished, "model_config_id": model.get("id", "")}
                 save_extraction_results(DATABASE_PATH, [saved])
                 existing[key] = saved
             except Exception as exc:
+                if monitor_started is not None:
+                    _write_ai_job_monitor(
+                        "extraction",
+                        "error",
+                        record_id=record_id,
+                        rule_id=rule.get("id", ""),
+                        rule_name=rule.get("name", ""),
+                        model_config_id=monitor_model.get("id", ""),
+                        model_name=monitor_model.get("model", ""),
+                        engine=monitor_model.get("api_type", ""),
+                        elapsed_ms=round((time.monotonic() - monitor_started) * 1000),
+                        source_preview=monitor_source[:600],
+                        error=str(exc)[:600],
+                    )
                 failures.append(str(exc))
                 failed = {**base_row, "result_text": old.get("result_text", ""), "extraction_status": "FAILED", "error_message": str(exc), "completed_at": "", "updated_at": datetime.now().isoformat(timespec="seconds")}
                 save_extraction_results(DATABASE_PATH, [failed])
@@ -2971,7 +3416,7 @@ def _extraction_record_needs_processing(record: dict[str, object], current_versi
     status = str(record.get("extraction_status", "") or "PENDING").strip().upper()
     if status in {"QUEUED", "IN_PROGRESS", "NOT_REQUIRED"}:
         return False
-    if status in {"PENDING", "FAILED", "STALE", ""}:
+    if status in {"PENDING", "STOPPED", "FAILED", "STALE", ""}:
         return True
     return bool(current_version and str(record.get("extraction_version", "") or "") != current_version)
 
@@ -3008,6 +3453,7 @@ def _extraction_queue_snapshot() -> dict[str, object]:
         "auto_execute": bool(config.get("auto_execute", True)),
         "pending_count": sum(1 for item in records if item["needs_extraction"]),
         "processing_count": sum(1 for item in records if item["status"] in {"QUEUED", "IN_PROGRESS"}),
+        "is_running": any(item["status"] in {"QUEUED", "IN_PROGRESS"} for item in records),
         "records": records,
     }
 
@@ -3027,21 +3473,23 @@ def _translation_record_needs_processing(record: dict[str, object], current_vers
     status = str(record.get("translation_status", "") or "PENDING").strip().upper()
     if status in {"QUEUED", "IN_PROGRESS", "NOT_REQUIRED"}:
         return False
-    if status in {"PENDING", "FAILED"}:
+    if status in {"PENDING", "STOPPED", "FAILED"}:
         return True
     version = str(record.get("translation_version", "") or "")
     return bool(current_version and version != current_version)
 
 
 def _translation_queue_snapshot() -> dict[str, object]:
-    current_version = str(_load_translation_tuning_config().get("version", "") or "")
+    current_version = _current_translation_revision()
     items: list[dict[str, object]] = []
-    for record in list_records(DATABASE_PATH):
+    for record in list_translation_queue_records():
         status = str(record.get("translation_status", "") or "PENDING").strip().upper()
         version = str(record.get("translation_version", "") or "")
         needs_translation = _translation_record_needs_processing(record, current_version)
         if status == "FAILED":
             reason = str(record.get("translation_error", "") or "上次翻译失败")
+        elif status == "STOPPED":
+            reason = "已停止，可继续未完成翻译"
         elif status == "QUEUED":
             reason = "等待执行"
         elif status == "IN_PROGRESS":
@@ -3072,6 +3520,7 @@ def _translation_queue_snapshot() -> dict[str, object]:
         "worker_count": TRANSLATION_WORKERS,
         "pending_count": sum(1 for item in items if item["needs_translation"]),
         "processing_count": sum(1 for item in items if item["status"] in {"QUEUED", "IN_PROGRESS"}),
+        "is_running": any(item["status"] in {"QUEUED", "IN_PROGRESS"} for item in items),
         "records": items,
     }
 
@@ -3301,17 +3750,22 @@ def _call_ai_text(model: dict[str, object], system_prompt: str, user_prompt: str
     timeout = float(model.get("timeout_seconds", 120) or 120)
     if api_type == "ollama":
         url = f"{base_url}/api/generate"
-        data = _post_json_for_ai(url, {
+        ollama_payload: dict[str, object] = {
             "model": model_name,
             "stream": False,
             "format": "json",
             "prompt": f"{system_prompt}\n\n{user_prompt}",
             "options": {"temperature": 0, "num_predict": max_tokens},
-        }, timeout)
+        }
+        thinking_mode = _normalize_thinking_mode(model.get("thinking_mode", "auto"))
+        if thinking_mode != "auto":
+            ollama_payload["think"] = thinking_mode == "enabled"
+        ollama_payload.update(_normalize_model_request_options(model.get("request_options", {})))
+        data = _post_json_for_ai(url, ollama_payload, timeout)
         return str(data.get("response", "") if isinstance(data, dict) else "")
     data = _post_json_for_ai(
         _chat_url(base_url),
-        {
+        _openai_payload_for_model(model, {
             "model": model_name,
             "temperature": 0,
             "messages": [
@@ -3319,7 +3773,7 @@ def _call_ai_text(model: dict[str, object], system_prompt: str, user_prompt: str
                 {"role": "user", "content": user_prompt},
             ],
             "max_tokens": max_tokens,
-        },
+        }),
         timeout,
         headers={"Authorization": f"Bearer {model.get('api_key')}"} if model.get("api_key") else {},
     )

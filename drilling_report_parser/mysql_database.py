@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,8 @@ from .report_schema import REPORT_TABLES, REPORT_TYPES
 
 ROOT = Path(__file__).resolve().parents[1]
 INIT_SQL_PATH = ROOT / "db" / "init.sql"
+_DATABASE_INITIALIZED = False
+_DATABASE_INIT_LOCK = threading.Lock()
 
 BASE_RECORD_COLUMNS = [
     "record_id",
@@ -50,17 +53,25 @@ MYSQL_RECORD_COLUMNS = {
 
 
 def initialize_database() -> None:
-    statements = _sql_statements(INIT_SQL_PATH)
-    if not statements:
+    global _DATABASE_INITIALIZED
+    if _DATABASE_INITIALIZED:
         return
-    with _connect() as connection:
-        with connection.cursor() as cursor:
-            for statement in statements:
-                if _server_scope_statement(statement):
-                    continue
-                cursor.execute(statement)
-            _ensure_report_record_columns(cursor)
-        connection.commit()
+    with _DATABASE_INIT_LOCK:
+        if _DATABASE_INITIALIZED:
+            return
+        statements = _sql_statements(INIT_SQL_PATH)
+        if not statements:
+            return
+        with _connect() as connection:
+            with connection.cursor() as cursor:
+                for statement in statements:
+                    if _server_scope_statement(statement):
+                        continue
+                    cursor.execute(statement)
+                _ensure_report_record_columns(cursor)
+                _ensure_translation_content_indexes(cursor)
+            connection.commit()
+        _DATABASE_INITIALIZED = True
 
 
 @contextmanager
@@ -104,6 +115,16 @@ def _ensure_report_record_columns(cursor: Any) -> None:
             continue
         cursor.execute(f"ALTER TABLE report_records ADD COLUMN {column} {definition}")
         columns.add(column)
+
+
+def _ensure_translation_content_indexes(cursor: Any) -> None:
+    cursor.execute("SHOW INDEX FROM translation_content")
+    indexes = {str(row.get("Key_name", "") or "") for row in cursor.fetchall()}
+    if "idx_translation_memory_lookup" not in indexes:
+        cursor.execute(
+            "CREATE INDEX idx_translation_memory_lookup "
+            "ON translation_content (target_language, prompt_version, translation_status, source_hash)"
+        )
 
 
 def save_report_payload(
@@ -342,6 +363,62 @@ def save_translation_content(database_path: str | Path | None, record_id: str, r
         connection.commit()
 
 
+def upsert_translation_content(database_path: str | Path | None, record_id: str, rows: list[dict[str, Any]]) -> None:
+    """Persist completed translation units without replacing other units for the report."""
+    del database_path
+    if not record_id or not rows:
+        return
+    initialize_database()
+    values = [
+        (
+            record_id,
+            _text(row.get("entity_type")),
+            _text(row.get("entity_id")),
+            _text(row.get("field_code")),
+            _text(row.get("source_language")),
+            _text(row.get("target_language")),
+            _text(row.get("source_text")),
+            _text(row.get("translated_text")),
+            _text(row.get("source_hash")),
+            _text(row.get("model_config_id")),
+            _text(row.get("prompt_version")),
+            _text(row.get("translation_status")),
+            _text(row.get("error_message")),
+            _text(row.get("is_manual_modified")),
+            _text(row.get("created_at")),
+            _text(row.get("updated_at")),
+        )
+        for row in rows
+        if isinstance(row, dict)
+    ]
+    if not values:
+        return
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO translation_content (
+                  record_id, entity_type, entity_id, field_code, source_language, target_language,
+                  source_text, translated_text, source_hash, model_config_id, prompt_version,
+                  translation_status, error_message, is_manual_modified, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                  source_text=VALUES(source_text),
+                  translated_text=VALUES(translated_text),
+                  source_hash=VALUES(source_hash),
+                  model_config_id=VALUES(model_config_id),
+                  prompt_version=VALUES(prompt_version),
+                  translation_status=VALUES(translation_status),
+                  error_message=VALUES(error_message),
+                  is_manual_modified=IF(is_manual_modified<>'', is_manual_modified, VALUES(is_manual_modified)),
+                  updated_at=VALUES(updated_at)
+                """,
+                values,
+            )
+        connection.commit()
+
+
 def load_translation_content(database_path: str | Path | None, record_id: str) -> list[dict[str, str]]:
     del database_path
     with _connect() as connection:
@@ -349,6 +426,50 @@ def load_translation_content(database_path: str | Path | None, record_id: str) -
             cursor.execute("SELECT * FROM translation_content WHERE record_id=%s", (record_id,))
             rows = cursor.fetchall()
     return [{key: _text(value) for key, value in row.items() if key != "mysql_updated_at"} for row in rows]
+
+
+def load_translation_memory(
+    database_path: str | Path | None,
+    target_language: str,
+    prompt_version: str,
+    source_hashes: list[str] | None = None,
+) -> dict[str, str]:
+    del database_path
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            clean_hashes = list(dict.fromkeys(
+                str(value or "").strip()
+                for value in source_hashes or []
+                if str(value or "").strip()
+            ))
+            hash_filter = ""
+            args: list[object] = [target_language, prompt_version]
+            if clean_hashes:
+                placeholders = ",".join(["%s"] * len(clean_hashes))
+                hash_filter = f" AND source_hash IN ({placeholders})"
+                args.extend(clean_hashes)
+            cursor.execute(
+                f"""
+                SELECT source_hash, translated_text, is_manual_modified, updated_at
+                FROM translation_content
+                WHERE target_language=%s
+                  AND prompt_version=%s
+                  AND translation_status='COMPLETED'
+                  AND source_hash<>''
+                  AND translated_text<>''
+                  {hash_filter}
+                ORDER BY (is_manual_modified<>'') DESC, updated_at DESC
+                """,
+                args,
+            )
+            rows = cursor.fetchall()
+    memory: dict[str, str] = {}
+    for row in rows:
+        key = _text(row.get("source_hash"))
+        value = _text(row.get("translated_text"))
+        if key and value and key not in memory:
+            memory[key] = value
+    return memory
 
 
 def load_operation_translations(database_path: str | Path | None, record_ids: list[str]) -> list[dict[str, str]]:
@@ -579,6 +700,43 @@ def list_records(
         row["sc_hours"] = round(float(values.get("sc_hours", 0.0)), 2)
         row["npt_hours"] = round(float(values.get("npt_hours", 0.0)), 2)
     return [_record_to_public(row) for row in rows]
+
+
+def list_ai_job_status(kind: str) -> list[dict[str, str]]:
+    if kind not in {"translation", "extraction"}:
+        raise ValueError("Unsupported AI job kind")
+    prefix = "translation" if kind == "translation" else "extraction"
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT record_id,
+                       {prefix}_status AS status,
+                       {prefix}_progress AS progress,
+                       {prefix}_error AS error,
+                       {prefix}_updated_at AS updated_at
+                FROM report_records
+                ORDER BY report_date DESC, updated_at DESC
+                """
+            )
+            rows = cursor.fetchall()
+    return [{key: _text(value) for key, value in row.items()} for row in rows]
+
+
+def list_translation_queue_records() -> list[dict[str, str]]:
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT record_id, report_type, report_date AS reportDate, report_no AS reportNo,
+                       wellbore, rig, translation_status, translation_progress,
+                       translation_error, translation_version, translation_updated_at
+                FROM report_records
+                ORDER BY report_date DESC, updated_at DESC
+                """
+            )
+            rows = cursor.fetchall()
+    return [{key: _text(value) for key, value in row.items()} for row in rows]
 
 
 def query_records(**filters: str) -> list[dict[str, str]]:

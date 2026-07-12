@@ -1,5 +1,8 @@
 const toast = document.querySelector("#toast");
 const ADMIN_DEFAULT_PAGE_SIZE = 10;
+const ADMIN_QUEUE_POLL_INTERVAL_MS = 3000;
+let adminQueuePollTimer = null;
+let adminQueuePollRunning = false;
 const adminState = {
   authenticated: false,
   user: null,
@@ -11,9 +14,11 @@ const adminState = {
   aiModels: { models: [], default_model_id: "" },
   aiExtraction: { rules: [], catalog: { report_types: [], target_fields: [], output_formats: [] } },
   aiExtractionQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
+  aiJobMonitor: { translation: [], extraction: [], updatedAt: { translation: "", extraction: "" } },
   aiExtractionView: "rules",
   aiExtractionQueuePage: 1,
   aiExtractionQueuePageSize: ADMIN_DEFAULT_PAGE_SIZE,
+  aiExtractionQueueStatusTab: "pending",
   selectedAiExtractionRuleId: "",
   aiExtractionTestRecordId: "",
   aiExtractionTestSource: "",
@@ -31,10 +36,11 @@ const adminState = {
   translationTermImport: { running: false, result: null, duplicates: [] },
   translationTermCategory: "all",
   translationTermPage: 1,
-  translationTermPageSize: 10,
+  translationTermPageSize: ADMIN_DEFAULT_PAGE_SIZE,
   translationQueue: { records: [], pending_count: 0, processing_count: 0, current_version: "" },
   translationQueuePage: 1,
   translationQueuePageSize: ADMIN_DEFAULT_PAGE_SIZE,
+  translationQueueStatusTab: "pending",
   translationTestResult: null,
   translationTestRunning: false,
   translationTestSource: "05:30-07:30, BAJA BHA #5 DIRECCIONAL HASTA 4125 ft. PERFORA DE 4125 ft A 4140 ft CON ROP 90 ft/hr, WOB 18 klb Y SPP 12.5 MPa.",
@@ -46,7 +52,7 @@ const adminState = {
   records: [],
   logs: [],
   logsPage: 1,
-  logsPageSize: 20
+  logsPageSize: ADMIN_DEFAULT_PAGE_SIZE
 };
 
 function escapeHtml(value = "") {
@@ -124,9 +130,187 @@ async function loadAdminData() {
     adminState.logs = logs.logs || [];
     adminState.logsPage = 1;
     renderAdminPanels();
+    scheduleAdminQueuePoll();
   } catch (error) {
     showToast(error.message);
   }
+}
+
+function scheduleAdminQueuePoll(delay = ADMIN_QUEUE_POLL_INTERVAL_MS) {
+  if (adminQueuePollTimer) clearTimeout(adminQueuePollTimer);
+  adminQueuePollTimer = null;
+  if (!adminState.authenticated) return;
+  adminQueuePollTimer = setTimeout(pollAdminQueueStatus, Math.max(0, delay));
+}
+
+async function pollAdminQueueStatus() {
+  adminQueuePollTimer = null;
+  if (adminQueuePollRunning || document.hidden || !adminState.authenticated) {
+    scheduleAdminQueuePoll();
+    return;
+  }
+  const pollTranslation = adminState.tab === "translationTuning";
+  const pollExtraction = adminState.tab === "aiExtraction";
+  if (!pollTranslation && !pollExtraction) {
+    scheduleAdminQueuePoll();
+    return;
+  }
+  adminQueuePollRunning = true;
+  try {
+    if (pollTranslation) {
+      const [status, monitor] = await Promise.all([
+        adminRequest("/api/admin/translations/status"),
+        adminRequest("/api/admin/ai-jobs/monitor?kind=translation&limit=5"),
+      ]);
+      updateTranslationQueueSnapshot(status);
+      updateAiJobMonitor("translation", monitor);
+    }
+    if (pollExtraction) {
+      const [status, monitor] = await Promise.all([
+        adminRequest("/api/admin/ai-extractions/status"),
+        adminRequest("/api/admin/ai-jobs/monitor?kind=extraction&limit=5"),
+      ]);
+      updateExtractionQueueSnapshot(status);
+      updateAiJobMonitor("extraction", monitor);
+    }
+  } catch (error) {
+    if (!/请先登录|unauthorized/i.test(String(error.message || ""))) console.error(error);
+  } finally {
+    adminQueuePollRunning = false;
+    scheduleAdminQueuePoll();
+  }
+}
+
+function updateTranslationQueueSnapshot(queue = {}) {
+  const statusById = new Map((queue.records || []).map((row) => [String(row.record_id || ""), row]));
+  adminState.records = (adminState.records || []).map((record) => {
+    const status = statusById.get(String(record.record_id || ""));
+    return status ? { ...record, translation_status: status.status, translation_progress: status.progress, translation_error: status.error, translation_updated_at: status.updated_at } : record;
+  });
+  const records = (adminState.translationQueue?.records || []).map((row) => {
+    const status = statusById.get(String(row.record_id || ""));
+    if (!status) return row;
+    const merged = { ...row, ...status };
+    merged.reason = translationJobReason(merged, adminState.translationQueue?.current_version || "");
+    return merged;
+  });
+  const mergedQueue = { ...adminState.translationQueue, ...queue, records };
+  adminState.translationQueue = mergedQueue;
+  refreshTuningQueueCount("translation", mergedQueue.processing_count);
+  const byId = new Map(records.map((row) => [String(row.record_id || ""), row]));
+  document.querySelectorAll("[data-translation-job-status]").forEach((cell) => {
+    const row = byId.get(String(cell.dataset.translationJobStatus || ""));
+    if (row) cell.innerHTML = translationJobStatusMarkup(row);
+  });
+  document.querySelectorAll("[data-translation-job-reason]").forEach((cell) => {
+    const row = byId.get(String(cell.dataset.translationJobReason || ""));
+    if (row) cell.textContent = row.reason || "-";
+  });
+  const actions = document.querySelector("[data-translation-queue-actions]");
+  if (actions) actions.innerHTML = translationQueueActionsMarkup(mergedQueue);
+  refreshAiQueueStatusCounts("translation", records);
+  refreshTranslationQueueTable(records);
+}
+
+function updateExtractionQueueSnapshot(queue = {}) {
+  const statusById = new Map((queue.records || []).map((row) => [String(row.record_id || ""), row]));
+  adminState.records = (adminState.records || []).map((record) => {
+    const status = statusById.get(String(record.record_id || ""));
+    return status ? { ...record, extraction_status: status.status, extraction_progress: status.progress, extraction_error: status.error, extraction_updated_at: status.updated_at } : record;
+  });
+  const records = (adminState.aiExtractionQueue?.records || []).map((row) => {
+    const status = statusById.get(String(row.record_id || ""));
+    return status ? { ...row, ...status } : row;
+  });
+  const mergedQueue = { ...adminState.aiExtractionQueue, ...queue, records };
+  adminState.aiExtractionQueue = mergedQueue;
+  refreshTuningQueueCount("extraction", mergedQueue.processing_count);
+  const byId = new Map(records.map((row) => [String(row.record_id || ""), row]));
+  document.querySelectorAll("[data-extraction-job-status]").forEach((cell) => {
+    const row = byId.get(String(cell.dataset.extractionJobStatus || ""));
+    if (row) cell.innerHTML = extractionJobStatusMarkup(row);
+  });
+  document.querySelectorAll("[data-extraction-job-progress]").forEach((cell) => {
+    const row = byId.get(String(cell.dataset.extractionJobProgress || ""));
+    if (row) cell.textContent = `${row.progress || "0"}%`;
+  });
+  document.querySelectorAll("[data-extraction-job-updated]").forEach((cell) => {
+    const row = byId.get(String(cell.dataset.extractionJobUpdated || ""));
+    if (row) cell.textContent = row.updated_at || "-";
+  });
+  const actions = document.querySelector("[data-extraction-queue-actions]");
+  if (actions) actions.innerHTML = extractionQueueActionsMarkup(mergedQueue);
+  refreshAiQueueStatusCounts("extraction", records);
+  refreshExtractionQueueTable(records);
+}
+
+function refreshAiQueueStatusCounts(kind, records = []) {
+  const counts = { all: records.length, pending: 0, processing: 0, completed: 0 };
+  records.forEach((row) => {
+    const group = aiQueueStatusGroup(row.status, row);
+    if (counts[group] !== undefined) counts[group] += 1;
+  });
+  Object.entries(counts).forEach(([group, count]) => {
+    const target = document.querySelector(`[data-ai-queue-status-count="${kind}:${group}"]`);
+    if (target) target.textContent = String(count);
+  });
+}
+
+function refreshTuningQueueCount(kind, count = 0) {
+  const target = document.querySelector(`[data-tuning-queue-count="${kind}"]`);
+  if (target) target.textContent = String(Number(count || 0));
+}
+
+function refreshTranslationQueueTable(records = []) {
+  const body = document.querySelector("[data-translation-queue-body]");
+  if (!body) return;
+  const inputs = [...body.querySelectorAll('[name="translationQueueRecord"]')];
+  const checked = new Set(inputs.filter((input) => input.checked).map((input) => input.value));
+  const filtered = filterAiQueueRecords(records, adminState.translationQueueStatusTab || "pending");
+  const pageSize = Number(adminState.translationQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  adminState.translationQueuePage = clampPage(adminState.translationQueuePage, totalPages);
+  const visible = filtered.slice((adminState.translationQueuePage - 1) * pageSize, adminState.translationQueuePage * pageSize);
+  body.innerHTML = translationQueueRowsMarkup(visible);
+  if (inputs.length) body.querySelectorAll('[name="translationQueueRecord"]').forEach((input) => { input.checked = checked.has(input.value); });
+  const pagination = document.querySelector("[data-translation-queue-pagination]");
+  if (pagination) pagination.innerHTML = adminPaginationMarkup("translationQueue", filtered.length, adminState.translationQueuePage, totalPages, pageSize);
+}
+
+function refreshExtractionQueueTable(records = []) {
+  const body = document.querySelector("[data-extraction-queue-body]");
+  if (!body) return;
+  const inputs = [...body.querySelectorAll("[data-ai-extraction-record]")];
+  const checked = new Set(inputs.filter((input) => input.checked).map((input) => input.value));
+  const filtered = filterAiQueueRecords(records, adminState.aiExtractionQueueStatusTab || "pending");
+  const pageSize = Number(adminState.aiExtractionQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  adminState.aiExtractionQueuePage = clampPage(adminState.aiExtractionQueuePage, totalPages);
+  const visible = filtered.slice((adminState.aiExtractionQueuePage - 1) * pageSize, adminState.aiExtractionQueuePage * pageSize);
+  body.innerHTML = extractionQueueRowsMarkup(visible);
+  if (inputs.length) body.querySelectorAll("[data-ai-extraction-record]").forEach((input) => { input.checked = checked.has(input.value); });
+  const pagination = document.querySelector("[data-extraction-queue-pagination]");
+  if (pagination) pagination.innerHTML = adminPaginationMarkup("aiExtractionQueue", filtered.length, adminState.aiExtractionQueuePage, totalPages, pageSize);
+}
+
+function translationJobReason(row = {}, currentVersion = "") {
+  const status = String(row.status || "").toUpperCase();
+  if (status === "FAILED") return row.error || "上次翻译失败";
+  if (status === "STOPPED") return "已停止，可继续未完成翻译";
+  if (status === "QUEUED") return "等待执行";
+  if (status === "IN_PROGRESS") return "模型翻译中";
+  if (row.translation_version && currentVersion && row.translation_version !== currentVersion) return "翻译策略已更新";
+  if (status === "COMPLETED") return "已完成";
+  return "尚未翻译";
+}
+
+function updateAiJobMonitor(kind, payload = {}) {
+  adminState.aiJobMonitor[kind] = payload.events || [];
+  adminState.aiJobMonitor.updatedAt[kind] = payload.updated_at || "";
+  const body = document.querySelector(`[data-ai-job-monitor-body="${kind}"]`);
+  if (body) body.innerHTML = aiJobMonitorRowsMarkup(kind, adminState.aiJobMonitor[kind]);
+  const updated = document.querySelector(`[data-ai-job-monitor-updated="${kind}"]`);
+  if (updated) updated.textContent = monitorUpdatedLabel(payload.updated_at);
 }
 
 function renderNoPermission() {
@@ -248,7 +432,10 @@ function renderAdminAiModels() {
   const selected = models.find((item) => item.id === adminState.selectedAiModelId) || models[0] || emptyAiModel();
   adminState.selectedAiModelId = selected.id || "";
   const enabledCount = models.filter((item) => item.enabled !== false).length;
-  const pendingCount = adminState.records.filter(translationNeedsProcessing).length;
+  const translationRunning = Number(adminState.translationQueue?.processing_count || 0) > 0;
+  const extractionRunning = Number(adminState.aiExtractionQueue?.processing_count || 0) > 0;
+  const jobsRunning = translationRunning || extractionRunning;
+  const runningCount = Number(adminState.translationQueue?.processing_count || 0) + Number(adminState.aiExtractionQueue?.processing_count || 0);
   host.innerHTML = `
     <section class="admin-kpi-grid compact">
       ${adminKpi("模型配置", models.length, "公网 / 局域网 / 本地", "database")}
@@ -258,24 +445,23 @@ function renderAdminAiModels() {
     </section>
     <section class="panel">
       <div class="panel-heading">
-        <div><h2>模型接入配置</h2><span class="panel-note">支持 OpenAI-Compatible 公网模型和局域网本地模型；保存后日报翻译会使用默认启用模型</span></div>
+        <div><h2>模型接入配置</h2><span class="panel-note">${jobsRunning ? `当前有 ${runningCount} 个运行任务；必须前往对应任务队列停止后，才能保存或切换默认模型` : "支持 OpenAI-Compatible 公网模型和局域网本地模型；保存后新任务使用默认启用模型"}</span></div>
         <div class="admin-actions">
-          <button class="button secondary small" type="button" data-admin-reset-translations>清空译文</button>
-          <button class="button secondary small" type="button" data-admin-queue-translations ${pendingCount ? "" : "disabled"}>翻译待处理 (${pendingCount})</button>
-          <button class="button small" type="button" data-admin-new-ai-model>新增模型</button>
+          ${jobsRunning ? `<button class="button secondary small" type="button" data-admin-open-active-ai-jobs>查看运行任务 (${runningCount})</button>` : ""}
+          <button class="button small" type="button" data-admin-new-ai-model ${jobsRunning ? "disabled" : ""}>新增模型</button>
         </div>
       </div>
       <div class="table-wrap"><table class="record-table admin-table">
-        <thead><tr><th>配置名称</th><th>接口类型</th><th>API地址</th><th>模型名称</th><th>超时</th><th>启用</th><th>默认</th><th>更新时间</th><th>操作</th></tr></thead>
-        <tbody>${models.map(aiModelRow).join("") || `<tr><td colspan="9">暂无模型配置</td></tr>`}</tbody>
+        <thead><tr><th>配置名称</th><th>接口类型</th><th>API地址</th><th>模型名称</th><th>Think</th><th>超时</th><th>启用</th><th>默认</th><th>更新时间</th><th>操作</th></tr></thead>
+        <tbody>${models.map(aiModelRow).join("") || `<tr><td colspan="10">暂无模型配置</td></tr>`}</tbody>
       </table></div>
     </section>
-    <section class="admin-project-layout">
-      <section class="panel">
+    <section class="admin-project-layout ai-model-layout">
+      <section class="panel ai-model-config-panel">
         <div class="panel-heading"><h2>模型配置详情</h2><span class="panel-note">API Key 留空表示沿用已保存密钥；本地模型可不填 Key</span></div>
-        ${aiModelForm(selected)}
+        ${aiModelForm(selected, jobsRunning)}
       </section>
-      <section class="panel">
+      <section class="panel ai-model-test-panel">
         <div class="panel-heading"><h2>连接测试结果</h2><span class="panel-note">测试会向模型发送最小请求，不写入业务数据</span></div>
         ${aiModelTestResultMarkup()}
       </section>
@@ -289,6 +475,7 @@ function aiModelRow(model = {}) {
     <td>${escapeHtml(apiTypeLabel(model.api_type))}</td>
     <td>${escapeHtml(model.base_url || "-")}</td>
     <td>${escapeHtml(model.model || "-")}</td>
+    <td>${escapeHtml(thinkingModeLabel(model.thinking_mode))}</td>
     <td>${escapeHtml(model.timeout_seconds || 60)}s</td>
     <td><span class="status-pill ${model.enabled !== false ? "uploaded" : "failed"}">${model.enabled !== false ? "启用" : "停用"}</span></td>
     <td>${model.is_default ? "默认" : "-"}</td>
@@ -297,24 +484,46 @@ function aiModelRow(model = {}) {
   </tr>`;
 }
 
-function aiModelForm(model = {}) {
+function aiModelForm(model = {}, jobsRunning = false) {
   const apiType = model.api_type || "openai-compatible";
-  return `<div class="admin-config-grid ai-model-form">
+  const isOllama = apiType === "ollama";
+  const defaultOptions = model.is_default
+    ? `<option value="true" selected>当前默认</option>`
+    : `<option value="false" selected>非默认</option><option value="true">设为默认</option>`;
+  return `<div class="ai-model-form">
     <input type="hidden" name="aiModelId" value="${escapeHtml(model.id || "")}" />
-    <label>配置名称<input name="aiModelName" value="${escapeHtml(model.name || "")}" placeholder="例如：主模型-DeepSeek-V3" /></label>
-    <label>接口类型<select name="aiModelApiType"><option value="openai-compatible" ${apiType !== "ollama" ? "selected" : ""}>OpenAI Compatible</option><option value="ollama" ${apiType === "ollama" ? "selected" : ""}>Ollama</option></select></label>
-    <label class="wide">API地址<input name="aiModelBaseUrl" value="${escapeHtml(model.base_url || "")}" placeholder="https://api.example.com/v1 或 http://10.10.1.12:8000/v1" /></label>
-    <label>模型名称<input name="aiModelModel" value="${escapeHtml(model.model || "")}" placeholder="deepseek-chat / qwen-plus / llama3" /></label>
-    <label>API Key<input name="aiModelApiKey" type="password" value="${model.api_key_set ? "********" : ""}" placeholder="${model.api_key_set ? "已保存，留空不改" : "本地模型可留空"}" /></label>
-    <label>超时秒数<input name="aiModelTimeout" type="number" min="5" max="600" value="${escapeHtml(model.timeout_seconds || 60)}" /></label>
-    <label>Temperature<input name="aiModelTemperature" type="number" min="0" max="2" step="0.1" value="${escapeHtml(model.temperature ?? 0)}" /></label>
-    <label>重试次数<input name="aiModelRetry" type="number" min="0" max="10" value="${escapeHtml(model.retry_count ?? 2)}" /></label>
-    <label>启用状态<select name="aiModelEnabled"><option value="true" ${model.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${model.enabled === false ? "selected" : ""}>停用</option></select></label>
-    <label>默认模型<select name="aiModelDefault"><option value="true" ${model.is_default ? "selected" : ""}>设为默认</option><option value="false" ${!model.is_default ? "selected" : ""}>非默认</option></select></label>
-    <div class="admin-actions wide">
+    <section class="ai-model-form-section">
+      <div class="ai-model-form-heading"><strong>连接信息</strong><span>用于定位模型服务并完成身份验证</span></div>
+      <div class="ai-model-form-grid connection-grid">
+        <label class="ai-model-field">配置名称<input name="aiModelName" value="${escapeHtml(model.name || "")}" placeholder="例如：本地 Qwen" /></label>
+        <label class="ai-model-field">接口类型<select name="aiModelApiType"><option value="openai-compatible" ${apiType !== "ollama" ? "selected" : ""}>OpenAI Compatible</option><option value="ollama" ${apiType === "ollama" ? "selected" : ""}>Ollama</option></select></label>
+        <label class="ai-model-field full">API 地址<input name="aiModelBaseUrl" value="${escapeHtml(model.base_url || "")}" placeholder="${isOllama ? "http://127.0.0.1:11434" : "http://127.0.0.1:1234/v1"}" /><small data-ai-model-url-hint>${isOllama ? "填写 Ollama 服务根地址" : "OpenAI-Compatible 地址通常以 /v1 结尾"}</small></label>
+        <label class="ai-model-field">模型名称<input name="aiModelModel" value="${escapeHtml(model.model || "")}" placeholder="qwen3.5-9b" /></label>
+        <label class="ai-model-field ${isOllama ? "is-disabled" : ""}" data-ai-model-api-key-field>API Key<input name="aiModelApiKey" type="password" value="${model.api_key_set ? "********" : ""}" placeholder="${isOllama ? "Ollama 无需填写" : model.api_key_set ? "已保存，留空不改" : "本地服务可留空"}" ${isOllama ? "disabled" : ""} /><small>${isOllama ? "Ollama 调用不使用 API Key" : "仅发送给当前 OpenAI-Compatible 地址"}</small></label>
+      </div>
+    </section>
+    <section class="ai-model-form-section">
+      <div class="ai-model-form-heading"><strong>运行策略</strong><span>控制请求时限、翻译拆分和模型选择</span></div>
+      <div class="ai-model-form-grid runtime-grid">
+        <label class="ai-model-field">请求超时<input name="aiModelTimeout" type="number" min="5" max="600" value="${escapeHtml(model.timeout_seconds || 60)}" /><small>单次模型请求，5–600 秒</small></label>
+        <label class="ai-model-field">翻译重试<input name="aiModelRetry" type="number" min="0" max="10" value="${escapeHtml(model.retry_count ?? 2)}" /><small>失败后的额外尝试次数</small></label>
+        <label class="ai-model-field">翻译分块上限<input name="aiModelChunkChars" type="number" min="0" max="8000" step="100" value="${escapeHtml(model.chunk_max_chars ?? 0)}" /><small>0=自动：兼容接口 2500，Ollama 6000</small></label>
+        <label class="ai-model-field">Think 模式<select name="aiModelThinkingMode"><option value="disabled" ${model.thinking_mode === "disabled" ? "selected" : ""}>关闭（翻译推荐）</option><option value="enabled" ${model.thinking_mode === "enabled" ? "selected" : ""}>开启</option><option value="auto" ${!model.thinking_mode || model.thinking_mode === "auto" ? "selected" : ""}>跟随模型默认</option></select><small>关闭可减少延迟和推理 token</small></label>
+        <label class="ai-model-field">启用状态<select name="aiModelEnabled"><option value="true" ${model.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${model.enabled === false ? "selected" : ""}>停用</option></select><small>停用后不会被新任务调用</small></label>
+        <label class="ai-model-field">默认模型<select name="aiModelDefault">${defaultOptions}</select><small>${model.is_default ? "切换默认模型时请编辑目标配置" : "设为默认后供新任务优先使用"}</small></label>
+      </div>
+    </section>
+    <details class="ai-model-advanced">
+      <summary>高级请求配置（JSON）</summary>
+      <div class="ai-model-advanced-body">
+        <div class="ai-model-config-path"><span>本机配置文件</span><code>outputs/ai_model_configs.json</code><small>页面不会回显原始 API Key；密钥仍只保存在后端文件中</small></div>
+        <label class="ai-model-field">请求附加参数<textarea name="aiModelRequestOptions" rows="7" spellcheck="false" placeholder='{"thinking":{"type":"disabled"}}'>${escapeHtml(JSON.stringify(model.request_options || {}, null, 2))}</textarea><small>用于供应商专用参数；手动值优先于自动 Think 映射。model、messages、prompt、stream 和鉴权字段不可覆盖。</small></label>
+      </div>
+    </details>
+    <div class="admin-actions ai-model-form-actions">
       <button class="button secondary" type="button" data-admin-test-ai-model>测试连接</button>
-      <button class="button" type="button" data-admin-save-ai-models>保存配置</button>
-      <button class="button secondary" type="button" data-admin-delete-ai-model ${model.id ? "" : "disabled"}>删除</button>
+      <button class="button" type="button" data-admin-save-ai-models ${jobsRunning ? "disabled" : ""}>保存配置</button>
+      <button class="button secondary" type="button" data-admin-delete-ai-model ${model.id && !jobsRunning ? "" : "disabled"}>删除</button>
     </div>
   </div>`;
 }
@@ -335,7 +544,32 @@ function aiModelTestResultMarkup() {
 }
 
 function emptyAiModel() {
-  return { id: newClientId(), name: "新模型配置", api_type: "openai-compatible", base_url: "", model: "", timeout_seconds: 60, temperature: 0, retry_count: 2, enabled: true, is_default: !(adminState.aiModels.models || []).length };
+  return { id: newClientId(), name: "新模型配置", api_type: "openai-compatible", base_url: "", model: "", timeout_seconds: 60, retry_count: 2, chunk_max_chars: 0, thinking_mode: "disabled", enabled: true, is_default: !(adminState.aiModels.models || []).length };
+}
+
+function thinkingModeLabel(value) {
+  if (value === "disabled") return "关闭";
+  if (value === "enabled") return "开启";
+  return "默认";
+}
+
+function syncAiModelInterfaceFields(select) {
+  const form = select?.closest(".ai-model-form");
+  if (!form) return;
+  const isOllama = select.value === "ollama";
+  const keyField = form.querySelector("[data-ai-model-api-key-field]");
+  const keyInput = keyField?.querySelector('input[name="aiModelApiKey"]');
+  const keyHint = keyField?.querySelector("small");
+  const urlInput = form.querySelector('input[name="aiModelBaseUrl"]');
+  const urlHint = form.querySelector("[data-ai-model-url-hint]");
+  keyField?.classList.toggle("is-disabled", isOllama);
+  if (keyInput) {
+    keyInput.disabled = isOllama;
+    keyInput.placeholder = isOllama ? "Ollama 无需填写" : "本地服务可留空";
+  }
+  if (keyHint) keyHint.textContent = isOllama ? "Ollama 调用不使用 API Key" : "仅发送给当前 OpenAI-Compatible 地址";
+  if (urlInput) urlInput.placeholder = isOllama ? "http://127.0.0.1:11434" : "http://127.0.0.1:1234/v1";
+  if (urlHint) urlHint.textContent = isOllama ? "填写 Ollama 服务根地址" : "OpenAI-Compatible 地址通常以 /v1 结尾";
 }
 
 function apiTypeLabel(value) {
@@ -345,6 +579,36 @@ function apiTypeLabel(value) {
 function defaultAiModelName() {
   const found = (adminState.aiModels.models || []).find((item) => item.id === adminState.aiModels.default_model_id);
   return found?.name || "-";
+}
+
+function openActiveAiJobsModal() {
+  const translations = (adminState.translationQueue?.records || []).filter((item) => ["QUEUED", "IN_PROGRESS"].includes(String(item.status || "").toUpperCase()));
+  const extractions = (adminState.aiExtractionQueue?.records || []).filter((item) => ["QUEUED", "IN_PROGRESS"].includes(String(item.status || "").toUpperCase()));
+  const section = (title, rows, kind) => `<section class="active-ai-job-section">
+    <div class="panel-heading"><div><h3>${title}</h3><span class="panel-note">${rows.length} 条运行中</span></div></div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>进度</th></tr></thead>
+      <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.report_date || "-")}<small class="table-subtext">${escapeHtml(row.report_no || "-")}</small></td><td>${escapeHtml(row.wellbore || "-")}</td><td>${escapeHtml(row.rig || "-")}</td><td><span class="status-pill processing">${kind === "translation" ? translationQueueStatusLabel(row.status) : aiQueueStatusLabel(row.status)}</span></td><td>${escapeHtml(row.progress || "0")}%</td></tr>`).join("") || `<tr><td colspan="5">当前没有运行任务</td></tr>`}</tbody>
+    </table></div>
+  </section>`;
+  openAdminModal(
+    `正在运行的 AI 任务（${translations.length + extractions.length}）`,
+    `<div class="active-ai-job-list">${section("日报翻译", translations, "translation")}${section("数据提炼", extractions, "extraction")}</div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>关闭</button>
+     ${translations.length ? `<button class="button secondary" type="button" data-admin-jump-ai-queue="translation">前往翻译任务</button>` : ""}
+     ${extractions.length ? `<button class="button" type="button" data-admin-jump-ai-queue="extraction">前往提炼任务</button>` : ""}`
+  );
+}
+
+function jumpToAiJobQueue(kind) {
+  closeAdminModal();
+  if (kind === "extraction") {
+    adminState.aiExtractionView = "queue";
+    switchAdminTab("aiExtraction");
+    return renderAdminAiExtraction();
+  }
+  adminState.translationTuningView = "queue";
+  switchAdminTab("translationTuning");
+  renderAdminTranslationTuning();
 }
 
 function renderAdminAiExtraction() {
@@ -361,7 +625,7 @@ function renderAdminAiExtraction() {
     <section class="panel"><div class="panel-heading"><h2>测试工作台</h2><span class="panel-note">只展示提炼结果，不写入生产报表</span></div>${aiExtractionTestMarkup()}</section>` : `
     <section class="panel">
       <div class="panel-heading">
-        <div><h2>AI 数据提炼规则</h2><span class="panel-note">从指定日报字段提炼关键数据，并映射到生产报表目标字段</span></div>
+        <h2>AI 数据提炼规则</h2>
         <div class="admin-actions heading-actions">
           <label class="auto-execute-toggle" title="开启后，上传日报会自动加入 AI 数据提炼任务队列；关闭后需在任务队列手动执行。">
             <input type="checkbox" name="aiExtractionAutoExecute" ${config.auto_execute !== false ? "checked" : ""} />
@@ -388,36 +652,79 @@ function renderAdminAiExtraction() {
       ${adminKpi("默认模型", defaultAiModelName(), "可按规则覆盖", "shield")}
     </section>
     <nav class="tuning-tabs" aria-label="数据提炼视图">
-      ${aiExtractionTab("rules", "规则配置")}${aiExtractionTab("queue", "任务队列")}${aiExtractionTab("test", "测试工作台")}
+      ${aiExtractionTab("rules", "规则配置")}${aiExtractionTab("queue", "任务队列", queue.processing_count)}${aiExtractionTab("test", "测试工作台")}
     </nav>
     <div class="translation-tuning-content">${content}</div>`;
 }
 
-function aiExtractionTab(value, label) {
-  return `<button type="button" class="${adminState.aiExtractionView === value ? "active" : ""}" data-ai-extraction-view="${value}">${label}</button>`;
+function aiExtractionTab(value, label, runningCount = null) {
+  const count = runningCount === null ? "" : `<span class="tuning-tab-count" data-tuning-queue-count="extraction">${Number(runningCount || 0)}</span>`;
+  return `<button type="button" class="${adminState.aiExtractionView === value ? "active" : ""}" data-ai-extraction-view="${value}">${label}${count}</button>`;
+}
+
+function aiQueueStatusGroup(status = "", row = {}) {
+  const value = String(status || "PENDING").toUpperCase();
+  if (["QUEUED", "IN_PROGRESS"].includes(value)) return "processing";
+  if (row.needs_translation) return "pending";
+  if (value === "COMPLETED") return "completed";
+  if (["PENDING", "STOPPED", "FAILED", "STALE", ""].includes(value)) return "pending";
+  return "other";
+}
+
+function filterAiQueueRecords(records = [], tab = "all") {
+  return tab === "all" ? records : records.filter((row) => aiQueueStatusGroup(row.status, row) === tab);
+}
+
+function aiQueueStatusTabsMarkup(kind, records = [], activeTab = "pending") {
+  const counts = { all: records.length, pending: 0, processing: 0, completed: 0 };
+  records.forEach((row) => {
+    const group = aiQueueStatusGroup(row.status, row);
+    if (counts[group] !== undefined) counts[group] += 1;
+  });
+  const labels = { all: "全部", pending: "未处理", processing: "进行中", completed: "已完成" };
+  return `<nav class="queue-status-tabs" aria-label="任务状态筛选">${Object.entries(labels).map(([value, label]) => `<button type="button" class="${activeTab === value ? "active" : ""}" data-ai-queue-status-tab="${kind}" data-ai-queue-status-value="${value}">${label}<span data-ai-queue-status-count="${kind}:${value}">${counts[value]}</span></button>`).join("")}</nav>`;
 }
 
 function aiExtractionQueueMarkup() {
   const queue = adminState.aiExtractionQueue || {};
   const rows = queue.records || [];
+  const statusTab = adminState.aiExtractionQueueStatusTab || "pending";
+  const filteredRows = filterAiQueueRecords(rows, statusTab);
   const pageSize = Number(adminState.aiExtractionQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const currentPage = clampPage(adminState.aiExtractionQueuePage, totalPages);
   adminState.aiExtractionQueuePage = currentPage;
-  const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  return `<section class="panel">
-    <div class="panel-heading"><div><h2>数据提炼任务</h2><span class="panel-note">规则版本 ${escapeHtml(queue.current_version || "-")}；失败重试不会清除上次成功值</span></div>
-      <div class="admin-actions heading-actions"><button class="button small" type="button" data-admin-queue-extractions="continue">执行待处理</button><button class="button secondary small" type="button" data-admin-queue-extractions="overwrite">按当前规则覆盖执行</button></div>
+  const visibleRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  return `<div class="ai-queue-stack"><section class="panel">
+    <div class="panel-heading"><h2>数据提炼任务</h2>
+      <div class="admin-actions heading-actions" data-extraction-queue-actions>${extractionQueueActionsMarkup(queue)}</div>
     </div>
+    ${aiQueueStatusTabsMarkup("extraction", rows, statusTab)}
     <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
-      <tbody>${visibleRows.map((row) => `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${row.needs_extraction ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td><span class="status-pill ${aiQueueStatusTone(row.status)}" title="${escapeHtml(row.error || "")}">${escapeHtml(aiQueueStatusLabel(row.status))}</span></td><td>${escapeHtml(row.progress || "0")}%</td><td>${escapeHtml(row.updated_at || "-")}</td></tr>`).join("") || `<tr><td colspan="6">当前没有符合启用规则的日报</td></tr>`}</tbody>
+      <tbody data-extraction-queue-body>${extractionQueueRowsMarkup(visibleRows)}</tbody>
     </table></div>
-    ${adminPaginationMarkup("aiExtractionQueue", rows.length, currentPage, totalPages, pageSize)}
-  </section>`;
+    <div data-extraction-queue-pagination>${adminPaginationMarkup("aiExtractionQueue", filteredRows.length, currentPage, totalPages, pageSize)}</div>
+  </section>${aiJobMonitorPanelMarkup("extraction")}</div>`;
+}
+
+function extractionQueueRowsMarkup(rows = []) {
+  return rows.map((row) => `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${row.needs_extraction ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td data-extraction-job-status="${escapeHtml(row.record_id)}">${extractionJobStatusMarkup(row)}</td><td data-extraction-job-progress="${escapeHtml(row.record_id)}">${escapeHtml(row.progress || "0")}%</td><td data-extraction-job-updated="${escapeHtml(row.record_id)}">${escapeHtml(row.updated_at || "-")}</td></tr>`).join("") || `<tr><td colspan="6">当前状态下没有日报任务</td></tr>`;
+}
+
+function extractionQueueActionsMarkup(queue = {}) {
+  const tab = adminState.aiExtractionQueueStatusTab || "pending";
+  if (tab === "processing") return `<button class="button secondary small" type="button" data-admin-stop-extractions ${Number(queue.processing_count || 0) ? "" : "disabled"}>停止进行中任务</button>`;
+  if (tab === "completed") return `<button class="button small" type="button" data-admin-queue-extractions="overwrite">重新提炼选中</button>`;
+  if (tab === "pending") return `<button class="button small" type="button" data-admin-queue-extractions="continue">开始提炼选中</button>`;
+  return `<span class="panel-note">请选择“未处理”“进行中”或“已完成”后执行批量操作</span>`;
+}
+
+function extractionJobStatusMarkup(row = {}) {
+  return `<span class="status-pill ${aiQueueStatusTone(row.status)}" title="${escapeHtml(row.error || "")}">${escapeHtml(aiQueueStatusLabel(row.status))}</span>`;
 }
 
 function aiQueueStatusLabel(status = "") {
-  return ({ PENDING: "待提炼", QUEUED: "排队中", IN_PROGRESS: "提炼中", COMPLETED: "已提炼", FAILED: "失败", STALE: "规则已更新", NOT_REQUIRED: "无需提炼" })[String(status).toUpperCase()] || "待提炼";
+  return ({ PENDING: "待提炼", STOPPED: "已停止", QUEUED: "排队中", IN_PROGRESS: "提炼中", COMPLETED: "已提炼", FAILED: "失败", STALE: "规则已更新", NOT_REQUIRED: "无需提炼" })[String(status).toUpperCase()] || "待提炼";
 }
 
 function aiQueueStatusTone(status = "") {
@@ -455,7 +762,7 @@ function aiExtractionRuleForm(rule = {}) {
     <label>状态<select name="aiExtractionEnabled"><option value="true" ${rule.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${rule.enabled === false ? "selected" : ""}>停用</option></select></label>
     <label class="wide">适用条件<textarea name="aiExtractionCondition" rows="3" placeholder="例如：仅处理作业类型为 NPT 的明细">${escapeHtml(rule.condition || "")}</textarea></label>
     <label class="wide">提炼要求<textarea name="aiExtractionInstruction" rows="4" placeholder="说明需要识别什么、无法判断时如何处理">${escapeHtml(rule.instruction || "")}</textarea></label>
-    <div class="admin-actions wide"><button class="button" type="button" data-admin-save-extraction-rules>保存规则</button><button class="button secondary" type="button" data-admin-delete-extraction-rule>删除规则</button></div>
+    <div class="admin-actions wide"><button class="button" type="button" data-admin-save-extraction-rules ${Number(adminState.aiExtractionQueue?.processing_count || 0) ? "disabled" : ""}>保存规则</button><button class="button secondary" type="button" data-admin-delete-extraction-rule>删除规则</button></div>
   </div>`;
 }
 
@@ -662,7 +969,7 @@ function renderAdminTranslationTuning() {
   const tuning = adminState.translationTuning || {};
   const terms = adminState.translationTerms?.terms || [];
   const enabledFields = (tuning.scope_rules || []).filter((item) => item.enabled !== false).length;
-  const pendingCount = adminState.records.filter(translationNeedsProcessing).length;
+  const pendingCount = Number(adminState.translationQueue?.pending_count || 0);
   const view = adminState.translationTuningView || "fields";
   const content = view === "terms" ? translationTermsMarkup() : view === "queue" ? translationQueuePanelMarkup() : view === "test" ? translationTestWorkbenchMarkup() : translationFieldPoliciesMarkup();
   host.innerHTML = `
@@ -675,14 +982,15 @@ function renderAdminTranslationTuning() {
     <nav class="tuning-tabs" aria-label="翻译调优视图">
       ${translationTuningTab("fields", "字段与 Prompt")}
       ${translationTuningTab("terms", "术语词库")}
-      ${translationTuningTab("queue", "任务队列")}
+      ${translationTuningTab("queue", "任务队列", adminState.translationQueue?.processing_count)}
       ${translationTuningTab("test", "测试工作台")}
     </nav>
     <div class="translation-tuning-content">${content}</div>`;
 }
 
-function translationTuningTab(value, label) {
-  return `<button type="button" class="${adminState.translationTuningView === value ? "active" : ""}" data-translation-tuning-view="${value}">${label}</button>`;
+function translationTuningTab(value, label, runningCount = null) {
+  const count = runningCount === null ? "" : `<span class="tuning-tab-count" data-tuning-queue-count="translation">${Number(runningCount || 0)}</span>`;
+  return `<button type="button" class="${adminState.translationTuningView === value ? "active" : ""}" data-translation-tuning-view="${value}">${label}${count}</button>`;
 }
 
 function translationLanguageNames(values = []) {
@@ -693,23 +1001,75 @@ function translationLanguageNames(values = []) {
 function translationNeedsProcessing(record = {}) {
   const status = String(record.translation_status || "").toUpperCase();
   const version = String(record.translation_version || "");
-  const currentVersion = String(adminState.translationTuning?.version || "");
+  const currentVersion = String(adminState.translationQueue?.current_version || "");
   if (["QUEUED", "IN_PROGRESS", "NOT_REQUIRED"].includes(status)) return false;
-  return ["PENDING", "FAILED"].includes(status) || Boolean(currentVersion && version !== currentVersion);
+  return ["PENDING", "STOPPED", "FAILED"].includes(status) || Boolean(currentVersion && version !== currentVersion);
 }
 
 function translationQueuePanelMarkup() {
   const queue = adminState.translationQueue || {};
   const records = queue.records || [];
+  const statusTab = adminState.translationQueueStatusTab || "pending";
+  const filteredRecords = filterAiQueueRecords(records, statusTab);
   const pageSize = Number(adminState.translationQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
-  const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const currentPage = clampPage(adminState.translationQueuePage, totalPages);
   adminState.translationQueuePage = currentPage;
-  const visibleRecords = records.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  return `<section class="panel"><div class="panel-heading"><div><h2>日报翻译任务</h2><span class="panel-note">当前策略版本 ${escapeHtml(queue.current_version || "-")}</span></div><div class="admin-actions heading-actions"><button class="button secondary small" type="button" data-admin-queue-selected="overwrite">覆盖重译选中</button><button class="button small" type="button" data-admin-queue-selected="continue">继续翻译选中</button></div></div>
-    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-translation-queue-select-all /></th><th>类型</th><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>原因</th></tr></thead><tbody>${visibleRecords.map(translationQueueRowMarkup).join("") || `<tr><td colspan="7">暂无日报记录</td></tr>`}</tbody></table></div>
-    ${adminPaginationMarkup("translationQueue", records.length, currentPage, totalPages, pageSize)}
+  const visibleRecords = filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  return `<div class="ai-queue-stack"><section class="panel"><div class="panel-heading"><h2>日报翻译任务</h2><div class="admin-actions heading-actions" data-translation-queue-actions>${translationQueueActionsMarkup(queue)}</div></div>
+    ${aiQueueStatusTabsMarkup("translation", records, statusTab)}
+    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-translation-queue-select-all /></th><th>类型</th><th>日期 / 报告号</th><th>井号</th><th>队伍</th><th>状态</th><th>原因</th></tr></thead><tbody data-translation-queue-body>${translationQueueRowsMarkup(visibleRecords)}</tbody></table></div>
+    <div data-translation-queue-pagination>${adminPaginationMarkup("translationQueue", filteredRecords.length, currentPage, totalPages, pageSize)}</div>
+  </section>${aiJobMonitorPanelMarkup("translation")}</div>`;
+}
+
+function translationQueueRowsMarkup(records = []) {
+  return records.map(translationQueueRowMarkup).join("") || `<tr><td colspan="7">当前状态下没有日报任务</td></tr>`;
+}
+
+function translationQueueActionsMarkup(queue = {}) {
+  const tab = adminState.translationQueueStatusTab || "pending";
+  if (tab === "processing") return `<button class="button secondary small" type="button" data-admin-stop-translations ${Number(queue.processing_count || 0) ? "" : "disabled"}>停止进行中任务</button>`;
+  if (tab === "completed") return `<button class="button small" type="button" data-admin-queue-selected="overwrite">重新翻译选中</button>`;
+  if (tab === "pending") return `<button class="button small" type="button" data-admin-queue-selected="continue">开始翻译选中</button>`;
+  return `<button class="button secondary small" type="button" data-admin-reset-translations>清空全部译文</button>`;
+}
+
+function aiJobMonitorPanelMarkup(kind) {
+  const label = kind === "translation" ? "翻译模型运行监控" : "提炼模型运行监控";
+  const events = adminState.aiJobMonitor?.[kind] || [];
+  return `<section class="panel ai-job-monitor-panel">
+    <div class="panel-heading"><h2><span class="monitor-live-dot" aria-hidden="true"></span>${label}</h2><span class="monitor-updated" data-ai-job-monitor-updated="${kind}">${monitorUpdatedLabel(adminState.aiJobMonitor?.updatedAt?.[kind])}</span></div>
+    <div class="ai-job-monitor-stream" data-ai-job-monitor-body="${kind}">${aiJobMonitorRowsMarkup(kind, events)}</div>
   </section>`;
+}
+
+function aiJobMonitorRowsMarkup(kind, events = []) {
+  const rows = [...events].reverse();
+  if (!rows.length) return `<div class="admin-empty-panel"><p>等待模型调用事件。任务运行后会在这里显示输入和返回。</p></div>`;
+  return rows.map((event) => {
+    const eventName = String(event.event || "");
+    const tone = eventName === "response" ? "success" : eventName === "error" ? "failed" : "running";
+    const stage = eventName === "response" ? "已返回" : eventName === "error" ? "调用失败" : eventName === "retry" ? "自动重试" : "请求中";
+    const model = event.model_name || event.model_config_id || event.engine || "默认模型";
+    const elapsed = Number(event.elapsed_ms);
+    const output = event.error || event.response_preview || (eventName === "request" ? "等待模型返回…" : "-");
+    return `<article class="ai-job-monitor-row ${tone}">
+      <div class="monitor-event-meta"><span class="monitor-stage ${tone}">${stage}</span><time>${monitorTimeLabel(event.time)}</time><strong>${escapeHtml(event.record_id || "-")}</strong><span>${escapeHtml(model)}</span>${Number.isFinite(elapsed) ? `<span>${(elapsed / 1000).toFixed(1)}s</span>` : ""}</div>
+      <div class="monitor-event-content"><div><small>发送数据${event.source_chars ? ` · ${escapeHtml(event.source_chars)} 字符` : ""}</small><p>${escapeHtml(event.source_preview || (eventName === "request" ? "本次请求未记录文本预览" : "-") )}</p></div><div><small>模型返回</small><p>${escapeHtml(output)}</p></div></div>
+    </article>`;
+  }).join("");
+}
+
+function monitorTimeLabel(value) {
+  const parsed = new Date(value || "");
+  return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleTimeString("zh-CN", { hour12: false });
+}
+
+function monitorUpdatedLabel(value) {
+  if (!value) return "等待刷新";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "刚刚刷新" : `更新于 ${parsed.toLocaleTimeString("zh-CN", { hour12: false })}`;
 }
 
 function translationFieldPoliciesMarkup() {
@@ -725,8 +1085,8 @@ function translationFieldPoliciesMarkup() {
   return `
     <section class="panel tuning-policy-panel">
       <div class="panel-heading">
-        <div><h2>翻译策略</h2><span class="panel-note">按日报类型、模块和字段精确控制翻译范围</span></div>
-        <button class="button small" type="button" data-admin-save-translation-tuning>保存策略</button>
+        <h2>翻译策略</h2>
+        <button class="button small" type="button" data-admin-save-translation-tuning ${Number(adminState.translationQueue?.processing_count || 0) ? "disabled" : ""}>保存策略</button>
       </div>
       <div class="tuning-policy-layout">
         <div class="tuning-prompt-form">
@@ -790,7 +1150,7 @@ function translationTermsMarkup() {
     const queryMatches = !query || [term.zh, term.en, term.es, translationTermCategoryLabel(term.category)].some((value) => String(value || "").toLowerCase().includes(query));
     return categoryMatches && queryMatches;
   });
-  const pageSize = Number(adminState.translationTermPageSize || 10);
+  const pageSize = Number(adminState.translationTermPageSize || ADMIN_DEFAULT_PAGE_SIZE);
   const pageCount = Math.max(1, Math.ceil(filteredTerms.length / pageSize));
   adminState.translationTermPage = Math.min(Math.max(1, adminState.translationTermPage || 1), pageCount);
   const start = (adminState.translationTermPage - 1) * pageSize;
@@ -798,7 +1158,7 @@ function translationTermsMarkup() {
   return `
     <section class="panel">
       <div class="panel-heading tuning-term-heading">
-        <div><h2>术语词库</h2><span class="panel-note">术语对全部日报字段生效，作业类型仅用于分类管理</span></div>
+        <h2>术语词库</h2>
         <div class="admin-actions tuning-term-actions"><input type="file" accept=".xlsx,.xls,.xlsm,.xltx,.xltm" data-translation-term-file hidden /><a class="button secondary small" href="/api/admin/translation-terms/template">下载模板</a><button class="button secondary small" type="button" data-admin-import-translation-terms ${adminState.translationTermImport.running ? "disabled" : ""}>${adminState.translationTermImport.running ? "分析中..." : "导入 Excel"}</button><a class="button secondary small" href="/api/admin/translation-terms/export">导出 Excel</a><button class="button small" type="button" data-admin-add-translation-term>新增术语</button></div>
       </div>
       ${translationTermImportSummaryMarkup()}
@@ -869,7 +1229,7 @@ function translationTestWorkbenchMarkup() {
         <label>模拟字段<select name="translationTestField">${policies.map((policy) => `<option value="${escapeHtml(policy.id)}" ${policy.id === adminState.translationTestFieldCode ? "selected" : ""}>${escapeHtml(policy.report_type_label)} / ${escapeHtml(policy.section_label)} / ${escapeHtml(policy.label)}</option>`).join("")}</select></label>
       </div>
       <label class="tuning-test-source">日报原文<textarea name="translationTestSource" rows="10" maxlength="8000">${escapeHtml(adminState.translationTestSource || "")}</textarea></label>
-      <div class="admin-actions"><button class="button" type="button" data-admin-run-translation-test ${adminState.translationTestRunning ? "disabled" : ""}>${adminState.translationTestRunning ? "测试中..." : "运行测试"}</button></div>
+      <div class="admin-actions"><button class="button" type="button" data-admin-run-translation-test ${adminState.translationTestRunning ? "disabled" : ""}>${adminState.translationTestRunning ? "测试中..." : "运行单条测试"}</button><button class="button secondary" type="button" data-admin-run-translation-batch-test ${adminState.translationTestRunning ? "disabled" : ""}>运行 6 条批量稳定性测试</button></div>
       <details class="prompt-preview" ${result?.prompt_preview ? "open" : ""}><summary>实际 Prompt 预览</summary><pre>${escapeHtml(result?.prompt_preview || "运行测试后显示最终发送给模型的 Prompt。")}</pre></details>
     </section>
     <section class="panel tuning-test-output">
@@ -883,7 +1243,7 @@ function translationTestResultMarkup(result) {
   if (!result) return `<div class="admin-empty-panel tuning-test-empty"><p>输入一段真实日报描述，运行后可查看译文、Prompt 和质量检查。</p></div>`;
   return `<div class="translation-test-result ${result.ok ? "success" : "failed"}">
     <div class="translation-output-text"><span>译文</span><p>${escapeHtml(result.translated_text || result.error || "模型未返回译文")}</p></div>
-    <div class="translation-test-meta"><span>源语言 <strong>${escapeHtml(result.source_language || "-")}</strong></span><span>目标语言 <strong>${escapeHtml(result.target_language || "-")}</strong></span><span>Prompt版本 <strong>${escapeHtml(result.prompt_version || "-")}</strong></span></div>
+    <div class="translation-test-meta"><span>源语言 <strong>${escapeHtml(result.source_language || "-")}</strong></span><span>目标语言 <strong>${escapeHtml(result.target_language || "-")}</strong></span><span>Prompt版本 <strong>${escapeHtml(result.prompt_version || "-")}</strong></span><span>测试规模 <strong>${escapeHtml(result.batch_size || 1)} 条</strong></span><span>Prompt <strong>${escapeHtml(result.prompt_chars || 0)} 字符</strong></span></div>
     <div class="translation-checks">${(result.checks || []).map((check) => `<div class="${escapeHtml(check.status || "warning")}"><span aria-hidden="true"></span><div><strong>${escapeHtml(check.label)}</strong>${check.detail ? `<small>${escapeHtml(check.detail)}</small>` : ""}</div></div>`).join("")}</div>
   </div>`;
 }
@@ -1066,7 +1426,7 @@ function renderAdminData() {
 function renderAdminLogs() {
   const host = document.querySelector('[data-admin-panel="logs"]');
   const logs = adminState.logs || [];
-  const pageSize = Number(adminState.logsPageSize || 20);
+  const pageSize = Number(adminState.logsPageSize || ADMIN_DEFAULT_PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
   const currentPage = Math.min(Math.max(1, Number(adminState.logsPage || 1)), totalPages);
   adminState.logsPage = currentPage;
@@ -1099,10 +1459,10 @@ function adminPaginationMarkup(kind, totalRows, currentPage, totalPages, pageSiz
   const end = Math.min(totalRows, currentPage * pageSize);
   const sizes = [10, 20, 50];
   return `
-    <div class="record-pagination admin-list-pagination ${extraClass}">
-      <span>共 ${totalRows} 条，显示 ${start}-${end}</span>
-      <div class="admin-log-page-controls">
-        <label>每页
+    <div class="record-pagination standard-pagination admin-list-pagination ${extraClass}">
+      <span class="pagination-summary">共 ${totalRows} 条，显示 ${start}-${end}</span>
+      <div class="standard-pagination-controls admin-log-page-controls">
+        <label class="standard-page-size">每页
           <select data-admin-page-size="${kind}">
             ${sizes.map((size) => `<option value="${size}" ${size === pageSize ? "selected" : ""}>${size} 条</option>`).join("")}
           </select>
@@ -1181,6 +1541,7 @@ function switchAdminTab(tab) {
   adminState.tab = tab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => button.classList.toggle("active", button.dataset.adminTab === tab));
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => panel.hidden = panel.dataset.adminPanel !== tab);
+  scheduleAdminQueuePoll(0);
 }
 
 function roleLabel(value) {
@@ -1294,6 +1655,22 @@ async function saveAdminConfig() {
 
 function collectAiModelForm() {
   const host = document.querySelector('[data-admin-panel="aiModels"]');
+  const requestOptionsText = host?.querySelector('[name="aiModelRequestOptions"]')?.value.trim() || "{}";
+  let requestOptions;
+  try {
+    requestOptions = JSON.parse(requestOptionsText);
+  } catch (error) {
+    throw new Error(`高级请求配置不是有效 JSON：${error.message}`);
+  }
+  if (!requestOptions || Array.isArray(requestOptions) || typeof requestOptions !== "object") {
+    throw new Error("高级请求配置必须是 JSON 对象。");
+  }
+  const reservedOptionKeys = new Set(["authorization", "api_key", "apikey", "base_url", "messages", "model", "prompt", "stream"]);
+  const blockedOption = Object.keys(requestOptions).find((key) => reservedOptionKeys.has(key.trim().toLowerCase()));
+  if (blockedOption) throw new Error(`高级请求配置不允许覆盖 ${blockedOption}。`);
+  if (new TextEncoder().encode(requestOptionsText).length > 12000) {
+    throw new Error("高级请求配置不能超过 12 KB。");
+  }
   return {
     id: host?.querySelector('[name="aiModelId"]')?.value || newClientId(),
     name: host?.querySelector('[name="aiModelName"]')?.value.trim() || "未命名模型",
@@ -1302,8 +1679,10 @@ function collectAiModelForm() {
     api_key: host?.querySelector('[name="aiModelApiKey"]')?.value || "",
     model: host?.querySelector('[name="aiModelModel"]')?.value.trim() || "",
     timeout_seconds: Number(host?.querySelector('[name="aiModelTimeout"]')?.value || 60),
-    temperature: Number(host?.querySelector('[name="aiModelTemperature"]')?.value || 0),
+    thinking_mode: host?.querySelector('[name="aiModelThinkingMode"]')?.value || "auto",
     retry_count: Number(host?.querySelector('[name="aiModelRetry"]')?.value || 2),
+    chunk_max_chars: Number(host?.querySelector('[name="aiModelChunkChars"]')?.value || 0),
+    request_options: requestOptions,
     enabled: host?.querySelector('[name="aiModelEnabled"]')?.value !== "false",
     is_default: host?.querySelector('[name="aiModelDefault"]')?.value === "true",
   };
@@ -1321,9 +1700,9 @@ function aiModelsWithCurrentForm() {
 }
 
 async function saveAiModels() {
-  const models = aiModelsWithCurrentForm();
-  const defaultModel = models.find((item) => item.is_default) || models.find((item) => item.enabled !== false) || models[0];
   try {
+    const models = aiModelsWithCurrentForm();
+    const defaultModel = models.find((item) => item.is_default) || models.find((item) => item.enabled !== false) || models[0];
     const response = await adminRequest("/api/admin/ai-models", {
       method: "POST",
       body: JSON.stringify({ models, default_model_id: defaultModel?.id || "" }),
@@ -1340,7 +1719,14 @@ async function saveAiModels() {
 }
 
 async function testAiModel() {
-  const model = collectAiModelForm();
+  let model;
+  try {
+    model = collectAiModelForm();
+  } catch (error) {
+    adminState.aiModelTestResult = { ok: false, error: error.message };
+    renderAdminAiModels();
+    return;
+  }
   adminState.aiModelTestResult = null;
   renderAdminAiModels();
   try {
@@ -1378,6 +1764,36 @@ async function queueTranslations(mode = "continue", recordIds = null) {
   }
 }
 
+async function stopTranslations(confirmAction = true) {
+  if (confirmAction && !window.confirm("确认停止当前翻译队列？已完成译文会保留，未完成日报之后可以继续。")) return false;
+  const result = await adminRequest("/api/admin/translations/stop", { method: "POST", body: "{}" });
+  showToast(`已停止翻译：${result.stopped_records || 0} 条未完成日报`);
+  return true;
+}
+
+async function stopAiExtractions(confirmAction = true) {
+  if (confirmAction && !window.confirm("确认停止当前数据提炼队列？已完成结果会保留，未完成日报之后可以继续。")) return false;
+  const result = await adminRequest("/api/admin/ai-extractions/stop", { method: "POST", body: "{}" });
+  showToast(`已停止提炼：${result.stopped_records || 0} 条未完成日报`);
+  return true;
+}
+
+async function stopTranslationsAndRefresh() {
+  try {
+    if (await stopTranslations()) await loadAdminData();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function stopExtractionsAndRefresh() {
+  try {
+    if (await stopAiExtractions()) await loadAdminData();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 async function openTranslationQueue() {
   try {
     adminState.translationQueue = await adminRequest("/api/admin/translations");
@@ -1405,13 +1821,20 @@ function translationQueueRowMarkup(record = {}) {
     <td><strong>${escapeHtml(record.report_type_label || record.report_type)}</strong></td>
     <td>${escapeHtml(record.report_date || "-")}<small class="table-subtext">${escapeHtml(record.report_no || "-")}</small></td>
     <td>${escapeHtml(record.wellbore || "-")}</td><td>${escapeHtml(record.rig || "-")}</td>
-    <td><span class="status-pill ${record.status === "FAILED" ? "failed" : record.status === "COMPLETED" ? "uploaded" : "pending"}">${escapeHtml(translationQueueStatusLabel(record.status))}${record.progress ? ` ${escapeHtml(record.progress)}%` : ""}</span></td>
-    <td>${escapeHtml(record.reason || "-")}</td>
+    <td data-translation-job-status="${escapeHtml(record.record_id)}">${translationJobStatusMarkup(record)}</td>
+    <td data-translation-job-reason="${escapeHtml(record.record_id)}">${escapeHtml(record.reason || "-")}</td>
   </tr>`;
 }
 
+function translationJobStatusMarkup(record = {}) {
+  const status = String(record.status || "").toUpperCase();
+  const tone = status === "FAILED" ? "failed" : status === "COMPLETED" ? "uploaded" : ["QUEUED", "IN_PROGRESS"].includes(status) ? "processing" : "pending";
+  const progress = ["QUEUED", "IN_PROGRESS"].includes(status) ? ` ${escapeHtml(record.progress || "0")}%` : "";
+  return `<span class="status-pill ${tone}">${escapeHtml(translationQueueStatusLabel(status))}${progress}</span>`;
+}
+
 function translationQueueStatusLabel(status = "") {
-  return { PENDING: "待处理", FAILED: "失败", QUEUED: "已排队", IN_PROGRESS: "翻译中", COMPLETED: "已完成", NOT_REQUIRED: "无需翻译" }[status] || status || "待处理";
+  return { PENDING: "待处理", STOPPED: "已停止", FAILED: "失败", QUEUED: "已排队", IN_PROGRESS: "翻译中", COMPLETED: "已完成", NOT_REQUIRED: "无需翻译" }[status] || status || "待处理";
 }
 
 function selectedTranslationQueueIds() {
@@ -1830,7 +2253,19 @@ function switchTranslationTuningView(view) {
   renderAdminTranslationTuning();
 }
 
-async function runTranslationTuningTest() {
+function switchAiQueueStatusTab(kind, value) {
+  if (!['all', 'pending', 'processing', 'completed'].includes(value)) return;
+  if (kind === "extraction") {
+    adminState.aiExtractionQueueStatusTab = value;
+    adminState.aiExtractionQueuePage = 1;
+    return renderAdminAiExtraction();
+  }
+  adminState.translationQueueStatusTab = value;
+  adminState.translationQueuePage = 1;
+  renderAdminTranslationTuning();
+}
+
+async function runTranslationTuningTest(batchMode = false) {
   const host = document.querySelector('[data-admin-panel="translationTuning"]');
   const sourceText = host?.querySelector('[name="translationTestSource"]')?.value.trim() || "";
   if (!sourceText) return showToast("请输入需要测试的日报文本");
@@ -1846,6 +2281,7 @@ async function runTranslationTuningTest() {
     model_id: adminState.translationTestModelId,
     field_code: adminState.translationTestFieldCode,
     tuning: adminState.translationTuning,
+    batch_mode: Boolean(batchMode),
   };
   renderAdminTranslationTuning();
   try {
@@ -2043,6 +2479,9 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-admin-test-ai-model]")) return testAiModel();
   if (event.target.closest("[data-admin-save-ai-models]")) return saveAiModels();
   if (event.target.closest("[data-admin-delete-ai-model]")) return deleteSelectedAiModel();
+  if (event.target.closest("[data-admin-open-active-ai-jobs]")) return openActiveAiJobsModal();
+  const jumpAiQueue = event.target.closest("[data-admin-jump-ai-queue]");
+  if (jumpAiQueue) return jumpToAiJobQueue(jumpAiQueue.dataset.adminJumpAiQueue);
   if (event.target.closest("[data-admin-new-extraction-rule]")) return newAiExtractionRule();
   const editExtraction = event.target.closest("[data-admin-edit-extraction-rule]");
   if (editExtraction) return editAiExtractionRule(editExtraction.dataset.adminEditExtractionRule);
@@ -2056,6 +2495,10 @@ document.addEventListener("click", (event) => {
   }
   const queueExtraction = event.target.closest("[data-admin-queue-extractions]");
   if (queueExtraction) return queueAiExtractions(queueExtraction.dataset.adminQueueExtractions || "continue");
+  const queueStatusTab = event.target.closest("[data-ai-queue-status-tab]");
+  if (queueStatusTab) return switchAiQueueStatusTab(queueStatusTab.dataset.aiQueueStatusTab, queueStatusTab.dataset.aiQueueStatusValue);
+  if (event.target.closest("[data-admin-stop-extractions]")) return stopExtractionsAndRefresh();
+  if (event.target.closest("[data-admin-stop-translations]")) return stopTranslationsAndRefresh();
   if (event.target.closest("[data-admin-reset-translations]")) return resetTranslations();
   if (event.target.closest("[data-admin-queue-translations]")) return queueTranslations();
   if (event.target.closest("[data-admin-open-translation-queue]")) return openTranslationQueue();
@@ -2068,6 +2511,7 @@ document.addEventListener("click", (event) => {
   const removeScope = event.target.closest("[data-admin-remove-translation-scope]");
   if (removeScope) return removeTranslationScope(removeScope.dataset.adminRemoveTranslationScope);
   if (event.target.closest("[data-admin-run-translation-test]")) return runTranslationTuningTest();
+  if (event.target.closest("[data-admin-run-translation-batch-test]")) return runTranslationTuningTest(true);
   if (event.target.closest("[data-admin-import-translation-terms]")) return chooseTranslationTermWorkbook();
   if (event.target.closest("[data-admin-review-term-duplicates]")) return openTranslationTermDuplicateReview();
   if (event.target.closest("[data-admin-resolve-term-duplicates]")) return resolveTranslationTermDuplicates();
@@ -2123,6 +2567,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.matches('[name="aiModelApiType"]')) return syncAiModelInterfaceFields(event.target);
   if (event.target.matches("[data-admin-page-size]")) return setAdminPageSize(event.target.dataset.adminPageSize, Number(event.target.value || ADMIN_DEFAULT_PAGE_SIZE));
   if (event.target.matches("[data-admin-page-jump]")) return commitAdminPageJump(event.target);
   if (event.target.matches('[name="translationPolicyEnabled"]')) {
@@ -2174,6 +2619,10 @@ document.addEventListener("keydown", (event) => {
     return openTranslationQueue();
   }
   if (event.key === "Escape") closeAdminModal();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) scheduleAdminQueuePoll(0);
 });
 
 loadAdminSession();

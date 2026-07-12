@@ -11,6 +11,8 @@ from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from .text_structure import normalize_multiline
+
 
 MAX_SCAN_COLS = 80
 
@@ -595,7 +597,8 @@ def _slice_table_row(row: list[CellValue], columns: list[tuple[str, int]]) -> di
     for idx, (name, start) in enumerate(columns):
         end = columns[idx + 1][1] if idx + 1 < len(columns) else len(row)
         values = [cell.value for cell in row[start:end] if cell.value]
-        parsed[name] = clean_value(" ".join(values))
+        combined = "\n".join(values) if name == "operation_details" else " ".join(values)
+        parsed[name] = normalize_multiline(combined) if name == "operation_details" else clean_value(combined)
     return parsed
 
 
@@ -643,7 +646,7 @@ def _append_continuation(row: dict[str, Any], parsed: dict[str, str], continuati
     if not continuation_text:
         return
     target = continuation_columns[-1]
-    row[target] = clean_value(f"{row.get(target, '')} {continuation_text}")
+    row[target] = normalize_multiline(f"{row.get(target, '')}\n{continuation_text}")
 
 
 def _dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -10,13 +10,13 @@
       "instruction": "提取造成该段NPT的责任公司或Service Line。第一优先级：A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE、RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO等明确归责表达。第二优先级：描述明确指出某公司的设备、工具或服务发生FALLA、ANOMALIA、PERDIDA、CAIDA、FAULT、FAILURE、LOSS等故障，并由该公司处置。第三优先级：故障对象与唯一服务品牌存在明确归属，例如HAL/HALLIBURTON/SPERRY、SLB/SCHLUMBERGER/SLB-RPS、CNLC-WIRELINE。仅出现iCruise、MWD、LWD、BHA或公司参与后续处置，不足以判定责任；故障若明确位于钻杆、套管等其他对象，也不得归责给同段出现的定向服务商。不得仅根据井队上下文猜测，不得把无关的协助或后续作业公司当成责任方。只返回一个责任方名称；没有充分证据返回空字符串。如果责任公司与井队公司一致，输出完整井队名称。",
       "target_field": "service_line",
       "output_format": "company",
-      "model_id": "7bad1ba9-c961-4407-8f54-1d819b462fb4",
+      "model_id": "b613f4e8-033b-4433-b9ff-9fc515a982fe",
       "enabled": true,
-      "updated_at": "2026-07-11T20:58:22"
+      "updated_at": "2026-07-12T09:03:59"
     }
   ],
   "auto_execute": true,
-  "version": "ai-extraction-5a397074aee8",
+  "version": "ai-extraction-d1bfbd13349c",
   "catalog": {
     "report_types": [
       {
@@ -1251,5 +1251,5 @@
       }
     ]
   },
-  "updated_at": "2026-07-11T20:58:22"
+  "updated_at": "2026-07-12T09:03:59"
 }

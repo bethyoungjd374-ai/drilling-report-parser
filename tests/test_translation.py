@@ -1,16 +1,32 @@
 from __future__ import annotations
 
+import json
+import re
 import unittest
+from unittest.mock import patch
 
 from drilling_report_parser.translation import TermsConfig, apply_translation_content
 from drilling_report_parser.translation.service import (
     DrillingReportTranslator,
+    OpenAICompatibleTranslationEngine,
+    TranslationCircuitOpen,
+    TranslationQualityError,
     TranslationTuningConfig,
+    TranslationTransportError,
+    _numeric_quality_error,
+    _check_provider_circuit,
+    _PROVIDER_CIRCUIT_LOCK,
+    _PROVIDER_CIRCUITS,
+    _restore_surgically_protected_values,
+    _repair_protected_token_layout,
+    _surgically_protect_values,
     _split_translation_text,
+    _translation_part_item,
     _translation_quality_error,
     detect_language,
     iter_payload_text_units,
     source_hash,
+    text_needs_translation,
     translation_coverage,
 )
 
@@ -43,12 +59,142 @@ class CountingEngine:
     def __init__(self) -> None:
         self.calls = 0
         self.batch_sizes = []
+        self.batches = []
 
     def translate_items(self, items, target_language, timeout_seconds):
         del target_language, timeout_seconds
         self.calls += 1
         self.batch_sizes.append(len(items))
-        return {str(item["id"]): "已完成翻译" for item in items}
+        self.batches.append(list(items))
+        return {
+            str(item["id"]): "已完成翻译 " + " ".join(re.findall(r"\[\[P\d+]]", item["source_text"]))
+            for item in items
+        }
+
+
+class ProtectedTokenEngine:
+    name = "protected-token-engine"
+
+    def __init__(self, *, drop_tokens: bool = False, reverse_tokens: bool = False) -> None:
+        self.calls = 0
+        self.items = []
+        self.drop_tokens = drop_tokens
+        self.reverse_tokens = reverse_tokens
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        self.items.extend(items)
+        if self.drop_tokens:
+            return {str(item["id"]): "已完成翻译" for item in items}
+        results = {}
+        for item in items:
+            tokens = re.findall(r"\[\[P\d+]]", item["source_text"])
+            if self.reverse_tokens:
+                tokens.reverse()
+            results[str(item["id"])] = "已完成翻译 " + " ".join(tokens)
+        return results
+
+
+class PlaceholderRejectingEngine:
+    name = "openai-compatible"
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.items = []
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        self.items.extend(items)
+        if any(re.search(r"\[\[P\d+]]", str(item.get("source_text", ""))) for item in items):
+            raise TranslationQualityError("model changed, removed, or duplicated protected placeholders")
+        return {str(item["id"]): "已翻译" for item in items}
+
+
+class PartialFailureEngine:
+    name = "partial-failure-engine"
+
+    def __init__(self) -> None:
+        self.batch_sizes = []
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.batch_sizes.append(len(items))
+        results = {}
+        for item in items:
+            tokens = re.findall(r"\[\[P\d+]]", item["source_text"])
+            if len(items) > 1 and str(item["id"]) == "1":
+                tokens = []
+            results[str(item["id"])] = "已完成翻译 " + " ".join(tokens)
+        return results
+
+
+class OfflineEngine:
+    name = "openai-compatible"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del items, target_language, timeout_seconds
+        self.calls += 1
+        raise TranslationTransportError("provider offline", retryable=False)
+
+
+class CoolingDownEngine:
+    name = "openai-compatible"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        if self.calls == 1:
+            raise TranslationCircuitOpen("provider cooling down", retry_after_seconds=2.5)
+        return {
+            str(item["id"]): "已完成翻译 " + " ".join(re.findall(r"\[\[P\d+]]", item["source_text"]))
+            for item in items
+        }
+
+
+class ExtraNumberEngine:
+    name = "extra-number"
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        return {
+            str(item["id"]): "已完成翻译 999 " + " ".join(re.findall(r"\[\[P\d+]]", item["source_text"]))
+            for item in items
+        }
+
+
+class MonthLocalizationEngine:
+    name = "month-localization"
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        return {
+            str(item["id"]): str(item["source_text"])
+            .replace("DESDE EL", "自")
+            .replace("DE MAYO DE", "年5月")
+            .replace(".", "日。")
+            for item in items
+        }
+
+
+class SuperscriptUnitEngine:
+    name = "superscript-unit"
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        return {
+            str(item["id"]): str(item["source_text"])
+            .replace("VOLUMEN", "体积")
+            .replace("M3", "m³")
+            for item in items
+        }
 
 
 class TranslationServiceTest(unittest.TestCase):
@@ -63,11 +209,100 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(detect_language("SACA BHA #5 DIRECCIONAL"), "es")
         self.assertEqual(detect_language("Environ Incident? N INCIDENTES SIN REPORTAR EN LAS ULTIMAS 24 HORAS."), "es")
 
+    def test_mixed_chinese_and_spanish_text_still_requires_translation(self) -> None:
+        source = "已确认：CONTINUAR BAJANDO CASING HASTA 10749 FT."
+
+        self.assertTrue(text_needs_translation(source, "zh-CN"))
+        result = self.translator.translate_report_payload({"report_fields": {"currentOps": source}})
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+
     def test_rejects_unchanged_or_barely_translated_chinese_output(self) -> None:
         source = "INCIDENTES SIN REPORTAR EN LAS ULTIMAS 24 HORAS. TRASLADO DE FLUIDOS DEL CAMPAMENTO."
         self.assertIn("unchanged", _translation_quality_error(source, source, "zh-CN"))
-        self.assertIn("excessive", _translation_quality_error(source, f"{source} 钻进", "zh-CN"))
+        self.assertIn("unchanged", _translation_quality_error(source, f"{source} 钻进", "zh-CN"))
         self.assertEqual(_translation_quality_error(source, "过去 24 小时内无事故报告。已转运营地流体。", "zh-CN"), "")
+        self.assertIn(
+            "unchanged",
+            _translation_quality_error("RUN COMPLETION STRING\nTO PRODUCTION DEPTH.", "RUN COMPLETION STRING TO PRODUCTION DEPTH.", "zh-CN"),
+        )
+
+    def test_data_heavy_output_is_not_rejected_by_chinese_ratio(self) -> None:
+        source = "ISIP: 5520 PSI; FRICTION GRADIENT: 0.16 PSI/FT; HHP: 4598 HHP."
+        translated = "ISIP：5520 PSI；摩阻梯度：0.16 PSI/FT；HHP：4598 HHP。"
+
+        self.assertEqual(_translation_quality_error(source, translated, "zh-CN"), "")
+
+    def test_allows_preserved_spanish_terms_inside_chinese_output(self) -> None:
+        source = "INSTALA EQUIPO (VENTA STP) COMO SIGUE."
+
+        error = _translation_quality_error(source, "安装设备（VENTA STP），如下。", "zh-CN")
+
+        self.assertEqual(error, "")
+
+    def test_surgical_number_restore_preserves_adjacent_number_boundary(self) -> None:
+        source = "GUÍA # 0177006 1 WINCHE; GUÍA # 0177003 1 GRÚA."
+        protected, values = _surgically_protect_values({"id": "1", "source_text": source})
+        collapsed = str(protected["source_text"])
+        for index, value in enumerate(values):
+            if index and value.get("separate_from_previous"):
+                previous_token = str(values[index - 1]["token"])
+                collapsed = collapsed.replace(f"{previous_token} {value['token']}", f"{previous_token}{value['token']}")
+
+        restored = _restore_surgically_protected_values(collapsed, values)
+
+        self.assertIn("0177006 1", restored)
+        self.assertIn("0177003 1", restored)
+        self.assertEqual(_numeric_quality_error(source, restored, "zh-CN"), "")
+
+    def test_main_protection_restores_space_between_mixed_fraction_tokens(self) -> None:
+        source = 'SECCIÓN [[P0]] [[P1]]"'
+
+        repaired = _repair_protected_token_layout(source, '井段 [[P0]][[P1]]"')
+
+        self.assertEqual(repaired, '井段 [[P0]] [[P1]]"')
+
+    def test_main_protection_removes_invented_fraction_suffix(self) -> None:
+        source = "ARENA MAXPROP [[P1]] PARA TRABAJO"
+
+        repaired = _repair_protected_token_layout(source, "MAXPROP [[P1]]/40砂用于作业")
+
+        self.assertEqual(repaired, "MAXPROP [[P1]]砂用于作业")
+
+    def test_main_protection_restores_space_after_latin_term(self) -> None:
+        source = "ARENA MAXPROP [[P1]] PARA TRABAJO"
+
+        repaired = _repair_protected_token_layout(source, "MaxProp[[P1]]砂用于作业")
+
+        self.assertEqual(repaired, "MaxProp [[P1]]砂用于作业")
+
+    def test_surgical_retry_protects_required_technical_identifier(self) -> None:
+        protected, values = _surgically_protect_values({
+            "id": "15",
+            "source_text": "TCP + PURE - WO#01",
+            "preserve_terms": ["WO#01"],
+        })
+
+        restored = _restore_surgically_protected_values("TCP + PURE - " + values[-1]["token"], values)
+
+        self.assertNotIn("WO#01", protected["source_text"])
+        self.assertTrue(any(value["replacement"] == "WO#01" for value in values))
+        self.assertTrue(restored.endswith("WO#01"))
+
+    def test_long_text_part_only_carries_terms_present_in_that_part(self) -> None:
+        item = {
+            "id": "0",
+            "source_text": "FIRST ID-A1. SECOND ID-B2.",
+            "glossary": [
+                {"source": "FIRST", "target": "第一"},
+                {"source": "SECOND", "target": "第二"},
+            ],
+            "preserve_terms": ["ID-A1", "ID-B2"],
+        }
+
+        part = _translation_part_item(item, "0::part-0", "FIRST ID-A1.")
+
+        self.assertEqual(part["glossary"], [{"source": "FIRST", "target": "第一"}])
+        self.assertEqual(part["preserve_terms"], ["ID-A1"])
 
     def test_splits_long_remarks_without_losing_text(self) -> None:
         source = "第一段内容。 " + ("LONG TECHNICAL REMARK - " * 45) + "最后一段。"
@@ -144,6 +379,40 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertTrue(all(row["source_hash"] for row in result["translation_content"]))
         self.assertEqual(progress_updates[-1], ("zh-CN", 2, 2))
 
+    def test_emits_translation_rows_incrementally_by_chunk(self) -> None:
+        translator = DrillingReportTranslator(
+            FakeLocalEngine(),
+            self.terms,
+            target_language="zh-CN",
+            chunk_max_chars=40,
+        )
+        persisted = []
+        payload = {
+            "report_fields": {
+                "currentOps": "DRILL AHEAD WITH STABLE RETURNS.",
+                "summary24h": "CIRCULATE BOTTOMS UP UNTIL CLEAN.",
+            }
+        }
+
+        result = translator.translate_report_payload(
+            payload,
+            on_rows=lambda language, rows: persisted.append((language, list(rows))),
+        )
+
+        self.assertEqual(len(result["translation_content"]), 2)
+        self.assertEqual(sum(len(rows) for _language, rows in persisted), 2)
+        self.assertTrue(all(language == "zh-CN" for language, _rows in persisted))
+
+    def test_translation_batch_exercises_multiple_items_in_one_request(self) -> None:
+        engine = CountingEngine()
+        translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", chunk_max_chars=2400)
+
+        rows = translator.translate_text_batch(["DRILL AHEAD WITH STABLE RETURNS."] * 6)
+
+        self.assertEqual(len(rows), 6)
+        self.assertEqual(engine.batch_sizes, [6])
+        self.assertTrue(all(row["translation_status"] == "COMPLETED" for row in rows))
+
     def test_applies_saved_translation_content_to_payload(self) -> None:
         payload = {
             "metadata": {"record_id": "drilling:PCNC-040:2026-06-11:11"},
@@ -214,18 +483,22 @@ class TranslationServiceTest(unittest.TestCase):
 
     def test_retries_model_calls_and_records_model_config_id(self) -> None:
         engine = FlakyEngine()
+        events = []
         translator = DrillingReportTranslator(
             engine,
-            self.terms,
+            TermsConfig.from_data({}),
             target_language="zh-CN",
             model_config_id="model-primary",
             retry_count=1,
+            telemetry=events.append,
         )
 
         result = translator.translate_report_payload({"report_fields": {"currentOps": "Drilling ahead"}})
 
         self.assertEqual(engine.calls, 2)
         self.assertEqual(result["translation_content"][0]["model_config_id"], "model-primary")
+        self.assertIn("model_request_retry", [event["event"] for event in events])
+        self.assertNotIn("model_request_error", [event["event"] for event in events])
 
     def test_tuning_limits_fields_and_changes_prompt(self) -> None:
         tuning = TranslationTuningConfig.from_data({
@@ -251,15 +524,404 @@ class TranslationServiceTest(unittest.TestCase):
 
         self.assertEqual(len(result["translation_content"]), 1)
         self.assertEqual(result["translation_content"][0]["field_code"], "report_fields.currentOps")
-        self.assertEqual(result["translation_content"][0]["prompt_version"], "test-tuning-v1")
+        self.assertEqual(result["translation_content"][0]["prompt_version"], translator.prompt_version)
         self.assertIn("现场钻井翻译审核员", preview)
         self.assertIn("逐句翻译，禁止合并句子", preview)
         self.assertIn("ROP", preview)
 
+    def test_data_driven_protection_masks_and_restores_original_units(self) -> None:
+        engine = ProtectedTokenEngine()
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "ft/hr"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN")
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DRILL FROM 3,200 FT AT 17.5 ft/hr."},
+        })
+
+        model_text = engine.items[0]["source_text"]
+        translated_text = result["translation_content"][0]["translated_text"]
+        self.assertNotIn("3,200", model_text)
+        self.assertNotIn("FT", model_text)
+        self.assertNotIn("ft/hr", model_text)
+        self.assertEqual(len(re.findall(r"\[\[P\d+]]", model_text)), 2)
+        self.assertIn("3,200 FT", translated_text)
+        self.assertIn("17.5 ft/hr", translated_text)
+
+    def test_openai_compatible_uses_hard_unit_protection_and_longest_compound_match(self) -> None:
+        engine = ProtectedTokenEngine()
+        engine.name = "openai-compatible"
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "psi", "psi/ft", "ft/hr"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN")
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "GRADIENT 0.16 PSI/FT; DRILL AT 45 FT/HR."},
+        })
+
+        model_text = engine.items[0]["source_text"]
+        translated_text = result["translation_content"][0]["translated_text"]
+        self.assertEqual(len(re.findall(r"\[\[P\d+]]", model_text)), 2)
+        self.assertNotIn("PSI/FT", model_text)
+        self.assertNotIn("FT/HR", model_text)
+        self.assertIn("0.16 PSI/FT", translated_text)
+        self.assertIn("45 FT/HR", translated_text)
+
+    def test_protected_unit_is_not_rewritten_by_post_translation_glossary(self) -> None:
+        engine = ProtectedTokenEngine()
+        engine.name = "openai-compatible"
+        terms = TermsConfig.from_data({
+            "terms": [{"id": "rpm", "en": "RPM", "zh": "转速", "protected": True, "enabled": True}],
+            "protected_terms": {"units": ["rpm"]},
+        })
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN")
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "ROTATE AT 120 RPM."},
+        })
+
+        translated_text = result["translation_content"][0]["translated_text"]
+        self.assertIn("120 RPM", translated_text)
+        self.assertNotIn("转速", translated_text)
+
+    def test_placeholder_failure_recovers_with_structured_segments(self) -> None:
+        engine = PlaceholderRejectingEngine()
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DRILL TO 3200 FT."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertEqual(row["translated_text"], "已翻译 3200 FT.")
+        self.assertEqual(engine.calls, 3)
+        self.assertTrue(any("[[P" in str(item.get("source_text", "")) for item in engine.items))
+        self.assertTrue(any("[[P" not in str(item.get("source_text", "")) for item in engine.items))
+
+    def test_placeholder_dense_item_uses_segments_before_model_request(self) -> None:
+        engine = PlaceholderRejectingEngine()
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "psi"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DRILL 100 FT, 200 FT, 300 FT; TEST 400 PSI AND 500 PSI."},
+        })
+
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertTrue(engine.items)
+        self.assertTrue(any("[[P" in str(item.get("source_text", "")) for item in engine.items))
+        self.assertTrue(any("[[P" not in str(item.get("source_text", "")) for item in engine.items))
+
+    def test_all_protected_identifiers_skip_model_instead_of_failing_source_copy(self) -> None:
+        engine = PlaceholderRejectingEngine()
+        terms = TermsConfig.from_data({
+            "protected_terms": {"acronyms": ["TCP", "PURE", "WO#01"]},
+        })
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "TCP + PURE - WO#01"},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "NOT_REQUIRED")
+        self.assertEqual(row["translated_text"], "TCP + PURE - WO#01")
+        self.assertEqual(engine.calls, 0)
+
+    def test_digit_glued_word_is_not_treated_as_preserved_identifier(self) -> None:
+        translator = DrillingReportTranslator(
+            ProtectedTokenEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+        )
+
+        preserved = translator._preserve_terms("177.00INCIDENTES SIN REPORTAR", [])
+
+        self.assertNotIn("00INCIDENTES", preserved)
+
+    def test_standalone_numbers_use_compact_protection_and_restore_precision(self) -> None:
+        engine = ProtectedTokenEngine()
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "REPORT 2026 HAS 15 ITEMS."},
+        })
+
+        self.assertNotIn("2026", engine.items[0]["source_text"])
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertIn("2026", result["translation_content"][0]["translated_text"])
+        self.assertIn("15", result["translation_content"][0]["translated_text"])
+
+    def test_compact_technical_time_is_protected_without_false_extra_numbers(self) -> None:
+        engine = ProtectedTokenEngine()
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "INGRESA EL 25-01-2026 A LAS 06H00 AM."},
+        })
+
+        self.assertNotIn("06H00", engine.items[0]["source_text"])
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertIn("06H00", result["translation_content"][0]["translated_text"])
+
+    def test_spanish_numeric_ordinals_are_protected_as_complete_values(self) -> None:
+        engine = ProtectedTokenEngine()
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "OBSERVA RUPTURA DE 1er. TAPON Y LIBERA 2do. TAPON."},
+        })
+
+        model_text = engine.items[0]["source_text"]
+        self.assertNotIn("1er.", model_text)
+        self.assertNotIn("2do.", model_text)
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertIn("1er.", result["translation_content"][0]["translated_text"])
+        self.assertIn("2do.", result["translation_content"][0]["translated_text"])
+
+    def test_decimal_touching_following_text_is_protected_as_one_value(self) -> None:
+        engine = ProtectedTokenEngine()
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"incidentComments": "N Days since Last LTA 188.00INCIDENTES SIN REPORTAR EN 24 HORAS."},
+        })
+
+        self.assertNotIn("188.00", engine.items[0]["source_text"])
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertIn("188.00", result["translation_content"][0]["translated_text"])
+
+    def test_numeric_month_localization_is_not_treated_as_an_extra_value(self) -> None:
+        translator = DrillingReportTranslator(
+            MonthLocalizationEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+        )
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DESDE EL 8 DE MAYO DE 2026."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertIn("5月", row["translated_text"])
+
+    def test_unit_identifier_digit_is_not_treated_as_a_changed_value(self) -> None:
+        translator = DrillingReportTranslator(
+            SuperscriptUnitEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+        )
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "VOLUMEN 54.99 M3."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertIn("54.99 m³", row["translated_text"])
+
+    def test_protection_rules_are_compiled_from_current_configuration(self) -> None:
+        engine = ProtectedTokenEngine()
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["kPa"]}})
+        translator = DrillingReportTranslator(
+            engine,
+            terms,
+            target_language="zh-CN",
+            tuning=TranslationTuningConfig(protect_numbers=False),
+        )
+
+        translator.translate_report_payload({
+            "report_fields": {"currentOps": "PRESSURE 500 kPa AND DEPTH 3200 FT."},
+        })
+
+        model_text = engine.items[0]["source_text"]
+        self.assertNotIn("kPa", model_text)
+        self.assertIn("3200 FT", model_text)
+
+    def test_global_acronyms_proper_nouns_and_ambiguous_units_use_context(self) -> None:
+        engine = ProtectedTokenEngine()
+        terms = TermsConfig.from_data({
+            "protected_terms": {"acronyms": ["BHA"], "units": ["in"], "proper_nouns": ["SINOPEC"]},
+        })
+        translator = DrillingReportTranslator(
+            engine,
+            terms,
+            target_language="zh-CN",
+            tuning=TranslationTuningConfig(),
+        )
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "WORK IN HOLE WITH BHA FOR SINOPEC, 12.25 in section."},
+        })
+
+        model_text = engine.items[0]["source_text"]
+        self.assertIn("WORK IN HOLE", model_text)
+        self.assertNotIn("BHA", model_text)
+        self.assertNotIn("SINOPEC", model_text)
+        self.assertNotIn("12.25 in", model_text)
+        translated_text = result["translation_content"][0]["translated_text"]
+        self.assertIn("BHA", translated_text)
+        self.assertIn("SINOPEC", translated_text)
+        self.assertIn("12.25 in", translated_text)
+
+    def test_m_in_m_lwd_is_not_treated_as_metre_unit(self) -> None:
+        engine = ProtectedTokenEngine()
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["m"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN")
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "PERFORA CON HTAS. M/ LWD EN FORMACION TENA."},
+        })
+
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertIn("M/ LWD", engine.items[0]["source_text"])
+
+    def test_locked_glossary_term_is_restored_to_configured_target(self) -> None:
+        engine = ProtectedTokenEngine()
+        terms = TermsConfig.from_data({
+            "terms": [{"id": "dp", "en": "drill pipe", "zh": "钻杆", "protected": True, "enabled": True}],
+            "protected_terms": {},
+        })
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN")
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "RUN DRILL PIPE."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(engine.calls, 0)
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertIn("钻杆", row["translated_text"])
+
+    def test_missing_protected_placeholder_is_retried_then_rejected(self) -> None:
+        engine = ProtectedTokenEngine(drop_tokens=True)
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=1)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DRILL TO 3200 FT."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(engine.calls, 2)
+        self.assertEqual(row["translation_status"], "FAILED")
+        self.assertIn("protected placeholders", row["error_message"])
+
+    def test_batch_placeholder_failure_retries_only_the_invalid_item(self) -> None:
+        engine = PartialFailureEngine()
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {
+                "currentOps": "DRILL TO 3200 FT.",
+                "summary24h": "PULL TO 1200 FT.",
+            },
+        })
+
+        self.assertEqual(engine.batch_sizes, [2, 1])
+        self.assertTrue(all(row["translation_status"] == "COMPLETED" for row in result["translation_content"]))
+
+    def test_transport_failure_does_not_expand_batch_into_per_item_calls(self) -> None:
+        engine = OfflineEngine()
+        translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", retry_count=3)
+
+        result = translator.translate_report_payload({
+            "report_fields": {
+                "currentOps": "DRILL AHEAD WITH STABLE RETURNS.",
+                "summary24h": "CIRCULATE BOTTOMS UP UNTIL CLEAN.",
+            }
+        })
+
+        self.assertEqual(engine.calls, 1)
+        self.assertTrue(all(row["translation_status"] == "FAILED" for row in result["translation_content"]))
+
+    @patch("drilling_report_parser.translation.service.time.sleep")
+    def test_open_circuit_waits_for_cooldown_then_retries(self, sleep) -> None:
+        engine = CoolingDownEngine()
+        translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", retry_count=1)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DRILL AHEAD WITH STABLE RETURNS."},
+        })
+
+        self.assertEqual(engine.calls, 2)
+        sleep.assert_called_once_with(2.5)
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+
+    @patch("drilling_report_parser.translation.service.time.sleep")
+    @patch("drilling_report_parser.translation.service.time.monotonic", side_effect=[100.0, 103.0])
+    def test_provider_circuit_cooldown_wait_does_not_raise(self, _monotonic, sleep) -> None:
+        key = "https://provider.test"
+        with _PROVIDER_CIRCUIT_LOCK:
+            _PROVIDER_CIRCUITS[key] = {"failures": 2.0, "opened_until": 103.0}
+
+        _check_provider_circuit(key)
+
+        sleep.assert_called_once_with(3.0)
+        with _PROVIDER_CIRCUIT_LOCK:
+            self.assertNotIn(key, _PROVIDER_CIRCUITS)
+
+    def test_rejects_numbers_added_by_the_model(self) -> None:
+        translator = DrillingReportTranslator(
+            ExtraNumberEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+        )
+
+        result = translator.translate_report_payload({"report_fields": {"currentOps": "DRILL TO 3200 FT."}})
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "FAILED")
+        self.assertIn("extra=['999']", row["error_message"])
+
+    def test_translation_memory_hit_skips_model_request(self) -> None:
+        engine = ProtectedTokenEngine()
+        source = "DRILL AHEAD WITH STABLE RETURNS."
+        translator = DrillingReportTranslator(
+            engine,
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            translation_memory={source_hash(source): "继续钻进，返出稳定。"},
+        )
+
+        result = translator.translate_report_payload({"report_fields": {"currentOps": source}})
+
+        self.assertEqual(engine.calls, 0)
+        self.assertEqual(result["translation_content"][0]["translated_text"], "继续钻进，返出稳定。")
+
+    def test_prompt_only_includes_protections_hit_by_current_text(self) -> None:
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "psi"], "acronyms": ["BHA"]}})
+        translator = DrillingReportTranslator(ProtectedTokenEngine(), terms, target_language="zh-CN")
+
+        preview = translator.prompt_preview("DRILL TO 3200 ft.", "zh-CN")
+
+        self.assertIn("[[P0]]", preview)
+        self.assertNotIn("psi", preview)
+        self.assertNotIn("BHA", preview)
+
+    def test_reordered_protected_placeholders_are_allowed_when_all_are_preserved(self) -> None:
+        engine = ProtectedTokenEngine(reverse_tokens=True)
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0)
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "DRILL FROM 3200 FT TO 5300 FT."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertIn("3200 FT", row["translated_text"])
+        self.assertIn("5300 FT", row["translated_text"])
+
     def test_openai_compatible_batches_larger_translation_chunks(self) -> None:
         engine = CountingEngine()
         translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", chunk_max_chars=2400)
-        text = "PERFORA SECCION CON BHA DIRECCIONAL Y CIRCULA RETORNOS LIMPIOS. " * 10
+        text = "PERFORA SECCION DIRECCIONAL Y CIRCULA RETORNOS LIMPIOS. " * 10
         payload = {
             "report_fields": {
                 "currentOps": text,
@@ -273,6 +935,293 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(len(result["translation_content"]), 3)
         self.assertEqual(engine.calls, 1)
         self.assertEqual(engine.batch_sizes, [3])
+
+    def test_large_report_splits_at_business_module_boundaries(self) -> None:
+        engine = CountingEngine()
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", chunk_max_chars=500)
+        text = "DRILL AHEAD WITH STABLE RETURNS AND MONITOR ALL PARAMETERS. " * 4
+        payload = {
+            "metadata": {"record_id": "drilling:CTX-1:2026-07-12:1", "report_type": "drilling"},
+            "report_fields": {"currentOps": text, "summary24h": text},
+            "operations": [
+                {"row_no": "1", "operation_details": text},
+                {"row_no": "2", "operation_details": text},
+            ],
+        }
+
+        rows = translator.translate_report_payload(payload)["translation_content"]
+
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(engine.calls, 2)
+        self.assertEqual(
+            [{item["context_group"] for item in batch} for batch in engine.batches],
+            [{"report_fields"}, {"operations"}],
+        )
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_compatible_retries_unchanged_batch_items_individually_with_strict_prompt(self, post_json) -> None:
+        sources = {
+            "0": "BAJANDO CASING HASTA FONDO.",
+            "1": "CIRCULA HASTA RETORNOS LIMPIOS.",
+        }
+
+        def response(items):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": '{"items":[' + ",".join(
+                            f'{{"id":"{item_id}","translated_text":"{text}"}}'
+                            for item_id, text in items
+                        ) + "]}",
+                    }
+                }]
+            }
+
+        post_json.side_effect = [
+            response(list(sources.items())),
+            response([("0", "下入套管至井底。")]),
+            response([("1", "循环至返出干净。")]),
+        ]
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model", "secret")
+        items = [
+            {"id": item_id, "source_language": "es", "source_text": text, "glossary": []}
+            for item_id, text in sources.items()
+        ]
+
+        translated = engine.translate_items(items, "zh-CN", 60)
+
+        self.assertEqual(translated, {"0": "下入套管至井底。", "1": "循环至返出干净。"})
+        self.assertEqual(post_json.call_count, 3)
+        for call in post_json.call_args_list[1:]:
+            prompt = call.args[1]["messages"][1]["content"]
+            self.assertIn("上一次结果未满足完整性要求", prompt)
+            self.assertNotIn("/no_think", prompt)
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_compatible_only_retries_invalid_batch_items(self, post_json) -> None:
+        post_json.side_effect = [
+            {
+                "choices": [{"message": {"content": (
+                    '{"items":['
+                    '{"id":"0","translated_text":"已完成中文翻译。"},'
+                    '{"id":"1","translated_text":"CIRCULA HASTA RETORNOS LIMPIOS."}'
+                    "]}"
+                )}}]
+            },
+            {
+                "choices": [{"message": {"content": (
+                    '{"items":[{"id":"1","translated_text":"循环至返出干净。"}]}'
+                )}}]
+            },
+        ]
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model")
+        items = [
+            {"id": "0", "source_language": "es", "source_text": "BAJANDO CASING.", "glossary": []},
+            {"id": "1", "source_language": "es", "source_text": "CIRCULA HASTA RETORNOS LIMPIOS.", "glossary": []},
+        ]
+
+        translated = engine.translate_items(items, "zh-CN", 60)
+
+        self.assertEqual(translated["0"], "已完成中文翻译。")
+        self.assertEqual(translated["1"], "循环至返出干净。")
+        self.assertEqual(post_json.call_count, 2)
+        retry_prompt = post_json.call_args_list[1].args[1]["messages"][1]["content"]
+        self.assertIn('"id": "1"', retry_prompt)
+        self.assertNotIn('"id": "0"', retry_prompt)
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_compatible_retries_only_item_that_lost_placeholder(self, post_json) -> None:
+        post_json.side_effect = [
+            {"choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"已完成翻译。"}]}'}}]},
+            {"choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"已完成翻译 [[P0]]。"}]}'}}]},
+        ]
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model")
+
+        translated = engine.translate_items(
+            [{"id": "0", "source_language": "en", "source_text": "DRILL TO [[P0]].", "glossary": []}],
+            "zh-CN",
+            60,
+        )
+
+        self.assertEqual(translated["0"], "已完成翻译 [[P0]]。")
+        self.assertEqual(post_json.call_count, 2)
+        self.assertIn("上一次结果未满足完整性要求", post_json.call_args_list[1].args[1]["messages"][1]["content"])
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_translation_preserves_source_layout_and_uses_report_context(self, post_json) -> None:
+        def response(_url, payload, _timeout, **_kwargs):
+            prompt = payload["messages"][1]["content"]
+            request_item = json.loads(prompt.split("Input JSON:\n", 1)[1])["items"][0]
+            tokens = re.findall(r"\[\[P\d+]]", request_item["source_text"])
+            return {"choices": [{"message": {"content": json.dumps({
+                "items": [{"id": "0", "translated_text": f"下入 {tokens[0]}。\n- 进行压力试验 {tokens[1]} PSI。"}],
+            }, ensure_ascii=False)}}]}
+
+        post_json.side_effect = response
+        terms = TermsConfig.from_data({"protected_terms": {"acronyms": ["BHA"]}})
+        translator = DrillingReportTranslator(
+            OpenAICompatibleTranslationEngine("https://example.test", "test-model"),
+            terms,
+            target_language="zh-CN",
+            retry_count=0,
+        )
+        source = "RUN BHA.\n- PRESSURE TEST 3000 PSI."
+
+        result = translator.translate_report_payload({
+            "metadata": {"record_id": "drilling:TEST-1:2026-07-12:1", "report_type": "drilling"},
+            "report_fields": {"currentOps": source, "wellbore": "TEST-1", "rig": "RIG-9", "reportDate": "2026-07-12"},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertEqual(row["translated_text"].count("\n"), 1)
+        self.assertEqual(post_json.call_count, 1)
+        first_prompt = post_json.call_args_list[0].args[1]["messages"][1]["content"]
+        request_items = json.loads(first_prompt.split("Input JSON:\n", 1)[1])["items"]
+        self.assertNotEqual(request_items[0]["source_text"], source)
+        self.assertIn('"wellbore": "TEST-1"', first_prompt)
+        self.assertIn('"rig": "RIG-9"', first_prompt)
+        self.assertEqual(len(re.findall(r"\[\[P\d+]]", request_items[0]["source_text"])), 2)
+        self.assertIn('"preserve_terms": []', first_prompt)
+
+    def test_description_is_translated_as_one_paragraph(self) -> None:
+        engine = CountingEngine()
+        translator = DrillingReportTranslator(
+            engine,
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+        )
+        source = "RUN COMPLETION STRING\nTO PRODUCTION DEPTH."
+
+        result = translator.translate_report_payload({"report_fields": {"description": source}})
+
+        row = result["translation_content"][0]
+        model_item = engine.batches[0][0]
+        self.assertEqual(row["source_text"], source)
+        self.assertNotIn("\n", model_item["source_text"])
+        self.assertEqual(model_item["source_text"], "RUN COMPLETION STRING TO PRODUCTION DEPTH.")
+        self.assertNotIn("\n", row["translated_text"])
+        self.assertTrue(model_item["paragraph_layout"])
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_compatible_retries_truncated_json_with_strict_prompt(self, post_json) -> None:
+        post_json.side_effect = [
+            {
+                "choices": [{
+                    "finish_reason": "length",
+                    "message": {"content": '{"items":[{"id":"0","translated_text":"继续'},
+                }]
+            },
+            {
+                "choices": [{
+                    "finish_reason": "stop",
+                    "message": {"content": '{"items":[{"id":"0","translated_text":"继续钻进。"}]}'},
+                }]
+            },
+        ]
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model")
+
+        translated = engine.translate_items(
+            [{"id": "0", "source_language": "en", "source_text": "DRILL AHEAD.", "glossary": []}],
+            "zh-CN",
+            60,
+        )
+
+        self.assertEqual(translated, {"0": "继续钻进。"})
+        self.assertEqual(post_json.call_count, 2)
+        retry_prompt = post_json.call_args_list[1].args[1]["messages"][1]["content"]
+        self.assertIn("上一次结果未满足完整性要求", retry_prompt)
+        self.assertGreaterEqual(post_json.call_args_list[0].args[1]["max_tokens"], 4096)
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_compatible_splits_long_items_before_request(self, post_json) -> None:
+        def response(_url, payload, _timeout, **_kwargs):
+            prompt = payload["messages"][1]["content"]
+            request_items = json.loads(prompt.split("Input JSON:\n", 1)[1])["items"]
+            content = {
+                "items": [
+                    {"id": item["id"], "translated_text": "已翻译该段内容。"}
+                    for item in request_items
+                ]
+            }
+            return {"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(content, ensure_ascii=False)}}]}
+
+        post_json.side_effect = response
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model")
+        source = "DRILL AHEAD WITH STABLE RETURNS. " * 400
+
+        translated = engine.translate_items(
+            [{"id": "0", "source_language": "en", "source_text": source, "glossary": []}],
+            "zh-CN",
+            60,
+        )
+
+        self.assertGreater(post_json.call_count, 1)
+        self.assertTrue(translated["0"].startswith("已翻译"))
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_prompt_keeps_provider_specific_directives_out_of_user_message(self, post_json) -> None:
+        post_json.return_value = {
+            "choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"继续钻进。"}]}'}}]
+        }
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model")
+
+        engine.translate_items(
+            [{"id": "0", "source_language": "en", "source_text": "DRILL AHEAD.", "glossary": [], "prompt_context": {"system_prompt": "SYSTEM ROLE"}}],
+            "zh-CN",
+            60,
+        )
+
+        payload = post_json.call_args.args[1]
+        self.assertIn("SYSTEM ROLE", payload["messages"][0]["content"])
+        self.assertNotIn("SYSTEM ROLE", payload["messages"][1]["content"])
+        self.assertNotIn("/no_think", payload["messages"][1]["content"])
+        self.assertGreaterEqual(payload["max_tokens"], 4096)
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_lm_studio_qwen_disabled_thinking_uses_prefill_and_template_switch(self, post_json) -> None:
+        post_json.return_value = {
+            "choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"继续钻进。"}]}'}}]
+        }
+        engine = OpenAICompatibleTranslationEngine(
+            "http://127.0.0.1:1234/v1",
+            "qwen3.5-9b",
+            thinking_mode="disabled",
+        )
+
+        engine.translate_items(
+            [{"id": "0", "source_language": "en", "source_text": "DRILL AHEAD.", "glossary": []}],
+            "zh-CN",
+            60,
+        )
+
+        payload = post_json.call_args.args[1]
+        self.assertEqual(payload["chat_template_kwargs"], {"enable_thinking": False})
+        self.assertEqual(payload["messages"][-1], {"role": "assistant", "content": "<think>\n\n</think>\n\n"})
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_deepseek_disabled_thinking_uses_deepseek_control_and_manual_options(self, post_json) -> None:
+        post_json.return_value = {
+            "choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"继续钻进。"}]}'}}]
+        }
+        engine = OpenAICompatibleTranslationEngine(
+            "https://api.deepseek.com",
+            "deepseek-v4-pro",
+            thinking_mode="disabled",
+            request_options={"reasoning_effort": "high"},
+        )
+
+        engine.translate_items(
+            [{"id": "0", "source_language": "en", "source_text": "DRILL AHEAD.", "glossary": []}],
+            "zh-CN",
+            60,
+        )
+
+        payload = post_json.call_args.args[1]
+        self.assertEqual(payload["thinking"], {"type": "disabled"})
+        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertNotIn("chat_template_kwargs", payload)
 
     def test_scope_rules_separate_report_types_and_modules(self) -> None:
         tuning = TranslationTuningConfig.from_data({
@@ -296,6 +1245,9 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(translator.translate_report_payload(drilling)["translation_content"], [])
         rows = translator.translate_report_payload(completion)["translation_content"]
         self.assertEqual({row["field_code"] for row in rows}, {"report_fields.description", "operations.operation_details"})
+
+    def test_source_hash_distinguishes_paragraph_layout(self) -> None:
+        self.assertNotEqual(source_hash("FIRST LINE\nSECOND LINE"), source_hash("FIRST LINE SECOND LINE"))
 
 
 if __name__ == "__main__":

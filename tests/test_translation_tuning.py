@@ -14,6 +14,7 @@ from drilling_report_parser.form_server import (
     _normalize_translation_terms_config,
     _parse_standard_translation_terms,
     _translation_record_needs_processing,
+    _current_translation_revision,
     _translation_terms_workbook_bytes,
 )
 
@@ -53,6 +54,20 @@ class TranslationTuningConfigTest(unittest.TestCase):
         second = _normalize_translation_tuning_config({"prompt": {"system_prompt": "Prompt B"}})
 
         self.assertNotEqual(first["version"], second["version"])
+
+    def test_runtime_revision_changes_with_terms_and_model(self) -> None:
+        tuning = _normalize_translation_tuning_config({"prompt": {"system_prompt": "Prompt A"}})
+        model_a = {"id": "model-a", "api_type": "openai-compatible", "model": "alpha"}
+        model_b = {"id": "model-b", "api_type": "openai-compatible", "model": "beta"}
+        terms_a = {"terms": [{"id": "bha", "en": "BHA", "zh": "钻具组合", "enabled": True, "protected": True}]}
+        terms_b = {"terms": [{"id": "bha", "en": "BHA", "zh": "井底钻具组合", "enabled": True, "protected": True}]}
+
+        base = _current_translation_revision(model=model_a, terms_config=terms_a, tuning_config=tuning)
+        changed_terms = _current_translation_revision(model=model_a, terms_config=terms_b, tuning_config=tuning)
+        changed_model = _current_translation_revision(model=model_b, terms_config=terms_a, tuning_config=tuning)
+
+        self.assertNotEqual(base, changed_terms)
+        self.assertNotEqual(base, changed_model)
 
     def test_extracts_flexible_excel_cells_without_assuming_headers(self) -> None:
         workbook = Workbook()
@@ -115,6 +130,7 @@ class TranslationTuningConfigTest(unittest.TestCase):
         current_version = "prompt-v2"
 
         self.assertTrue(_translation_record_needs_processing({"translation_status": "PENDING"}, current_version))
+        self.assertTrue(_translation_record_needs_processing({"translation_status": "STOPPED"}, current_version))
         self.assertTrue(_translation_record_needs_processing({"translation_status": "FAILED"}, current_version))
         self.assertTrue(_translation_record_needs_processing({"translation_status": "COMPLETED", "translation_version": "prompt-v1"}, current_version))
         self.assertFalse(_translation_record_needs_processing({"translation_status": "QUEUED"}, current_version))

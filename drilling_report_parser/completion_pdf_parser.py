@@ -8,6 +8,9 @@ from typing import Any, BinaryIO
 import pdfplumber
 from pypdf import PdfReader
 
+from .text_structure import column_text as _structured_column_text
+from .text_structure import normalize_multiline
+
 
 TIME_TOKEN_RE = re.compile(r"^\d{1,2}:\d{2}$")
 NUM_RE = r"[-+]?\d[\d,]*(?:\.\d+)?"
@@ -106,10 +109,10 @@ def _collect_block(lines: list[str], start: str, stops: tuple[str, ...]) -> str:
                     before = line.split(stop, 1)[0]
                     if before.strip():
                         parts.append(before)
-                    return _clean(" ".join(parts))
+                    return normalize_multiline("\n".join(parts))
             if line.strip():
                 parts.append(line)
-    return _clean(" ".join(parts))
+    return normalize_multiline("\n".join(parts))
 
 
 def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) -> dict[str, str]:
@@ -295,30 +298,14 @@ def _column_text(
     first_line_only: bool = False,
     preserve_lines: bool = False,
 ) -> str:
-    selected = [word for word in words if left <= word["x0"] < right]
-    if not selected:
-        return ""
-    if first_line_only:
-        top = min(word["top"] for word in selected)
-        selected = [word for word in selected if abs(word["top"] - top) <= 2.8]
-    selected.sort(key=lambda word: (round(word["top"], 1), word["x0"]))
-    if preserve_lines:
-        lines: list[str] = []
-        current_top: float | None = None
-        current_words: list[str] = []
-        for word in selected:
-            top = round(word["top"], 1)
-            if current_top is None or abs(top - current_top) <= 2.8:
-                current_top = top if current_top is None else current_top
-                current_words.append(word["text"])
-                continue
-            lines.append(_clean(" ".join(current_words)))
-            current_top = top
-            current_words = [word["text"]]
-        if current_words:
-            lines.append(_clean(" ".join(current_words)))
-        return _join_text_lines(lines)
-    return _clean(" ".join(word["text"] for word in selected))
+    return _structured_column_text(
+        words,
+        left,
+        right,
+        first_line_only=first_line_only,
+        preserve_lines=preserve_lines,
+        line_tolerance=2.8,
+    )
 
 
 def _normalize_op_code(value: str) -> str:
@@ -363,20 +350,7 @@ def _clean_op_sub(value: str) -> str:
 
 
 def _clean_operation_details(value: str) -> str:
-    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in str(value or "").splitlines()]
-    return _join_text_lines(lines)
-
-
-def _join_text_lines(lines: list[str]) -> str:
-    cleaned = [_clean(line) for line in lines if _clean(line)]
-    if not cleaned:
-        return ""
-    punctuated: list[str] = []
-    for line in cleaned:
-        if not re.search(r"[.!?;:。！？；：]$", line):
-            line = f"{line};"
-        punctuated.append(line)
-    return "\n".join(punctuated)
+    return normalize_multiline(value)
 
 
 def _parse_bulks(layout_pages: list[str]) -> list[dict[str, str]]:

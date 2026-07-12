@@ -8,7 +8,7 @@ import threading
 import unittest
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from drilling_report_parser import excel_database, form_server
 from drilling_report_parser.excel_database import load_report_payload
@@ -84,6 +84,61 @@ class FormServerImportTest(unittest.TestCase):
             "reportDate": "2026-05-22", "wellbore": "PCNC-039", "rig": "SINOPEC 248",
         }}), [])
 
+    def test_lm_studio_qwen_disabled_thinking_payload_uses_compatibility_prefill(self) -> None:
+        model = {
+            "base_url": "http://127.0.0.1:1234/v1",
+            "model": "qwen3.5-9b",
+            "thinking_mode": "disabled",
+        }
+        payload = form_server._openai_payload_for_model(model, {
+            "model": "qwen3.5-9b",
+            "messages": [{"role": "user", "content": "translate"}],
+        })
+
+        self.assertEqual(payload["chat_template_kwargs"], {"enable_thinking": False})
+        self.assertEqual(payload["messages"][-1], {"role": "assistant", "content": "<think>\n\n</think>\n\n"})
+
+    def test_system_model_temperature_is_fixed_for_deterministic_workflows(self) -> None:
+        model = form_server._normalize_ai_model({
+            "id": "deterministic-model",
+            "name": "Deterministic",
+            "api_type": "openai-compatible",
+            "base_url": "https://example.test/v1",
+            "model": "example-model",
+            "temperature": 1.7,
+        })
+
+        self.assertNotIn("temperature", model)
+        config = form_server._translation_config_for_model(model)
+        self.assertEqual(config.openai_temperature, 0.0)
+
+    def test_deepseek_thinking_and_manual_request_options_use_provider_wire_format(self) -> None:
+        model = {
+            "base_url": "https://api.deepseek.com",
+            "model": "deepseek-v4-pro",
+            "thinking_mode": "disabled",
+            "request_options": {"reasoning_effort": "high"},
+        }
+
+        payload = form_server._openai_payload_for_model(model, {
+            "model": "deepseek-v4-pro",
+            "messages": [{"role": "user", "content": "translate"}],
+        })
+
+        self.assertEqual(payload["thinking"], {"type": "disabled"})
+        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertNotIn("chat_template_kwargs", payload)
+
+    def test_manual_request_options_cannot_override_core_request_fields(self) -> None:
+        options = form_server._normalize_model_request_options({
+            "model": "wrong-model",
+            "messages": [{"role": "user", "content": "wrong"}],
+            "Authorization": "secret",
+            "thinking": {"type": "disabled"},
+        })
+
+        self.assertEqual(options, {"thinking": {"type": "disabled"}})
+
     def test_operation_translation_accepts_whitespace_normalization_and_rejects_stale_source(self) -> None:
         source = "WAIT ON SERVICE\nCOMPANY"
         stored_source = "WAIT ON SERVICE COMPANY"
@@ -145,6 +200,74 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(len(config["rules"]), 1)
         self.assertEqual(config["rules"][0]["target_field"], "service_line")
         self.assertIn("target_fields", config["catalog"])
+
+    def test_stopped_extraction_is_available_to_continue(self) -> None:
+        self.assertTrue(form_server._extraction_record_needs_processing(
+            {"extraction_status": "STOPPED", "extraction_version": "rules-v1"},
+            "rules-v1",
+        ))
+        self.assertFalse(form_server._extraction_record_needs_processing(
+            {"extraction_status": "IN_PROGRESS", "extraction_version": "rules-v1"},
+            "rules-v1",
+        ))
+
+    def test_stop_translation_invalidates_jobs_and_rotates_executor(self) -> None:
+        old_executor = Mock()
+        new_executor = Mock()
+        original_executor = form_server.TRANSLATION_EXECUTOR
+        form_server.TRANSLATION_EXECUTOR = old_executor
+        self.addCleanup(setattr, form_server, "TRANSLATION_EXECUTOR", original_executor)
+        form_server.TRANSLATION_JOB_GENERATIONS["report-1"] = 4
+        self.addCleanup(form_server.TRANSLATION_JOB_GENERATIONS.pop, "report-1", None)
+
+        with (
+            patch.object(form_server, "list_ai_job_status", return_value=[{
+                "record_id": "report-1", "status": "IN_PROGRESS", "progress": "42",
+            }]),
+            patch.object(form_server, "update_record_translation_status") as update_status,
+            patch.object(form_server, "_write_translation_metric"),
+            patch.object(form_server, "ThreadPoolExecutor", return_value=new_executor),
+        ):
+            stopped = form_server._stop_active_translation_jobs()
+
+        self.assertEqual(stopped, 1)
+        self.assertIs(form_server.TRANSLATION_EXECUTOR, new_executor)
+        self.assertEqual(form_server.TRANSLATION_JOB_GENERATIONS["report-1"], 5)
+        old_executor.shutdown.assert_called_once_with(wait=False, cancel_futures=True)
+        update_status.assert_called_once_with(
+            form_server.DATABASE_PATH, "report-1", status="STOPPED", progress="42", error="",
+        )
+
+    def test_ai_job_status_snapshot_is_lightweight_and_reports_processing_count(self) -> None:
+        records = [
+            {"record_id": "report-1", "translation_status": "IN_PROGRESS", "translation_progress": "38", "translation_updated_at": "now"},
+            {"record_id": "report-2", "translation_status": "COMPLETED", "translation_progress": "100", "translation_updated_at": "before"},
+        ]
+        lightweight_records = [
+            {"record_id": row["record_id"], "status": row["translation_status"], "progress": row["translation_progress"], "updated_at": row["translation_updated_at"]}
+            for row in records
+        ]
+        with patch.object(form_server, "list_ai_job_status", return_value=lightweight_records):
+            snapshot = form_server._ai_job_status_snapshot("translation")
+
+        self.assertEqual(snapshot["processing_count"], 1)
+        self.assertEqual(snapshot["records"][0], {
+            "record_id": "report-1", "status": "IN_PROGRESS", "progress": "38", "error": "", "updated_at": "now",
+        })
+
+    def test_ai_job_monitor_keeps_separate_translation_and_extraction_streams(self) -> None:
+        original_path = form_server.AI_JOB_MONITOR_PATH
+        form_server.AI_JOB_MONITOR_PATH = Path(self.repository_tmp.name) / "ai_job_monitor.jsonl"
+        self.addCleanup(setattr, form_server, "AI_JOB_MONITOR_PATH", original_path)
+
+        form_server._write_ai_job_monitor("translation", "request", record_id="report-1", source_preview="DRILL AHEAD")
+        form_server._write_ai_job_monitor("translation", "response", record_id="report-1", response_preview="继续钻进")
+        form_server._write_ai_job_monitor("extraction", "response", record_id="report-2", response_preview="SLB")
+
+        translation = form_server._ai_job_monitor_snapshot("translation", 10)
+        extraction = form_server._ai_job_monitor_snapshot("extraction", 10)
+        self.assertEqual([row["event"] for row in translation["events"]], ["request", "response"])
+        self.assertEqual(extraction["events"][0]["record_id"], "report-2")
 
     def test_default_ai_extraction_rule_is_disabled_until_reviewed(self) -> None:
         config = form_server._default_ai_extraction_config()

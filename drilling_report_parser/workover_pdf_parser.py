@@ -21,6 +21,7 @@ from .completion_pdf_parser import (
     _source_payload,
     _value_between,
 )
+from .text_structure import normalize_multiline
 
 
 def parse_workover_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, Any]:
@@ -121,7 +122,7 @@ def _collect_description(lines: list[str]) -> str:
                 # Some descriptions continue before the label on the same line;
                 # the label itself marks the end of the field.
                 break
-    return _clean(" ".join(parts))
+    return normalize_multiline("\n".join(parts))
 
 
 def _value_after_label_words(line: str, label: str) -> str:

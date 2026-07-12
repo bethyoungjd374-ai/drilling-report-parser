@@ -1,7 +1,7 @@
 const i18n = {
   zh: {
     ui: {
-      appTitleShort: "NexoRig", appSubtitle: "智井平台", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
+      appTitleShort: "NexoRig", appSubtitle: "钻完井管理平台", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
       systemAdmin: "系统后台",
       menuDailyParsing: "日报解析", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
       menuProductionReport: "生产报表", menuRigProductionSummary: "生产时效", menuProductionDetailReport: "生产报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
@@ -289,27 +289,28 @@ const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" 
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
 const lockedRecordIds = new Set();
 const reportContentState = {
-  drilling: { mode: "original", original: null, cache: {}, targetLanguage: "" },
-  completion: { mode: "original", original: null, cache: {}, targetLanguage: "" },
-  workover: { mode: "original", original: null, cache: {}, targetLanguage: "" },
-  move: { mode: "original", original: null, cache: {}, targetLanguage: "" }
+  drilling: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" },
+  completion: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" },
+  workover: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" },
+  move: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" }
 };
-const RECORDS_PER_PAGE = 10;
-const ANALYTICS_DETAIL_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const recordState = {
-  drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
-  completion: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
-  workover: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" },
-  move: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, sortBy: "last" }
+  drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, pageSize: DEFAULT_PAGE_SIZE, sortBy: "last" },
+  completion: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, pageSize: DEFAULT_PAGE_SIZE, sortBy: "last" },
+  workover: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, pageSize: DEFAULT_PAGE_SIZE, sortBy: "last" },
+  move: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, pageSize: DEFAULT_PAGE_SIZE, sortBy: "last" }
 };
 const translationPollTimers = { drilling: null, completion: null, workover: null, move: null };
 const serverWarnings = { drilling: [], completion: [], workover: [], move: [] };
 const wellStatsCache = {};
 const analyticsState = {
-  production: { payload: null, detailPage: 1, sortField: "", sortDir: "desc" },
+  production: { payload: null, detailPage: 1, detailPageSize: DEFAULT_PAGE_SIZE, sortField: "", sortDir: "desc" },
   productionReport: {
     payload: null,
     detailPage: 1,
+    detailPageSize: DEFAULT_PAGE_SIZE,
     sortField: "",
     sortDir: "desc",
     activeTab: "rig",
@@ -326,6 +327,7 @@ const analyticsState = {
   npt: {
     payload: null,
     detailPage: 1,
+    detailPageSize: DEFAULT_PAGE_SIZE,
     sortField: "",
     sortDir: "desc",
     activeTab: "rig",
@@ -708,16 +710,17 @@ function syncLanguageButtons() {
   document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
     const reportType = activeReportType(button);
     const language = button.dataset.lang;
+    const selectedLanguage = reportType
+      ? reportContentState[reportType]?.selectedLanguage || "original"
+      : currentLanguage === "es" ? "es" : reportContentLanguageMode === "translated" ? "zh" : "original";
     const isLoading = reportTranslationBusy.language
       && language === reportTranslationBusy.language
       && (!reportTranslationBusy.reportType || reportType === reportTranslationBusy.reportType);
     const needsReportTranslation = language === "zh" && reportType;
     const disabledForTranslation = needsReportTranslation && !canSwitchReportTranslation(reportType);
     button.textContent = isLoading ? ui("translationRunningShort") : languageButtonLabel(language);
-    const active = language === "original"
-      ? reportContentLanguageMode === "original" && currentLanguage === "zh"
-      : language === currentLanguage && (language !== "zh" || reportContentLanguageMode === "translated");
-    button.classList.toggle("active", active);
+    button.classList.toggle("active", language === selectedLanguage);
+    button.setAttribute("aria-pressed", language === selectedLanguage ? "true" : "false");
     button.classList.toggle("is-loading", Boolean(isLoading));
     button.disabled = Boolean(reportTranslationBusy.language) || disabledForTranslation;
     button.title = disabledForTranslation ? ui("translationNotReady") : "";
@@ -732,15 +735,18 @@ async function handleLanguageChoice(language, sourceButton = null) {
     if (reportType) restoreReportOriginal(reportType);
     else restoreActiveReportOriginal();
     reportContentLanguageMode = "original";
+    if (reportType) reportContentState[reportType].selectedLanguage = "original";
+    applyLanguage("zh");
     renderLocalizedOperationDescriptions();
     syncLanguageButtons();
     return;
   }
   if (!["zh", "es"].includes(language)) return;
   if (language === "es") {
-    applyLanguage("es");
     if (reportType) restoreReportOriginal(reportType);
     else reportContentLanguageMode = "original";
+    if (reportType) reportContentState[reportType].selectedLanguage = "es";
+    applyLanguage("es");
     syncLanguageButtons();
     return;
   }
@@ -754,12 +760,18 @@ async function handleLanguageChoice(language, sourceButton = null) {
     showToast(ui("translationNotReady"));
     return;
   }
+  const previousLanguage = currentLanguage;
+  const previousSelection = reportContentState[reportType]?.selectedLanguage || "original";
   setReportTranslationBusy(reportType, language);
   try {
     applyLanguage(language);
     const translated = await translateVisibleReportContent(language, reportType);
     if (translated) {
       reportContentLanguageMode = language;
+      reportContentState[reportType].selectedLanguage = language;
+    } else {
+      reportContentState[reportType].selectedLanguage = previousSelection;
+      applyLanguage(previousLanguage);
     }
   } finally {
     clearReportTranslationBusy();
@@ -842,6 +854,7 @@ function setReportOriginalPayload(reportType, payload) {
   if (!reportContentState[reportType]) return;
   reportContentState[reportType] = {
     mode: "original",
+    selectedLanguage: currentLanguage === "es" ? "es" : "original",
     original: clonePayload(payload),
     cache: {},
     targetLanguage: "",
@@ -1007,6 +1020,10 @@ function updateTranslationPreviewNotice(reportType, show) {
 function makeInput(field, value = "") {
   const control = field.type === "textarea" ? document.createElement("textarea") : field.type === "select" ? document.createElement("select") : document.createElement("input");
   control.name = field.name;
+  if (field.type === "textarea") {
+    control.classList.add("multiline-source-text");
+    control.rows = Math.min(12, Math.max(3, String(value || "").split("\n").length));
+  }
   if (field.type === "select") {
     (field.options || []).forEach((optionValue) => {
       const option = document.createElement("option");
@@ -1216,7 +1233,8 @@ function renderRecordDashboard(reportType) {
   const drillingDayCount = stageDays.drilling.size;
   const tableRecords = sortedRecords(state.selectedDate ? selectedRecords.filter((record) => record.reportDate === state.selectedDate) : selectedRecords);
   const totalTableRows = tableRecords.length + selectedJobs.length;
-  const totalPages = Math.max(1, Math.ceil(totalTableRows / RECORDS_PER_PAGE));
+  const pageSize = normalizedPageSize(state.pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalTableRows / pageSize));
   state.page = Math.min(Math.max(Number(state.page) || 1, 1), totalPages);
 
   host.innerHTML = `
@@ -1278,7 +1296,7 @@ function renderRecordDashboard(reportType) {
             </div>
           </div>
           <div class="table-wrap">
-            ${recordTableMarkup(reportType, tableRecords, selectedJobs, state.page)}
+            ${recordTableMarkup(reportType, tableRecords, selectedJobs, state.page, pageSize)}
           </div>
         </section>
       </section>
@@ -1703,15 +1721,16 @@ function calendarMarkup(reportType, dateValue, uploadedDays, stageDays, operatio
   `;
 }
 
-function recordTableMarkup(reportType, records, jobs = [], page = 1) {
+function recordTableMarkup(reportType, records, jobs = [], page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   const rows = [
     ...jobs.map((job) => ({ kind: "job", value: job })),
     ...records.map((record) => ({ kind: "record", value: record })),
   ];
   if (!rows.length) return `<div class="empty-records">${ui("noRecords")}</div>`;
-  const totalPages = Math.max(1, Math.ceil(rows.length / RECORDS_PER_PAGE));
+  pageSize = normalizedPageSize(pageSize);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(Math.max(Number(page) || 1, 1), totalPages);
-  const pageRows = rows.slice((currentPage - 1) * RECORDS_PER_PAGE, currentPage * RECORDS_PER_PAGE);
+  const pageRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return `
     <table class="record-table">
       <thead><tr><th>${ui("date")}</th><th>${ui("well")}</th><th>${ui("reportType")}</th><th>${ui("fileName")}</th><th>${ui("uploadTime")}</th><th>${ui("uploader")}</th><th>${ui("status")}</th><th>${ui("operation")}</th></tr></thead>
@@ -1719,7 +1738,7 @@ function recordTableMarkup(reportType, records, jobs = [], page = 1) {
         ${pageRows.map((row) => row.kind === "job" ? jobRecordRowMarkup(reportType, row.value) : savedRecordRowMarkup(reportType, row.value)).join("")}
       </tbody>
     </table>
-    ${recordPaginationMarkup(reportType, currentPage, totalPages, rows.length)}
+    ${recordPaginationMarkup(reportType, currentPage, totalPages, rows.length, pageSize)}
   `;
 }
 
@@ -1754,28 +1773,55 @@ function savedRecordRowMarkup(reportType, record) {
   `;
 }
 
-function recordPaginationMarkup(reportType, currentPage, totalPages, totalRows) {
+function paginationSummary(totalRows, currentPage, pageSize) {
+  const start = totalRows ? (currentPage - 1) * pageSize + 1 : 0;
+  const end = Math.min(totalRows, currentPage * pageSize);
+  if (currentLanguage === "es") return `${totalRows} registros, mostrando ${start}-${end}`;
+  return `共 ${totalRows} 条，显示 ${start}-${end}`;
+}
+
+function pageSizeOptionsMarkup(pageSize) {
+  return PAGE_SIZE_OPTIONS.map((size) => `<option value="${size}" ${size === pageSize ? "selected" : ""}>${size} 条</option>`).join("");
+}
+
+function normalizedPageSize(value) {
+  const pageSize = Number(value);
+  return PAGE_SIZE_OPTIONS.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
+}
+
+function recordPaginationMarkup(reportType, currentPage, totalPages, totalRows, pageSize) {
   return `
-    <div class="record-pagination">
-      <span>${totalRows} ${ui("recordsCount")} / ${ui("page")} ${currentPage} / ${totalPages}</span>
-      <div class="record-page-buttons">
+    <div class="record-pagination standard-pagination">
+      <span class="pagination-summary">${paginationSummary(totalRows, currentPage, pageSize)}</span>
+      <div class="standard-pagination-controls">
+        <label class="standard-page-size">每页
+          <select data-record-page-size="${reportType}" aria-label="每页条数">${pageSizeOptionsMarkup(pageSize)}</select>
+        </label>
+        <div class="record-page-buttons">
         <button class="icon-button" type="button" data-record-page="${currentPage - 1}" data-report-type="${reportType}" ${currentPage <= 1 ? "disabled" : ""} aria-label="${ui("prevPage")}">‹</button>
         <label class="page-jump">第 <input type="number" min="1" max="${totalPages}" value="${currentPage}" inputmode="numeric" data-record-page-jump data-report-type="${reportType}" aria-label="跳转页码" /> / ${totalPages} 页</label>
         <button class="icon-button" type="button" data-record-page="${currentPage + 1}" data-report-type="${reportType}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="${ui("nextPage")}">›</button>
+        </div>
       </div>
     </div>
   `;
 }
 
 function analyticsPaginationMarkup(kind, currentPage, totalPages, totalRows) {
-  if (totalRows <= ANALYTICS_DETAIL_PAGE_SIZE) return "";
+  if (!totalRows) return "";
+  const pageSize = normalizedPageSize(analyticsState[kind]?.detailPageSize);
   return `
-    <div class="record-pagination analytics-pagination">
-      <span>${totalRows} ${ui("recordsCount")} / ${ui("page")} ${currentPage} / ${totalPages}</span>
-      <div class="record-page-buttons">
+    <div class="record-pagination standard-pagination analytics-pagination">
+      <span class="pagination-summary">${paginationSummary(totalRows, currentPage, pageSize)}</span>
+      <div class="standard-pagination-controls">
+        <label class="standard-page-size">每页
+          <select data-analytics-page-size="${kind}" aria-label="每页条数">${pageSizeOptionsMarkup(pageSize)}</select>
+        </label>
+        <div class="record-page-buttons">
         <button class="icon-button" type="button" data-analytics-page="${currentPage - 1}" data-analytics-kind="${kind}" ${currentPage <= 1 ? "disabled" : ""} aria-label="${ui("prevPage")}">‹</button>
         <label class="page-jump">第 <input type="number" min="1" max="${totalPages}" value="${currentPage}" inputmode="numeric" data-analytics-page-jump data-analytics-kind="${kind}" aria-label="跳转页码" /> / ${totalPages} 页</label>
         <button class="icon-button" type="button" data-analytics-page="${currentPage + 1}" data-analytics-kind="${kind}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="${ui("nextPage")}">›</button>
+        </div>
       </div>
     </div>
   `;
@@ -1783,12 +1829,13 @@ function analyticsPaginationMarkup(kind, currentPage, totalPages, totalRows) {
 
 function analyticsPageSlice(kind, rows) {
   const state = analyticsState[kind];
-  const totalPages = Math.max(1, Math.ceil(rows.length / ANALYTICS_DETAIL_PAGE_SIZE));
+  const pageSize = normalizedPageSize(state.detailPageSize);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(Math.max(1, Number(state.detailPage) || 1), totalPages);
   state.detailPage = currentPage;
-  const start = (currentPage - 1) * ANALYTICS_DETAIL_PAGE_SIZE;
+  const start = (currentPage - 1) * pageSize;
   return {
-    pageRows: rows.slice(start, start + ANALYTICS_DETAIL_PAGE_SIZE),
+    pageRows: rows.slice(start, start + pageSize),
     currentPage,
     totalPages
   };
@@ -1816,6 +1863,20 @@ function commitAnalyticsPageJump(input) {
   const kind = input?.dataset.analyticsKind;
   if (!analyticsState[kind]) return;
   analyticsState[kind].detailPage = clampPage(input.value, Number(input.max || 1));
+  renderAnalyticsPage(kind);
+}
+
+function setRecordPageSize(reportType, value) {
+  if (!recordState[reportType]) return;
+  recordState[reportType].pageSize = normalizedPageSize(value);
+  recordState[reportType].page = 1;
+  renderRecordDashboard(reportType);
+}
+
+function setAnalyticsPageSize(kind, value) {
+  if (!analyticsState[kind]) return;
+  analyticsState[kind].detailPageSize = normalizedPageSize(value);
+  analyticsState[kind].detailPage = 1;
   renderAnalyticsPage(kind);
 }
 
@@ -5183,6 +5244,8 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-record-page-size]")) return setRecordPageSize(event.target.dataset.recordPageSize, event.target.value);
+  if (event.target.matches("[data-analytics-page-size]")) return setAnalyticsPageSize(event.target.dataset.analyticsPageSize, event.target.value);
   if (event.target.matches("[data-record-page-jump]")) return commitRecordPageJump(event.target);
   if (event.target.matches("[data-analytics-page-jump]")) return commitAnalyticsPageJump(event.target);
   const productionScopeType = event.target.closest("[data-production-scope-type]");

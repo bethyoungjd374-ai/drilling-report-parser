@@ -5,7 +5,7 @@ let currentLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
 const loginI18n = {
   zh: {
     pageTitle: "登录 - NexoRig",
-    systemName: "NexoRig 智井平台",
+    systemName: "NexoRig 钻完井管理平台",
     systemSubtitle: "面向钻井、完井、修井业务的日报智能解析、生产统计与运营分析平台",
     featureParse: "日报智能解析",
     featureStats: "生产数据统计",

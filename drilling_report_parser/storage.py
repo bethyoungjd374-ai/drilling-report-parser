@@ -87,6 +87,14 @@ def save_translation_content(database_path: str | Path, record_id: str, rows: li
     _clear_mysql_failure()
 
 
+def upsert_translation_content(database_path: str | Path, record_id: str, rows: list[dict[str, Any]]) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.upsert_translation_content(None, record_id, rows)
+    _clear_mysql_failure()
+
+
 def load_translation_content(database_path: str | Path, record_id: str) -> list[dict[str, str]]:
     _validate_mysql_label(database_path)
     from . import mysql_database
@@ -94,6 +102,20 @@ def load_translation_content(database_path: str | Path, record_id: str) -> list[
     rows = mysql_database.load_translation_content(None, record_id)
     _clear_mysql_failure()
     return rows
+
+
+def load_translation_memory(
+    database_path: str | Path,
+    target_language: str,
+    prompt_version: str,
+    source_hashes: list[str] | None = None,
+) -> dict[str, str]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    memory = mysql_database.load_translation_memory(None, target_language, prompt_version, source_hashes)
+    _clear_mysql_failure()
+    return memory
 
 
 def load_operation_translations(database_path: str | Path, record_ids: list[str]) -> list[dict[str, str]]:
@@ -224,6 +246,22 @@ def list_records(
     )
     _clear_mysql_failure()
     return records
+
+
+def list_ai_job_status(kind: str) -> list[dict[str, str]]:
+    from . import mysql_database
+
+    rows = mysql_database.list_ai_job_status(kind)
+    _clear_mysql_failure()
+    return rows
+
+
+def list_translation_queue_records() -> list[dict[str, str]]:
+    from . import mysql_database
+
+    rows = mysql_database.list_translation_queue_records()
+    _clear_mysql_failure()
+    return rows
 
 
 def list_npt_confirmation_wells(
