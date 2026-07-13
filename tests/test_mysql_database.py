@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
-from drilling_report_parser.mysql_database import _ensure_report_record_columns, _npt_row_revision, _operation_hour_summary, _upsert_record
+from drilling_report_parser.mysql_database import INIT_SQL_PATH, _ensure_report_record_columns, _npt_row_revision, _operation_hour_summary, _translation_source_hash, _upsert_record
+from drilling_report_parser.text_structure import normalize_multiline
+from drilling_report_parser.translation import source_hash
 
 
 class FakeCursor:
@@ -18,6 +21,17 @@ class FakeCursor:
 
 
 class MySQLDatabaseMigrationTest(unittest.TestCase):
+    def test_schema_contains_translation_memory_and_revision_tables(self) -> None:
+        schema = Path(INIT_SQL_PATH).read_text(encoding="utf-8")
+
+        self.assertIn("CREATE TABLE IF NOT EXISTS translation_memory", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS translation_revisions", schema)
+
+    def test_manual_memory_hash_matches_translation_pipeline_hash(self) -> None:
+        text = "DRILL AHEAD.\r\nCIRCULATE CLEAN."
+
+        self.assertEqual(_translation_source_hash(text), source_hash(normalize_multiline(text)))
+
     def test_operation_hour_summary_uses_confirmed_type(self) -> None:
         summary = _operation_hour_summary([
             {"record_id": "r-1", "row_json": '{"hours":"18","op_type":"P"}'},

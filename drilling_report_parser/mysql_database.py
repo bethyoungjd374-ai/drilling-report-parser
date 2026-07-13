@@ -2,15 +2,23 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .database_common import (
+    confirmation_group_status as _confirmation_group_status,
+    natural_record_id as _natural_record_id,
+    normalize_report_type as _normalize_report_type,
+    npt_statuses as _npt_statuses,
+    safe_float as _safe_float,
+    slug as _slug,
+)
 from .db_config import mysql_settings
-from .report_schema import REPORT_TABLES, REPORT_TYPES
+from .report_schema import REPORT_TABLES
+from .text_structure import normalize_multiline
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -433,8 +441,10 @@ def load_translation_memory(
     target_language: str,
     prompt_version: str,
     source_hashes: list[str] | None = None,
+    report_type: str = "",
 ) -> dict[str, str]:
     del database_path
+    initialize_database()
     with _connect() as connection:
         with connection.cursor() as cursor:
             clean_hashes = list(dict.fromkeys(
@@ -442,12 +452,40 @@ def load_translation_memory(
                 for value in source_hashes or []
                 if str(value or "").strip()
             ))
+            memory: dict[str, str] = {}
+            if clean_hashes:
+                placeholders = ",".join(["%s"] * len(clean_hashes))
+                memory_args: list[object] = [target_language, *clean_hashes]
+                report_filter = ""
+                if report_type:
+                    report_filter = " AND report_type IN ('', %s)"
+                    memory_args.append(report_type)
+                cursor.execute(
+                    f"""
+                    SELECT source_hash, translated_text, report_type, updated_at
+                    FROM translation_memory
+                    WHERE target_language=%s
+                      AND confirmed='true'
+                      AND source_hash IN ({placeholders})
+                      {report_filter}
+                    ORDER BY (report_type<>'') DESC, updated_at DESC
+                    """,
+                    memory_args,
+                )
+                for row in cursor.fetchall():
+                    key = _text(row.get("source_hash"))
+                    value = _text(row.get("translated_text"))
+                    if key and value and key not in memory:
+                        memory[key] = value
             hash_filter = ""
             args: list[object] = [target_language, prompt_version]
             if clean_hashes:
-                placeholders = ",".join(["%s"] * len(clean_hashes))
+                remaining_hashes = [value for value in clean_hashes if value not in memory]
+                if not remaining_hashes:
+                    return memory
+                placeholders = ",".join(["%s"] * len(remaining_hashes))
                 hash_filter = f" AND source_hash IN ({placeholders})"
-                args.extend(clean_hashes)
+                args.extend(remaining_hashes)
             cursor.execute(
                 f"""
                 SELECT source_hash, translated_text, is_manual_modified, updated_at
@@ -463,13 +501,165 @@ def load_translation_memory(
                 args,
             )
             rows = cursor.fetchall()
-    memory: dict[str, str] = {}
     for row in rows:
         key = _text(row.get("source_hash"))
         value = _text(row.get("translated_text"))
         if key and value and key not in memory:
             memory[key] = value
     return memory
+
+
+def list_translation_memory(
+    database_path: str | Path | None,
+    *,
+    query: str = "",
+    report_type: str = "",
+    limit: int = 200,
+) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    clauses = ["1=1"]
+    args: list[object] = []
+    if query.strip():
+        clauses.append("(source_text LIKE %s OR translated_text LIKE %s)")
+        pattern = f"%{query.strip()}%"
+        args.extend([pattern, pattern])
+    if report_type.strip():
+        clauses.append("report_type=%s")
+        args.append(report_type.strip().lower())
+    args.append(max(1, min(int(limit or 200), 1000)))
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT * FROM translation_memory
+                WHERE {' AND '.join(clauses)}
+                ORDER BY updated_at DESC, id DESC
+                LIMIT %s
+                """,
+                args,
+            )
+            rows = cursor.fetchall()
+    return [
+        {key: (_text(value) if key != "usage_count" and key != "id" else value) for key, value in row.items() if key != "mysql_updated_at"}
+        for row in rows
+    ]
+
+
+def save_translation_memory_entry(database_path: str | Path | None, entry: dict[str, Any]) -> dict[str, Any]:
+    del database_path
+    initialize_database()
+    source_text = _text(entry.get("source_text")).strip()
+    translated_text = _text(entry.get("translated_text")).strip()
+    target_language = _text(entry.get("target_language") or "zh-CN").strip()
+    if not source_text or not translated_text:
+        raise ValueError("翻译记忆的原文和标准译文不能为空。")
+    source_hash_value = _text(entry.get("source_hash")).strip() or _translation_source_hash(source_text)
+    now = _now()
+    values = (
+        _text(entry.get("source_language")), target_language, source_text, source_hash_value,
+        translated_text, _text(entry.get("report_type")).lower(), _text(entry.get("operation_category")),
+        _text(entry.get("field_code")), _text(entry.get("source_record_id")),
+        "true" if _truthy(entry.get("confirmed", True)) else "false", _text(entry.get("confirmed_by")),
+        _text(entry.get("created_at") or now), now,
+    )
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO translation_memory (
+                  source_language, target_language, source_text, source_hash, translated_text,
+                  report_type, operation_category, field_code, source_record_id, confirmed,
+                  confirmed_by, created_at, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                  id=LAST_INSERT_ID(id), source_language=VALUES(source_language), source_text=VALUES(source_text),
+                  translated_text=VALUES(translated_text), operation_category=VALUES(operation_category),
+                  source_record_id=VALUES(source_record_id), confirmed=VALUES(confirmed),
+                  confirmed_by=VALUES(confirmed_by), updated_at=VALUES(updated_at)
+                """,
+                values,
+            )
+            entry_id = int(cursor.lastrowid or 0)
+        connection.commit()
+    return {"id": entry_id, "source_hash": source_hash_value, "updated_at": now}
+
+
+def delete_translation_memory_entry(database_path: str | Path | None, entry_id: int) -> bool:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM translation_memory WHERE id=%s", (int(entry_id),))
+            deleted = cursor.rowcount > 0
+        connection.commit()
+    return deleted
+
+
+def revise_translation_content(
+    database_path: str | Path | None,
+    *,
+    record_id: str,
+    entity_id: str,
+    field_code: str,
+    target_language: str,
+    revised_text: str,
+    editor: str = "",
+    note: str = "",
+    add_to_memory: bool = True,
+    report_type: str = "",
+) -> dict[str, Any]:
+    del database_path
+    initialize_database()
+    revised = _text(revised_text).strip()
+    if not revised:
+        raise ValueError("修订译文不能为空。")
+    now = _now()
+    memory_entry: dict[str, Any] | None = None
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT source_language, source_text, translated_text, source_hash
+                   FROM translation_content
+                   WHERE record_id=%s AND entity_id=%s AND field_code=%s AND target_language=%s
+                   FOR UPDATE""",
+                (record_id, entity_id, field_code, target_language),
+            )
+            current = cursor.fetchone()
+            if not current:
+                raise KeyError("未找到需要修订的译文。")
+            previous = _text(current.get("translated_text"))
+            cursor.execute(
+                """UPDATE translation_content
+                   SET translated_text=%s, translation_status='COMPLETED', error_message='',
+                       is_manual_modified='true', updated_at=%s
+                   WHERE record_id=%s AND entity_id=%s AND field_code=%s AND target_language=%s""",
+                (revised, now, record_id, entity_id, field_code, target_language),
+            )
+            cursor.execute(
+                """INSERT INTO translation_revisions (
+                     record_id, entity_id, field_code, target_language, source_text,
+                     previous_text, revised_text, revision_type, editor, note, created_at
+                   ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'manual', %s, %s, %s)""",
+                (record_id, entity_id, field_code, target_language, _text(current.get("source_text")), previous, revised, editor, note, now),
+            )
+            if add_to_memory:
+                memory_entry = {
+                    "source_language": _text(current.get("source_language")),
+                    "target_language": target_language,
+                    "source_text": _text(current.get("source_text")),
+                    "source_hash": _text(current.get("source_hash")),
+                    "translated_text": revised,
+                    "report_type": report_type,
+                    "field_code": field_code,
+                    "source_record_id": record_id,
+                    "confirmed": True,
+                    "confirmed_by": editor,
+                }
+        connection.commit()
+    if memory_entry:
+        save_translation_memory_entry(None, memory_entry)
+    return {"record_id": record_id, "field_code": field_code, "translated_text": revised, "updated_at": now}
 
 
 def load_operation_translations(database_path: str | Path | None, record_ids: list[str]) -> list[dict[str, str]]:
@@ -737,10 +927,6 @@ def list_translation_queue_records() -> list[dict[str, str]]:
             )
             rows = cursor.fetchall()
     return [{key: _text(value) for key, value in row.items()} for row in rows]
-
-
-def query_records(**filters: str) -> list[dict[str, str]]:
-    return list_records(None, **filters)
 
 
 def list_npt_confirmation_wells(
@@ -1227,13 +1413,6 @@ def _npt_candidate_records(
     return list(grouped.values())
 
 
-def _safe_float(value: Any) -> float:
-    try:
-        return float(str(value or "0").replace(",", ""))
-    except ValueError:
-        return 0.0
-
-
 def _npt_row_revision(row: dict[str, Any]) -> str:
     persisted = {key: value for key, value in row.items() if key != "row_no"}
     value = json.dumps(persisted, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -1260,27 +1439,6 @@ def _operation_hour_summary(rows: list[dict[str, Any]]) -> dict[str, dict[str, f
 
 def _system_type(row: dict[str, Any]) -> str:
     return str(row.get("system_op_type", "") or row.get("op_type", "") or "").strip().upper()
-
-
-def _npt_statuses() -> list[dict[str, str]]:
-    return [
-        {"value": "pending", "label": "待确认"},
-        {"value": "draft", "label": "确认中"},
-        {"value": "confirmed", "label": "已确认"},
-    ]
-
-
-def _confirmation_group_status(item: dict[str, Any]) -> str:
-    statuses = {str(value or "").strip().lower() for value in item.get("statuses", []) if str(value or "").strip()}
-    record_count = len(item.get("record_ids", []) or [])
-    locked_count = int(item.get("locked_count", 0) or 0)
-    if record_count and locked_count >= record_count:
-        return "confirmed"
-    if "confirmed" in statuses and record_count and locked_count >= record_count:
-        return "confirmed"
-    if "draft" in statuses or "confirmed" in statuses:
-        return "draft"
-    return "pending"
 
 
 def _sql_statements(path: Path) -> list[str]:
@@ -1330,28 +1488,14 @@ def _truthy(value: Any) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "locked", "confirmed"}
 
 
+def _translation_source_hash(value: Any) -> str:
+    normalized = normalize_multiline(value)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def _normalize_report_type(report_type: str) -> str:
-    normalized = (report_type or "").strip().lower()
-    if normalized not in REPORT_TYPES:
-        raise ValueError(f"Unsupported report_type: {report_type}")
-    return normalized
-
-
-def _natural_record_id(report_type: str, fields: dict[str, Any]) -> str:
-    parts = [report_type, fields.get("wellbore", ""), fields.get("reportDate", ""), fields.get("reportNo", "")]
-    if not all(str(part or "").strip() for part in parts):
-        return ""
-    return ":".join(_slug(str(part)) for part in parts)
-
-
 def _generated_record_id(report_type: str) -> str:
     return f"{report_type}:{_slug(_now())}"
-
-
-def _slug(value: str) -> str:
-    text = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip())
-    return text.strip("-") or "unknown"

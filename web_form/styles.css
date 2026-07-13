@@ -3708,7 +3708,8 @@ body:has(#nptStatsPage.active) .workspace {
 
 .npt-detail-table {
   table-layout: fixed;
-  min-width: 1060px;
+  width: 100%;
+  min-width: 0;
 }
 
 .npt-detail-table th,
@@ -3730,24 +3731,31 @@ body:has(#nptStatsPage.active) .workspace {
 
 .npt-detail-table th:nth-child(3),
 .npt-detail-table td:nth-child(3) {
-  width: auto;
+  width: 148px;
 }
 
 .npt-detail-table th:nth-child(4),
 .npt-detail-table td:nth-child(4) {
-  width: 118px;
-  text-align: center;
+  width: auto;
 }
 
 .npt-detail-table th:nth-child(5),
 .npt-detail-table td:nth-child(5) {
-  width: 104px;
+  width: 112px;
   text-align: center;
 }
 
-.npt-detail-table th:nth-child(6),
-.npt-detail-table td:nth-child(6) {
-  width: 76px;
+.record-table.npt-detail-table th:nth-child(6),
+.record-table.npt-detail-table td:nth-child(6) {
+  width: 96px;
+  min-width: 0;
+  text-align: center;
+}
+
+.record-table.npt-detail-table th:nth-child(7),
+.record-table.npt-detail-table td:nth-child(7) {
+  width: 68px;
+  min-width: 0;
   text-align: center;
   white-space: nowrap;
 }
@@ -3795,6 +3803,10 @@ body:has(#nptStatsPage.active) .workspace {
   z-index: 1000;
   max-height: min(58vh, 430px);
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #b9cadd;
   border-radius: 8px;
   padding: 14px 16px;
@@ -4260,16 +4272,6 @@ body.modal-open {
   gap: 16px;
 }
 
-.admin-sidebar .menu-group-toggle,
-.admin-sidebar .menu-link {
-  grid-template-columns: 28px minmax(0, 1fr) 16px;
-}
-
-.admin-sidebar .menu-link {
-  grid-template-columns: 24px minmax(0, 1fr);
-}
-
-.admin-menu-icon,
 .admin-kpi-icon,
 .auth-input-icon,
 .auth-feature-icon {
@@ -4277,22 +4279,6 @@ body.modal-open {
   background: currentColor;
   mask: var(--icon) center / contain no-repeat;
   -webkit-mask: var(--icon) center / contain no-repeat;
-}
-
-.admin-menu-icon {
-  width: 22px;
-  height: 22px;
-  color: #b8d3e8;
-}
-
-.admin-sidebar .menu-group-toggle .admin-menu-icon {
-  width: 24px;
-  height: 24px;
-  color: #d9e8f4;
-}
-
-.admin-menu-link.active .admin-menu-icon {
-  color: var(--blue);
 }
 
 .icon-overview { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='14' width='7' height='7' rx='1'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1'/%3E%3C/svg%3E"); }
@@ -5160,6 +5146,8 @@ body.modal-open {
 }
 
 .translation-tuning-content {
+  display: grid;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -5950,6 +5938,258 @@ body.modal-open {
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.translation-test-diagnostics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.translation-test-diagnostics > div {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+
+.translation-test-diagnostics strong {
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.translation-test-diagnostics p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.translation-knowledge-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.experience-flow,
+.experience-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.experience-flow {
+  margin-bottom: 14px;
+}
+
+.experience-flow span {
+  padding: 6px 10px;
+  border: 1px solid #bfd2df;
+  border-radius: 999px;
+  background: #f3f8fb;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.experience-summary {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.experience-summary strong {
+  color: var(--blue);
+  font-size: 20px;
+}
+
+.experience-summary span {
+  margin-right: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.translation-experience-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.translation-experience-list.compact .translation-experience-card {
+  padding: 12px;
+}
+
+.translation-experience-card {
+  display: grid;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #d29b2d;
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.translation-experience-card.applied {
+  border-left-color: var(--blue);
+}
+
+.translation-experience-card.verified {
+  border-left-color: #3f8768;
+}
+
+.experience-card-heading,
+.experience-card-heading > div,
+.experience-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.experience-card-heading {
+  justify-content: space-between;
+}
+
+.experience-confidence,
+.experience-card-actions span,
+.translation-advanced-knowledge > summary span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.experience-cause small,
+.experience-recommendation small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.experience-cause p,
+.experience-recommendation p,
+.translation-experience-card details p {
+  margin: 4px 0 0;
+  line-height: 1.6;
+}
+
+.experience-card-actions {
+  padding-top: 4px;
+}
+
+.verified-experience {
+  margin-top: 14px;
+}
+
+.verified-experience > summary,
+.translation-advanced-knowledge > summary {
+  cursor: pointer;
+  color: var(--navy);
+}
+
+.translation-advanced-knowledge > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.translation-advanced-content {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.translation-pipeline-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.translation-memory-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(260px, 0.65fr);
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.translation-review-toolbar,
+.translation-review-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.translation-review-toolbar label {
+  min-width: min(520px, 100%);
+}
+
+.translation-review-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.translation-review-row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.translation-review-row > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.translation-review-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.translation-review-columns label {
+  display: grid;
+  gap: 6px;
+}
+
+.translation-review-actions input[name="translationReviewNote"] {
+  flex: 1 1 260px;
+}
+
+.business-prompt-grid {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.translation-memory-form .wide {
+  grid-column: 1 / -1;
+}
+
+.translation-memory-form label,
+.translation-memory-panel td:first-child,
+.translation-memory-panel td:nth-child(4) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memory-cell-text {
+  min-width: 220px;
+  max-width: 520px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 760px) {
+  .translation-memory-form,
+  .translation-pipeline-comparison,
+  .translation-review-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .translation-checks {
@@ -6926,7 +7166,6 @@ textarea {
 .record-summary-card,
 .analytics-kpi,
 .analytics-card,
-.admin-panel,
 .admin-kpi-card,
 .admin-note-grid {
   border-radius: 9px;
@@ -7486,7 +7725,6 @@ body:has(#nptStatsPage.active) .menu-link.active::before {
 .record-summary-card,
 .analytics-kpi,
 .analytics-card,
-.admin-panel,
 .admin-kpi-card,
 .admin-note-grid,
 .production-report-tabs,
@@ -8006,4 +8244,182 @@ td textarea {
   .monitor-event-content {
     grid-template-columns: 1fr;
   }
+}
+
+/* Front-office navigation — concept 3: quiet groups, clear hierarchy, cyan focus. */
+:is(body, body:has(#nptStatsPage.active)) .app-shell > .sidebar:not(.admin-sidebar) {
+  padding: 16px 12px;
+  background: linear-gradient(180deg, #07345c 0%, #052b4d 58%, #042744 100%);
+  border-right: 1px solid rgba(151, 205, 238, 0.12);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.035);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .brand {
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 8px 16px;
+  border-bottom-color: rgba(194, 224, 242, 0.14);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 19, 35, 0.22), inset 0 0 0 1px rgba(18, 109, 200, 0.1);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .brand strong {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .brand span {
+  margin-top: 2px;
+  color: #a9bfd1;
+  font-size: 11px;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .system-nav {
+  gap: 0;
+  margin-top: 8px;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group {
+  gap: 2px;
+  padding: 7px 0 9px;
+  border-bottom: 1px solid rgba(194, 224, 242, 0.11);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group:last-child {
+  border-bottom: 0;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group-toggle {
+  min-height: 42px;
+  grid-template-columns: 26px minmax(0, 1fr) 16px;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: #f4f8fb;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group-toggle:hover,
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.065);
+  outline: 1px solid rgba(160, 210, 239, 0.12);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group-icon {
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  border-radius: 0;
+  background: transparent;
+  object-fit: contain;
+  opacity: 0.92;
+  filter: brightness(0) invert(1);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-chevron {
+  width: 15px;
+  height: 15px;
+  justify-self: end;
+  opacity: 0.72;
+  filter: brightness(0) invert(1);
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-group-toggle:hover .menu-chevron {
+  opacity: 1;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-items {
+  gap: 3px;
+  padding: 1px 0 0;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link {
+  min-height: 40px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  padding: 6px 10px 6px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: rgba(226, 237, 245, 0.84);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.3;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-item-icon {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 5px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  object-fit: contain;
+  opacity: 0.78;
+  filter: brightness(0) invert(1);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link:hover,
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link:focus-visible {
+  border-color: rgba(151, 205, 238, 0.08);
+  background: rgba(255, 255, 255, 0.065);
+  color: #ffffff;
+  outline: none;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link.active {
+  border-color: rgba(55, 212, 236, 0.15);
+  background: linear-gradient(90deg, rgba(10, 143, 175, 0.3), rgba(14, 111, 157, 0.18));
+  color: #ffffff;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link::before {
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link.active::before {
+  background: #2ed8ef;
+  box-shadow: 0 0 12px rgba(46, 216, 239, 0.58);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .menu-link.active .menu-item-icon {
+  border-color: rgba(76, 220, 240, 0.15);
+  background: rgba(46, 216, 239, 0.12);
+  opacity: 1;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .sidebar-bottom-actions {
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top-color: rgba(194, 224, 242, 0.13);
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .sidebar-system-link {
+  min-height: 42px;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 800;
+}
+
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .sidebar-system-link:hover,
+:is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .sidebar-system-link:focus-visible {
+  border-color: rgba(151, 205, 238, 0.08);
+  background: rgba(255, 255, 255, 0.065);
 }

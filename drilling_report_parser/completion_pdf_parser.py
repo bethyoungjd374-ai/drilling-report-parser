@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import re
-from io import BytesIO
 from pathlib import Path
 from typing import Any, BinaryIO
 
-import pdfplumber
-from pypdf import PdfReader
-
+from .pdf_io import extract_page as _extract_page
+from .pdf_io import pdfplumber_open as _pdfplumber_open
+from .pdf_io import reader as _reader
+from .pdf_io import source_payload as _source_payload
 from .text_structure import column_text as _structured_column_text
 from .text_structure import normalize_multiline
 
@@ -38,29 +38,6 @@ def parse_completion_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> 
         "mud_products": _parse_mud_products(layout_text),
         "perforation_intervals": _parse_perforation_intervals(layout_pages),
     }
-
-
-def _source_payload(source: str | Path | bytes | BinaryIO) -> str | Path | bytes:
-    if isinstance(source, (str, Path, bytes)):
-        return source
-    return source.read()
-
-
-def _reader(source: str | Path | bytes | BinaryIO) -> PdfReader:
-    if isinstance(source, (str, Path)):
-        return PdfReader(str(source))
-    if isinstance(source, bytes):
-        return PdfReader(BytesIO(source))
-    return PdfReader(source)
-
-
-def _extract_page(page, mode: str) -> str:
-    try:
-        if mode == "layout":
-            return page.extract_text(extraction_mode="layout") or ""
-        return page.extract_text() or ""
-    except Exception:
-        return page.extract_text() or ""
 
 
 def _clean(value: str) -> str:
@@ -203,12 +180,6 @@ def _parse_operations_from_pdf(source: str | Path | bytes) -> list[dict[str, str
         for page in pdf.pages:
             rows.extend(_parse_operation_page(page))
     return rows
-
-
-def _pdfplumber_open(source: str | Path | bytes):
-    if isinstance(source, (str, Path)):
-        return pdfplumber.open(str(source))
-    return pdfplumber.open(BytesIO(source))
 
 
 def _parse_operation_page(page) -> list[dict[str, str]]:

@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 系统后台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/web_form/styles.css?v=global-pagination-2" />
+    <link rel="stylesheet" href="/web_form/styles.css?v=sidebar-nav-3" />
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar admin-sidebar" aria-label="系统后台菜单">
+      <aside class="sidebar" aria-label="系统后台菜单">
         <div class="brand">
           <div class="brand-mark brand-logo" aria-label="NexoRig logo">
             <svg class="brand-logo-svg" viewBox="0 0 64 64" aria-hidden="true">
@@ -27,45 +27,45 @@
         <nav class="system-nav admin-sidebar-nav">
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <span class="admin-menu-icon icon-overview" aria-hidden="true"></span>
+              <img class="menu-group-icon" src="/web_form/icons/nav/chart-histogram.svg" alt="" />
               <span>运营工作台</span>
-              <span class="menu-chevron">v</span>
+              <img class="menu-chevron" src="/web_form/icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link admin-menu-link active" data-admin-tab="overview"><span class="admin-menu-icon icon-overview" aria-hidden="true"></span><span>总览</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="projects"><span class="admin-menu-icon icon-briefcase" aria-hidden="true"></span><span>项目与队伍</span></a>
+              <a href="#" class="menu-link admin-menu-link active" data-admin-tab="overview"><img class="menu-item-icon" src="/web_form/icons/nav/gauge.svg" alt="" /><span>总览</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="projects"><img class="menu-item-icon" src="/web_form/icons/nav/briefcase.svg" alt="" /><span>项目与队伍</span></a>
             </div>
           </div>
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <span class="admin-menu-icon icon-sparkles" aria-hidden="true"></span>
+              <img class="menu-group-icon" src="/web_form/icons/nav/sparkles.svg" alt="" />
               <span>AI 工作流</span>
-              <span class="menu-chevron">v</span>
+              <img class="menu-chevron" src="/web_form/icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiModels"><span class="admin-menu-icon icon-cpu" aria-hidden="true"></span><span>模型接入</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="translationTuning"><span class="admin-menu-icon icon-languages" aria-hidden="true"></span><span>翻译策略</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiExtraction"><span class="admin-menu-icon icon-sparkles" aria-hidden="true"></span><span>数据提炼</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiModels"><img class="menu-item-icon" src="/web_form/icons/nav/cpu.svg" alt="" /><span>模型接入</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="translationTuning"><img class="menu-item-icon" src="/web_form/icons/nav/language.svg" alt="" /><span>翻译策略</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="aiExtraction"><img class="menu-item-icon" src="/web_form/icons/nav/sparkles.svg" alt="" /><span>数据提炼</span></a>
             </div>
           </div>
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <span class="admin-menu-icon icon-shield" aria-hidden="true"></span>
+              <img class="menu-group-icon" src="/web_form/icons/nav/shield-check.svg" alt="" />
               <span>系统治理</span>
-              <span class="menu-chevron">v</span>
+              <img class="menu-chevron" src="/web_form/icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="users"><span class="admin-menu-icon icon-users" aria-hidden="true"></span><span>账号管理</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="roles"><span class="admin-menu-icon icon-shield" aria-hidden="true"></span><span>角色权限</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="config"><span class="admin-menu-icon icon-settings" aria-hidden="true"></span><span>系统参数</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="data"><span class="admin-menu-icon icon-database" aria-hidden="true"></span><span>数据维护</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="logs"><span class="admin-menu-icon icon-logs" aria-hidden="true"></span><span>审计日志</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="users"><img class="menu-item-icon" src="/web_form/icons/nav/users.svg" alt="" /><span>账号管理</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="roles"><img class="menu-item-icon" src="/web_form/icons/nav/shield-check.svg" alt="" /><span>角色权限</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="config"><img class="menu-item-icon" src="/web_form/icons/nav/settings.svg" alt="" /><span>系统参数</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="data"><img class="menu-item-icon" src="/web_form/icons/nav/database.svg" alt="" /><span>数据维护</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="logs"><img class="menu-item-icon" src="/web_form/icons/nav/list-details.svg" alt="" /><span>审计日志</span></a>
             </div>
           </div>
         </nav>
         <div class="sidebar-bottom-actions">
           <a class="menu-link sidebar-system-link" href="/web_form/">
-            <span class="admin-menu-icon icon-home" aria-hidden="true"></span>
+            <img class="menu-item-icon" src="/web_form/icons/nav/home.svg" alt="" />
             <span>返回前台</span>
           </a>
         </div>
@@ -99,6 +99,7 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/web_form/liquid-glass.js"></script>
-    <script src="/web_form/admin.js?v=translation-queue-count-3"></script>
+    <script src="/web_form/http-client.js?v=1"></script>
+    <script src="/web_form/admin.js?v=architecture-cleanup-1"></script>
   </body>
 </html>

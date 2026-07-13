@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css?v=global-pagination-2" />
+    <link rel="stylesheet" href="./styles.css?v=sidebar-nav-3" />
   </head>
   <body>
     <div class="app-shell">
@@ -27,45 +27,45 @@
         <nav class="system-nav">
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <img class="menu-group-icon" src="./icons/daily-parsing.png" alt="" />
-              <span data-i18n="menuDailyParsing">日报解析</span>
-              <span class="menu-chevron">v</span>
+              <img class="menu-group-icon" src="./icons/nav/calendar-stats.svg" alt="" />
+              <span data-i18n="menuDailyParsing">日报管理</span>
+              <img class="menu-chevron" src="./icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link active" data-menu-target="drilling-daily" data-title-i18n="menuDrillingDaily" data-desc-i18n="descDrillingDaily"><img class="menu-item-icon" src="./icons/drilling-daily.png" alt="" /><span data-i18n="menuDrillingDaily">钻井日报</span></a>
-              <a href="#" class="menu-link" data-menu-target="completion-daily" data-title-i18n="menuCompletionDaily" data-desc-i18n="descCompletionDaily"><img class="menu-item-icon" src="./icons/completion-daily.png" alt="" /><span data-i18n="menuCompletionDaily">完井日报</span></a>
-              <a href="#" class="menu-link" data-menu-target="workover-daily" data-title-i18n="menuWorkoverDaily" data-desc-i18n="descWorkoverDaily"><img class="menu-item-icon" src="./icons/workover-daily.png" alt="" /><span data-i18n="menuWorkoverDaily">修井日报</span></a>
+              <a href="#" class="menu-link active" data-menu-target="drilling-daily" data-title-i18n="menuDrillingDaily" data-desc-i18n="descDrillingDaily"><img class="menu-item-icon" src="./icons/nav/calendar-bolt.svg" alt="" /><span data-i18n="menuDrillingDaily">钻井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="completion-daily" data-title-i18n="menuCompletionDaily" data-desc-i18n="descCompletionDaily"><img class="menu-item-icon" src="./icons/nav/circle-check.svg" alt="" /><span data-i18n="menuCompletionDaily">完井日报</span></a>
+              <a href="#" class="menu-link" data-menu-target="workover-daily" data-title-i18n="menuWorkoverDaily" data-desc-i18n="descWorkoverDaily"><img class="menu-item-icon" src="./icons/nav/tool.svg" alt="" /><span data-i18n="menuWorkoverDaily">修井日报</span></a>
             </div>
           </div>
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <img class="menu-group-icon" src="./icons/production-report.png" alt="" />
-              <span data-i18n="menuProductionReport">生产报表</span>
-              <span class="menu-chevron">v</span>
+              <img class="menu-group-icon" src="./icons/nav/chart-histogram.svg" alt="" />
+              <span data-i18n="menuProductionReport">生产分析</span>
+              <img class="menu-chevron" src="./icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/rig-production-summary.png" alt="" /><span data-i18n="menuRigProductionSummary">生产时效</span></a>
-              <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><img class="menu-item-icon" src="./icons/production-report.png" alt="" /><span data-i18n="menuProductionDetailReport">生产报表</span></a>
-              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/well-npt-confirm.png" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
-              <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/rig-npt-ranking.png" alt="" /><span data-i18n="menuRigNptRanking">NPT确认</span></a>
+              <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/nav/clock-hour-4.svg" alt="" /><span data-i18n="menuRigProductionSummary">时效分析</span></a>
+              <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><img class="menu-item-icon" src="./icons/nav/report-analytics.svg" alt="" /><span data-i18n="menuProductionDetailReport">生产报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/nav/hourglass.svg" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
+              <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/nav/clipboard-check.svg" alt="" /><span data-i18n="menuRigNptRanking">NPT确认</span></a>
             </div>
           </div>
           <div class="menu-group open">
             <button class="menu-group-toggle" type="button" aria-expanded="true">
-              <img class="menu-group-icon" src="./icons/hsse.png" alt="" />
+              <img class="menu-group-icon" src="./icons/nav/shield-check.svg" alt="" />
               <span data-i18n="menuHsse">HSSE管理</span>
-              <span class="menu-chevron">v</span>
+              <img class="menu-chevron" src="./icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link" data-menu-target="hsse-collection" data-title-i18n="menuHsseCollection" data-desc-i18n="descHsseCollection"><img class="menu-item-icon" src="./icons/hsse-collection.png" alt="" /><span data-i18n="menuHsseCollection">信息填报</span></a>
-              <a href="#" class="menu-link" data-menu-target="hsse-dashboard" data-title-i18n="menuHsseDashboard" data-desc-i18n="descHsseDashboard"><img class="menu-item-icon" src="./icons/hsse-dashboard.png" alt="" /><span data-i18n="menuHsseDashboard">安全驾驶舱</span></a>
-              <a href="#" class="menu-link" data-menu-target="period-safety-report" data-title-i18n="menuPeriodSafetyReport" data-desc-i18n="descPeriodSafetyReport"><img class="menu-item-icon" src="./icons/period-safety-report.png" alt="" /><span data-i18n="menuPeriodSafetyReport">安全报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="hsse-collection" data-title-i18n="menuHsseCollection" data-desc-i18n="descHsseCollection"><img class="menu-item-icon" src="./icons/nav/clipboard-text.svg" alt="" /><span data-i18n="menuHsseCollection">HSSE填报</span></a>
+              <a href="#" class="menu-link" data-menu-target="hsse-dashboard" data-title-i18n="menuHsseDashboard" data-desc-i18n="descHsseDashboard"><img class="menu-item-icon" src="./icons/nav/gauge.svg" alt="" /><span data-i18n="menuHsseDashboard">安全驾驶舱</span></a>
+              <a href="#" class="menu-link" data-menu-target="period-safety-report" data-title-i18n="menuPeriodSafetyReport" data-desc-i18n="descPeriodSafetyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuPeriodSafetyReport">HSSE报表</span></a>
             </div>
           </div>
         </nav>
         <div class="sidebar-bottom-actions">
           <a class="menu-link sidebar-system-link" href="/admin/" data-front-admin-entry hidden>
-            <span class="admin-menu-icon icon-settings" aria-hidden="true"></span>
+            <img class="menu-item-icon" src="./icons/nav/settings.svg" alt="" />
             <span data-i18n="systemAdmin">系统后台</span>
           </a>
         </div>
@@ -897,6 +897,7 @@
                     <tr>
                       <th>日期</th>
                       <th>时间段</th>
+                      <th>识别责任方</th>
                       <th>工况描述</th>
                       <th>系统识别状态</th>
                       <th>确认状态</th>
@@ -967,6 +968,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
-    <script src="./app.js?v=global-pagination-2"></script>
+    <script src="./http-client.js?v=1"></script>
+    <script src="./app.js?v=architecture-cleanup-1"></script>
   </body>
 </html>

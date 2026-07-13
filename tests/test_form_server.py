@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import http.client
 import json
 import os
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock, patch
@@ -269,6 +271,33 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual([row["event"] for row in translation["events"]], ["request", "response"])
         self.assertEqual(extraction["events"][0]["record_id"], "report-2")
 
+    def test_translation_debug_log_retention_limits_age_count_and_rotated_file(self) -> None:
+        debug_path = Path(self.repository_tmp.name) / "translation_debug_logs.jsonl"
+        rotated_path = debug_path.with_suffix(debug_path.suffix + ".1")
+        now = datetime(2026, 7, 13, 12, 0, tzinfo=timezone.utc)
+        rows = [
+            {"time": "2026-07-01T12:00:00Z", "event": "old", "index": 0},
+            *[
+                {"time": f"2026-07-{day:02d}T12:00:00Z", "event": "recent", "index": day}
+                for day in range(9, 14)
+            ],
+        ]
+        debug_path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+        rotated_path.write_text("old rotated data", encoding="utf-8")
+
+        with (
+            patch.object(form_server, "TRANSLATION_DEBUG_LOG_PATH", debug_path),
+            patch.object(form_server, "TRANSLATION_DEBUG_RETENTION_DAYS", 7),
+            patch.object(form_server, "TRANSLATION_DEBUG_MAX_ENTRIES", 3),
+            patch.object(form_server, "TRANSLATION_DEBUG_MAX_BYTES", 1024 * 1024),
+        ):
+            result = form_server._prune_translation_debug_logs(now=now)
+
+        retained = [json.loads(line) for line in debug_path.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["index"] for row in retained], [11, 12, 13])
+        self.assertEqual(result["after"], 3)
+        self.assertFalse(rotated_path.exists())
+
     def test_default_ai_extraction_rule_is_disabled_until_reviewed(self) -> None:
         config = form_server._default_ai_extraction_config()
 
@@ -345,6 +374,58 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(company, "SINOPEC")
         self.assertEqual(form_server._normalize_responsible_party(company, payload), "SINOPEC 248")
         self.assertEqual(form_server._normalize_responsible_party("SINOPEC-SLB FRACTURA", payload), "SINOPEC-SLB FRACTURA")
+
+    def test_explicit_npt_responsibility_stops_at_line_boundary(self) -> None:
+        source = "NPT A CARGO DE SINOPEC\nIncident Comments:"
+
+        self.assertEqual(form_server._explicit_responsible_party(source), "SINOPEC")
+
+    def test_operation_extraction_status_is_row_specific(self) -> None:
+        source = "NPT A CARGO DE SERVICE COMPANY"
+        source_hash = hashlib.sha256(source.encode("utf-8")).hexdigest()
+        current = {
+            "source_hash": source_hash,
+            "rule_version": "rules-v2",
+            "extraction_status": "COMPLETED",
+            "result_text": "SERVICE COMPANY",
+            "updated_at": "2026-07-13T10:00:00",
+        }
+
+        self.assertEqual(
+            form_server._current_operation_extraction(source, current, "rules-v2"),
+            ("SERVICE COMPANY", "COMPLETED", "", "2026-07-13T10:00:00"),
+        )
+        self.assertEqual(form_server._current_operation_extraction(source, {}, "rules-v2"), ("", "PENDING", "", ""))
+        self.assertEqual(form_server._current_operation_extraction(source, current, "rules-v3")[1], "STALE")
+        self.assertEqual(form_server._current_operation_extraction(f"{source} CHANGED", current, "rules-v2")[1], "STALE")
+
+    def test_npt_confirmation_rows_include_current_responsible_party(self) -> None:
+        source = "NPT A CARGO DE SERVICE COMPANY"
+        rows = [{
+            "record_id": "report-1",
+            "row_no": 2,
+            "system_op_type": "NPT",
+            "operation_details": source,
+        }]
+        result = {
+            "record_id": "report-1",
+            "source_section": "operations",
+            "source_row_no": 2,
+            "target_field": "service_line",
+            "source_hash": hashlib.sha256(source.encode("utf-8")).hexdigest(),
+            "rule_version": "rules-v2",
+            "extraction_status": "COMPLETED",
+            "result_text": "SERVICE COMPANY",
+        }
+
+        with (
+            patch.object(form_server, "load_extraction_results", return_value=[result]),
+            patch.object(form_server, "_load_ai_extraction_config", return_value={"version": "rules-v2"}),
+        ):
+            form_server._enrich_operation_extraction_rows(rows)
+
+        self.assertEqual(rows[0]["service_line"], "SERVICE COMPANY")
+        self.assertEqual(rows[0]["extraction_status"], "COMPLETED")
 
     def test_fault_evidence_maps_directional_tool_brand_to_service_line(self) -> None:
         source = "HALLIBURTON SPERRY REVISA FALLA / COMPORTAMIENTO ANÓMALO DE HERRAMIENTA ICRUISE MWD"

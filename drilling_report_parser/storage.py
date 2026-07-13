@@ -109,13 +109,56 @@ def load_translation_memory(
     target_language: str,
     prompt_version: str,
     source_hashes: list[str] | None = None,
+    report_type: str = "",
 ) -> dict[str, str]:
     _validate_mysql_label(database_path)
     from . import mysql_database
 
-    memory = mysql_database.load_translation_memory(None, target_language, prompt_version, source_hashes)
+    memory = mysql_database.load_translation_memory(None, target_language, prompt_version, source_hashes, report_type)
     _clear_mysql_failure()
     return memory
+
+
+def list_translation_memory(
+    database_path: str | Path,
+    *,
+    query: str = "",
+    report_type: str = "",
+    limit: int = 200,
+) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_translation_memory(None, query=query, report_type=report_type, limit=limit)
+    _clear_mysql_failure()
+    return rows
+
+
+def save_translation_memory_entry(database_path: str | Path, entry: dict[str, Any]) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    result = mysql_database.save_translation_memory_entry(None, entry)
+    _clear_mysql_failure()
+    return result
+
+
+def delete_translation_memory_entry(database_path: str | Path, entry_id: int) -> bool:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    deleted = mysql_database.delete_translation_memory_entry(None, entry_id)
+    _clear_mysql_failure()
+    return deleted
+
+
+def revise_translation_content(database_path: str | Path, **values: Any) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    result = mysql_database.revise_translation_content(None, **values)
+    _clear_mysql_failure()
+    return result
 
 
 def load_operation_translations(database_path: str | Path, record_ids: list[str]) -> list[dict[str, str]]:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 import threading
 from datetime import datetime, timezone
 from functools import wraps
@@ -12,8 +11,15 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
+from .database_common import (
+    confirmation_group_status as _confirmation_group_status,
+    natural_record_id as _natural_record_id,
+    normalize_report_type as _normalize_report_type,
+    npt_statuses as _npt_statuses,
+    safe_float as _safe_float,
+    slug as _slug,
+)
 
-REPORT_TYPES = {"drilling", "completion", "workover", "move"}
 _WORKBOOK_LOCK = threading.RLock()
 
 
@@ -731,40 +737,12 @@ def _operation_rows_for_record(workbook: Workbook, report_type: str, record_id: 
     return _matching_rows(workbook[sheet_name], record_id, keep_row_no=True)
 
 
-def _safe_float(value: Any) -> float:
-    try:
-        return float(str(value or "0").replace(",", ""))
-    except ValueError:
-        return 0.0
-
-
 def _truthy(value: Any) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "locked", "confirmed"}
 
 
 def _system_type(row: dict[str, Any]) -> str:
     return str(row.get("system_op_type", "") or row.get("op_type", "") or "").strip().upper()
-
-
-def _npt_statuses() -> list[dict[str, str]]:
-    return [
-        {"value": "pending", "label": "待确认"},
-        {"value": "draft", "label": "确认中"},
-        {"value": "confirmed", "label": "已确认"},
-    ]
-
-
-def _confirmation_group_status(item: dict[str, Any]) -> str:
-    statuses = {str(value or "").strip().lower() for value in item.get("statuses", []) if str(value or "").strip()}
-    record_count = len(item.get("record_ids", []) or [])
-    locked_count = int(item.get("locked_count", 0) or 0)
-    if record_count and locked_count >= record_count:
-        return "confirmed"
-    if "confirmed" in statuses and record_count and locked_count >= record_count:
-        return "confirmed"
-    if "draft" in statuses or "confirmed" in statuses:
-        return "draft"
-    return "pending"
 
 
 def _ensure_schema(workbook: Workbook) -> None:
@@ -871,31 +849,12 @@ def _headers(worksheet: Worksheet) -> list[str]:
     return [_cell_value(cell.value) for cell in worksheet[1]]
 
 
-def _natural_record_id(report_type: str, fields: dict[str, Any]) -> str:
-    parts = [report_type, fields.get("wellbore", ""), fields.get("reportDate", ""), fields.get("reportNo", "")]
-    if not all(str(part or "").strip() for part in parts):
-        return ""
-    return ":".join(_slug(str(part)) for part in parts)
-
-
 def _generated_record_id(report_type: str, timestamp: str) -> str:
     return f"{report_type}:{_slug(timestamp)}"
 
 
-def _slug(value: str) -> str:
-    text = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip())
-    return text.strip("-") or "unknown"
-
-
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
-
-def _normalize_report_type(report_type: str) -> str:
-    normalized = (report_type or "").strip().lower()
-    if normalized not in REPORT_TYPES:
-        raise ValueError(f"Unsupported report_type: {report_type}")
-    return normalized
 
 
 def _format_workbook(workbook: Workbook) -> None:

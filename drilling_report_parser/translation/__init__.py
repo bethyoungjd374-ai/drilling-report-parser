@@ -3,6 +3,7 @@ from __future__ import annotations
 from .service import (
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TRANSLATION_INSTRUCTION,
+    DEFAULT_BUSINESS_PROMPT_TEMPLATES,
     DrillingReportTranslator,
     NoopTranslationEngine,
     OllamaTranslationEngine,
@@ -33,6 +34,7 @@ from .service import (
 __all__ = [
     "DEFAULT_SYSTEM_PROMPT",
     "DEFAULT_TRANSLATION_INSTRUCTION",
+    "DEFAULT_BUSINESS_PROMPT_TEMPLATES",
     "DrillingReportTranslator",
     "NoopTranslationEngine",
     "OllamaTranslationEngine",

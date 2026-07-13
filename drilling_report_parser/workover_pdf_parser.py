@@ -4,23 +4,20 @@ import re
 from pathlib import Path
 from typing import Any, BinaryIO
 
-from pypdf import PdfReader
-
 from .completion_pdf_parser import (
     NUM_RE,
     _clean,
     _collect_block,
-    _extract_page,
     _first_line,
-    _num,
     _parse_bulks,
     _parse_daily_costs,
     _parse_mud_products,
     _parse_operations_from_pdf,
-    _reader,
-    _source_payload,
     _value_between,
 )
+from .pdf_io import extract_page as _extract_page
+from .pdf_io import reader as _reader
+from .pdf_io import source_payload as _source_payload
 from .text_structure import normalize_multiline
 
 

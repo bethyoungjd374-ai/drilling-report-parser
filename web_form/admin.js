@@ -48,6 +48,9 @@ const adminState = {
   translationTestLanguage: "zh-CN",
   translationTestFieldCode: "",
   translationTermSearch: "",
+  translationMemory: { entries: [], count: 0, loading: false },
+  translationExperience: { suggestions: [], counts: {}, loading: false },
+  translationReview: { record_id: "", rows: [], loading: false },
   dataStatus: null,
   records: [],
   logs: [],
@@ -66,15 +69,7 @@ function showToast(message) {
 }
 
 async function adminRequest(path, options = {}) {
-  const isFormData = options.body instanceof FormData;
-  const response = await fetch(path, {
-    credentials: "same-origin",
-    headers: { ...(isFormData ? {} : { "Content-Type": "application/json" }), ...(options.headers || {}) },
-    ...options,
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || "后台请求失败");
-  return payload;
+  return window.NexoHttp.requestJson(path, options, "后台请求失败");
 }
 
 async function loadAdminSession() {
@@ -99,7 +94,7 @@ async function loadAdminSession() {
 
 async function loadAdminData() {
   try {
-    const [users, config, aiModels, aiExtraction, aiExtractionQueue, projectTeams, translationTerms, translationTuning, translationQueue, dataStatus, records, logs] = await Promise.all([
+    const [users, config, aiModels, aiExtraction, aiExtractionQueue, projectTeams, translationTerms, translationTuning, translationExperience, translationQueue, dataStatus, records, logs] = await Promise.all([
       adminRequest("/api/admin/users"),
       adminRequest("/api/admin/config"),
       adminRequest("/api/admin/ai-models"),
@@ -108,6 +103,7 @@ async function loadAdminData() {
       adminRequest("/api/admin/project-teams"),
       adminRequest("/api/admin/translation-terms"),
       adminRequest("/api/admin/translation-tuning"),
+      adminRequest("/api/admin/translation-experience?limit=200"),
       adminRequest("/api/admin/translations"),
       adminRequest("/api/admin/data-status"),
       adminRequest("/api/records"),
@@ -124,6 +120,7 @@ async function loadAdminData() {
     adminState.projectTeams = { teams: projectTeams.teams || [], projects: projectTeams.projects || [], pending_wells: projectTeams.pending_wells || [] };
     adminState.translationTerms = { terms: translationTerms.terms || [], protected_terms: translationTerms.protected_terms || {} };
     adminState.translationTuning = translationTuning || adminState.translationTuning;
+    adminState.translationExperience = { suggestions: translationExperience.suggestions || [], counts: translationExperience.counts || {}, loading: false };
     adminState.translationQueue = translationQueue || adminState.translationQueue;
     adminState.dataStatus = dataStatus;
     adminState.records = records.records || [];
@@ -158,12 +155,16 @@ async function pollAdminQueueStatus() {
   adminQueuePollRunning = true;
   try {
     if (pollTranslation) {
-      const [status, monitor] = await Promise.all([
+      const [status, monitor, experience] = await Promise.all([
         adminRequest("/api/admin/translations/status"),
         adminRequest("/api/admin/ai-jobs/monitor?kind=translation&limit=5"),
+        adminRequest("/api/admin/translation-experience?limit=200"),
       ]);
       updateTranslationQueueSnapshot(status);
       updateAiJobMonitor("translation", monitor);
+      adminState.translationExperience = { suggestions: experience.suggestions || [], counts: experience.counts || {}, loading: false };
+      const experienceTab = document.querySelector('[data-translation-tuning-view="memory"] .tuning-tab-count');
+      if (experienceTab) experienceTab.textContent = Number(experience.counts?.PENDING || 0);
     }
     if (pollExtraction) {
       const [status, monitor] = await Promise.all([
@@ -224,6 +225,14 @@ function updateExtractionQueueSnapshot(queue = {}) {
   });
   const mergedQueue = { ...adminState.aiExtractionQueue, ...queue, records };
   adminState.aiExtractionQueue = mergedQueue;
+  const currentTab = adminState.aiExtractionQueueStatusTab || "pending";
+  const nextTab = preferredExtractionQueueStatusTab(records, currentTab);
+  if (nextTab !== currentTab) {
+    adminState.aiExtractionQueueStatusTab = nextTab;
+    adminState.aiExtractionQueuePage = 1;
+    renderAdminAiExtraction();
+    return;
+  }
   refreshTuningQueueCount("extraction", mergedQueue.processing_count);
   const byId = new Map(records.map((row) => [String(row.record_id || ""), row]));
   document.querySelectorAll("[data-extraction-job-status]").forEach((cell) => {
@@ -287,7 +296,7 @@ function refreshExtractionQueueTable(records = []) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   adminState.aiExtractionQueuePage = clampPage(adminState.aiExtractionQueuePage, totalPages);
   const visible = filtered.slice((adminState.aiExtractionQueuePage - 1) * pageSize, adminState.aiExtractionQueuePage * pageSize);
-  body.innerHTML = extractionQueueRowsMarkup(visible);
+  body.innerHTML = extractionQueueRowsMarkup(visible, adminState.aiExtractionQueueStatusTab === "completed");
   if (inputs.length) body.querySelectorAll("[data-ai-extraction-record]").forEach((input) => { input.checked = checked.has(input.value); });
   const pagination = document.querySelector("[data-extraction-queue-pagination]");
   if (pagination) pagination.innerHTML = adminPaginationMarkup("aiExtractionQueue", filtered.length, adminState.aiExtractionQueuePage, totalPages, pageSize);
@@ -675,6 +684,11 @@ function filterAiQueueRecords(records = [], tab = "all") {
   return tab === "all" ? records : records.filter((row) => aiQueueStatusGroup(row.status, row) === tab);
 }
 
+function preferredExtractionQueueStatusTab(records = [], currentTab = "pending") {
+  if (filterAiQueueRecords(records, currentTab).length) return currentTab;
+  return ["pending", "processing", "completed"].find((tab) => filterAiQueueRecords(records, tab).length) || currentTab;
+}
+
 function aiQueueStatusTabsMarkup(kind, records = [], activeTab = "pending") {
   const counts = { all: records.length, pending: 0, processing: 0, completed: 0 };
   records.forEach((row) => {
@@ -700,15 +714,18 @@ function aiExtractionQueueMarkup() {
       <div class="admin-actions heading-actions" data-extraction-queue-actions>${extractionQueueActionsMarkup(queue)}</div>
     </div>
     ${aiQueueStatusTabsMarkup("extraction", rows, statusTab)}
-    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
-      <tbody data-extraction-queue-body>${extractionQueueRowsMarkup(visibleRows)}</tbody>
+    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all ${statusTab === "completed" && visibleRows.length ? "checked" : ""} /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
+      <tbody data-extraction-queue-body>${extractionQueueRowsMarkup(visibleRows, statusTab === "completed")}</tbody>
     </table></div>
     <div data-extraction-queue-pagination>${adminPaginationMarkup("aiExtractionQueue", filteredRows.length, currentPage, totalPages, pageSize)}</div>
   </section>${aiJobMonitorPanelMarkup("extraction")}</div>`;
 }
 
-function extractionQueueRowsMarkup(rows = []) {
-  return rows.map((row) => `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${row.needs_extraction ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td data-extraction-job-status="${escapeHtml(row.record_id)}">${extractionJobStatusMarkup(row)}</td><td data-extraction-job-progress="${escapeHtml(row.record_id)}">${escapeHtml(row.progress || "0")}%</td><td data-extraction-job-updated="${escapeHtml(row.record_id)}">${escapeHtml(row.updated_at || "-")}</td></tr>`).join("") || `<tr><td colspan="6">当前状态下没有日报任务</td></tr>`;
+function extractionQueueRowsMarkup(rows = [], selectCompleted = false) {
+  return rows.map((row) => {
+    const checked = row.needs_extraction || (selectCompleted && aiQueueStatusGroup(row.status, row) === "completed");
+    return `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${checked ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td data-extraction-job-status="${escapeHtml(row.record_id)}">${extractionJobStatusMarkup(row)}</td><td data-extraction-job-progress="${escapeHtml(row.record_id)}">${escapeHtml(row.progress || "0")}%</td><td data-extraction-job-updated="${escapeHtml(row.record_id)}">${escapeHtml(row.updated_at || "-")}</td></tr>`;
+  }).join("") || `<tr><td colspan="6">当前状态下没有日报任务</td></tr>`;
 }
 
 function extractionQueueActionsMarkup(queue = {}) {
@@ -971,7 +988,7 @@ function renderAdminTranslationTuning() {
   const enabledFields = (tuning.scope_rules || []).filter((item) => item.enabled !== false).length;
   const pendingCount = Number(adminState.translationQueue?.pending_count || 0);
   const view = adminState.translationTuningView || "fields";
-  const content = view === "terms" ? translationTermsMarkup() : view === "queue" ? translationQueuePanelMarkup() : view === "test" ? translationTestWorkbenchMarkup() : translationFieldPoliciesMarkup();
+  const content = view === "terms" ? translationTermsMarkup() : view === "queue" ? translationQueuePanelMarkup() : view === "test" ? translationTestWorkbenchMarkup() : view === "memory" ? translationMemoryAndLogsMarkup() : translationFieldPoliciesMarkup();
   host.innerHTML = `
     <section class="admin-kpi-grid compact tuning-kpis">
       ${adminKpi("翻译范围", enabledFields, `共 ${(tuning.scope_rules || []).length} 条精确规则`, "sliders")}
@@ -984,6 +1001,7 @@ function renderAdminTranslationTuning() {
       ${translationTuningTab("terms", "术语词库")}
       ${translationTuningTab("queue", "任务队列", adminState.translationQueue?.processing_count)}
       ${translationTuningTab("test", "测试工作台")}
+      ${translationTuningTab("memory", "经验闭环", adminState.translationExperience?.counts?.PENDING)}
     </nav>
     <div class="translation-tuning-content">${content}</div>`;
 }
@@ -996,14 +1014,6 @@ function translationTuningTab(value, label, runningCount = null) {
 function translationLanguageNames(values = []) {
   const labels = { "zh-CN": "中文" };
   return values.map((value) => labels[value] || value).join(" / ") || "未配置";
-}
-
-function translationNeedsProcessing(record = {}) {
-  const status = String(record.translation_status || "").toUpperCase();
-  const version = String(record.translation_version || "");
-  const currentVersion = String(adminState.translationQueue?.current_version || "");
-  if (["QUEUED", "IN_PROGRESS", "NOT_REQUIRED"].includes(status)) return false;
-  return ["PENDING", "STOPPED", "FAILED"].includes(status) || Boolean(currentVersion && version !== currentVersion);
 }
 
 function translationQueuePanelMarkup() {
@@ -1053,10 +1063,19 @@ function aiJobMonitorRowsMarkup(kind, events = []) {
     const stage = eventName === "response" ? "已返回" : eventName === "error" ? "调用失败" : eventName === "retry" ? "自动重试" : "请求中";
     const model = event.model_name || event.model_config_id || event.engine || "默认模型";
     const elapsed = Number(event.elapsed_ms);
-    const output = event.error || event.response_preview || (eventName === "request" ? "等待模型返回…" : "-");
+    const source = event.source_preview || (eventName === "request"
+      ? "本次请求未记录文本预览"
+      : "发送数据见下方对应的请求记录");
+    const output = event.error || event.response_preview || (eventName === "request"
+      ? "等待模型返回…"
+      : eventName === "response" && kind === "extraction"
+        ? "无充分证据，模型返回空值（未识别责任方）"
+        : eventName === "response"
+          ? "模型返回空内容"
+          : "-");
     return `<article class="ai-job-monitor-row ${tone}">
       <div class="monitor-event-meta"><span class="monitor-stage ${tone}">${stage}</span><time>${monitorTimeLabel(event.time)}</time><strong>${escapeHtml(event.record_id || "-")}</strong><span>${escapeHtml(model)}</span>${Number.isFinite(elapsed) ? `<span>${(elapsed / 1000).toFixed(1)}s</span>` : ""}</div>
-      <div class="monitor-event-content"><div><small>发送数据${event.source_chars ? ` · ${escapeHtml(event.source_chars)} 字符` : ""}</small><p>${escapeHtml(event.source_preview || (eventName === "request" ? "本次请求未记录文本预览" : "-") )}</p></div><div><small>模型返回</small><p>${escapeHtml(output)}</p></div></div>
+      <div class="monitor-event-content"><div><small>发送数据${event.source_chars ? ` · ${escapeHtml(event.source_chars)} 字符` : ""}</small><p>${escapeHtml(source)}</p></div><div><small>模型返回</small><p>${escapeHtml(output)}</p></div></div>
     </article>`;
   }).join("");
 }
@@ -1092,11 +1111,14 @@ function translationFieldPoliciesMarkup() {
         <div class="tuning-prompt-form">
           <label>系统角色<textarea name="translationSystemPrompt" rows="3" maxlength="1200">${escapeHtml(prompt.system_prompt || "")}</textarea></label>
           <label>翻译要求<textarea name="translationInstruction" rows="4" maxlength="2400">${escapeHtml(prompt.translation_instruction || "")}</textarea></label>
+          <details class="prompt-preview"><summary>按业务类型补充 Prompt</summary><div class="business-prompt-grid">${businessPromptTemplatesMarkup(tuning.prompt_templates || {})}</div></details>
         </div>
         <div class="tuning-option-panel">
+          <fieldset><legend>翻译管线</legend>${translationPipelineOptions(tuning.pipeline_mode || "contextual")}</fieldset>
           <fieldset><legend>目标语言</legend>${translationTargetOptions(tuning.target_languages || [])}</fieldset>
-          <fieldset><legend>内容保护</legend>${translationProtectionOptions(protections)}</fieldset>
-          <p>术语词库中的锁定词会强制采用目标译法；缩写、单位和专名会写入模型保护清单。</p>
+          <fieldset><legend>内容保护方式</legend>${translationProtectionModeOptions(protections.mode || "prompt")}</fieldset>
+          <fieldset><legend>全局保护范围</legend>${translationProtectionOptions(protections)}</fieldset>
+          <p>严格占位保护会根据全局保护配置先替换数字、单位、缩写和专名，模型完成翻译后再原样恢复；可变单位别名和上下文排除规则保存在翻译策略配置中。</p>
         </div>
       </div>
       ${translationScopeBuilderMarkup()}
@@ -1116,6 +1138,12 @@ function translationFieldPoliciesMarkup() {
       </div>
       ${adminPaginationMarkup("translationScope", rules.length, adminState.translationScopePage, pageCount, pageSize)}
     </section>`;
+}
+
+function businessPromptTemplatesMarkup(templates = {}) {
+  return [["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"], ["move", "搬迁"]]
+    .map(([value, label]) => `<label>${label}<textarea name="translationBusinessPrompt" data-report-type="${value}" rows="3" maxlength="1200">${escapeHtml(templates[value] || "")}</textarea></label>`)
+    .join("");
 }
 
 function translationScopeBuilderMarkup() {
@@ -1141,6 +1169,20 @@ function translationProtectionOptions(protections = {}) {
   return [["numbers", "数字与精度"], ["units", "计量单位"], ["acronyms", "专业缩写"], ["proper_nouns", "公司与专名"]].map(([value, label]) => `<label><input type="checkbox" name="translationProtection" value="${value}" ${protections[value] !== false ? "checked" : ""} />${label}</label>`).join("");
 }
 
+function translationProtectionModeOptions(selected = "prompt") {
+  return [
+    ["placeholder", "严格占位保护（推荐）"],
+    ["prompt", "仅提示词 + 结果校验"],
+  ].map(([value, label]) => `<label><input type="radio" name="translationProtectionMode" value="${value}" ${selected === value ? "checked" : ""} />${label}</label>`).join("");
+}
+
+function translationPipelineOptions(selected = "contextual") {
+  return [
+    ["contextual", "上下文翻译（推荐）"],
+    ["legacy", "旧版占位符（回退）"],
+  ].map(([value, label]) => `<label><input type="radio" name="translationPipelineMode" value="${value}" ${selected === value ? "checked" : ""} />${label}</label>`).join("");
+}
+
 function translationTermsMarkup() {
   const terms = adminState.translationTerms?.terms || [];
   const query = String(adminState.translationTermSearch || "").trim().toLowerCase();
@@ -1164,8 +1206,8 @@ function translationTermsMarkup() {
       ${translationTermImportSummaryMarkup()}
       <div class="translation-term-toolbar"><input class="tuning-term-search" type="search" value="${escapeHtml(adminState.translationTermSearch)}" placeholder="搜索中文、英文或西班牙语" aria-label="搜索术语" data-translation-term-search /><div class="translation-term-segments" role="group" aria-label="作业类型筛选">${translationTermCategorySegments(category)}</div></div>
       <div class="table-wrap tuning-term-table-wrap"><table class="record-table admin-table tuning-term-table">
-        <thead><tr><th>作业类型</th><th>中文</th><th>English</th><th>Español</th><th>状态</th><th>操作</th></tr></thead>
-        <tbody>${visibleTerms.map(translationTermListRow).join("") || `<tr><td colspan="6">没有匹配的术语</td></tr>`}</tbody>
+        <thead><tr><th>作业类型</th><th>术语类型</th><th>中文</th><th>English</th><th>Español</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>${visibleTerms.map(translationTermListRow).join("") || `<tr><td colspan="7">没有匹配的术语</td></tr>`}</tbody>
       </table></div>
       ${adminPaginationMarkup("translationTerms", filteredTerms.length, adminState.translationTermPage, pageCount, pageSize, "translation-term-pagination")}
     </section>
@@ -1177,6 +1219,15 @@ function translationTermsMarkup() {
 
 function translationTermCategoryLabel(value = "general") {
   return { general: "通用", drilling: "钻井", completion: "完井", workover: "修井", move: "搬迁" }[value] || "通用";
+}
+
+function translationTermTypeLabel(value = "preferred") {
+  return { protected: "严格保护", preferred: "标准术语", contextual: "上下文术语", phrase: "行业短语" }[value] || "标准术语";
+}
+
+function translationTermTypeOptions(selected = "preferred") {
+  return [["protected", "严格保护词"], ["preferred", "固定标准术语"], ["contextual", "上下文术语"], ["phrase", "行业短语"]]
+    .map(([value, label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("");
 }
 
 function translationTermCategoryOptions(selected = "general", includeAll = false) {
@@ -1201,8 +1252,8 @@ function translationTermImportSummaryMarkup() {
 
 function translationTermListRow(term = {}) {
   return `<tr>
-    <td><span class="type-pill">${escapeHtml(translationTermCategoryLabel(term.category))}</span></td><td><strong>${escapeHtml(term.zh || "-")}</strong></td><td>${escapeHtml(term.en || "-")}</td><td>${escapeHtml(term.es || "-")}</td>
-    <td><span class="status-pill ${term.enabled !== false ? "uploaded" : "failed"}">${term.enabled !== false ? (term.protected !== false ? "启用 / 锁定" : "启用") : "停用"}</span></td>
+    <td><span class="type-pill">${escapeHtml(translationTermCategoryLabel(term.category))}</span></td><td><span class="type-pill">${escapeHtml(translationTermTypeLabel(term.term_type))}</span></td><td><strong>${escapeHtml(term.zh || "-")}</strong></td><td>${escapeHtml(term.en || "-")}</td><td>${escapeHtml(term.es || "-")}</td>
+    <td><span class="status-pill ${term.enabled !== false ? "uploaded" : "failed"}">${term.enabled !== false ? (term.strict_preserve ? "启用 / 严格" : "启用") : "停用"}</span></td>
     <td><button class="link-button" type="button" data-admin-edit-translation-term="${escapeHtml(term.id)}">编辑</button><button class="link-button danger-link" type="button" data-admin-delete-translation-term="${escapeHtml(term.id)}">删除</button></td>
   </tr>`;
 }
@@ -1229,7 +1280,7 @@ function translationTestWorkbenchMarkup() {
         <label>模拟字段<select name="translationTestField">${policies.map((policy) => `<option value="${escapeHtml(policy.id)}" ${policy.id === adminState.translationTestFieldCode ? "selected" : ""}>${escapeHtml(policy.report_type_label)} / ${escapeHtml(policy.section_label)} / ${escapeHtml(policy.label)}</option>`).join("")}</select></label>
       </div>
       <label class="tuning-test-source">日报原文<textarea name="translationTestSource" rows="10" maxlength="8000">${escapeHtml(adminState.translationTestSource || "")}</textarea></label>
-      <div class="admin-actions"><button class="button" type="button" data-admin-run-translation-test ${adminState.translationTestRunning ? "disabled" : ""}>${adminState.translationTestRunning ? "测试中..." : "运行单条测试"}</button><button class="button secondary" type="button" data-admin-run-translation-batch-test ${adminState.translationTestRunning ? "disabled" : ""}>运行 6 条批量稳定性测试</button></div>
+      <div class="admin-actions"><button class="button" type="button" data-admin-run-translation-test ${adminState.translationTestRunning ? "disabled" : ""}>${adminState.translationTestRunning ? "测试中..." : "运行单条测试"}</button><button class="button secondary" type="button" data-admin-compare-translation-pipelines ${adminState.translationTestRunning ? "disabled" : ""}>对比新旧管线</button><button class="button secondary" type="button" data-admin-run-translation-batch-test ${adminState.translationTestRunning ? "disabled" : ""}>运行 6 条批量稳定性测试</button></div>
       <details class="prompt-preview" ${result?.prompt_preview ? "open" : ""}><summary>实际 Prompt 预览</summary><pre>${escapeHtml(result?.prompt_preview || "运行测试后显示最终发送给模型的 Prompt。")}</pre></details>
     </section>
     <section class="panel tuning-test-output">
@@ -1241,11 +1292,89 @@ function translationTestWorkbenchMarkup() {
 
 function translationTestResultMarkup(result) {
   if (!result) return `<div class="admin-empty-panel tuning-test-empty"><p>输入一段真实日报描述，运行后可查看译文、Prompt 和质量检查。</p></div>`;
+  if (result.compare_mode) return translationPipelineComparisonMarkup(result);
+  const matchedTerms = Array.isArray(result.matched_terms) ? result.matched_terms : [];
+  const protectedTerms = Array.isArray(result.protected_terms) ? result.protected_terms : [];
   return `<div class="translation-test-result ${result.ok ? "success" : "failed"}">
     <div class="translation-output-text"><span>译文</span><p>${escapeHtml(result.translated_text || result.error || "模型未返回译文")}</p></div>
-    <div class="translation-test-meta"><span>源语言 <strong>${escapeHtml(result.source_language || "-")}</strong></span><span>目标语言 <strong>${escapeHtml(result.target_language || "-")}</strong></span><span>Prompt版本 <strong>${escapeHtml(result.prompt_version || "-")}</strong></span><span>测试规模 <strong>${escapeHtml(result.batch_size || 1)} 条</strong></span><span>Prompt <strong>${escapeHtml(result.prompt_chars || 0)} 字符</strong></span></div>
+    <div class="translation-test-meta"><span>管线 <strong>${result.pipeline_mode === "legacy" ? "旧版占位符" : "上下文翻译"}</strong></span><span>源语言 <strong>${escapeHtml(result.source_language || "-")}</strong></span><span>目标语言 <strong>${escapeHtml(result.target_language || "-")}</strong></span><span>Prompt版本 <strong>${escapeHtml(result.prompt_version || "-")}</strong></span><span>测试规模 <strong>${escapeHtml(result.batch_size || 1)} 条</strong></span><span>Prompt <strong>${escapeHtml(result.prompt_chars || 0)} 字符</strong></span><span>占位符 <strong>${escapeHtml(result.placeholder_count || 0)}</strong></span></div>
+    <details class="prompt-preview"><summary>实际送模原文</summary><pre>${escapeHtml(result.request_source_text || "-")}</pre></details>
+    <div class="translation-test-diagnostics"><div><strong>命中术语</strong><p>${matchedTerms.length ? matchedTerms.map((term) => `${escapeHtml(term.source)} → ${escapeHtml(term.target)}（${escapeHtml(translationTermTypeLabel(term.type))}）`).join("<br>") : "无"}</p></div><div><strong>严格保护项</strong><p>${protectedTerms.length ? protectedTerms.map(escapeHtml).join("、") : "无"}</p></div></div>
     <div class="translation-checks">${(result.checks || []).map((check) => `<div class="${escapeHtml(check.status || "warning")}"><span aria-hidden="true"></span><div><strong>${escapeHtml(check.label)}</strong>${check.detail ? `<small>${escapeHtml(check.detail)}</small>` : ""}</div></div>`).join("")}</div>
   </div>`;
+}
+
+function translationPipelineComparisonMarkup(result = {}) {
+  return `<div class="translation-pipeline-comparison">${(result.comparisons || []).map((item) => `<section class="translation-test-result ${item.ok ? "success" : "failed"}"><div class="panel-heading"><h3>${item.pipeline_mode === "contextual" ? "上下文管线（新）" : "旧版占位符管线"}</h3><span class="panel-note">${escapeHtml(item.elapsed_ms || 0)} ms · ${escapeHtml(item.placeholder_count || 0)} 个占位符</span></div><div class="translation-output-text"><span>译文</span><p>${escapeHtml(item.translated_text || item.error || "无返回")}</p></div><details class="prompt-preview"><summary>实际送模原文</summary><pre>${escapeHtml(item.request_source_text || "-")}</pre></details><div class="translation-checks">${(item.checks || []).map((check) => `<div class="${escapeHtml(check.status || "warning")}"><span aria-hidden="true"></span><div><strong>${escapeHtml(check.label)}</strong>${check.detail ? `<small>${escapeHtml(check.detail)}</small>` : ""}</div></div>`).join("")}</div><details class="prompt-preview"><summary>完整 Prompt</summary><pre>${escapeHtml(item.prompt_preview || "-")}</pre></details></section>`).join("")}</div>`;
+}
+
+function translationMemoryAndLogsMarkup() {
+  const memory = adminState.translationMemory || { entries: [], loading: false };
+  const experience = adminState.translationExperience || { suggestions: [], counts: {}, loading: false };
+  const suggestions = experience.suggestions || [];
+  const actionable = suggestions.filter((item) => ["PENDING", "APPLIED"].includes(String(item.status || "")));
+  const verified = suggestions.filter((item) => item.status === "VERIFIED").slice(0, 12);
+  return `<div class="translation-knowledge-layout">
+    <section class="panel translation-experience-panel">
+      <div class="panel-heading"><div><h2>翻译错误经验闭环</h2><span class="panel-note">失败后自动归因并生成配置建议；采纳后自动重跑，成功即标记为已验证</span></div><button class="button secondary small" type="button" data-admin-refresh-translation-knowledge>刷新</button></div>
+      <div class="experience-flow" aria-label="经验闭环流程"><span>1 自动归因</span><span>2 生成建议</span><span>3 一键采纳并重跑</span><span>4 成功验证</span></div>
+      <div class="experience-summary"><strong>${Number(experience.counts?.PENDING || 0)}</strong><span>待处理建议</span><strong>${Number(experience.counts?.APPLIED || 0)}</strong><span>重跑验证中</span><strong>${Number(experience.counts?.VERIFIED || 0)}</strong><span>已验证经验</span></div>
+      <div class="translation-experience-list">${experience.loading ? `<div class="admin-empty-panel"><p>正在分析错误经验…</p></div>` : actionable.map(translationExperienceCardMarkup).join("") || `<div class="admin-empty-panel success"><p>当前没有待处理建议。后续翻译失败时会自动在这里给出原因和可应用方案，不需要逐条查看日志。</p></div>`}</div>
+      ${verified.length ? `<details class="verified-experience"><summary>查看最近已验证经验（${verified.length}）</summary><div class="translation-experience-list compact">${verified.map(translationExperienceCardMarkup).join("")}</div></details>` : ""}
+    </section>
+    <details class="panel translation-advanced-knowledge"><summary><strong>人工复核与逐句记忆（高级）</strong><span>日常不需要操作；只用于少量例外处理</span></summary>
+      <div class="translation-advanced-content">
+        ${translationReviewMarkup()}
+        <section class="panel translation-memory-panel">
+          <div class="panel-heading"><div><h2>人工确认翻译记忆</h2><span class="panel-note">只复用完全相同原文，保留作为少量例外兜底</span></div></div>
+          <div class="translation-memory-form">
+            <label>日报类型<select name="translationMemoryReportType"><option value="">通用</option><option value="drilling">钻井</option><option value="completion">完井</option><option value="workover">修井</option><option value="move">搬迁</option></select></label>
+            <label>字段编码<input name="translationMemoryFieldCode" placeholder="operations.operation_details" /></label>
+            <label class="wide">西语 / 英语原文<textarea name="translationMemorySource" rows="4" maxlength="12000"></textarea></label>
+            <label class="wide">人工确认中文<textarea name="translationMemoryTarget" rows="4" maxlength="12000"></textarea></label>
+            <div class="admin-actions wide"><button class="button small" type="button" data-admin-save-translation-memory>保存确认译例</button></div>
+          </div>
+          <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>范围</th><th>原文</th><th>标准中文</th><th>确认人 / 更新</th><th>操作</th></tr></thead><tbody>${memory.loading ? `<tr><td colspan="5">正在读取翻译记忆…</td></tr>` : (memory.entries || []).map(translationMemoryRowMarkup).join("") || `<tr><td colspan="5">暂无人工确认译例</td></tr>`}</tbody></table></div>
+        </section>
+      </div>
+    </details>
+  </div>`;
+}
+
+function translationExperienceCardMarkup(item = {}) {
+  const status = String(item.status || "PENDING");
+  const statusLabel = { PENDING: "待采纳", APPLIED: "重跑验证中", VERIFIED: "已验证", DISMISSED: "已忽略" }[status] || status;
+  const actionLabel = {
+    add_protected_unit: "加入全局单位保护",
+    add_protected_acronym: "加入全局缩写保护",
+    add_protected_proper_noun: "加入全局专名保护",
+    enable_placeholder: "启用严格占位保护",
+    add_prompt_rule: "加入字段级Prompt经验",
+    retry_current_rules: "按当前规则重跑",
+  }[item.action_type] || item.action_type || "应用建议";
+  const evidence = (item.evidence || [])[0] || {};
+  const scope = [item.report_type, item.field_code].filter(Boolean).join(" · ") || "全局";
+  return `<article class="translation-experience-card ${status.toLowerCase()}">
+    <div class="experience-card-heading"><div><span class="status-pill ${status === "VERIFIED" ? "uploaded" : status === "APPLIED" ? "processing" : "pending"}">${escapeHtml(statusLabel)}</span><strong>${escapeHtml(item.title || "翻译经验建议")}</strong></div><span class="experience-confidence">${item.confidence === "high" ? "高置信" : "需验证"} · ${escapeHtml(scope)}</span></div>
+    <div class="experience-cause"><small>识别原因</small><p>${escapeHtml(item.cause || "-")}</p></div>
+    <div class="experience-recommendation"><small>建议动作</small><p><strong>${escapeHtml(actionLabel)}</strong>：${escapeHtml(item.recommendation || "-")}</p></div>
+    ${evidence.error_message ? `<details><summary>查看触发证据 · 累计 ${Number(item.occurrence_count || 1)} 次${Number(item.regression_count || 0) ? ` · 回归 ${Number(item.regression_count)} 次` : ""}</summary><p>${escapeHtml(evidence.error_message)}</p><small>${escapeHtml(evidence.record_id || "")} ${escapeHtml(evidence.field_code || "")}</small></details>` : ""}
+    <div class="experience-card-actions">${status === "PENDING" ? `<button class="button small" type="button" data-admin-apply-translation-experience="${escapeHtml(item.id)}">采纳建议并重跑</button><button class="link-button" type="button" data-admin-dismiss-translation-experience="${escapeHtml(item.id)}">忽略</button>` : status === "APPLIED" ? `<span>已写入经验池，等待重跑结果自动验证</span>` : `<span>验证日报：${escapeHtml(item.verified_record_id || "-")} · ${escapeHtml(item.verified_at || "-")}</span>`}</div>
+  </article>`;
+}
+
+function translationReviewMarkup() {
+  const review = adminState.translationReview || { record_id: "", rows: [], loading: false };
+  const records = adminState.translationQueue?.records || [];
+  return `<section class="panel translation-review-panel"><div class="panel-heading"><div><h2>日报译文人工修订</h2><span class="panel-note">每次保存都会记录修改前后文本，可同时沉淀为已确认翻译记忆</span></div></div><div class="translation-review-toolbar"><label>日报<select name="translationReviewRecord"><option value="">请选择日报</option>${records.map((record) => `<option value="${escapeHtml(record.record_id)}" ${review.record_id === record.record_id ? "selected" : ""}>${escapeHtml(record.report_date || "-")} · ${escapeHtml(record.wellbore || "-")} · ${escapeHtml(record.report_type_label || record.report_type || "-")}</option>`).join("")}</select></label><button class="button secondary small" type="button" data-admin-load-translation-review>加载译文</button></div><div class="translation-review-list">${review.loading ? `<div class="admin-empty-panel"><p>正在读取日报译文…</p></div>` : (review.rows || []).map(translationReviewRowMarkup).join("") || `<div class="admin-empty-panel"><p>选择一份已翻译日报进行人工复核。</p></div>`}</div></section>`;
+}
+
+function translationReviewRowMarkup(row = {}, index = 0) {
+  return `<article class="translation-review-row" data-translation-review-row="${index}" data-entity-id="${escapeHtml(row.entity_id || "")}" data-field-code="${escapeHtml(row.field_code || "")}" data-target-language="${escapeHtml(row.target_language || "zh-CN")}"><div><span class="type-pill">${escapeHtml(row.field_code || "-")}</span><small>${row.is_manual_modified ? "已人工修订" : "模型译文"}</small></div><div class="translation-review-columns"><label>原文<textarea rows="5" readonly>${escapeHtml(row.source_text || "")}</textarea></label><label>中文译文<textarea name="translationReviewText" rows="5">${escapeHtml(row.translated_text || "")}</textarea></label></div><div class="translation-review-actions"><label><input type="checkbox" name="translationReviewAddMemory" checked />加入翻译记忆</label><input name="translationReviewNote" placeholder="修订说明（可选）" maxlength="1000" /><button class="button small" type="button" data-admin-save-translation-review>保存本条修订</button></div></article>`;
+}
+
+function translationMemoryRowMarkup(entry = {}) {
+  return `<tr><td><span class="type-pill">${escapeHtml(entry.report_type || "通用")}</span><small>${escapeHtml(entry.field_code || "全部字段")}</small></td><td><p class="memory-cell-text">${escapeHtml(entry.source_text || "-")}</p></td><td><p class="memory-cell-text">${escapeHtml(entry.translated_text || "-")}</p></td><td>${escapeHtml(entry.confirmed_by || "-")}<small>${escapeHtml(entry.updated_at || "-")}</small></td><td><button class="link-button danger-link" type="button" data-admin-delete-translation-memory="${escapeHtml(entry.id)}">删除</button></td></tr>`;
 }
 
 function aliasInputValue(value) {
@@ -1546,13 +1675,6 @@ function switchAdminTab(tab) {
 
 function roleLabel(value) {
   return (adminState.roles || []).find((role) => role.value === value)?.label || value || "-";
-}
-
-function fileSize(value) {
-  const size = Number(value) || 0;
-  if (size > 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`;
-  if (size > 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${size} B`;
 }
 
 function normalizeRoleValue(value) {
@@ -1888,15 +2010,26 @@ function captureTranslationTuningForm() {
   });
   const targetLanguages = [...host.querySelectorAll('[name="translationTargetLanguage"]:checked')].map((input) => input.value);
   const protectionInputs = [...host.querySelectorAll('[name="translationProtection"]')];
-  const protections = Object.fromEntries(protectionInputs.map((input) => [input.value, input.checked]));
+  const protections = {
+    ...(current.protections || {}),
+    ...Object.fromEntries(protectionInputs.map((input) => [input.value, input.checked])),
+    mode: host.querySelector('[name="translationProtectionMode"]:checked')?.value || "placeholder",
+  };
+  const promptTemplates = Object.fromEntries(
+    [...host.querySelectorAll('[name="translationBusinessPrompt"]')]
+      .map((input) => [input.dataset.reportType || "", input.value.trim()])
+      .filter(([reportType]) => reportType)
+  );
   adminState.translationTuning = {
     ...current,
+    pipeline_mode: host.querySelector('[name="translationPipelineMode"]:checked')?.value || "contextual",
     scope_rules: scopeRules,
     target_languages: targetLanguages.length ? targetLanguages : ["zh-CN"],
     prompt: {
       system_prompt: host.querySelector('[name="translationSystemPrompt"]')?.value.trim() || "",
       translation_instruction: host.querySelector('[name="translationInstruction"]')?.value.trim() || "",
     },
+    prompt_templates: promptTemplates,
     protections,
   };
   return adminState.translationTuning;
@@ -1963,20 +2096,22 @@ function addTranslationTerm() {
 
 function openTranslationTermModal(id = "") {
   const existing = (adminState.translationTerms?.terms || []).find((term) => term.id === id);
-  const term = existing || { id: "", category: "general", zh: "", en: "", es: "", aliases: { zh: [], en: [], es: [] }, protected: true, enabled: true };
+  const term = existing || { id: "", category: "general", term_type: "preferred", priority: 50, strict_preserve: false, zh: "", en: "", es: "", aliases: { zh: [], en: [], es: [] }, protected: false, enabled: true };
   const aliases = term.aliases || {};
   openAdminModal(
     existing ? "编辑术语" : "新增术语",
     `<div class="translation-term-modal-form">
       <input type="hidden" name="termModalId" value="${escapeHtml(term.id)}" />
       <label>作业类型<select name="termModalCategory">${translationTermCategoryOptions(term.category || "general")}</select></label>
+      <label>术语类型<select name="termModalType">${translationTermTypeOptions(term.term_type || "preferred")}</select></label>
+      <label>优先级<input type="number" name="termModalPriority" min="0" max="1000" value="${escapeHtml(term.priority ?? 50)}" /></label>
       <label>中文<input name="termModalZh" value="${escapeHtml(term.zh || "")}" /></label>
       <label>English<input name="termModalEn" value="${escapeHtml(term.en || "")}" /></label>
       <label>Español<input name="termModalEs" value="${escapeHtml(term.es || "")}" /></label>
       <label>中文别名<textarea name="termModalAliasesZh" rows="3">${escapeHtml(aliasInputValue(aliases.zh))}</textarea></label>
       <label>英文别名<textarea name="termModalAliasesEn" rows="3">${escapeHtml(aliasInputValue(aliases.en))}</textarea></label>
       <label>西语别名<textarea name="termModalAliasesEs" rows="3">${escapeHtml(aliasInputValue(aliases.es))}</textarea></label>
-      <div class="tuning-term-switches"><label><input type="checkbox" name="termModalEnabled" ${term.enabled !== false ? "checked" : ""} />启用</label><label><input type="checkbox" name="termModalProtected" ${term.protected !== false ? "checked" : ""} />锁定译法</label></div>
+      <div class="tuning-term-switches"><label><input type="checkbox" name="termModalEnabled" ${term.enabled !== false ? "checked" : ""} />启用</label><label><input type="checkbox" name="termModalStrictPreserve" ${term.strict_preserve ? "checked" : ""} />必须原样保留</label></div>
     </div>`,
     `<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button" type="button" data-admin-save-translation-term-modal>保存术语</button>`
   );
@@ -1996,6 +2131,8 @@ function saveTranslationTermModal() {
     terms.push(term);
   }
   term.category = modal.querySelector('[name="termModalCategory"]')?.value || "general";
+  term.term_type = modal.querySelector('[name="termModalType"]')?.value || "preferred";
+  term.priority = Math.max(0, Math.min(1000, Number(modal.querySelector('[name="termModalPriority"]')?.value || 50)));
   term.zh = zh;
   term.en = en;
   term.es = es;
@@ -2005,7 +2142,8 @@ function saveTranslationTermModal() {
     es: parseAliasList(modal.querySelector('[name="termModalAliasesEs"]')?.value || ""),
   };
   term.enabled = modal.querySelector('[name="termModalEnabled"]')?.checked ?? true;
-  term.protected = modal.querySelector('[name="termModalProtected"]')?.checked ?? true;
+  term.strict_preserve = modal.querySelector('[name="termModalStrictPreserve"]')?.checked ?? false;
+  term.protected = term.term_type === "protected";
   term.updated_at = new Date().toISOString().slice(0, 19);
   adminState.translationTerms.terms = terms;
   closeAdminModal();
@@ -2162,13 +2300,15 @@ async function saveAiExtractionRules() {
 
 async function queueAiExtractions(mode = "continue") {
   const recordIds = [...document.querySelectorAll("[data-ai-extraction-record]:checked")].map((input) => input.value);
-  if (!recordIds.length) return showToast("请至少选择一条日报");
+  if (!recordIds.length) return showToast("请勾选要提炼的日报；已完成列表默认全选");
   const action = mode === "overwrite" ? "按当前规则覆盖提炼" : "执行待处理提炼";
   if (!window.confirm(`确认对 ${recordIds.length} 条日报${action}？`)) return;
   try {
     const result = await adminRequest("/api/admin/ai-extractions/queue", { method: "POST", body: JSON.stringify({ mode, record_ids: recordIds }) });
     showToast(`已加入提炼队列：${result.queued_records || 0} 条`);
     adminState.aiExtractionQueue = await adminRequest("/api/admin/ai-extractions");
+    adminState.aiExtractionQueueStatusTab = preferredExtractionQueueStatusTab(adminState.aiExtractionQueue.records || [], "processing");
+    adminState.aiExtractionQueuePage = 1;
     renderAdminAiExtraction();
   } catch (error) {
     showToast(error.message);
@@ -2244,13 +2384,132 @@ async function runAiExtractionTest() {
   }
 }
 
-function switchTranslationTuningView(view) {
+async function switchTranslationTuningView(view) {
   if (adminState.translationTuningView === "fields") captureTranslationTuningForm();
   if (adminState.translationTuningView === "terms") {
     adminState.translationTerms.protected_terms = captureProtectedTerms();
   }
   adminState.translationTuningView = view;
   renderAdminTranslationTuning();
+  if (view === "memory") await loadTranslationKnowledge();
+}
+
+async function loadTranslationKnowledge() {
+  adminState.translationMemory.loading = true;
+  adminState.translationExperience.loading = true;
+  renderAdminTranslationTuning();
+  try {
+    const [experience, memory] = await Promise.all([
+      adminRequest("/api/admin/translation-experience?limit=200"),
+      adminRequest("/api/admin/translation-memory?limit=200"),
+    ]);
+    adminState.translationExperience = { suggestions: experience.suggestions || [], counts: experience.counts || {}, loading: false };
+    adminState.translationMemory = { entries: memory.entries || [], count: Number(memory.count || 0), loading: false };
+  } catch (error) {
+    adminState.translationExperience.loading = false;
+    adminState.translationMemory.loading = false;
+    showToast(error.message);
+  }
+  renderAdminTranslationTuning();
+}
+
+async function loadTranslationReview() {
+  const recordId = document.querySelector('[name="translationReviewRecord"]')?.value || adminState.translationReview.record_id || "";
+  if (!recordId) return showToast("请选择需要复核的日报");
+  adminState.translationReview = { record_id: recordId, rows: [], loading: true };
+  renderAdminTranslationTuning();
+  try {
+    const result = await adminRequest(`/api/admin/translation-content?record_id=${encodeURIComponent(recordId)}`);
+    adminState.translationReview = { record_id: recordId, rows: result.rows || [], loading: false };
+  } catch (error) {
+    adminState.translationReview.loading = false;
+    showToast(error.message);
+  }
+  renderAdminTranslationTuning();
+}
+
+async function saveTranslationReview(button) {
+  const rowHost = button.closest("[data-translation-review-row]");
+  const revisedText = rowHost?.querySelector('[name="translationReviewText"]')?.value.trim() || "";
+  if (!rowHost || !revisedText) return showToast("修订译文不能为空");
+  const record = (adminState.translationQueue?.records || []).find((item) => item.record_id === adminState.translationReview.record_id) || {};
+  const payload = {
+    record_id: adminState.translationReview.record_id,
+    entity_id: rowHost.dataset.entityId || "",
+    field_code: rowHost.dataset.fieldCode || "",
+    target_language: rowHost.dataset.targetLanguage || "zh-CN",
+    revised_text: revisedText,
+    note: rowHost.querySelector('[name="translationReviewNote"]')?.value.trim() || "",
+    add_to_memory: rowHost.querySelector('[name="translationReviewAddMemory"]')?.checked !== false,
+    report_type: record.report_type || "",
+  };
+  try {
+    await adminRequest("/api/admin/translation-content/revise", { method: "POST", body: JSON.stringify(payload) });
+    showToast("译文修订及版本记录已保存");
+    await Promise.all([loadTranslationReview(), loadTranslationKnowledge()]);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function saveTranslationMemory() {
+  const source = document.querySelector('[name="translationMemorySource"]')?.value?.trim() || "";
+  const translated = document.querySelector('[name="translationMemoryTarget"]')?.value?.trim() || "";
+  if (!source || !translated) return showToast("请填写完整原文和人工确认中文");
+  const entry = {
+    source_text: source,
+    translated_text: translated,
+    source_language: "es",
+    target_language: "zh-CN",
+    report_type: document.querySelector('[name="translationMemoryReportType"]')?.value || "",
+    field_code: document.querySelector('[name="translationMemoryFieldCode"]')?.value?.trim() || "",
+  };
+  try {
+    await adminRequest("/api/admin/translation-memory", { method: "POST", body: JSON.stringify({ entry }) });
+    showToast("人工确认译例已保存");
+    await loadTranslationKnowledge();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function deleteTranslationMemory(id) {
+  if (!window.confirm("确认删除这条翻译记忆？")) return;
+  try {
+    await adminRequest("/api/admin/translation-memory", { method: "POST", body: JSON.stringify({ action: "delete", id: Number(id) }) });
+    showToast("翻译记忆已删除");
+    await loadTranslationKnowledge();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function applyTranslationExperience(id) {
+  if (!window.confirm("确认采纳这条经验建议并自动重跑受影响日报？系统会把规则写入全局保护或Prompt经验池。")) return;
+  try {
+    const result = await adminRequest("/api/admin/translation-experience/apply", {
+      method: "POST",
+      body: JSON.stringify({ id, action: "apply_and_rerun" }),
+    });
+    showToast(`经验已应用，自动重跑 ${result.queued_records || 0} 份日报`);
+    await Promise.all([loadTranslationKnowledge(), loadAdminData()]);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function dismissTranslationExperience(id) {
+  if (!window.confirm("确认忽略这条经验建议？相同错误再次出现时会重新提示。")) return;
+  try {
+    await adminRequest("/api/admin/translation-experience/apply", {
+      method: "POST",
+      body: JSON.stringify({ id, action: "dismiss" }),
+    });
+    showToast("经验建议已忽略");
+    await loadTranslationKnowledge();
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function switchAiQueueStatusTab(kind, value) {
@@ -2265,7 +2524,7 @@ function switchAiQueueStatusTab(kind, value) {
   renderAdminTranslationTuning();
 }
 
-async function runTranslationTuningTest(batchMode = false) {
+async function runTranslationTuningTest(batchMode = false, compareMode = false) {
   const host = document.querySelector('[data-admin-panel="translationTuning"]');
   const sourceText = host?.querySelector('[name="translationTestSource"]')?.value.trim() || "";
   if (!sourceText) return showToast("请输入需要测试的日报文本");
@@ -2282,6 +2541,7 @@ async function runTranslationTuningTest(batchMode = false) {
     field_code: adminState.translationTestFieldCode,
     tuning: adminState.translationTuning,
     batch_mode: Boolean(batchMode),
+    compare_mode: Boolean(compareMode),
   };
   renderAdminTranslationTuning();
   try {
@@ -2491,6 +2751,13 @@ document.addEventListener("click", (event) => {
   const extractionView = event.target.closest("[data-ai-extraction-view]");
   if (extractionView) {
     adminState.aiExtractionView = extractionView.dataset.aiExtractionView || "rules";
+    if (adminState.aiExtractionView === "queue") {
+      adminState.aiExtractionQueueStatusTab = preferredExtractionQueueStatusTab(
+        adminState.aiExtractionQueue?.records || [],
+        adminState.aiExtractionQueueStatusTab || "pending",
+      );
+      adminState.aiExtractionQueuePage = 1;
+    }
     return renderAdminAiExtraction();
   }
   const queueExtraction = event.target.closest("[data-admin-queue-extractions]");
@@ -2506,11 +2773,23 @@ document.addEventListener("click", (event) => {
   if (queueSelected) return queueSelectedTranslations(queueSelected.dataset.adminQueueSelected);
   const tuningView = event.target.closest("[data-translation-tuning-view]");
   if (tuningView) return switchTranslationTuningView(tuningView.dataset.translationTuningView);
+  if (event.target.closest("[data-admin-refresh-translation-knowledge]")) return loadTranslationKnowledge();
+  const applyExperience = event.target.closest("[data-admin-apply-translation-experience]");
+  if (applyExperience) return applyTranslationExperience(applyExperience.dataset.adminApplyTranslationExperience);
+  const dismissExperience = event.target.closest("[data-admin-dismiss-translation-experience]");
+  if (dismissExperience) return dismissTranslationExperience(dismissExperience.dataset.adminDismissTranslationExperience);
+  if (event.target.closest("[data-admin-load-translation-review]")) return loadTranslationReview();
+  const saveReview = event.target.closest("[data-admin-save-translation-review]");
+  if (saveReview) return saveTranslationReview(saveReview);
+  if (event.target.closest("[data-admin-save-translation-memory]")) return saveTranslationMemory();
+  const deleteMemory = event.target.closest("[data-admin-delete-translation-memory]");
+  if (deleteMemory) return deleteTranslationMemory(deleteMemory.dataset.adminDeleteTranslationMemory);
   if (event.target.closest("[data-admin-save-translation-tuning]")) return saveTranslationTuning();
   if (event.target.closest("[data-admin-add-translation-scope]")) return addTranslationScope();
   const removeScope = event.target.closest("[data-admin-remove-translation-scope]");
   if (removeScope) return removeTranslationScope(removeScope.dataset.adminRemoveTranslationScope);
   if (event.target.closest("[data-admin-run-translation-test]")) return runTranslationTuningTest();
+  if (event.target.closest("[data-admin-compare-translation-pipelines]")) return runTranslationTuningTest(false, true);
   if (event.target.closest("[data-admin-run-translation-batch-test]")) return runTranslationTuningTest(true);
   if (event.target.closest("[data-admin-import-translation-terms]")) return chooseTranslationTermWorkbook();
   if (event.target.closest("[data-admin-review-term-duplicates]")) return openTranslationTermDuplicateReview();

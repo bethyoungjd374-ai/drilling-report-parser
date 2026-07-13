@@ -88,3 +88,33 @@
 - P2: none remaining
 
 Final result: passed
+
+---
+
+## Navigation redesign follow-up
+
+Result: passed
+
+## Source truth
+
+- Selected concept: `/Users/jason/.codex/generated_images/019f5a7b-28d2-7422-af93-3038758ff9a6/exec-026b5cdc-f3ed-4190-8585-714a41b78d6e.png`
+- Implementation screenshots: `design-qa-front.png`, `design-qa-admin.png`
+- Same-state comparisons: `design-qa-full-comparison.png`, `design-qa-sidebar-comparison.png`
+- Browser viewport: 1959 × 1137 CSS px; Chinese locale; first menu item active; all menu groups expanded.
+
+## Visual comparison
+
+- P0: none. Both front and admin navigation render and remain usable.
+- P1: none. Selected concept hierarchy, navy palette, outline icon family, cyan active marker, group dividers, and bottom system action are implemented.
+- P2: none. Front and admin computed typography and spacing match exactly: group 13px / 42px, item 12px / 40px, group padding 8px 9px, item padding 6px 10px 6px 13px, sidebar padding 16px 12px, width 224px.
+- P3: the selected concept uses a visually wider sidebar and larger density than the existing product viewport. The implementation intentionally keeps the established 224px product grid while preserving the selected visual language.
+
+## Interaction and asset checks
+
+- Front group collapse/reopen: passed.
+- Front navigation active-state switch and restoration: passed.
+- Admin group collapse/reopen: passed.
+- Admin tab active-state switch and restoration: passed.
+- Chinese / Spanish menu label switching: passed.
+- Front icons: 17/17 loaded; admin icons: 17/17 loaded.
+- Browser console errors on checked front/admin states: none.

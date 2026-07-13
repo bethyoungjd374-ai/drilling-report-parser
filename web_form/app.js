@@ -3,9 +3,9 @@ const i18n = {
     ui: {
       appTitleShort: "NexoRig", appSubtitle: "钻完井管理平台", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
       systemAdmin: "系统后台",
-      menuDailyParsing: "日报解析", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
-      menuProductionReport: "生产报表", menuRigProductionSummary: "生产时效", menuProductionDetailReport: "生产报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
-      menuHsse: "HSSE管理", menuHsseCollection: "信息填报", menuHsseDashboard: "安全驾驶舱", menuDailySafetySummary: "安全报表", menuPeriodSafetyReport: "安全报表",
+      menuDailyParsing: "日报管理", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
+      menuProductionReport: "生产分析", menuRigProductionSummary: "时效分析", menuProductionDetailReport: "生产报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
+      menuHsse: "HSSE管理", menuHsseCollection: "HSSE填报", menuHsseDashboard: "安全驾驶舱", menuDailySafetySummary: "HSSE报表", menuPeriodSafetyReport: "HSSE报表",
       descDrillingDaily: "支持上传钻井或搬迁 PDF 日报，解析井基础信息及 Operation 内容，并进入钻井日报填报页面。",
       descCompletionDaily: "上传完井日报 PDF，解析基础信息、Operation、库存和射孔区间，预览后可二次编辑。", descWorkoverDaily: "上传修井日报 PDF，解析 WO 信息、Operation、库存、安全备注和射孔区间，预览后可二次编辑。", descMoveDaily: "上传搬迁日报 PDF，解析 Operation、重型设备和载荷清单，预览后可二次编辑。",
       descRigProductionSummary: "基于日报解析数据，按井队、日报类型和月份展示生产作业时效。", descProductionDetailReport: "按项目周期、井队和井号归属查询生产时效明细。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
@@ -78,9 +78,9 @@ const i18n = {
     ui: {
       appTitleShort: "NexoRig", appSubtitle: "Drilling Intelligence", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
       systemAdmin: "System Admin",
-      menuDailyParsing: "Daily Parsing", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
-      menuProductionReport: "Production Reports", menuRigProductionSummary: "Production Time", menuProductionDetailReport: "Production Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
-      menuHsse: "HSSE Management", menuHsseCollection: "Information Entry", menuHsseDashboard: "Safety Cockpit", menuDailySafetySummary: "Safety Report", menuPeriodSafetyReport: "Safety Report",
+      menuDailyParsing: "Daily Reports", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
+      menuProductionReport: "Production Analysis", menuRigProductionSummary: "Time Analysis", menuProductionDetailReport: "Production Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
+      menuHsse: "HSSE Management", menuHsseCollection: "HSSE Entry", menuHsseDashboard: "Safety Cockpit", menuDailySafetySummary: "HSSE Reports", menuPeriodSafetyReport: "HSSE Reports",
       descDrillingDaily: "Upload drilling or rig move PDF daily reports, parse well basics and Operation content, then edit the drilling daily report.",
       descCompletionDaily: "Upload completion daily PDFs, parse basics, operations, bulks, and perforated intervals, then preview and edit.", descWorkoverDaily: "Upload workover daily PDFs, parse WO information, operations, bulks, safety comments, and perforated intervals, then preview and edit.", descMoveDaily: "Reserved entry for rig move daily PDF parsing and structured entry.",
       descRigProductionSummary: "Show production time by rig, report type, and month from parsed daily reports.", descProductionDetailReport: "Query production time details by project period, rig, and well assignment.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
@@ -153,9 +153,9 @@ const i18n = {
     ui: {
       appTitleShort: "NexoRig", appSubtitle: "Inteligencia de Perforación", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
       systemAdmin: "Administración",
-      menuDailyParsing: "Análisis de Reportes", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
-      menuProductionReport: "Reportes de Producción", menuRigProductionSummary: "Tiempo de Producción", menuProductionDetailReport: "Reporte de Producción", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
-      menuHsse: "Gestión HSSE", menuHsseCollection: "Registro de Información", menuHsseDashboard: "Cabina de Seguridad", menuDailySafetySummary: "Reporte de Seguridad", menuPeriodSafetyReport: "Reporte de Seguridad",
+      menuDailyParsing: "Reportes Diarios", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
+      menuProductionReport: "Análisis de Producción", menuRigProductionSummary: "Análisis de Tiempos", menuProductionDetailReport: "Reporte de Producción", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
+      menuHsse: "Gestión HSSE", menuHsseCollection: "Registro HSSE", menuHsseDashboard: "Cabina de Seguridad", menuDailySafetySummary: "Reportes HSSE", menuPeriodSafetyReport: "Reportes HSSE",
       descDrillingDaily: "Carga reportes diarios PDF de perforación o movilización, extrae datos básicos y operaciones, y permite editar el reporte diario de perforación.",
       descCompletionDaily: "Carga PDFs diarios de completación, extrae datos básicos, operaciones, inventarios e intervalos cañoneados, y permite revisar y editar.", descWorkoverDaily: "Carga PDFs diarios de workover, extrae información WO, operaciones, inventarios, comentarios de seguridad e intervalos cañoneados, y permite revisar y editar.", descMoveDaily: "Entrada reservada para análisis PDF y captura estructurada de reportes diarios de movilización.",
       descRigProductionSummary: "Muestra tiempos de producción por equipo, tipo de reporte y mes desde reportes diarios procesados.", descProductionDetailReport: "Consulta detalles de producción por periodo de proyecto, equipo y asignación de pozo.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
@@ -295,6 +295,7 @@ const reportContentState = {
   move: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" }
 };
 const DEFAULT_PAGE_SIZE = 10;
+const NPT_DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const recordState = {
   drilling: { records: [], selectedWell: "", selectedDate: "", search: "", calendarMonth: "", page: 1, pageSize: DEFAULT_PAGE_SIZE, sortBy: "last" },
@@ -327,7 +328,7 @@ const analyticsState = {
   npt: {
     payload: null,
     detailPage: 1,
-    detailPageSize: DEFAULT_PAGE_SIZE,
+    detailPageSize: NPT_DEFAULT_PAGE_SIZE,
     sortField: "",
     sortDir: "desc",
     activeTab: "rig",
@@ -355,17 +356,6 @@ const nptConfirmState = {
   detail: null,
   scope: { all_rigs: false, rig: "" },
   loading: false
-};
-const adminState = {
-  authenticated: false,
-  user: null,
-  permissions: {},
-  tab: "overview",
-  users: [],
-  roles: [],
-  config: {},
-  dataStatus: null,
-  logs: []
 };
 const frontSession = {
   authenticated: false,
@@ -402,16 +392,6 @@ function message(key, values = {}) {
 
 function labelFor(name) {
   return i18n[currentLanguage].fields[name] || i18n.zh.fields[name] || name;
-}
-
-function loadManualWellProfiles() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(MANUAL_WELLS_STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed.filter((item) => item && item.wellbore).map(normalizeManualWellProfile) : [];
-  } catch (error) {
-    console.warn("Manual well profiles reset after invalid storage.", error);
-    return [];
-  }
 }
 
 function saveManualWellProfiles() {
@@ -747,12 +727,14 @@ async function handleLanguageChoice(language, sourceButton = null) {
     else reportContentLanguageMode = "original";
     if (reportType) reportContentState[reportType].selectedLanguage = "es";
     applyLanguage("es");
+    if (!reportType) renderLocalizedOperationDescriptions();
     syncLanguageButtons();
     return;
   }
   if (!reportType) {
     reportContentLanguageMode = "translated";
     applyLanguage(language);
+    renderLocalizedOperationDescriptions();
     syncLanguageButtons();
     return;
   }
@@ -1540,41 +1522,8 @@ function uniqueReportDays(records) {
   return new Set(records.map((record) => record.reportDate).filter(Boolean));
 }
 
-function reportSpan(records) {
-  const dates = records.map((record) => record.reportDate).filter(Boolean).sort();
-  if (!dates.length) return null;
-  return { start: dates[0], end: dates[dates.length - 1] };
-}
-
-function hasMissingInSpan(records, span) {
-  if (!span) return false;
-  const uploaded = new Set(records.map((record) => record.reportDate));
-  const cursor = new Date(`${span.start}T00:00:00Z`);
-  const end = new Date(`${span.end}T00:00:00Z`);
-  while (cursor <= end) {
-    const dateStr = cursor.toISOString().slice(0, 10);
-    if (!uploaded.has(dateStr)) return true;
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return false;
-}
-
 function wellHasNpt(records) {
   return records.some((record) => Math.max(0, Number(record.npt_hours) || 0) > 0);
-}
-
-function missingCalendarDays(uploadedDays, monthBase, span) {
-  const days = new Set();
-  if (!span) return days;
-  const base = new Date(`${(monthBase || new Date().toISOString().slice(0, 10)).slice(0, 7)}-01T00:00:00`);
-  const year = base.getFullYear();
-  const month = base.getMonth();
-  const totalDays = new Date(year, month + 1, 0).getDate();
-  for (let day = 1; day <= totalDays; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    if (dateStr >= span.start && dateStr <= span.end && !uploadedDays.has(day)) days.add(day);
-  }
-  return days;
 }
 
 function calendarStageDays(records) {
@@ -1630,14 +1579,6 @@ function firstStageDate(records, stage) {
     .map((record) => record.reportDate)
     .sort();
   return dates[0] || "";
-}
-
-function reportCompleteness(records, missingDays) {
-  const uploadedCount = uniqueReportDays(records).size;
-  const warningDays = new Set(records.filter((record) => record.validation_status === "warning").map((record) => record.reportDate).filter(Boolean)).size;
-  const expected = uploadedCount + missingDays.size;
-  const percent = expected ? Math.max(0, Math.round(((uploadedCount - warningDays * 0.35) / expected) * 100)) : 0;
-  return { percent, warningDays };
 }
 
 function operationStats(rows) {
@@ -2174,47 +2115,6 @@ function setMultiSelectOptions(select, values) {
   });
 }
 
-function populateProductionProjectFilter(formEl, projects = []) {
-  const field = formEl.querySelector("[data-production-project-filter]");
-  if (!field) return false;
-  const items = productionProjectItems(projects);
-  field._productionProjectItems = items;
-  const existing = selectedProductionProjectValues(field);
-  const validValues = new Set(items.map((item) => item.value));
-  let selected = new Set([...existing].filter((value) => validValues.has(value)));
-  let defaultApplied = false;
-  if (!selected.size && !field.dataset.projectTouched) {
-    selected = new Set(items.filter((item) => projectStartYear(item) === String(new Date().getFullYear())).map((item) => item.value));
-    defaultApplied = selected.size > 0;
-  }
-  renderProductionProjectOptions(field, items, selected);
-  setProductionProjectSelection(field, selected);
-  filterProductionProjectOptions(field);
-  return defaultApplied && !existing.size;
-}
-
-function populateProductionRigFilter(formEl, rigs = []) {
-  const field = formEl.querySelector("[data-production-rig-filter]");
-  if (!field) return false;
-  const items = productionRigItems(rigs);
-  field._productionProjectItems = items;
-  field.dataset.valueName = "rig";
-  field.dataset.emptyLabel = ui("allRigs");
-  field.dataset.selectedUnit = "个井队";
-  const existing = selectedProductionProjectValues(field);
-  const validValues = new Set(items.map((item) => item.value));
-  let selected = new Set([...existing].filter((value) => validValues.has(value)));
-  let defaultApplied = false;
-  if (!selected.size && !field.dataset.projectTouched) {
-    selected = new Set(items.map((item) => item.value));
-    defaultApplied = selected.size > 0;
-  }
-  renderProductionProjectOptions(field, items, selected);
-  setProductionProjectSelection(field, selected);
-  filterProductionProjectOptions(field);
-  return defaultApplied && !existing.size;
-}
-
 function productionProjectItems(projects = []) {
   return (projects || []).map((item) => {
     const value = String(item.value || "").trim();
@@ -2222,11 +2122,10 @@ function productionProjectItems(projects = []) {
       value,
       label: projectOptionLabel(item),
       start_date: item.start_date || "",
-      end_date: item.end_date || "",
       searchText: [item.label, item.contract_no, item.start_date, item.end_date, value].filter(Boolean).join(" ").toLowerCase(),
     };
   }).filter((item) => item.value).sort((left, right) => {
-    const byDate = String(right.start_date || "").localeCompare(String(left.start_date || ""));
+    const byDate = String(right.start_date).localeCompare(String(left.start_date));
     return byDate || left.label.localeCompare(right.label, "zh-Hans-CN", { numeric: true });
   });
 }
@@ -2234,11 +2133,7 @@ function productionProjectItems(projects = []) {
 function productionRigItems(rigs = []) {
   return (rigs || []).map((rig) => String(rig || "").trim()).filter(Boolean).sort((left, right) => {
     return left.localeCompare(right, "zh-Hans-CN", { numeric: true, sensitivity: "base" });
-  }).map((rig) => ({
-    value: rig,
-    label: rig,
-    searchText: rig.toLowerCase(),
-  }));
+  }).map((rig) => ({ value: rig, label: rig, searchText: rig.toLowerCase() }));
 }
 
 function initializeProductionReportSelections(filters = {}) {
@@ -2251,11 +2146,8 @@ function initializeProductionReportSelections(filters = {}) {
   const rigValues = rigs.map((item) => item.value);
   const projectValues = projects.map((item) => item.value);
 
-  if (!state.rigTouched) state.selectedRigs = new Set(rigValues);
-  else state.selectedRigs = intersectSelection(state.selectedRigs, rigValues);
-  if (!state.projectTouched) state.selectedProjects = new Set(projectValues);
-  else state.selectedProjects = intersectSelection(state.selectedProjects, projectValues);
-
+  state.selectedRigs = state.rigTouched ? intersectSelection(state.selectedRigs, rigValues) : new Set(rigValues);
+  state.selectedProjects = state.projectTouched ? intersectSelection(state.selectedProjects, projectValues) : new Set(projectValues);
   state.selectionInitialized = true;
   return !wasInitialized && (rigValues.length > 0 || projectValues.length > 0);
 }
@@ -2263,25 +2155,6 @@ function initializeProductionReportSelections(filters = {}) {
 function intersectSelection(selected, validValues) {
   const valid = new Set(validValues);
   return new Set([...selected].filter((value) => valid.has(value)));
-}
-
-function projectStartYear(item = {}) {
-  return String(item.start_date || "").slice(0, 4);
-}
-
-function selectedProductionProjectValues(field) {
-  return new Set([...field.querySelectorAll('input[type="hidden"][name="project"]')].map((input) => input.value).filter(Boolean));
-}
-
-function renderProductionProjectOptions(field, items, selected) {
-  const host = field.querySelector("[data-project-options]");
-  if (!host) return;
-  host.innerHTML = items.map((item) => `
-    <label class="project-multiselect-option" data-project-option data-project-search-text="${escapeHtml(item.searchText)}">
-      <input type="checkbox" value="${escapeHtml(item.value)}" ${selected.has(item.value) ? "checked" : ""} />
-      <span>${escapeHtml(item.label)}</span>
-    </label>
-  `).join("") || `<div class="project-multiselect-empty">暂无项目</div>`;
 }
 
 function setProductionProjectSelection(field, selected) {
@@ -2801,63 +2674,6 @@ function analyticsKpi(label, value, caption) {
   return `<div class="analytics-kpi"><span>${escapeHtml(label)}</span><strong>${metricValueHtml(value)}</strong><small>${escapeHtml(caption || ui("analyticsDefaultCaption"))}</small></div>`;
 }
 
-function nptKpiCard(label, value, caption, icon, tone = "neutral") {
-  return `
-    <div class="analytics-kpi npt-kpi ${escapeHtml(tone)}">
-      <div>
-        <span>${escapeHtml(label)}</span>
-        <strong>${metricValueHtml(value)}</strong>
-        <small>${escapeHtml(caption || "")}</small>
-      </div>
-      <i class="npt-kpi-icon ${escapeHtml(icon)}" aria-hidden="true"></i>
-    </div>
-  `;
-}
-
-function nptRigShare(payload) {
-  const totalRigs = new Set((payload.details || []).map((row) => row.rig).filter(Boolean)).size;
-  return totalRigs ? Math.round((Number(payload.kpis?.rig_count || 0) / totalRigs) * 1000) / 10 : 0;
-}
-
-function nptWellShare(payload) {
-  const totalWells = new Set((payload.details || []).map((row) => row.wellbore).filter(Boolean)).size;
-  return totalWells ? Math.round((Number(payload.kpis?.well_count || 0) / totalWells) * 1000) / 10 : 0;
-}
-
-function nptDeltaCaption(delta, unit = "") {
-  const arrow = delta.value > 0 ? "↑" : delta.value < 0 ? "↓" : "→";
-  const suffix = unit ? unit : "";
-  return `较上期 ${arrow} ${formatHours(Math.abs(delta.value))}${suffix}`;
-}
-
-function nptTrendDelta(rows, field) {
-  const values = rows.map((row) => Number(row[field] || 0));
-  if (values.length < 2) return { value: 0, direction: "neutral" };
-  const half = Math.max(1, Math.floor(values.length / 2));
-  const previous = values.slice(0, half);
-  const current = values.slice(-half);
-  const avg = (items) => items.reduce((sum, item) => sum + item, 0) / Math.max(1, items.length);
-  const value = avg(current) - avg(previous);
-  return { value, direction: value > 0 ? "up" : value < 0 ? "down" : "neutral" };
-}
-
-function nptDailyRows(details, monthlyRows = []) {
-  const byDate = new Map();
-  details.forEach((row) => {
-    const key = row.reportDate || "";
-    if (!key) return;
-    byDate.set(key, (byDate.get(key) || 0) + Number(row.hours || 0));
-  });
-  const daily = [...byDate.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([date, hours]) => ({ label: date.slice(5) || date, hours: Math.round(hours * 100) / 100, share: Math.round((hours / 24) * 1000) / 10 }));
-  if (daily.length) return daily;
-  return (monthlyRows || []).map((row) => {
-    const hours = Number(row.hours || 0);
-    return { label: row.month || "", hours, share: Math.round((hours / 24) * 1000) / 10 };
-  });
-}
-
 function reportTypeLabel(value) {
   const key = String(value || "").toLowerCase();
   return REPORT_TYPE_LABELS_JS[key]?.[currentLanguage] || REPORT_TYPE_LABELS_JS[key]?.zh || value || "";
@@ -2881,25 +2697,6 @@ function metricValueHtml(value) {
   const match = text.match(/^(.+?)(?:\s+)?(h|%)$/);
   if (!match) return escapeHtml(text);
   return `${escapeHtml(match[1])}<small>${escapeHtml(match[2])}</small>`;
-}
-
-function renderStackedBars(selector, rows, series) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  if (!rows.length) return host.innerHTML = emptyAnalytics();
-  const max = Math.max(...rows.map((row) => series.reduce((sum, item) => sum + Number(row[item.key] || 0), 0)), 1);
-  host.innerHTML = `<div class="bar-list">${rows.map((row) => {
-    const total = series.reduce((sum, item) => sum + Number(row[item.key] || 0), 0);
-    return `<div class="bar-row"><span>${escapeHtml(row.rig || row.label)}</span><div class="stack-bar">${series.map((item, index) => `<i style="width:${(Number(row[item.key] || 0) / max) * 100}%;background:${CHART_COLORS[index % CHART_COLORS.length]}"></i>`).join("")}</div><b>${formatHours(total)}</b></div>`;
-  }).join("")}</div>${legend(series.map((item) => item.label))}`;
-}
-
-function renderSimpleBars(selector, rows) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  if (!rows.length) return host.innerHTML = emptyAnalytics();
-  const max = Math.max(...rows.map((row) => Number(row.hours || 0)), 1);
-  host.innerHTML = `<div class="bar-list">${rows.map((row) => `<div class="bar-row"><span>${escapeHtml(row.label)}</span><div class="single-bar"><i style="width:${(Number(row.hours || 0) / max) * 100}%"></i></div><b>${formatHours(row.hours)}</b></div>`).join("")}</div>`;
 }
 
 function renderProductionNptRanking(selector, rows) {
@@ -2926,181 +2723,6 @@ function renderProductionNptRanking(selector, rows) {
     </div>
     <div class="production-npt-ranking-caption"><i></i>${escapeHtml(ui("productionNptCaption"))}</div>
   `;
-}
-
-function renderNptRigBars(selector, rows) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  if (!rows.length) return host.innerHTML = emptyAnalytics();
-  const sorted = [...rows].sort((left, right) => Number(right.hours || 0) - Number(left.hours || 0)).slice(0, 6);
-  const max = Math.max(...sorted.map((row) => Number(row.hours || 0)), 1);
-  host.innerHTML = `
-    <div class="npt-horizontal-chart">
-      ${sorted.map((row) => {
-        const width = Math.max(4, (Number(row.hours || 0) / max) * 100);
-        return `
-          <div class="npt-horizontal-row">
-            <span>${escapeHtml(row.label || "-")}</span>
-            <div class="npt-horizontal-track"><i style="width:${width}%"></i></div>
-            <b>${formatHours(row.hours)}</b>
-          </div>
-        `;
-      }).join("")}
-      <div class="npt-axis"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div>
-    </div>
-    <div class="npt-chart-caption"><i></i>${escapeHtml(ui("nptHoursCaption"))}</div>
-  `;
-}
-
-function renderNptReasonDonut(selector, rows, totalNpt) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  const usable = (rows || []).filter((row) => Number(row.hours || 0) > 0);
-  if (!usable.length) return host.innerHTML = emptyAnalytics();
-  const total = totalNpt || usable.reduce((sum, row) => sum + Number(row.hours || 0), 0);
-  let offset = 25;
-  const radius = 15.9;
-  const circles = usable.map((row, index) => {
-    const value = Number(row.hours || 0);
-    const dash = (value / total) * 100;
-    const circle = `<circle r="${radius}" cx="20" cy="20" fill="transparent" stroke="${CHART_COLORS[index % CHART_COLORS.length]}" stroke-width="7" stroke-dasharray="${dash} ${100 - dash}" stroke-dashoffset="${-offset}" />`;
-    offset += dash;
-    return circle;
-  }).join("");
-  host.innerHTML = `
-    <div class="npt-donut-layout">
-      <div class="npt-donut-stage">
-        <svg viewBox="0 0 40 40" class="npt-donut" role="img" aria-label="NPT原因分布">${circles}</svg>
-        <div class="npt-donut-center"><strong>${formatHours(total)}</strong><span>总NPT时长</span></div>
-      </div>
-      <div class="npt-donut-list">
-        ${usable.slice(0, 7).map((row, index) => `
-          <span><i style="background:${CHART_COLORS[index % CHART_COLORS.length]}"></i>${escapeHtml(reasonLabel(row.label))} ${Number(row.share || ((Number(row.hours || 0) / total) * 100)).toFixed(1)}% (${formatHours(row.hours)} h)</span>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
-
-function renderNptWellRanking(selector, rows, totalNpt) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  const rankedRows = [...(rows || [])].sort((left, right) => Number(right.hours || 0) - Number(left.hours || 0));
-  if (!rankedRows.length) return host.innerHTML = emptyAnalytics();
-  const total = totalNpt || rankedRows.reduce((sum, row) => sum + Number(row.hours || 0), 0);
-  host.innerHTML = `
-    <div class="npt-ranking-scroll">
-      <table class="npt-ranking-table">
-        <thead><tr><th>排名</th><th>井号</th><th>NPT时长(h)</th><th>占比</th></tr></thead>
-        <tbody>
-          ${rankedRows.map((row, index) => `
-            <tr>
-              <td><span class="npt-rank-medal rank-${index + 1}">${index + 1}</span></td>
-              <td>${escapeHtml(row.label || "-")}</td>
-              <td>${formatHours(row.hours)}</td>
-              <td>${total ? ((Number(row.hours || 0) / total) * 100).toFixed(1) : "0.0"}%</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderNptLineChart(selector, rows, field, unit) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  const usable = (rows || []).filter((row) => row.label);
-  if (!usable.length) return host.innerHTML = emptyAnalytics();
-  const width = 620, height = 190, padX = 34, padY = 24;
-  const max = Math.max(...usable.map((row) => Number(row[field] || 0)), 1);
-  const step = usable.length > 1 ? (width - padX * 2) / (usable.length - 1) : 0;
-  const points = usable.map((row, index) => {
-    const x = padX + index * step;
-    const y = height - padY - (Number(row[field] || 0) / max) * (height - padY * 2);
-    return { x, y, row };
-  });
-  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `${padX},${height - padY} ${polyline} ${padX + (usable.length - 1) * step},${height - padY}`;
-  const yTicks = [0, 0.33, 0.66, 1].map((ratio) => {
-    const y = height - padY - ratio * (height - padY * 2);
-    const label = Math.round(max * ratio * 10) / 10;
-    return `<line x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" /><text x="6" y="${y + 4}">${label}${unit}</text>`;
-  }).join("");
-  const labelEvery = Math.max(1, Math.ceil(usable.length / 6));
-  const labels = points.map((point, index) => index % labelEvery === 0 || index === points.length - 1 ? `<text x="${point.x}" y="${height - 5}" text-anchor="middle">${escapeHtml(point.row.label)}</text>` : "").join("");
-  host.innerHTML = `
-    <svg class="npt-line-chart" viewBox="0 0 ${width} ${height}" role="img">
-      <g class="npt-line-grid">${yTicks}</g>
-      <polygon points="${area}" class="npt-line-area"></polygon>
-      <polyline points="${polyline}" class="npt-line-path"></polyline>
-      ${points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="3.5" class="npt-line-dot"><title>${escapeHtml(point.row.label)} ${formatHours(point.row[field])}${unit}</title></circle>`).join("")}
-      <g class="npt-line-labels">${labels}</g>
-    </svg>
-    <div class="npt-chart-caption"><i></i>${escapeHtml(unit === "%" ? ui("nptDailyShareCaption") : ui("nptHoursCaption"))}</div>
-  `;
-}
-
-function renderNptPendingList(selector, details) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  const grouped = new Map();
-  (details || []).forEach((row) => {
-    const key = `${row.rig || ""}__${row.wellbore || ""}`;
-    if (!row.wellbore) return;
-    const item = grouped.get(key) || { rig: row.rig || "", wellbore: row.wellbore || "", lastDate: "", hours: 0, eventCount: 0 };
-    item.hours += Number(row.hours || 0);
-    item.eventCount += 1;
-    if (!item.lastDate || String(row.reportDate || "").localeCompare(item.lastDate) > 0) item.lastDate = row.reportDate || "";
-    grouped.set(key, item);
-  });
-  const rows = [...grouped.values()].sort((left, right) => Number(right.hours || 0) - Number(left.hours || 0)).slice(0, 4);
-  const badge = document.querySelector("[data-npt-pending-count]");
-  if (badge) badge.textContent = String(rows.length);
-  if (!rows.length) return host.innerHTML = emptyAnalytics();
-  host.innerHTML = `
-    <table class="npt-pending-table">
-      <thead><tr><th>井号</th><th>最近NPT事件</th><th>NPT时长(h)</th><th>操作</th></tr></thead>
-      <tbody>
-        ${rows.map((row) => `
-          <tr>
-            <td>${escapeHtml(row.wellbore)}</td>
-            <td>${escapeHtml(row.lastDate || "-")}</td>
-            <td>${formatHours(row.hours)}</td>
-            <td><button class="link-button npt-confirm-link" type="button" data-npt-confirm-shortcut="${escapeHtml(row.wellbore)}" data-rig="${escapeHtml(row.rig)}">确认 ›</button></td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-    <button class="link-button npt-view-all-pending" type="button" data-menu-target="rig-npt-ranking">查看全部 →</button>
-  `;
-}
-
-function renderTrendBars(selector, rows) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  if (!rows.length) return host.innerHTML = emptyAnalytics();
-  const max = Math.max(...rows.map((row) => Number(row.hours || 0)), 1);
-  host.innerHTML = `<div class="trend-bars">${rows.map((row) => `<div><i style="height:${Math.max(4, (Number(row.hours || 0) / max) * 130)}px"></i><strong>${formatHours(row.hours)}</strong><span>${escapeHtml(row.month)}</span></div>`).join("")}</div>`;
-}
-
-function renderLineChart(selector, rows, series) {
-  const host = document.querySelector(selector);
-  if (!host) return;
-  if (!rows.length) return host.innerHTML = emptyAnalytics();
-  const max = Math.max(...rows.flatMap((row) => series.map((item) => Number(row[item.key] || 0))), 1);
-  const width = 760, height = 180, pad = 28;
-  const step = rows.length > 1 ? (width - pad * 2) / (rows.length - 1) : 0;
-  const lines = series.map((item, index) => {
-    const points = rows.map((row, rowIndex) => {
-      const x = pad + rowIndex * step;
-      const y = height - pad - (Number(row[item.key] || 0) / max) * (height - pad * 2);
-      return `${x},${y}`;
-    }).join(" ");
-    return `<polyline points="${points}" fill="none" stroke="${CHART_COLORS[index % CHART_COLORS.length]}" stroke-width="3" />`;
-  }).join("");
-  const labels = rows.map((row, index) => `<text x="${pad + index * step}" y="${height - 6}" text-anchor="middle">${escapeHtml(row.month)}</text>`).join("");
-  host.innerHTML = `<svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img">${lines}${labels}</svg>${legend(series.map((item) => item.label))}`;
 }
 
 const PRODUCTION_GANTT_TYPES = [
@@ -3483,7 +3105,7 @@ function renderNptOperationRows(locked = false) {
     .map((row, index) => ({ row, index }))
     .filter(({ row }) => !onlyScNpt || ["SC", "NPT"].includes(String(row.confirmed_op_type || row.system_op_type || "").toUpperCase()));
   if (!visibleRows.length) {
-    rowsHost.innerHTML = `<tr><td colspan="6">当前没有 SC 或 NPT 时效。</td></tr>`;
+    rowsHost.innerHTML = `<tr><td colspan="7">当前没有 SC 或 NPT 时效。</td></tr>`;
     return;
   }
   rowsHost.innerHTML = visibleRows.map(({ row, index }) => {
@@ -3492,6 +3114,7 @@ function renderNptOperationRows(locked = false) {
     <tr data-npt-row="${index}">
       <td>${escapeHtml((row.reportDate || "").slice(5) || "-")}</td>
       <td>${escapeHtml(row.from || "-")} ~ ${escapeHtml(row.to || "-")}</td>
+      <td>${nptExtractionCell(row)}</td>
       <td class="npt-description-cell"><button type="button" class="npt-description-preview" data-npt-description="${escapeHtml(description.text)}">${translationStateBadge(description.translated)}${escapeHtml(description.text)}</button></td>
       <td>${opTypePill(row.system_op_type)}</td>
       <td>
@@ -3553,6 +3176,9 @@ function showNptDescriptionPopover(trigger) {
   const rect = trigger.getBoundingClientRect();
   const popover = document.createElement("div");
   popover.className = "npt-description-popover";
+  popover.setAttribute("role", "dialog");
+  popover.setAttribute("aria-label", "完整工况描述");
+  popover.tabIndex = 0;
   popover.textContent = text;
   document.body.appendChild(popover);
   const width = Math.min(720, Math.max(420, window.innerWidth - 48));
@@ -3561,6 +3187,7 @@ function showNptDescriptionPopover(trigger) {
   popover.style.width = `${width}px`;
   popover.style.left = `${left}px`;
   popover.style.top = `${Math.max(24, top)}px`;
+  popover.focus({ preventScroll: true });
 }
 
 function collectNptConfirmationRows() {
@@ -3600,72 +3227,6 @@ function updateNptNoteCount() {
   const note = document.querySelector('[name="nptConfirmNote"]');
   const counter = document.querySelector("[data-npt-note-count]");
   if (counter) counter.textContent = String((note?.value || "").length);
-}
-
-function productionReportExportColumns() {
-  const showRig = analyticsState.productionReport.activeTab === "project";
-  return [
-    { key: "wellbore", label: ui("tableWell") },
-    showRig ? { key: "rig", label: ui("tableRig") } : null,
-    { key: "contract_project", label: ui("tableContractProject"), fallback: "project_name" },
-    { key: "move_date", label: ui("tableMoveDate") },
-    { key: "drilling_start_date", label: ui("tableDrillingStartDate") },
-    { key: "drilling_finish_date", label: ui("tableDrillingFinishDate") },
-    { key: "completion_date", label: ui("tableCompletionDate") },
-    { key: "workover_date", label: ui("tableWorkoverDate") },
-    { key: "move_hours", label: ui("tableMoveHours"), hours: true },
-    { key: "drilling_hours", label: ui("tableDrillingHours"), hours: true },
-    { key: "completion_hours", label: ui("tableCompletionHours"), hours: true },
-    { key: "workover_hours", label: ui("tableWorkoverHours"), hours: true },
-    { key: "npt_hours", label: ui("tableNptHours"), hours: true },
-    { key: "remarks", label: ui("tableRemarks") },
-  ].filter(Boolean);
-}
-
-function productionReportExportValue(row, column) {
-  if (column.hours) return formatHours(row[column.key]);
-  return row[column.key] ?? (column.fallback ? row[column.fallback] : "") ?? "";
-}
-
-function excelCellHtml(value) {
-  const text = String(value ?? "");
-  const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
-  return escapeHtml(safeText);
-}
-
-function downloadProductionReportExcel(rows) {
-  const columns = productionReportExportColumns();
-  const state = analyticsState.productionReport;
-  const tabLabel = state.activeTab === "project" ? "按项目" : "按钻井队";
-  const today = new Date().toISOString().slice(0, 10);
-  const headerHtml = columns.map((column) => `<th>${excelCellHtml(column.label)}</th>`).join("");
-  const bodyHtml = rows.map((row) => `<tr>${columns.map((column) => `<td>${excelCellHtml(productionReportExportValue(row, column))}</td>`).join("")}</tr>`).join("");
-  const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <style>
-    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
-    th, td { border: 1px solid #9fb4c8; padding: 6px 8px; mso-number-format:"\\@"; }
-    th { background: #0b4d7a; color: #ffffff; font-weight: 700; }
-  </style>
-</head>
-<body>
-  <table>
-    <thead><tr>${headerHtml}</tr></thead>
-    <tbody>${bodyHtml}</tbody>
-  </table>
-</body>
-</html>`;
-  const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `生产报表-${tabLabel}-${today}.xls`;
-  link.style.display = "none";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(link.href);
 }
 
 function downloadProductionReportExcelFromServer() {
@@ -3733,303 +3294,7 @@ function exportAnalytics(kind) {
 }
 
 async function adminRequest(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || "后台请求失败");
-  return payload;
-}
-
-async function loadAdminSession() {
-  try {
-    const payload = await adminRequest("/api/admin/session");
-    adminState.authenticated = payload.authenticated;
-    adminState.user = payload.user || null;
-    adminState.permissions = payload.permissions || {};
-    renderAdminShell();
-    if (adminState.authenticated && adminState.permissions.admin) await loadAdminData();
-  } catch (error) {
-    console.error(error);
-    renderAdminShell();
-  }
-}
-
-async function loadAdminData() {
-  try {
-    const [users, config, dataStatus, logs] = await Promise.all([
-      adminRequest("/api/admin/users"),
-      adminRequest("/api/admin/config"),
-      adminRequest("/api/admin/data-status"),
-      adminRequest("/api/admin/audit-logs"),
-    ]);
-    adminState.users = users.users || [];
-    adminState.roles = users.roles || [];
-    adminState.config = config.config || {};
-    adminState.dataStatus = dataStatus;
-    adminState.logs = logs.logs || [];
-    renderAdminPanels();
-  } catch (error) {
-    showToast(error.message);
-  }
-}
-
-function renderAdminShell() {
-  const loginPanel = document.querySelector("[data-admin-login]");
-  const consolePanel = document.querySelector("[data-admin-console]");
-  const logoutButton = document.querySelector("[data-admin-logout]");
-  if (!loginPanel || !consolePanel || !logoutButton) return;
-  loginPanel.hidden = adminState.authenticated;
-  consolePanel.hidden = !adminState.authenticated;
-  logoutButton.hidden = !adminState.authenticated;
-  if (adminState.authenticated && !adminState.permissions.admin) {
-    consolePanel.querySelector(".admin-tabs")?.setAttribute("hidden", "");
-    consolePanel.querySelector('[data-admin-panel="overview"]').hidden = false;
-    consolePanel.querySelector('[data-admin-panel="overview"]').innerHTML = `<section class="panel"><div class="panel-heading"><h2>无后台权限</h2><span class="panel-note">当前账号可以登录，但没有系统后台管理权限。</span></div></section>`;
-    consolePanel.querySelectorAll('[data-admin-panel]:not([data-admin-panel="overview"])').forEach((panel) => panel.hidden = true);
-    return;
-  }
-  consolePanel.querySelector(".admin-tabs")?.removeAttribute("hidden");
-  if (adminState.authenticated) renderAdminPanels();
-}
-
-function renderAdminPanels() {
-  renderAdminOverview();
-  renderAdminUsers();
-  renderAdminRoles();
-  renderAdminConfig();
-  renderAdminData();
-  renderAdminLogs();
-  switchAdminTab(adminState.tab || "overview");
-}
-
-function renderAdminOverview() {
-  const host = document.querySelector('[data-admin-panel="overview"]');
-  if (!host) return;
-  const status = adminState.dataStatus || {};
-  const user = adminState.user || {};
-  host.innerHTML = `
-    <section class="admin-kpi-grid">
-      ${adminKpi("当前账号", user.display_name || user.username || "-", user.role || "")}
-      ${adminKpi("日报记录", status.records || 0, "MySQL记录数")}
-      ${adminKpi("源PDF", status.source_pdf_count || 0, "本地保存数量")}
-      ${adminKpi("MySQL", status.mysql?.available ? "可用" : "不可用", `${status.database_host || ""}:${status.database_port || ""}/${status.database_name || ""}`)}
-    </section>
-    <section class="panel">
-      <div class="panel-heading"><h2>后台范围</h2><span class="panel-note">轻量 JSON 配置，适合单机或小团队部署</span></div>
-      <div class="admin-note-grid">
-        <span>账号与角色</span><span>配置项</span><span>MySQL数据</span><span>操作日志</span>
-      </div>
-    </section>
-  `;
-}
-
-function adminKpi(label, value, caption) {
-  return `<div class="analytics-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(caption || "")}</small></div>`;
-}
-
-function renderAdminUsers() {
-  const host = document.querySelector('[data-admin-panel="users"]');
-  if (!host) return;
-  const roles = adminState.roles || [];
-  host.innerHTML = `
-    <section class="panel">
-      <div class="panel-heading"><h2>账号管理</h2><span class="panel-note">新增账号、分配角色、启停账号</span></div>
-      <div class="admin-user-form">
-        <label>用户名<input name="adminUserUsername" placeholder="username" /></label>
-        <label>姓名<input name="adminUserDisplay" placeholder="显示姓名" /></label>
-        <label>邮箱<input name="adminUserEmail" placeholder="name@company.com" /></label>
-        <label>角色<select name="adminUserRole">${roles.map((role) => `<option value="${escapeHtml(role.value)}">${escapeHtml(role.label)}</option>`).join("")}</select></label>
-        <label>状态<select name="adminUserStatus"><option value="active">启用</option><option value="disabled">停用</option></select></label>
-        <label>密码<input name="adminUserPassword" type="password" placeholder="新账号必填，留空不改" /></label>
-        <button class="button" type="button" data-admin-save-user>保存账号</button>
-      </div>
-      <div class="table-wrap">
-        <table class="record-table admin-table">
-          <thead><tr><th>用户名</th><th>姓名</th><th>邮箱</th><th>角色</th><th>状态</th><th>最后登录</th><th>操作</th></tr></thead>
-          <tbody>${(adminState.users || []).map((user) => `<tr><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.display_name)}</td><td>${escapeHtml(user.email)}</td><td>${escapeHtml(roleLabel(user.role))}</td><td>${escapeHtml(user.status)}</td><td>${escapeHtml(user.last_login)}</td><td><button class="link-button" type="button" data-admin-edit-user="${escapeHtml(user.username)}">填入</button></td></tr>`).join("")}</tbody>
-        </table>
-      </div>
-    </section>
-  `;
-}
-
-function renderAdminRoles() {
-  const host = document.querySelector('[data-admin-panel="roles"]');
-  if (!host) return;
-  const actions = [["view", "查看"], ["import", "导入"], ["edit", "编辑"], ["save", "保存"], ["export", "导出"], ["admin", "后台"]];
-  host.innerHTML = `
-    <section class="panel">
-      <div class="panel-heading"><h2>角色权限</h2><span class="panel-note">第一版固定四类角色，减少维护复杂度</span></div>
-      <div class="table-wrap">
-        <table class="record-table admin-table">
-          <thead><tr><th>角色</th>${actions.map(([, label]) => `<th>${label}</th>`).join("")}</tr></thead>
-          <tbody>${(adminState.roles || []).map((role) => `<tr><td>${escapeHtml(role.label)}</td>${actions.map(([key]) => `<td>${role.permissions?.[key] ? "✓" : "—"}</td>`).join("")}</tr>`).join("")}</tbody>
-        </table>
-      </div>
-    </section>
-  `;
-}
-
-function renderAdminConfig() {
-  const host = document.querySelector('[data-admin-panel="config"]');
-  if (!host) return;
-  const config = adminState.config || {};
-  host.innerHTML = `
-    <section class="panel">
-      <div class="panel-heading"><h2>系统配置</h2><span class="panel-note">保存基础配置和日报运行参数</span></div>
-      <div class="admin-config-grid">
-        <label>系统名称<input name="system_name" value="${escapeHtml(config.system_name)}" /></label>
-        <label>默认语言<select name="default_language"><option value="zh">中文</option><option value="es">ES</option></select></label>
-        <label>每页记录数<input name="records_per_page" type="number" min="5" max="100" value="${escapeHtml(config.records_per_page)}" /></label>
-        <label>数据库类型<input name="database_engine" value="${escapeHtml(config.database_engine || "mysql")}" readonly /></label>
-        <label>数据库名<input name="database_name" value="${escapeHtml(config.database_name || "")}" readonly /></label>
-        <label>源PDF保存<select name="save_source_pdf"><option value="true">开启</option><option value="false">关闭</option></select></label>
-        <label>PDF保留天数<input name="source_pdf_retention_days" type="number" min="1" value="${escapeHtml(config.source_pdf_retention_days)}" /></label>
-      </div>
-      <div class="admin-actions"><button class="button" type="button" data-admin-save-config>保存配置</button></div>
-    </section>
-  `;
-  const form = host.querySelector(".admin-config-grid");
-  form.querySelector('[name="default_language"]').value = config.default_language || "zh";
-  form.querySelector('[name="save_source_pdf"]').value = String(config.save_source_pdf !== false);
-}
-
-function renderAdminData() {
-  const host = document.querySelector('[data-admin-panel="data"]');
-  if (!host) return;
-  const status = adminState.dataStatus || {};
-  const byType = status.by_type || {};
-  host.innerHTML = `
-    <section class="admin-kpi-grid">
-      ${adminKpi("总记录", status.records || 0, "全部日报")}
-      ${adminKpi("钻井", byType.drilling || 0, "drilling")}
-      ${adminKpi("完井", byType.completion || 0, "completion")}
-      ${adminKpi("修井/搬迁", `${byType.workover || 0} / ${byType.move || 0}`, "workover / move")}
-    </section>
-    <section class="panel">
-      <div class="panel-heading"><h2>数据维护</h2><span class="panel-note">当前运行时只使用 MySQL；Excel 文件库已移除</span></div>
-      <div class="admin-note-grid">
-        <span>数据库</span><strong>${escapeHtml(status.database_name || "-")}</strong>
-        <span>连接</span><strong>${escapeHtml(`${status.database_host || ""}:${status.database_port || ""}`)}</strong>
-        <span>状态</span><strong>${status.mysql?.available ? "可用" : escapeHtml(status.mysql?.error || "不可用")}</strong>
-      </div>
-    </section>
-  `;
-}
-
-function renderAdminLogs() {
-  const host = document.querySelector('[data-admin-panel="logs"]');
-  if (!host) return;
-  host.innerHTML = `
-    <section class="panel">
-      <div class="panel-heading"><h2>日志审计</h2><span class="panel-note">最近 120 条后台操作</span></div>
-      <div class="table-wrap">
-        <table class="record-table admin-table">
-          <thead><tr><th>时间</th><th>用户</th><th>动作</th><th>模块</th><th>对象</th><th>结果</th><th>备注</th></tr></thead>
-          <tbody>${(adminState.logs || []).map((log) => `<tr><td>${escapeHtml(log.time)}</td><td>${escapeHtml(log.user)}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.module)}</td><td>${escapeHtml(log.target)}</td><td>${escapeHtml(log.result)}</td><td>${escapeHtml(log.note)}</td></tr>`).join("") || `<tr><td colspan="7">暂无日志</td></tr>`}</tbody>
-        </table>
-      </div>
-    </section>
-  `;
-}
-
-function switchAdminTab(tab) {
-  adminState.tab = tab;
-  document.querySelectorAll("[data-admin-tab]").forEach((button) => button.classList.toggle("active", button.dataset.adminTab === tab));
-  document.querySelectorAll("[data-admin-panel]").forEach((panel) => panel.hidden = panel.dataset.adminPanel !== tab);
-}
-
-function roleLabel(value) {
-  return (adminState.roles || []).find((role) => role.value === value)?.label || value || "-";
-}
-
-function fileSize(value) {
-  const size = Number(value) || 0;
-  if (size > 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`;
-  if (size > 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${size} B`;
-}
-
-async function loginAdmin() {
-  const username = document.querySelector('[name="adminUsername"]')?.value.trim() || "";
-  const password = document.querySelector('[name="adminPassword"]')?.value || "";
-  try {
-    const payload = await adminRequest("/api/admin/login", { method: "POST", body: JSON.stringify({ username, password }) });
-    adminState.authenticated = true;
-    adminState.user = payload.user;
-    adminState.permissions = payload.permissions || {};
-    showToast("后台登录成功");
-    renderAdminShell();
-    if (adminState.permissions.admin) await loadAdminData();
-  } catch (error) {
-    showToast(error.message);
-  }
-}
-
-async function logoutAdmin() {
-  try {
-    await adminRequest("/api/admin/logout", { method: "POST", body: "{}" });
-  } catch (error) {
-    console.error(error);
-  }
-  adminState.authenticated = false;
-  adminState.user = null;
-  adminState.users = [];
-  showToast("已退出后台");
-  renderAdminShell();
-}
-
-function fillAdminUserForm(username) {
-  const user = (adminState.users || []).find((item) => item.username === username);
-  if (!user) return;
-  document.querySelector('[name="adminUserUsername"]').value = user.username || "";
-  document.querySelector('[name="adminUserDisplay"]').value = user.display_name || "";
-  document.querySelector('[name="adminUserEmail"]').value = user.email || "";
-  document.querySelector('[name="adminUserRole"]').value = user.role || "viewer";
-  document.querySelector('[name="adminUserStatus"]').value = user.status || "active";
-  document.querySelector('[name="adminUserPassword"]').value = "";
-}
-
-async function saveAdminUser() {
-  const payload = {
-    username: document.querySelector('[name="adminUserUsername"]')?.value.trim(),
-    display_name: document.querySelector('[name="adminUserDisplay"]')?.value.trim(),
-    email: document.querySelector('[name="adminUserEmail"]')?.value.trim(),
-    role: document.querySelector('[name="adminUserRole"]')?.value,
-    status: document.querySelector('[name="adminUserStatus"]')?.value,
-    password: document.querySelector('[name="adminUserPassword"]')?.value,
-  };
-  try {
-    const response = await adminRequest("/api/admin/users", { method: "POST", body: JSON.stringify(payload) });
-    adminState.users = response.users || [];
-    showToast("账号已保存");
-    renderAdminUsers();
-  } catch (error) {
-    showToast(error.message);
-  }
-}
-
-async function saveAdminConfig() {
-  const host = document.querySelector('[data-admin-panel="config"]');
-  if (!host) return;
-  const payload = {};
-  host.querySelectorAll("[name]").forEach((control) => {
-    let value = control.value;
-    if (control.type === "number") value = Number(value);
-    if (control.name === "save_source_pdf") value = value === "true";
-    payload[control.name] = value;
-  });
-  try {
-    const response = await adminRequest("/api/admin/config", { method: "POST", body: JSON.stringify(payload) });
-    adminState.config = response.config || {};
-    showToast("配置已保存");
-    renderAdminConfig();
-  } catch (error) {
-    showToast(error.message);
-  }
+  return window.NexoHttp.requestJson(path, options, "后台请求失败");
 }
 
 function splitAt(value, marker = "@") {
@@ -4366,17 +3631,6 @@ function clockMinutes(value) {
   return hour * 60 + minute;
 }
 
-function validateNonNegativeRows(issues, tableId, rows, fields) {
-  rows.forEach((row, index) => {
-    fields.forEach((field) => {
-      const value = toNumber(row[field]);
-      if (Number.isFinite(value) && value < 0) {
-        pushIssue(issues, { level: "error", text: message("negativeValue", { row: index + 1, field }), tableId, rowIndex: index, field });
-      }
-    });
-  });
-}
-
 function validateIntervalRows(issues, tableId, rows) {
   rows.forEach((row, index) => {
     const topMd = toNumber(row.top_md);
@@ -4632,22 +3886,6 @@ async function uploadReportFile(reportType, job, file) {
     renderRecordDashboard(reportType);
     showImportError(error);
   }
-}
-
-async function importPdfFile(file) {
-  return importReportFiles("drilling", file ? [file] : []);
-}
-
-async function importCompletionPdfFile(file) {
-  return importReportFiles("completion", file ? [file] : []);
-}
-
-async function importWorkoverPdfFile(file) {
-  return importReportFiles("workover", file ? [file] : []);
-}
-
-async function importMovePdfFile(file) {
-  return importReportFiles("move", file ? [file] : []);
 }
 
 function validate() {
@@ -4923,36 +4161,6 @@ document.addEventListener("click", (event) => {
   const frontLogout = event.target.closest("[data-front-logout]");
   if (frontLogout) {
     logoutFront();
-    return;
-  }
-  const adminLogin = event.target.closest("[data-admin-login-button]");
-  if (adminLogin) {
-    loginAdmin();
-    return;
-  }
-  const adminLogout = event.target.closest("[data-admin-logout]");
-  if (adminLogout) {
-    logoutAdmin();
-    return;
-  }
-  const adminTab = event.target.closest("[data-admin-tab]");
-  if (adminTab) {
-    switchAdminTab(adminTab.dataset.adminTab);
-    return;
-  }
-  const adminEditUser = event.target.closest("[data-admin-edit-user]");
-  if (adminEditUser) {
-    fillAdminUserForm(adminEditUser.dataset.adminEditUser);
-    return;
-  }
-  const adminSaveUser = event.target.closest("[data-admin-save-user]");
-  if (adminSaveUser) {
-    saveAdminUser();
-    return;
-  }
-  const adminSaveConfig = event.target.closest("[data-admin-save-config]");
-  if (adminSaveConfig) {
-    saveAdminConfig();
     return;
   }
   const productionReportTab = event.target.closest("[data-production-report-tab]");
@@ -5402,8 +4610,9 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-window.addEventListener("scroll", () => {
-  document.querySelector(".npt-description-popover")?.remove();
+window.addEventListener("scroll", (event) => {
+  const popover = document.querySelector(".npt-description-popover");
+  if (!event.target?.closest?.(".npt-description-popover")) popover?.remove();
   positionOpenProductionProjectDropdowns();
   positionOpenProductionReportDropdowns();
 }, true);

@@ -46,12 +46,16 @@ from .storage import (
     load_extraction_results,
     load_translation_content,
     load_translation_memory,
+    list_translation_memory,
     mysql_status,
     reset_translation_state,
     save_npt_confirmation,
     save_report_payload,
     save_extraction_results,
     save_translation_content,
+    save_translation_memory_entry,
+    delete_translation_memory_entry,
+    revise_translation_content,
     update_record_translation_status,
     update_record_extraction_status,
     upsert_translation_content,
@@ -59,9 +63,16 @@ from .storage import (
 from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_report_parser import parse_pdf_daily_report
 from .report_schema import REPORT_TABLES, REPORT_TYPE_ORDER, ROW_COLUMNS, TRANSLATION_SCOPE_FIELDS
+from .runtime_files import (
+    append_jsonl,
+    atomic_write_json as _runtime_atomic_write_json,
+    ensure_parent as _runtime_ensure_parent,
+    prune_jsonl,
+)
 from .translation import (
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TRANSLATION_INSTRUCTION,
+    DEFAULT_BUSINESS_PROMPT_TEMPLATES,
     PROMPT_VERSION,
     TermsConfig,
     TranslationConfig,
@@ -75,6 +86,14 @@ from .translation import (
     source_hash,
     translation_coverage,
     translation_memory_version,
+)
+from .translation.experience import diagnose_translation_failures
+from .translation.experience_store import (
+    load_experience_pool,
+    mark_experience_verified,
+    record_experience_suggestions,
+    save_experience_pool,
+    update_experience_status,
 )
 from .workover_pdf_parser import parse_workover_pdf_daily_report
 
@@ -95,6 +114,8 @@ DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation"
 PRODUCTION_REPORT_REMARKS_PATH = ROOT / "outputs" / "production_report_remarks.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 TRANSLATION_METRICS_PATH = ROOT / "outputs" / "translation_metrics.jsonl"
+TRANSLATION_DEBUG_LOG_PATH = ROOT / "outputs" / "translation_debug_logs.jsonl"
+TRANSLATION_EXPERIENCE_PATH = ROOT / "outputs" / "translation_experience.json"
 AI_JOB_MONITOR_PATH = ROOT / "outputs" / "ai_job_monitor.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
@@ -114,9 +135,16 @@ SESSION_TTL_SECONDS = _bounded_env_int("DRP_SESSION_TTL_SECONDS", 12 * 60 * 60, 
 MAX_JSON_BODY_BYTES = _bounded_env_int("DRP_MAX_JSON_BODY_MB", 16, 1, 64) * 1024 * 1024
 MAX_UPLOAD_BYTES = _bounded_env_int("DRP_MAX_UPLOAD_MB", 64, 1, 256) * 1024 * 1024
 TRANSLATION_WORKERS = _bounded_env_int("DRP_TRANSLATION_WORKERS", 2, 1, 4)
+TRANSLATION_DEBUG_RETENTION_DAYS = _bounded_env_int("DRP_TRANSLATION_DEBUG_RETENTION_DAYS", 7, 1, 90)
+TRANSLATION_DEBUG_MAX_ENTRIES = _bounded_env_int("DRP_TRANSLATION_DEBUG_MAX_ENTRIES", 500, 50, 10_000)
+TRANSLATION_DEBUG_MAX_BYTES = _bounded_env_int("DRP_TRANSLATION_DEBUG_MAX_MB", 10, 1, 100) * 1024 * 1024
+TRANSLATION_DEBUG_PRUNE_INTERVAL = 25
 TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=TRANSLATION_WORKERS, thread_name_prefix="drp-translation")
 TRANSLATION_STATE_LOCK = threading.Lock()
 TRANSLATION_METRICS_LOCK = threading.Lock()
+TRANSLATION_DEBUG_LOG_LOCK = threading.Lock()
+TRANSLATION_DEBUG_LOG_WRITES = 0
+TRANSLATION_EXPERIENCE_LOCK = threading.RLock()
 AI_JOB_MONITOR_LOCK = threading.Lock()
 AI_JOB_MONITOR_CACHE: dict[str, deque[dict[str, object]]] = {
     "translation": deque(maxlen=100),
@@ -262,6 +290,15 @@ class FormHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/translation-tuning":
             self._admin_translation_tuning()
             return
+        if parsed.path == "/api/admin/translation-memory":
+            self._admin_translation_memory(parsed.query)
+            return
+        if parsed.path == "/api/admin/translation-experience":
+            self._admin_translation_experience(parsed.query)
+            return
+        if parsed.path == "/api/admin/translation-content":
+            self._admin_translation_content(parsed.query)
+            return
         if parsed.path == "/api/admin/translations":
             self._admin_translation_records()
             return
@@ -327,6 +364,15 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/admin/translation-tuning/test":
             self._admin_test_translation_tuning()
+            return
+        if self.path == "/api/admin/translation-memory":
+            self._admin_save_translation_memory()
+            return
+        if self.path == "/api/admin/translation-experience/apply":
+            self._admin_apply_translation_experience()
+            return
+        if self.path == "/api/admin/translation-content/revise":
+            self._admin_revise_translation_content()
             return
         if self.path == "/api/admin/ai-models":
             self._admin_save_ai_models()
@@ -723,6 +769,161 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         self._send_json(_translation_queue_snapshot())
 
+    def _admin_translation_memory(self, query_string: str = "") -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        params = parse_qs(query_string)
+        query = str((params.get("q") or [""])[0])[:200]
+        report_type = str((params.get("report_type") or [""])[0])[:32].lower()
+        limit = _bounded_int((params.get("limit") or [200])[0], 1, 1000, 200)
+        rows = list_translation_memory(DATABASE_PATH, query=query, report_type=report_type, limit=limit)
+        self._send_json({"entries": rows, "count": len(rows)})
+
+    def _admin_translation_experience(self, query_string: str = "") -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        params = parse_qs(query_string)
+        status = str((params.get("status") or [""])[0])[:32].strip().upper()
+        limit = _bounded_int((params.get("limit") or [200])[0], 1, 1000, 200)
+        pool = _load_translation_experience_pool()
+        suggestions = pool.get("suggestions") if isinstance(pool.get("suggestions"), list) else []
+        if status:
+            suggestions = [item for item in suggestions if str(item.get("status", "") or "").upper() == status]
+        suggestions = sorted(
+            suggestions,
+            key=lambda item: (str(item.get("last_seen_at", "") or ""), int(item.get("occurrence_count", 0) or 0)),
+            reverse=True,
+        )[:limit]
+        counts: dict[str, int] = {}
+        for item in pool.get("suggestions", []):
+            item_status = str(item.get("status", "PENDING") or "PENDING").upper()
+            counts[item_status] = counts.get(item_status, 0) + 1
+        self._send_json({"suggestions": suggestions, "count": len(suggestions), "counts": counts})
+
+    def _admin_apply_translation_experience(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        suggestion_id = str(payload.get("id", "") or "").strip()
+        action = str(payload.get("action", "apply_and_rerun") or "apply_and_rerun").strip().lower()
+        if not suggestion_id:
+            self._send_json({"error": "缺少经验建议 ID。"}, status=400)
+            return
+        if action == "dismiss":
+            result = _update_translation_experience_status(
+                suggestion_id,
+                status="DISMISSED",
+                actor=str(user.get("username", "") or ""),
+            )
+            if not result:
+                self._send_json({"error": "未找到经验建议。"}, status=404)
+                return
+            _write_audit(user, "dismiss_translation_experience", "ai_service", suggestion_id, True, str(result.get("title", "")))
+            self._send_json({"ok": True, "suggestion": result, "queued_records": 0})
+            return
+        active = _active_ai_job_counts()
+        if active["translation"]:
+            self._send_json({"error": "翻译任务正在运行，请等待当前任务结束后再采纳经验并重跑。", "active_jobs": active}, status=409)
+            return
+        try:
+            suggestion = _apply_translation_experience_suggestion(
+                suggestion_id,
+                actor=str(user.get("username", "") or ""),
+            )
+        except KeyError:
+            self._send_json({"error": "未找到经验建议。"}, status=404)
+            return
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+        record_ids = [str(item or "").strip() for item in suggestion.get("record_ids", []) if str(item or "").strip()]
+        queued, skipped = _queue_translation_record_ids(record_ids, mode="continue")
+        _write_audit(
+            user,
+            "apply_translation_experience",
+            "ai_service",
+            suggestion_id,
+            True,
+            f"{suggestion.get('action_type', '')}; {queued} queued / {skipped} skipped",
+        )
+        self._send_json({
+            "ok": True,
+            "suggestion": suggestion,
+            "queued_records": queued,
+            "skipped_records": skipped,
+        })
+
+    def _admin_save_translation_memory(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        action = str(payload.get("action", "save") or "save").lower()
+        if action == "delete":
+            entry_id = _bounded_int(payload.get("id"), 1, 2_147_483_647, 0)
+            if not entry_id:
+                self._send_json({"error": "缺少翻译记忆 ID。"}, status=400)
+                return
+            deleted = delete_translation_memory_entry(DATABASE_PATH, entry_id)
+            _write_audit(user, "delete_translation_memory", "ai_service", str(entry_id), deleted, "")
+            self._send_json({"ok": deleted, "id": entry_id})
+            return
+        entry = payload.get("entry") if isinstance(payload.get("entry"), dict) else payload
+        entry = dict(entry)
+        entry["confirmed"] = True
+        entry["confirmed_by"] = str(user.get("username", "") or "")
+        try:
+            result = save_translation_memory_entry(DATABASE_PATH, entry)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+        _write_audit(user, "save_translation_memory", "ai_service", str(result.get("id", "")), True, str(entry.get("field_code", "")))
+        self._send_json({"ok": True, **result})
+
+    def _admin_revise_translation_content(self) -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        payload = self._read_json_body()
+        required = ("record_id", "entity_id", "field_code", "revised_text")
+        missing = [key for key in required if not str(payload.get(key, "") or "").strip()]
+        if missing:
+            self._send_json({"error": f"缺少字段：{', '.join(missing)}"}, status=400)
+            return
+        try:
+            result = revise_translation_content(
+                DATABASE_PATH,
+                record_id=str(payload.get("record_id", "")),
+                entity_id=str(payload.get("entity_id", "")),
+                field_code=str(payload.get("field_code", "")),
+                target_language=normalize_language(payload.get("target_language", "zh-CN")),
+                revised_text=str(payload.get("revised_text", "")),
+                editor=str(user.get("username", "") or ""),
+                note=str(payload.get("note", "") or "")[:1000],
+                add_to_memory=bool(payload.get("add_to_memory", True)),
+                report_type=str(payload.get("report_type", "") or "").lower(),
+            )
+        except (ValueError, KeyError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+        _write_audit(user, "revise_translation", "ai_service", str(payload.get("record_id", "")), True, str(payload.get("field_code", "")))
+        self._send_json({"ok": True, **result})
+
+    def _admin_translation_content(self, query_string: str = "") -> None:
+        user = self._require_admin()
+        if not user:
+            return
+        params = parse_qs(query_string)
+        record_id = str((params.get("record_id") or [""])[0])[:191]
+        if not record_id:
+            self._send_json({"error": "缺少日报记录 ID。"}, status=400)
+            return
+        rows = load_translation_content(DATABASE_PATH, record_id)
+        self._send_json({"record_id": record_id, "rows": rows, "count": len(rows)})
+
     def _admin_translation_status(self) -> None:
         user = self._require_admin()
         if not user:
@@ -768,35 +969,116 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         raw_tuning = payload.get("tuning")
         batch_mode = bool(payload.get("batch_mode"))
+        compare_mode = bool(payload.get("compare_mode"))
         tuning_config = _normalize_translation_tuning_config(raw_tuning) if isinstance(raw_tuning, dict) else _load_translation_tuning_config()
         tuning = TranslationTuningConfig.from_data(tuning_config)
         terms = TermsConfig.from_data(_load_translation_terms_config())
+        selected_rule_id = str(payload.get("field_code", "") or "")
+        scope_rules = tuning_config.get("scope_rules") if isinstance(tuning_config.get("scope_rules"), list) else []
+        selected_rule = next(
+            (item for item in scope_rules if isinstance(item, dict) and str(item.get("id", "") or "") == selected_rule_id),
+            None,
+        ) or {"report_type": "drilling", "section": "report_fields", "field_name": "currentOps"}
+        test_report_type = str(selected_rule.get("report_type", "drilling") or "drilling")
+        test_section = str(selected_rule.get("section", "report_fields") or "report_fields")
+        test_field_name = str(selected_rule.get("field_name", "currentOps") or "currentOps")
+        test_field_code = f"{test_section}.{test_field_name}"
+        test_report_context = {"report_type": test_report_type, "record_id": "translation-test"}
+        test_event_context = {"content_role": test_field_name, "section": test_section, "report_type": test_report_type}
+        test_payload: dict[str, object] = {
+            "metadata": {"record_id": "translation-test", "report_type": test_report_type},
+            "report_fields": {},
+        }
+        if test_section == "report_fields":
+            test_payload["report_fields"] = {test_field_name: source_text}
+        else:
+            test_payload[test_section] = [{"row_no": "1", test_field_name: source_text}]
         started = time.monotonic()
         try:
+            if compare_mode:
+                comparisons: list[dict[str, object]] = []
+                for pipeline_mode in ("contextual", "legacy"):
+                    mode_started = time.monotonic()
+                    mode_tuning = TranslationTuningConfig.from_data({**tuning_config, "pipeline_mode": pipeline_mode})
+                    mode_translator = build_translator(
+                        config=_translation_config_for_model(model),
+                        terms=terms,
+                        target_language=target_language,
+                        tuning=mode_tuning,
+                    )
+                    mode_diagnostics = mode_translator.translation_diagnostics(
+                        source_text, target_language,
+                        report_context=test_report_context,
+                        event_context=test_event_context,
+                        field_code=test_field_code,
+                    )
+                    mode_result = mode_translator.translate_report_payload(test_payload)
+                    mode_rows = mode_result.get("translation_content") if isinstance(mode_result.get("translation_content"), list) else []
+                    mode_row = mode_rows[0] if mode_rows and isinstance(mode_rows[0], dict) else {}
+                    mode_text = str(mode_row.get("translated_text", "") or "")
+                    comparisons.append({
+                        "pipeline_mode": pipeline_mode,
+                        "ok": str(mode_row.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"},
+                        "translated_text": mode_text,
+                        "elapsed_ms": round((time.monotonic() - mode_started) * 1000),
+                        "prompt_preview": mode_translator.prompt_preview(
+                            source_text, target_language,
+                            report_context=test_report_context,
+                            event_context=test_event_context,
+                            field_code=test_field_code,
+                        ),
+                        "request_source_text": mode_diagnostics["request_source_text"],
+                        "placeholder_count": mode_diagnostics["placeholder_count"],
+                        "checks": mode_translator.quality_checks(str(mode_diagnostics["cleaned_source_text"]), mode_text, target_language) if mode_text else [],
+                        "error": str(mode_row.get("error_message", "") or ""),
+                    })
+                elapsed_ms = round((time.monotonic() - started) * 1000)
+                response = {
+                    "ok": all(bool(item.get("ok")) for item in comparisons),
+                    "compare_mode": True,
+                    "comparisons": comparisons,
+                    "source_language": detect_language(source_text),
+                    "target_language": target_language,
+                    "model_id": model.get("id", ""),
+                    "model_name": model.get("name", ""),
+                    "elapsed_ms": elapsed_ms,
+                }
+                _write_audit(user, "compare_translation_pipelines", "ai_service", str(model.get("name", "")), bool(response["ok"]), f"{elapsed_ms} ms")
+                self._send_json(response)
+                return
             translator = build_translator(
                 config=_translation_config_for_model(model),
                 terms=terms,
                 target_language=target_language,
                 tuning=tuning,
             )
-            prompt_preview = translator.prompt_preview(source_text, target_language)
+            diagnostics = translator.translation_diagnostics(
+                source_text, target_language,
+                report_context=test_report_context,
+                event_context=test_event_context,
+                field_code=test_field_code,
+            )
+            prompt_preview = translator.prompt_preview(
+                source_text, target_language,
+                report_context=test_report_context,
+                event_context=test_event_context,
+                field_code=test_field_code,
+            )
             if batch_mode:
                 rows = translator.translate_text_batch([source_text] * 6, target_language)
                 result = {"translation_content": rows}
             else:
-                result = translator.translate_plain_text(source_text)
+                result = translator.translate_report_payload(test_payload)
                 rows = result.get("translation_content") if isinstance(result.get("translation_content"), list) else []
             row = rows[0] if rows and isinstance(rows[0], dict) else {}
             translated_text = str(row.get("translated_text", "") or "")
             status = str(row.get("translation_status", "") or "")
             elapsed_ms = round((time.monotonic() - started) * 1000)
-            source_numbers = re.findall(r"\d+(?:[.,]\d+)?", source_text)
-            missing_numbers = [number for number in source_numbers if number not in translated_text]
             checks = [
                 {"label": "模型返回译文", "status": "passed" if rows and all(str(item.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"} for item in rows) else "failed"},
                 {"label": "译文未照抄原文", "status": "passed" if translated_text and translated_text.casefold() != source_text.casefold() else "warning"},
-                {"label": "数字与数值精度保留", "status": "passed" if not missing_numbers else "warning", "detail": ", ".join(missing_numbers[:8])},
             ]
+            checks.extend(translator.quality_checks(str(diagnostics["cleaned_source_text"]), translated_text, target_language) if translated_text else [])
             response = {
                 "ok": bool(rows) and all(str(item.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"} for item in rows),
                 "translated_text": translated_text,
@@ -810,6 +1092,13 @@ class FormHandler(BaseHTTPRequestHandler):
                 "batch_mode": batch_mode,
                 "batch_size": len(rows),
                 "prompt_chars": len(prompt_preview),
+                "pipeline_mode": diagnostics["pipeline_mode"],
+                "request_source_text": diagnostics["request_source_text"],
+                "cleaned_source_text": diagnostics["cleaned_source_text"],
+                "cleanup_actions": diagnostics["cleanup_actions"],
+                "matched_terms": diagnostics["matched_terms"],
+                "protected_terms": diagnostics["protected_terms"],
+                "placeholder_count": diagnostics["placeholder_count"],
                 "checks": checks,
                 "error": str(row.get("error_message", "") or ""),
             }
@@ -1047,30 +1336,7 @@ class FormHandler(BaseHTTPRequestHandler):
         if requested_ids is not None and not selected_ids:
             self._send_json({"error": "请至少选择一条日报。"}, status=400)
             return
-        current_version = _current_translation_revision()
-        queued = 0
-        skipped = 0
-        for record in list_records(DATABASE_PATH):
-            record_id = str(record.get("record_id", "") or "")
-            if not record_id or (selected_ids and record_id not in selected_ids):
-                continue
-            status = str(record.get("translation_status", "") or "").strip().upper()
-            version = str(record.get("translation_version", "") or "")
-            if status in {"QUEUED", "IN_PROGRESS"}:
-                skipped += 1
-                continue
-            if status == "NOT_REQUIRED":
-                skipped += 1
-                continue
-            if mode == "continue" and not _translation_record_needs_processing(record, current_version):
-                skipped += 1
-                continue
-            if mode == "overwrite":
-                _invalidate_translation_jobs([record_id])
-                reset_translation_state(DATABASE_PATH, record_id)
-            update_record_translation_status(DATABASE_PATH, record_id, status="QUEUED", progress=0, error="")
-            _schedule_translation_job(record_id)
-            queued += 1
+        queued, skipped = _queue_translation_record_ids(list(selected_ids) if selected_ids else None, mode=mode)
         _write_audit(user, "queue_translations", "ai_service", mode, True, f"{queued} queued / {skipped} skipped")
         self._send_json({"ok": True, "mode": mode, "queued_records": queued, "skipped_records": skipped})
 
@@ -1461,6 +1727,7 @@ class FormHandler(BaseHTTPRequestHandler):
                 scope_rig=_npt_scope_rig(user),
             )
             _enrich_operation_translation_rows(detail.get("operations", []))
+            _enrich_operation_extraction_rows(detail.get("operations", []))
             self._send_json(detail)
         except KeyError:
             self._send_json({"error": "NPT confirmation well not found."}, status=404)
@@ -1768,35 +2035,65 @@ def _current_translation_revision(
 
 
 def _write_translation_metric(event: str, **fields: object) -> None:
-    _ensure_parent(TRANSLATION_METRICS_PATH)
     record = {
         "time": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         "event": event,
         **fields,
     }
-    line = json.dumps(record, ensure_ascii=False, sort_keys=True)
-    with TRANSLATION_METRICS_LOCK:
-        _rotate_jsonl_if_needed(TRANSLATION_METRICS_PATH, 10 * 1024 * 1024)
-        with TRANSLATION_METRICS_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(line + "\n")
+    append_jsonl(
+        TRANSLATION_METRICS_PATH,
+        record,
+        lock=TRANSLATION_METRICS_LOCK,
+        max_bytes=10 * 1024 * 1024,
+    )
+
+
+def _write_translation_debug_log(event: str, **fields: object) -> None:
+    global TRANSLATION_DEBUG_LOG_WRITES
+    record = {
+        "time": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        "event": event,
+        **fields,
+    }
+    with TRANSLATION_DEBUG_LOG_LOCK:
+        append_jsonl(TRANSLATION_DEBUG_LOG_PATH, record, default=str)
+        TRANSLATION_DEBUG_LOG_WRITES += 1
+        try:
+            over_size = TRANSLATION_DEBUG_LOG_PATH.stat().st_size > TRANSLATION_DEBUG_MAX_BYTES
+        except OSError:
+            over_size = False
+        if over_size or TRANSLATION_DEBUG_LOG_WRITES % TRANSLATION_DEBUG_PRUNE_INTERVAL == 0:
+            _prune_translation_debug_logs_locked()
+
+
+def _prune_translation_debug_logs(*, now: datetime | None = None) -> dict[str, int]:
+    """Keep only recent, bounded debug telemetry; experience evidence is separate."""
+    with TRANSLATION_DEBUG_LOG_LOCK:
+        return _prune_translation_debug_logs_locked(now=now)
+
+
+def _prune_translation_debug_logs_locked(*, now: datetime | None = None) -> dict[str, int]:
+    return prune_jsonl(
+        TRANSLATION_DEBUG_LOG_PATH,
+        retention_days=TRANSLATION_DEBUG_RETENTION_DAYS,
+        max_entries=TRANSLATION_DEBUG_MAX_ENTRIES,
+        max_bytes=TRANSLATION_DEBUG_MAX_BYTES,
+        now=now,
+    )
 
 
 def _write_ai_job_monitor(kind: str, event: str, **fields: object) -> None:
     if kind not in {"translation", "extraction"}:
         return
-    _ensure_parent(AI_JOB_MONITOR_PATH)
     record = {
         "time": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         "kind": kind,
         "event": event,
         **fields,
     }
-    line = json.dumps(record, ensure_ascii=False, sort_keys=True)
     with AI_JOB_MONITOR_LOCK:
         _load_ai_job_monitor_cache_locked()
-        _rotate_jsonl_if_needed(AI_JOB_MONITOR_PATH, 5 * 1024 * 1024)
-        with AI_JOB_MONITOR_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(line + "\n")
+        append_jsonl(AI_JOB_MONITOR_PATH, record, max_bytes=5 * 1024 * 1024)
         AI_JOB_MONITOR_CACHE[kind].append(record)
 
 
@@ -1828,21 +2125,13 @@ def _load_ai_job_monitor_cache_locked() -> None:
     AI_JOB_MONITOR_CACHE_PATH = current_path
 
 
-def _rotate_jsonl_if_needed(path: Path, max_bytes: int) -> None:
-    try:
-        if not path.exists() or path.stat().st_size < max_bytes:
-            return
-        rotated = path.with_suffix(path.suffix + ".1")
-        rotated.unlink(missing_ok=True)
-        path.replace(rotated)
-    except OSError:
-        return
-
-
 def _translation_telemetry(record_id: str, generation: int, language: str = ""):
     def emit(payload: dict[str, object]) -> None:
         event = str(payload.get("event", "translation_event") or "translation_event")
         fields = {key: value for key, value in payload.items() if key != "event"}
+        if event in {"translation_source_cleaned", "model_wire_request", "model_wire_response", "translation_item_final"}:
+            _write_translation_debug_log(event, record_id=record_id, generation=generation, language=language, **fields)
+            return
         _write_translation_metric(event, record_id=record_id, generation=generation, language=language, **fields)
         if event in {"model_request_start", "model_request_complete", "model_request_retry", "model_request_error"}:
             monitor_event = {
@@ -1976,10 +2265,14 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
             _write_translation_metric("job_cancelled", record_id=record_id, generation=generation, reason="stale_before_start")
             return
         payload = load_report_payload(DATABASE_PATH, record_id)
-        terms = TermsConfig.from_data(_load_translation_terms_config())
+        payload_metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+        report_type = str(payload_metadata.get("report_type", "") or "").strip().lower()
+        terms_config = _load_translation_terms_config()
+        terms = TermsConfig.from_data(terms_config)
         target_languages = _translation_target_languages()
         translation_config = _active_translation_config()
-        tuning = TranslationTuningConfig.from_data(_load_translation_tuning_config())
+        tuning_config = _load_translation_tuning_config()
+        tuning = TranslationTuningConfig.from_data(tuning_config)
         prompt_version = _current_translation_revision()
         all_rows: list[dict[str, object]] = []
         update_record_translation_status(DATABASE_PATH, record_id, status="IN_PROGRESS", progress=1, error="")
@@ -2034,6 +2327,7 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
                 language,
                 translator.prompt_version,
                 source_hashes,
+                str(payload.get("metadata", {}).get("report_type", "") or "") if isinstance(payload.get("metadata"), dict) else "",
             ))
 
             def persist_language_rows(_language: str, completed_rows: list[dict[str, str]]) -> None:
@@ -2091,6 +2385,19 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
                 elapsed_ms=round((time.monotonic() - job_started) * 1000),
                 error=error[:500],
             )
+            suggestions = _record_translation_experience_suggestions(
+                record_id,
+                report_type,
+                failed,
+                terms_config=terms_config,
+                tuning_config=tuning_config,
+            )
+            _write_translation_metric(
+                "experience_suggested",
+                record_id=record_id,
+                suggestion_count=len(suggestions),
+                suggestion_ids=[item.get("id", "") for item in suggestions],
+            )
         else:
             update_record_translation_status(
                 DATABASE_PATH,
@@ -2107,6 +2414,9 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
                 row_count=len(all_rows),
                 elapsed_ms=round((time.monotonic() - job_started) * 1000),
             )
+            verified_count = _mark_translation_experience_verified(record_id)
+            if verified_count:
+                _write_translation_metric("experience_verified", record_id=record_id, verified_count=verified_count)
     except Exception as exc:  # pragma: no cover - background job should not stop the app.
         if not _translation_job_is_current(record_id, generation):
             _write_translation_metric(
@@ -2132,6 +2442,18 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
             elapsed_ms=round((time.monotonic() - job_started) * 1000),
             error=str(exc)[:500],
         )
+        try:
+            exception_payload = locals().get("payload") if isinstance(locals().get("payload"), dict) else {}
+            exception_metadata = exception_payload.get("metadata") if isinstance(exception_payload.get("metadata"), dict) else {}
+            _record_translation_experience_suggestions(
+                record_id,
+                str(exception_metadata.get("report_type", "") or ""),
+                [{"field_code": "", "source_text": "", "error_message": str(exc), "translation_status": "FAILED"}],
+                terms_config=locals().get("terms_config") if isinstance(locals().get("terms_config"), dict) else None,
+                tuning_config=locals().get("tuning_config") if isinstance(locals().get("tuning_config"), dict) else None,
+            )
+        except Exception as experience_exc:
+            _write_translation_metric("experience_capture_failed", record_id=record_id, error=str(experience_exc)[:500])
         print(f"translation job failed for {record_id}: {exc}")
 
 
@@ -2363,6 +2685,133 @@ def _save_translation_terms_config(config: dict[str, object]) -> None:
     _atomic_write_json(TRANSLATION_TERMS_PATH, _normalize_translation_terms_config(config))
 
 
+def _load_translation_experience_pool() -> dict[str, object]:
+    return load_experience_pool(TRANSLATION_EXPERIENCE_PATH, lock=TRANSLATION_EXPERIENCE_LOCK)
+
+
+def _save_translation_experience_pool(pool: dict[str, object]) -> None:
+    save_experience_pool(TRANSLATION_EXPERIENCE_PATH, pool, lock=TRANSLATION_EXPERIENCE_LOCK)
+
+
+def _record_translation_experience_suggestions(
+    record_id: str,
+    report_type: str,
+    failed_rows: list[dict[str, object]],
+    *,
+    terms_config: dict[str, object] | None = None,
+    tuning_config: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
+    terms_source = terms_config or _load_translation_terms_config()
+    protected_terms = terms_source.get("protected_terms") if isinstance(terms_source.get("protected_terms"), dict) else {}
+    tuning_source = tuning_config or _load_translation_tuning_config()
+    diagnosed = diagnose_translation_failures(
+        record_id=record_id,
+        report_type=report_type,
+        failed_rows=failed_rows,
+        protected_terms=protected_terms,
+        tuning=tuning_source,
+    )
+    return record_experience_suggestions(
+        TRANSLATION_EXPERIENCE_PATH,
+        diagnosed,
+        lock=TRANSLATION_EXPERIENCE_LOCK,
+    )
+
+
+def _update_translation_experience_status(
+    suggestion_id: str,
+    *,
+    status: str,
+    actor: str = "",
+    verified_record_id: str = "",
+) -> dict[str, object] | None:
+    return update_experience_status(
+        TRANSLATION_EXPERIENCE_PATH,
+        suggestion_id,
+        status=status,
+        actor=actor,
+        verified_record_id=verified_record_id,
+        lock=TRANSLATION_EXPERIENCE_LOCK,
+    )
+
+
+def _mark_translation_experience_verified(record_id: str) -> int:
+    try:
+        status_by_id = {
+            str(row.get("record_id", "") or ""): str(row.get("translation_status", "") or "").upper()
+            for row in list_records(DATABASE_PATH)
+        }
+    except Exception:
+        status_by_id = {record_id: "COMPLETED"}
+    return mark_experience_verified(
+        TRANSLATION_EXPERIENCE_PATH,
+        record_id,
+        status_by_id,
+        lock=TRANSLATION_EXPERIENCE_LOCK,
+    )
+
+
+def _apply_translation_experience_suggestion(suggestion_id: str, *, actor: str = "") -> dict[str, object]:
+    with TRANSLATION_EXPERIENCE_LOCK:
+        pool = _load_translation_experience_pool()
+        suggestions = pool.get("suggestions") if isinstance(pool.get("suggestions"), list) else []
+        suggestion = next((item for item in suggestions if str(item.get("id", "") or "") == suggestion_id), None)
+        if not isinstance(suggestion, dict):
+            raise KeyError(suggestion_id)
+        action_type = str(suggestion.get("action_type", "") or "")
+        token = str(suggestion.get("token", "") or "").strip()
+        with CONFIG_WRITE_LOCK:
+            if action_type in {"add_protected_unit", "add_protected_acronym", "add_protected_proper_noun"}:
+                if not token:
+                    raise ValueError("经验建议缺少需要保护的内容。")
+                group = {
+                    "add_protected_unit": "units",
+                    "add_protected_acronym": "acronyms",
+                    "add_protected_proper_noun": "proper_nouns",
+                }[action_type]
+                config = _load_translation_terms_config()
+                protected = config.get("protected_terms") if isinstance(config.get("protected_terms"), dict) else {}
+                protected[group] = _normalized_string_list([*protected.get(group, []), token])
+                config["protected_terms"] = protected
+                _save_translation_terms_config(config)
+            elif action_type == "enable_placeholder":
+                config = _load_translation_tuning_config()
+                protections = config.get("protections") if isinstance(config.get("protections"), dict) else {}
+                protections["mode"] = "placeholder"
+                config["protections"] = protections
+                config["updated_at"] = datetime.now().isoformat(timespec="seconds")
+                _save_translation_tuning_config(config)
+            elif action_type == "add_prompt_rule":
+                change = suggestion.get("proposed_change") if isinstance(suggestion.get("proposed_change"), dict) else {}
+                instruction = str(change.get("instruction", "") or "").strip()
+                if not instruction:
+                    raise ValueError("经验建议缺少可应用的Prompt规则。")
+                config = _load_translation_tuning_config()
+                rules = config.get("experience_rules") if isinstance(config.get("experience_rules"), list) else []
+                rule_id = f"experience-{str(suggestion.get('fingerprint', '') or '')[:16]}"
+                if not any(isinstance(item, dict) and str(item.get("id", "") or "") == rule_id for item in rules):
+                    rules.append({
+                        "id": rule_id,
+                        "report_type": str(suggestion.get("report_type", "") or ""),
+                        "field_code": str(suggestion.get("field_code", "") or ""),
+                        "instruction": instruction,
+                        "enabled": True,
+                        "source": "translation_experience",
+                        "created_at": datetime.now().isoformat(timespec="seconds"),
+                    })
+                config["experience_rules"] = rules
+                config["updated_at"] = datetime.now().isoformat(timespec="seconds")
+                _save_translation_tuning_config(config)
+            elif action_type != "retry_current_rules":
+                raise ValueError(f"不支持的经验操作：{action_type}")
+        suggestion["status"] = "APPLIED"
+        suggestion["applied_at"] = datetime.now().isoformat(timespec="seconds")
+        suggestion["applied_by"] = actor
+        pool["suggestions"] = suggestions
+        _save_translation_experience_pool(pool)
+        return suggestion
+
+
 TRANSLATION_REPORT_TYPE_LABELS = {
     "drilling": "钻井日报",
     "completion": "完井日报",
@@ -2448,13 +2897,25 @@ def _translation_scope_defaults() -> list[dict[str, object]]:
 def _default_translation_tuning_config() -> dict[str, object]:
     raw_languages = os.environ.get("DRP_TRANSLATION_TARGET_LANGUAGES", "zh-CN")
     return _normalize_translation_tuning_config({
+        "pipeline_mode": "contextual",
         "scope_rules": _translation_scope_defaults(),
         "target_languages": raw_languages.split(","),
         "prompt": {
             "system_prompt": DEFAULT_SYSTEM_PROMPT,
             "translation_instruction": DEFAULT_TRANSLATION_INSTRUCTION,
         },
-        "protections": {"numbers": True, "units": True, "acronyms": True, "proper_nouns": True},
+        "prompt_templates": dict(DEFAULT_BUSINESS_PROMPT_TEMPLATES),
+        "experience_rules": [],
+        "protections": {
+            "mode": "prompt",
+            "numbers": True,
+            "units": True,
+            "acronyms": True,
+            "proper_nouns": True,
+            "ambiguous_units": [],
+            "unit_aliases": {},
+            "unit_context_exclusions": [],
+        },
     })
 
 
@@ -2525,23 +2986,87 @@ def _normalize_translation_tuning_config(raw: object) -> dict[str, object]:
     if not target_languages:
         target_languages = ["zh-CN"]
     prompt_source = source.get("prompt") if isinstance(source.get("prompt"), dict) else {}
+    template_source = source.get("prompt_templates") if isinstance(source.get("prompt_templates"), dict) else {}
     protections_source = source.get("protections") if isinstance(source.get("protections"), dict) else {}
+    experience_rules: list[dict[str, object]] = []
+    raw_experience_rules = source.get("experience_rules") if isinstance(source.get("experience_rules"), list) else []
+    for index, item in enumerate(raw_experience_rules):
+        if not isinstance(item, dict):
+            continue
+        instruction = str(item.get("instruction", "") or "").strip()[:1000]
+        if not instruction:
+            continue
+        report_type = str(item.get("report_type", "") or "").strip().lower()
+        if report_type and report_type not in REPORT_TYPE_ORDER:
+            continue
+        field_code = str(item.get("field_code", "") or "").strip()[:128]
+        experience_rules.append({
+            "id": str(item.get("id", "") or f"experience-{index + 1}")[:80],
+            "report_type": report_type,
+            "field_code": field_code,
+            "instruction": instruction,
+            "enabled": _truthy(item.get("enabled", True)),
+            "source": str(item.get("source", "translation_experience") or "translation_experience")[:64],
+            "created_at": str(item.get("created_at", "") or "")[:64],
+        })
+    protection_mode = str(protections_source.get("mode", "prompt") or "prompt").strip().lower()
+    if protection_mode not in {"prompt", "placeholder"}:
+        protection_mode = "prompt"
+    ambiguous_units = _normalized_string_list(protections_source.get("ambiguous_units"))
+    raw_unit_aliases = protections_source.get("unit_aliases") if isinstance(protections_source.get("unit_aliases"), dict) else {}
+    unit_aliases = {
+        str(unit or "").strip().casefold(): _normalized_string_list(aliases)
+        for unit, aliases in raw_unit_aliases.items()
+        if str(unit or "").strip() and _normalized_string_list(aliases)
+    }
+    unit_context_exclusions: list[dict[str, object]] = []
+    raw_unit_exclusions = protections_source.get("unit_context_exclusions") if isinstance(protections_source.get("unit_context_exclusions"), list) else []
+    for item in raw_unit_exclusions:
+        if not isinstance(item, dict):
+            continue
+        units = _normalized_string_list(item.get("units"))
+        if not units and str(item.get("unit", "") or "").strip():
+            units = [str(item.get("unit", "") or "").strip()]
+        pattern = str(item.get("pattern", "") or "").strip()[:500]
+        try:
+            re.compile(pattern)
+        except re.error:
+            continue
+        if units and pattern:
+            unit_context_exclusions.append({"units": units, "pattern": pattern})
+    pipeline_mode = str(source.get("pipeline_mode", "contextual") or "contextual").strip().lower()
+    if pipeline_mode not in {"contextual", "legacy"}:
+        pipeline_mode = "contextual"
     normalized: dict[str, object] = {
+        "pipeline_mode": pipeline_mode,
         "scope_rules": scope_rules,
         "target_languages": target_languages,
         "prompt": {
             "system_prompt": str(prompt_source.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip()[:1200],
             "translation_instruction": str(prompt_source.get("translation_instruction", "") or DEFAULT_TRANSLATION_INSTRUCTION).strip()[:2400],
         },
+        "prompt_templates": {
+            report_type: str(template_source.get(report_type, default_text) or default_text).strip()[:1200]
+            for report_type, default_text in DEFAULT_BUSINESS_PROMPT_TEMPLATES
+        },
+        "experience_rules": experience_rules,
         "protections": {
+            "mode": protection_mode,
             "numbers": _truthy(protections_source.get("numbers", True)),
             "units": _truthy(protections_source.get("units", True)),
             "acronyms": _truthy(protections_source.get("acronyms", True)),
             "proper_nouns": _truthy(protections_source.get("proper_nouns", True)),
+            "ambiguous_units": ambiguous_units,
+            "unit_aliases": unit_aliases,
+            "unit_context_exclusions": unit_context_exclusions,
         },
         "scope_catalog": _translation_scope_catalog(),
     }
     fingerprint_source = {key: value for key, value in normalized.items() if key != "scope_catalog"}
+    if not experience_rules:
+        # Preserve the pre-experience-pool version until a real rule is added.
+        # An empty feature container must not make every completed report stale.
+        fingerprint_source.pop("experience_rules", None)
     fingerprint = hashlib.sha256(json.dumps(fingerprint_source, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:12]
     normalized["version"] = f"translation-tuning-{fingerprint}"
     normalized["updated_at"] = str(source.get("updated_at", "") or datetime.now().isoformat(timespec="seconds"))
@@ -3076,18 +3601,21 @@ def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], s
 
 
 def _explicit_responsible_party(source_text: str) -> str:
-    text = re.sub(r"\s+", " ", str(source_text or "")).strip()
+    source = str(source_text or "")
+    lines = [re.sub(r"\s+", " ", line).strip() for line in source.splitlines() if line.strip()]
+    candidates = [*lines, re.sub(r"\s+", " ", source).strip()]
     patterns = (
         r"\bNPT\s+A\s+CARGO\s+DE\s+([A-Z][A-Z0-9&._ -]{1,50})",
         r"\b(?:RESPONSABLE|RESPONSABILIDAD\s+DE)\s*[:=-]?\s*([A-Z][A-Z0-9&._ -]{1,50})",
         r"\b(?:RESPONSIBLE\s+(?:PARTY|COMPANY)|ACCOUNTABLE\s+TO)\s*[:=-]?\s*([A-Z][A-Z0-9&._ -]{1,50})",
     )
-    for pattern in patterns:
-        match = re.search(pattern, text, flags=re.IGNORECASE)
-        if not match:
-            continue
-        value = re.split(r"[;,]|\b(?:DURING|FOR|FROM|WITH|POR|PARA|DESDE|CON)\b", match.group(1), maxsplit=1, flags=re.IGNORECASE)[0]
-        return value.strip(" .:-").upper()
+    for candidate in candidates:
+        for pattern in patterns:
+            match = re.search(pattern, candidate, flags=re.IGNORECASE)
+            if not match:
+                continue
+            value = re.split(r"[;,]|\b(?:DURING|FOR|FROM|WITH|POR|PARA|DESDE|CON)\b", match.group(1), maxsplit=1, flags=re.IGNORECASE)[0]
+            return value.strip(" .:-").upper()
     return ""
 
 
@@ -3479,6 +4007,35 @@ def _translation_record_needs_processing(record: dict[str, object], current_vers
     return bool(current_version and version != current_version)
 
 
+def _queue_translation_record_ids(record_ids: list[str] | None, *, mode: str = "continue") -> tuple[int, int]:
+    if mode not in {"continue", "overwrite"}:
+        raise ValueError("翻译模式必须是继续翻译或覆盖重译。")
+    selected_ids = {str(item or "").strip() for item in (record_ids or []) if str(item or "").strip()}
+    if record_ids is not None and not selected_ids:
+        return 0, 0
+    current_version = _current_translation_revision()
+    queued = 0
+    skipped = 0
+    for record in list_records(DATABASE_PATH):
+        record_id = str(record.get("record_id", "") or "")
+        if not record_id or (selected_ids and record_id not in selected_ids):
+            continue
+        status = str(record.get("translation_status", "") or "").strip().upper()
+        if status in {"QUEUED", "IN_PROGRESS", "NOT_REQUIRED"}:
+            skipped += 1
+            continue
+        if mode == "continue" and not _translation_record_needs_processing(record, current_version):
+            skipped += 1
+            continue
+        if mode == "overwrite":
+            _invalidate_translation_jobs([record_id])
+            reset_translation_state(DATABASE_PATH, record_id)
+        update_record_translation_status(DATABASE_PATH, record_id, status="QUEUED", progress=0, error="")
+        _schedule_translation_job(record_id)
+        queued += 1
+    return queued, skipped
+
+
 def _translation_queue_snapshot() -> dict[str, object]:
     current_version = _current_translation_revision()
     items: list[dict[str, object]] = []
@@ -3587,19 +4144,22 @@ def _extract_excel_term_source(upload: UploadedFile) -> tuple[str, dict[str, obj
 def _translation_terms_workbook_bytes(config: dict[str, object], *, template: bool) -> bytes:
     columns = [
         ("category", "作业类型"),
+        ("term_type", "术语类型"),
         ("zh", "中文"),
         ("en", "English"),
         ("es", "Español"),
         ("aliases_zh", "中文别名"),
         ("aliases_en", "英文别名"),
         ("aliases_es", "西语别名"),
+        ("priority", "优先级"),
+        ("strict_preserve", "严格原样保留"),
         ("protected", "锁定译法"),
         ("enabled", "启用"),
     ]
     if template:
         rows: list[dict[str, object]] = [
-            {"category": "钻井", "zh": "机械钻速", "en": "rate of penetration", "es": "tasa de penetración", "aliases_en": "ROP", "aliases_es": "ROP", "protected": True, "enabled": True},
-            {"category": "通用", "zh": "立管压力", "en": "standpipe pressure", "es": "presión de tubería vertical", "aliases_en": "SPP", "aliases_es": "SPP", "protected": True, "enabled": True},
+            {"category": "钻井", "term_type": "上下文术语", "zh": "机械钻速", "en": "rate of penetration", "es": "tasa de penetración", "aliases_en": "ROP", "aliases_es": "ROP", "priority": 50, "strict_preserve": False, "protected": False, "enabled": True},
+            {"category": "通用", "term_type": "严格保护词", "zh": "SPP", "en": "SPP", "es": "SPP", "priority": 100, "strict_preserve": True, "protected": True, "enabled": True},
         ]
     else:
         rows = []
@@ -3609,12 +4169,15 @@ def _translation_terms_workbook_bytes(config: dict[str, object], *, template: bo
             aliases = term.get("aliases") if isinstance(term.get("aliases"), dict) else {}
             rows.append({
                 "category": TERM_CATEGORY_LABELS.get(_normalize_term_category(term.get("category")), "通用"),
+                "term_type": TERM_TYPE_LABELS.get(_normalize_term_type(term.get("term_type")), "固定标准术语"),
                 "zh": term.get("zh", ""),
                 "en": term.get("en", ""),
                 "es": term.get("es", ""),
                 "aliases_zh": "; ".join(str(value) for value in _list_value(aliases.get("zh")) if value),
                 "aliases_en": "; ".join(str(value) for value in _list_value(aliases.get("en")) if value),
                 "aliases_es": "; ".join(str(value) for value in _list_value(aliases.get("es")) if value),
+                "priority": _bounded_int(term.get("priority", 50), 0, 1000, 50),
+                "strict_preserve": bool(term.get("strict_preserve", False)),
                 "protected": bool(term.get("protected", True)),
                 "enabled": bool(term.get("enabled", True)),
             })
@@ -3632,22 +4195,25 @@ def _translation_terms_workbook_bytes(config: dict[str, object], *, template: bo
     for row_index, row in enumerate(rows, start=2):
         for column_index, (key, _) in enumerate(columns, start=1):
             value = row.get(key, "")
-            if key in {"protected", "enabled"}:
+            if key in {"protected", "strict_preserve", "enabled"}:
                 value = "是" if bool(value) else "否"
             worksheet.cell(row=row_index, column=column_index, value=value)
-    widths = [14, 22, 28, 30, 24, 28, 28, 12, 10]
+    widths = [14, 16, 22, 28, 30, 24, 28, 28, 10, 16, 12, 10]
     for column_index, width in enumerate(widths, start=1):
         worksheet.column_dimensions[worksheet.cell(row=1, column=column_index).column_letter].width = width
     worksheet.freeze_panes = "A2"
-    worksheet.auto_filter.ref = f"A1:I{max(len(rows) + 1, 2)}"
+    worksheet.auto_filter.ref = f"A1:L{max(len(rows) + 1, 2)}"
 
     instructions = workbook.create_sheet("填写说明")
     notes = [
         ("字段", "说明"),
         ("作业类型", "只填：通用、钻井、完井、修井、搬迁"),
+        ("术语类型", "只填：严格保护词、固定标准术语、上下文术语、行业短语"),
         ("中文 / English / Español", "每条至少填写两种语言，不要把整段日报描述当作术语"),
         ("别名", "多个别名用换行、逗号或分号分隔"),
-        ("锁定译法", "是：模型必须使用此译法；否：仅作为术语参考"),
+        ("优先级", "0～1000；同一原文命中多个术语时，优先级高的先使用"),
+        ("严格原样保留", "仅用于井号、品牌、型号、BHA编号或作业代码，不用于普通行业词"),
+        ("锁定译法", "旧模板兼容字段；新配置请使用术语类型和严格原样保留"),
         ("启用", "填写是或否"),
     ]
     for row_index, values in enumerate(notes, start=1):
@@ -3681,12 +4247,15 @@ def _parse_standard_translation_terms(upload: UploadedFile) -> list[dict[str, ob
 
     aliases = {
         "category": {"作业类型", "分类", "category", "operationtype", "reporttype"},
+        "term_type": {"术语类型", "类型", "termtype", "glossarytype"},
         "zh": {"中文", "中文术语", "chinese", "zh", "cn"},
         "en": {"英文", "英文术语", "english", "en"},
         "es": {"西班牙语", "西语", "español", "spanish", "es"},
         "aliases_zh": {"中文别名", "zhaliases", "chinesealiases"},
         "aliases_en": {"英文别名", "enaliases", "englishaliases"},
         "aliases_es": {"西语别名", "西班牙语别名", "esaliases", "spanishaliases"},
+        "priority": {"优先级", "priority", "rank"},
+        "strict_preserve": {"严格原样保留", "严格保护", "strictpreserve", "keepexact"},
         "protected": {"锁定译法", "锁定", "protected", "locked"},
         "enabled": {"启用", "enabled", "status"},
     }
@@ -3714,6 +4283,7 @@ def _parse_standard_translation_terms(upload: UploadedFile) -> list[dict[str, ob
                 continue
             candidates.append({
                 "category": _normalize_term_category(values.get("category", "general")),
+                "term_type": _normalize_term_type(values.get("term_type", "preferred")),
                 "zh": values.get("zh", ""),
                 "en": values.get("en", ""),
                 "es": values.get("es", ""),
@@ -3722,6 +4292,8 @@ def _parse_standard_translation_terms(upload: UploadedFile) -> list[dict[str, ob
                     "en": _split_import_aliases(values.get("aliases_en", "")),
                     "es": _split_import_aliases(values.get("aliases_es", "")),
                 },
+                "priority": _bounded_int(values.get("priority", 50), 0, 1000, 50),
+                "strict_preserve": _import_bool(values.get("strict_preserve"), False),
                 "protected": _import_bool(values.get("protected"), True),
                 "enabled": _import_bool(values.get("enabled"), True),
             })
@@ -3922,6 +4494,13 @@ TERM_CATEGORY_LABELS = {
     "move": "搬迁",
 }
 
+TERM_TYPE_LABELS = {
+    "protected": "严格保护词",
+    "preferred": "固定标准术语",
+    "contextual": "上下文术语",
+    "phrase": "行业短语",
+}
+
 LEGACY_TERM_CATEGORIES = {
     "operation": "drilling",
     "event": "drilling",
@@ -3973,6 +4552,9 @@ def _normalize_translation_terms_config(raw: object) -> dict[str, object]:
             "es": es,
             "aliases": aliases,
             "protected": bool(item.get("protected", True)),
+            "term_type": _normalize_term_type(item.get("term_type", "preferred")),
+            "strict_preserve": bool(item.get("strict_preserve", str(item.get("term_type", "")).strip().lower() == "protected")),
+            "priority": _bounded_int(item.get("priority", 50), 0, 1000, 50),
             "enabled": bool(item.get("enabled", True)),
             "updated_at": str(item.get("updated_at") or now),
         })
@@ -3985,6 +4567,19 @@ def _normalize_translation_terms_config(raw: object) -> dict[str, object]:
         "proper_nouns": _normalized_string_list(protected_source.get("proper_nouns", protected_defaults["proper_nouns"])),
     }
     return {"terms": terms, "protected_terms": protected_terms}
+
+
+def _normalize_term_type(value: object) -> str:
+    term_type = str(value or "preferred").strip().lower()
+    term_type = {
+        "严格保护词": "protected",
+        "严格保护": "protected",
+        "固定标准术语": "preferred",
+        "标准术语": "preferred",
+        "上下文术语": "contextual",
+        "行业短语": "phrase",
+    }.get(term_type, term_type)
+    return term_type if term_type in {"protected", "preferred", "contextual", "phrase"} else "preferred"
 
 
 def _default_protected_terms() -> dict[str, list[str]]:
@@ -4260,21 +4855,11 @@ def _read_audit_logs(limit: int = 100) -> list[dict[str, object]]:
 
 
 def _ensure_parent(path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    _runtime_ensure_parent(path)
 
 
 def _atomic_write_json(path: Path, value: object, *, private: bool = False) -> None:
-    _ensure_parent(path)
-    data = json.dumps(value, ensure_ascii=False, indent=2)
-    with CONFIG_WRITE_LOCK:
-        temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
-        try:
-            temporary.write_text(data, encoding="utf-8")
-            if private:
-                temporary.chmod(0o600)
-            os.replace(temporary, path)
-        finally:
-            temporary.unlink(missing_ok=True)
+    _runtime_atomic_write_json(path, value, private=private, lock=CONFIG_WRITE_LOCK)
 
 
 def main() -> None:
@@ -4292,6 +4877,7 @@ def main() -> None:
         return
     _ensure_admin_files()
     initialize_database(DATABASE_PATH)
+    _prune_translation_debug_logs()
     _resume_translation_jobs()
     _resume_extraction_jobs()
     server = ThreadingHTTPServer((args.host, args.port), FormHandler)
@@ -4832,6 +5418,29 @@ def _current_operation_translation(source_text: str, translation: dict[str, obje
     return "", status or "MISSING"
 
 
+def _current_operation_extraction(
+    source_text: str,
+    extraction: dict[str, object],
+    extraction_version: str,
+) -> tuple[str, str, str, str]:
+    if not extraction:
+        return "", "PENDING", "", ""
+    source_hash = hashlib.sha256(source_text.strip().encode("utf-8")).hexdigest()
+    source_matches = str(extraction.get("source_hash", "") or "") == source_hash
+    updated_at = str(extraction.get("updated_at", "") or "")
+    if not source_matches:
+        return "", "STALE", "", updated_at
+    status = str(extraction.get("extraction_status", "") or "").strip().upper() or "PENDING"
+    if status == "COMPLETED" and extraction_version and str(extraction.get("rule_version", "") or "") != extraction_version:
+        status = "STALE"
+    return (
+        str(extraction.get("result_text", "") or "").strip(),
+        status,
+        str(extraction.get("error_message", "") or ""),
+        updated_at,
+    )
+
+
 def _enrich_operation_translation_rows(rows: object) -> None:
     if not isinstance(rows, list):
         return
@@ -4850,6 +5459,43 @@ def _enrich_operation_translation_rows(rows: object) -> None:
         translated_text, status = _current_operation_translation(str(row.get("operation_details", "") or ""), translation)
         row["translated_operation_details"] = translated_text
         row["operation_translation_status"] = status
+
+
+def _enrich_operation_extraction_rows(rows: object) -> None:
+    if not isinstance(rows, list):
+        return
+    record_ids = list(dict.fromkeys(str(row.get("record_id", "") or "") for row in rows if isinstance(row, dict)))
+    extraction_version = str(_load_ai_extraction_config().get("version", "") or "")
+    results: list[dict[str, Any]] = []
+    try:
+        for record_id in record_ids:
+            results.extend(load_extraction_results(DATABASE_PATH, record_id))
+    except Exception:
+        results = []
+    index = {
+        (str(result.get("record_id", "") or ""), int(result.get("source_row_no", 0) or 0)): result
+        for result in results
+        if str(result.get("target_field", "") or "") == "service_line"
+        and str(result.get("source_section", "") or "") == "operations"
+    }
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        record_id = str(row.get("record_id", "") or "")
+        row_no = int(row.get("row_no", 0) or 0)
+        op_type = str(row.get("system_op_type", "") or "").strip().upper()
+        if op_type == "NPT":
+            service_line, status, error, updated_at = _current_operation_extraction(
+                str(row.get("operation_details", "") or ""),
+                index.get((record_id, row_no), {}),
+                extraction_version,
+            )
+        else:
+            service_line, status, error, updated_at = "", "NOT_REQUIRED", "", ""
+        row["service_line"] = service_line
+        row["extraction_status"] = status
+        row["extraction_error"] = error
+        row["extraction_updated_at"] = updated_at
 
 
 def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
@@ -4980,11 +5626,14 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                 record_id = str(matched_record.get("record_id", "") or "")
                 translation = translation_index.get((record_id, f"{record_id}:operations:{row_no}"), {})
                 translated_operation_details, operation_translation_status = _current_operation_translation(operation_details, translation)
-                source_matches = str(extraction.get("source_hash", "") or "") == hashlib.sha256(operation_details.strip().encode("utf-8")).hexdigest()
-                extraction_status = str(extraction.get("extraction_status", "") or "") if source_matches else ""
-                if extraction_status == "COMPLETED" and extraction_version and str(extraction.get("rule_version", "") or "") != extraction_version:
-                    extraction_status = "STALE"
-                extracted_service_line = str(extraction.get("result_text", "") or "").strip() if source_matches else ""
+                if op_type == "NPT":
+                    extracted_service_line, extraction_status, extraction_error, extraction_updated_at = _current_operation_extraction(
+                        operation_details,
+                        extraction,
+                        extraction_version,
+                    )
+                else:
+                    extracted_service_line, extraction_status, extraction_error, extraction_updated_at = "", "NOT_REQUIRED", "", ""
                 fact = {
                     "record_id": matched_record.get("record_id", ""),
                     "report_type": matched_record.get("report_type", ""),
@@ -5009,9 +5658,9 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                     "operation_translation_error": str(translation.get("error_message", "") or ""),
                     "source_row_no": row_no,
                     "service_line": extracted_service_line or str(row.get("service_line", "") or ""),
-                    "extraction_status": extraction_status or str(matched_record.get("extraction_status", "") or ""),
-                    "extraction_error": str(extraction.get("error_message", "") or matched_record.get("extraction_error", "") or ""),
-                    "extraction_updated_at": str(extraction.get("updated_at", "") or matched_record.get("extraction_updated_at", "") or ""),
+                    "extraction_status": extraction_status,
+                    "extraction_error": extraction_error,
+                    "extraction_updated_at": extraction_updated_at,
                 }
                 fact["time_range"] = _operation_time_range(fact)
                 fact["reason"] = _operation_category(fact)
@@ -5230,14 +5879,6 @@ def _truthy(value: object) -> bool:
 def _bounded_int(value: object, minimum: int, maximum: int, default: int) -> int:
     try:
         parsed = int(float(str(value or "").strip()))
-    except ValueError:
-        parsed = default
-    return max(minimum, min(maximum, parsed))
-
-
-def _bounded_float(value: object, minimum: float, maximum: float, default: float) -> float:
-    try:
-        parsed = float(str(value or "").strip())
     except ValueError:
         parsed = default
     return max(minimum, min(maximum, parsed))

@@ -1,23 +1,20 @@
 from __future__ import annotations
 
 import re
-from io import BytesIO
 from pathlib import Path
 from typing import Any, BinaryIO
-
-import pdfplumber
 
 from .completion_pdf_parser import (
     NUM_RE,
     TIME_TOKEN_RE,
     _clean,
     _collect_block,
-    _extract_page,
     _first_line,
-    _num,
-    _reader,
-    _source_payload,
 )
+from .pdf_io import extract_page as _extract_page
+from .pdf_io import pdfplumber_open as _pdfplumber_open
+from .pdf_io import reader as _reader
+from .pdf_io import source_payload as _source_payload
 from .text_structure import column_text as _structured_column_text
 from .text_structure import normalize_multiline
 
@@ -142,12 +139,6 @@ def _parse_operations(source: str | Path | bytes) -> list[dict[str, str]]:
         for page in pdf.pages:
             rows.extend(_parse_operation_page(page))
     return rows
-
-
-def _pdfplumber_open(source: str | Path | bytes):
-    if isinstance(source, (str, Path)):
-        return pdfplumber.open(str(source))
-    return pdfplumber.open(BytesIO(source))
 
 
 def _parse_operation_page(page) -> list[dict[str, str]]:

@@ -233,8 +233,26 @@ python3 -m drilling_report_parser.translate_cli examples/mixed_drilling_report.j
 ## 开发测试
 
 ```bash
-python -m unittest
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+python -m compileall -q drilling_report_parser scripts
+node --check web_form/app.js
+node --check web_form/admin.js
+node --check web_form/login.js
 ```
+
+### 代码结构
+
+- `form_server.py`：HTTP 路由、权限校验和业务流程编排，不承载通用文件算法。
+- `runtime_files.py`：配置原子写入、JSONL 追加、轮转和保留策略。
+- `database_common.py`：MySQL 与历史 Excel 适配器共享的记录 ID、日报类型和 NPT 状态规则。
+- `pdf_io.py`：钻井、完井、修井和搬迁解析器共享的 PDF 输入适配。
+- `translation/service.py`：翻译引擎、翻译管线和质量校验。
+- `translation/experience.py`：翻译失败原因诊断。
+- `translation/experience_store.py`：经验建议的持久化、合并和状态流转。
+- `web_form/http-client.js`：登录、前台和后台共用的同源 JSON 请求客户端。
+
+业务模块新增能力时应优先放入相应领域模块，由 `form_server.py` 负责调用；避免继续把文件读写、状态归并或解析器公共能力直接写进 HTTP Handler。
 
 ## MySQL 本地数据库
 

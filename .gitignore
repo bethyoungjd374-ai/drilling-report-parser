@@ -11,3 +11,11 @@ outputs/translation_tuning.json
 outputs/users.json
 outputs/system_config.json
 outputs/audit_logs.jsonl
+outputs/ai_job_monitor.jsonl.*
+outputs/translation_debug_logs.jsonl
+outputs/translation_debug_logs.jsonl.*
+outputs/translation_experience.json
+outputs/diagnostics/
+outputs/translation_batch_before_fix.json
+outputs/translation_terms.before-cleanup-*.json
+outputs/translation_terms_cleanup_report.json

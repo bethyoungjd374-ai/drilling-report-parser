@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Any
 
 from openpyxl import Workbook
@@ -387,12 +386,6 @@ def build_move_report_workbook(payload: dict[str, Any]) -> Workbook:
     ws.print_area = f"A1:L{row}"
     _apply_global(ws, row)
     return wb
-
-
-def workbook_bytes(workbook: Workbook) -> bytes:
-    stream = BytesIO()
-    workbook.save(stream)
-    return stream.getvalue()
 
 
 def _v(fields: dict[str, Any], key: str) -> str:

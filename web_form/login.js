@@ -109,12 +109,6 @@ function applyLoginLanguage(language) {
   document.querySelector('[name="newPassword"]')?.setAttribute("aria-label", authText("newPassword"));
 }
 
-function nextUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const next = params.get("next") || "";
-  return next.startsWith("/") ? next : "/web_form/";
-}
-
 function defaultUrlFor(user, permissions = {}) {
   const params = new URLSearchParams(window.location.search);
   const next = params.get("next") || "";
@@ -125,14 +119,7 @@ function defaultUrlFor(user, permissions = {}) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || "请求失败");
-  return payload;
+  return window.NexoHttp.requestJson(path, options, "请求失败");
 }
 
 async function checkExistingSession() {

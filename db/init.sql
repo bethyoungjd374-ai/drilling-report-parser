@@ -95,6 +95,50 @@ CREATE TABLE IF NOT EXISTS translation_content (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS translation_memory (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  source_language VARCHAR(16) NOT NULL DEFAULT '',
+  target_language VARCHAR(16) NOT NULL,
+  source_text MEDIUMTEXT NOT NULL,
+  source_hash VARCHAR(64) NOT NULL,
+  translated_text MEDIUMTEXT NOT NULL,
+  report_type VARCHAR(32) NOT NULL DEFAULT '',
+  operation_category VARCHAR(64) NOT NULL DEFAULT '',
+  field_code VARCHAR(128) NOT NULL DEFAULT '',
+  source_record_id VARCHAR(191) NOT NULL DEFAULT '',
+  confirmed VARCHAR(16) NOT NULL DEFAULT 'true',
+  confirmed_by VARCHAR(128) NOT NULL DEFAULT '',
+  usage_count INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at VARCHAR(64) NOT NULL DEFAULT '',
+  updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_translation_memory_scope (target_language, source_hash, report_type, field_code),
+  KEY idx_translation_memory_confirmed (target_language, confirmed, source_hash),
+  KEY idx_translation_memory_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS translation_revisions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  record_id VARCHAR(191) NOT NULL,
+  entity_id VARCHAR(255) NOT NULL,
+  field_code VARCHAR(128) NOT NULL,
+  target_language VARCHAR(16) NOT NULL,
+  source_text MEDIUMTEXT NULL,
+  previous_text MEDIUMTEXT NULL,
+  revised_text MEDIUMTEXT NOT NULL,
+  revision_type VARCHAR(32) NOT NULL DEFAULT 'manual',
+  editor VARCHAR(128) NOT NULL DEFAULT '',
+  note TEXT NULL,
+  created_at VARCHAR(64) NOT NULL DEFAULT '',
+  inserted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_translation_revisions_record (record_id, target_language, created_at),
+  CONSTRAINT fk_translation_revisions_record
+    FOREIGN KEY (record_id) REFERENCES report_records(record_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS ai_extraction_results (
   record_id VARCHAR(191) NOT NULL,
   rule_id VARCHAR(80) NOT NULL,

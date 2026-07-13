@@ -7,6 +7,7 @@ import os
 import re
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -32,9 +33,17 @@ TARGET_LANGUAGE = "zh-CN"
 PROMPT_VERSION = "drilling-daily-v7"
 DEFAULT_SYSTEM_PROMPT = "你是石油钻完井日报专业翻译器，熟悉钻井、完井、修井和搬迁作业术语。"
 DEFAULT_TRANSLATION_INSTRUCTION = "不得总结、删减、解释或添加说明；保持原文信息顺序和技术含义。"
+DEFAULT_BUSINESS_PROMPT_TEMPLATES = (
+    ("drilling", "结合钻进、循环、起下钻、BHA、井深及钻井参数的作业时序，使用中国钻井日报常用表达。"),
+    ("completion", "结合完井管柱、射孔、压裂、测试和井口作业语义，使用中国完井日报常用表达。"),
+    ("workover", "结合修井管柱、打捞、冲洗、试压和井筒处置语义，使用中国修井日报常用表达。"),
+    ("move", "结合钻机搬迁、运输、吊装、组装和场地作业时序，使用中国钻机搬迁日报常用表达。"),
+)
 DEFAULT_OLLAMA_CHUNK_CHARS = 6000
 DEFAULT_OPENAI_COMPATIBLE_CHUNK_CHARS = 2500
-TRANSLATION_PIPELINE_VERSION = "report-context-v8-coherent-protected-chunks"
+TRANSLATION_PIPELINE_VERSION = "report-context-v9-contextual-source"
+TRANSLATION_PIPELINE_MODES = {"contextual", "legacy"}
+TERM_TYPES = {"protected", "preferred", "contextual", "phrase"}
 TRANSLATABLE_REPORT_FIELDS = {
     "currentOps",
     "summary24h",
@@ -148,6 +157,13 @@ class TranslationTuningConfig:
     protect_units: bool = True
     protect_acronyms: bool = True
     protect_proper_nouns: bool = True
+    protection_mode: str = "prompt"
+    ambiguous_units: tuple[str, ...] = ()
+    unit_aliases: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    unit_context_exclusions: tuple[tuple[str, str], ...] = ()
+    experience_rules: tuple[tuple[str, str, str], ...] = ()
+    pipeline_mode: str = "contextual"
+    prompt_templates: tuple[tuple[str, str], ...] = DEFAULT_BUSINESS_PROMPT_TEMPLATES
     version: str = PROMPT_VERSION
     scope_rules: tuple[tuple[str, str, str], ...] = ()
 
@@ -192,7 +208,60 @@ class TranslationTuningConfig:
             if section and field_name:
                 scope_rules.append((report_type, section, field_name))
         prompt = source.get("prompt") if isinstance(source.get("prompt"), dict) else {}
+        raw_templates = source.get("prompt_templates") if isinstance(source.get("prompt_templates"), dict) else {}
+        prompt_templates = tuple(
+            (report_type, str(raw_templates.get(report_type, default_text) or default_text).strip())
+            for report_type, default_text in DEFAULT_BUSINESS_PROMPT_TEMPLATES
+        )
         protections = source.get("protections") if isinstance(source.get("protections"), dict) else {}
+        protection_mode = str(protections.get("mode", "prompt") or "prompt").strip().lower()
+        if protection_mode not in {"prompt", "placeholder"}:
+            protection_mode = "prompt"
+        ambiguous_units = tuple(
+            dict.fromkeys(
+                str(item or "").strip().casefold()
+                for item in (protections.get("ambiguous_units") if isinstance(protections.get("ambiguous_units"), list) else [])
+                if str(item or "").strip()
+            )
+        )
+        raw_unit_aliases = protections.get("unit_aliases") if isinstance(protections.get("unit_aliases"), dict) else {}
+        unit_aliases = tuple(sorted(
+            (
+                str(unit or "").strip().casefold(),
+                _string_tuple(aliases),
+            )
+            for unit, aliases in raw_unit_aliases.items()
+            if str(unit or "").strip() and _string_tuple(aliases)
+        ))
+        unit_context_exclusions: list[tuple[str, str]] = []
+        raw_exclusions = protections.get("unit_context_exclusions") if isinstance(protections.get("unit_context_exclusions"), list) else []
+        for item in raw_exclusions:
+            if not isinstance(item, dict):
+                continue
+            pattern = str(item.get("pattern", "") or "").strip()
+            raw_units = item.get("units") if isinstance(item.get("units"), list) else [item.get("unit", "")]
+            if not pattern:
+                continue
+            for configured_unit in raw_units:
+                unit = str(configured_unit or "").strip().casefold()
+                if unit:
+                    unit_context_exclusions.append((unit, pattern))
+        experience_rules: list[tuple[str, str, str]] = []
+        raw_experience_rules = source.get("experience_rules") if isinstance(source.get("experience_rules"), list) else []
+        for item in raw_experience_rules:
+            if not isinstance(item, dict) or not item.get("enabled", True):
+                continue
+            instruction = str(item.get("instruction", "") or "").strip()
+            if not instruction:
+                continue
+            experience_rules.append((
+                str(item.get("report_type", "") or "").strip().lower(),
+                str(item.get("field_code", "") or "").strip(),
+                instruction,
+            ))
+        pipeline_mode = str(source.get("pipeline_mode", "contextual") or "contextual").strip().lower()
+        if pipeline_mode not in TRANSLATION_PIPELINE_MODES:
+            pipeline_mode = "contextual"
         return cls(
             report_fields=report_fields,
             row_fields=row_fields,
@@ -202,6 +271,13 @@ class TranslationTuningConfig:
             protect_units=bool(protections.get("units", True)),
             protect_acronyms=bool(protections.get("acronyms", True)),
             protect_proper_nouns=bool(protections.get("proper_nouns", True)),
+            protection_mode=protection_mode,
+            ambiguous_units=ambiguous_units,
+            unit_aliases=unit_aliases,
+            unit_context_exclusions=tuple(unit_context_exclusions),
+            experience_rules=tuple(experience_rules),
+            pipeline_mode=pipeline_mode,
+            prompt_templates=prompt_templates,
             version=str(source.get("version", "") or PROMPT_VERSION).strip(),
             scope_rules=tuple(sorted(set(scope_rules))),
         )
@@ -216,6 +292,9 @@ class TermEntry:
     es: str = ""
     aliases: dict[str, tuple[str, ...]] = field(default_factory=dict)
     protected: bool = True
+    term_type: str = "preferred"
+    strict_preserve: bool = False
+    priority: int = 50
     enabled: bool = True
     updated_at: str = ""
 
@@ -234,6 +313,10 @@ class TermEntry:
                 if alias_text:
                     values.append((normalize_language(language), alias_text))
         return values
+
+    @property
+    def glossary_type(self) -> str:
+        return self.term_type if self.term_type in TERM_TYPES else "preferred"
 
 
 @dataclass(frozen=True)
@@ -280,6 +363,7 @@ class TextUnit:
     entity_type: str
     entity_id: str
     field_code: str
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 class OllamaTranslationEngine:
@@ -292,12 +376,22 @@ class OllamaTranslationEngine:
         temperature: float = 0.0,
         thinking_mode: str = "disabled",
         request_options: dict[str, Any] | None = None,
+        telemetry: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.temperature = temperature
         self.thinking_mode = _normalize_thinking_mode(thinking_mode)
         self.request_options = _safe_request_options(request_options)
+        self.telemetry = telemetry
+
+    def _trace(self, event: str, **fields: Any) -> None:
+        if not self.telemetry:
+            return
+        try:
+            self.telemetry({"event": event, "provider": self.name, "model": self.model, **fields})
+        except Exception:
+            pass
 
     def translate_items(self, items: list[dict[str, Any]], target_language: str, timeout_seconds: float) -> dict[str, str]:
         if not items:
@@ -308,17 +402,25 @@ class OllamaTranslationEngine:
             translated = self._request_translation(items, target_language, timeout_seconds, strict=False)
         except Exception:
             translated = self._request_translation(items, target_language, timeout_seconds, strict=True)
-        invalid_ids = [
-            str(item.get("id", ""))
+        invalid_errors = {
+            str(item.get("id", "")): error
             for item in items
-            if _translation_quality_error(
+            if (error := _translation_quality_error(
                 str(item.get("source_text", "") or ""),
                 str(translated.get(str(item.get("id", "")), "") or ""),
                 target_language,
-            )
-        ]
-        if invalid_ids:
-            retry_items = [item for item in items if str(item.get("id", "")) in invalid_ids]
+            ))
+        }
+        if invalid_errors:
+            retry_items = [
+                _translation_repair_item(
+                    item,
+                    str(translated.get(str(item.get("id", "")), "") or ""),
+                    invalid_errors[str(item.get("id", ""))],
+                )
+                for item in items
+                if str(item.get("id", "")) in invalid_errors
+            ]
             translated.update(self._request_translation(retry_items, target_language, timeout_seconds, strict=True))
         quality_errors = {
             str(item.get("id", "")): _translation_quality_error(
@@ -387,7 +489,27 @@ class OllamaTranslationEngine:
         payload.update(self.request_options)
         payload["model"] = self.model
         payload["prompt"] = _ollama_batch_prompt(items, target_language, strict=strict)
-        data = _post_json(f"{self.base_url}/api/generate", payload, timeout_seconds)
+        endpoint = f"{self.base_url}/api/generate"
+        started = time.monotonic()
+        self._trace(
+            "model_wire_request",
+            target_language=target_language,
+            strict=strict,
+            endpoint=endpoint,
+            request_payload=payload,
+        )
+        try:
+            data = _post_json(endpoint, payload, timeout_seconds)
+        except Exception as exc:
+            self._trace("model_wire_response", target_language=target_language, strict=strict, elapsed_ms=round((time.monotonic() - started) * 1000), error=str(exc))
+            raise
+        self._trace(
+            "model_wire_response",
+            target_language=target_language,
+            strict=strict,
+            elapsed_ms=round((time.monotonic() - started) * 1000),
+            raw_response=data,
+        )
         response = str(data.get("response", "") if isinstance(data, dict) else "")
         parsed = _json_object_from_text(response)
         raw_items = parsed.get("items")
@@ -411,6 +533,7 @@ class OpenAICompatibleTranslationEngine:
         temperature: float = 0.0,
         thinking_mode: str = "auto",
         request_options: dict[str, Any] | None = None,
+        telemetry: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -418,6 +541,15 @@ class OpenAICompatibleTranslationEngine:
         self.temperature = temperature
         self.thinking_mode = _normalize_thinking_mode(thinking_mode)
         self.request_options = _safe_request_options(request_options)
+        self.telemetry = telemetry
+
+    def _trace(self, event: str, **fields: Any) -> None:
+        if not self.telemetry:
+            return
+        try:
+            self.telemetry({"event": event, "provider": self.name, "model": self.model, **fields})
+        except Exception:
+            pass
 
     def translate_items(self, items: list[dict[str, Any]], target_language: str, timeout_seconds: float) -> dict[str, str]:
         if not items:
@@ -431,26 +563,27 @@ class OpenAICompatibleTranslationEngine:
                 translated = self._request_translation(items, target_language, timeout_seconds, strict=True)
             except TranslationResponseError as exc:
                 raise TranslationQualityError(str(exc)) from exc
-        invalid_ids = {
-            str(item.get("id", ""))
+        invalid_errors = {
+            str(item.get("id", "")): error
             for item in items
-            if _openai_item_quality_error(
+            if (error := _openai_item_quality_error(
                 item,
                 str(translated.get(str(item.get("id", "")), "") or ""),
                 target_language,
-            )
+            ))
         }
-        if invalid_ids:
+        if invalid_errors:
             # A successful batch response can still contain copied source text or
             # otherwise unusable translations. Retrying the same batch and prompt
             # tends to reproduce that response (and makes long batches more likely
             # to time out), so recover only the invalid items with the strict prompt.
             for item in items:
                 item_id = str(item.get("id", ""))
-                if item_id not in invalid_ids:
+                if item_id not in invalid_errors:
                     continue
+                retry_item = _translation_repair_item(item, str(translated.get(item_id, "") or ""), invalid_errors[item_id])
                 retry_result = self._request_translation(
-                    [item],
+                    [retry_item],
                     target_language,
                     timeout_seconds,
                     strict=True,
@@ -544,11 +677,26 @@ class OpenAICompatibleTranslationEngine:
             else:
                 payload["chat_template_kwargs"] = {"enable_thinking": self.thinking_mode == "enabled"}
         payload.update(self.request_options)
-        data = _post_json(
-            _chat_completions_url(self.base_url),
-            payload,
-            timeout_seconds,
-            headers=_auth_headers(self.api_key),
+        endpoint = _chat_completions_url(self.base_url)
+        started = time.monotonic()
+        self._trace(
+            "model_wire_request",
+            target_language=target_language,
+            strict=strict,
+            endpoint=endpoint,
+            request_payload=payload,
+        )
+        try:
+            data = _post_json(endpoint, payload, timeout_seconds, headers=_auth_headers(self.api_key))
+        except Exception as exc:
+            self._trace("model_wire_response", target_language=target_language, strict=strict, elapsed_ms=round((time.monotonic() - started) * 1000), error=str(exc))
+            raise
+        self._trace(
+            "model_wire_response",
+            target_language=target_language,
+            strict=strict,
+            elapsed_ms=round((time.monotonic() - started) * 1000),
+            raw_response=data,
         )
         content = _chat_content(data)
         choices = data.get("choices") if isinstance(data, dict) else []
@@ -602,10 +750,13 @@ class DrillingReportTranslator:
         self.chunk_max_chars = _translation_chunk_max_chars(engine.name, chunk_max_chars)
         self._term_matchers = _compiled_term_matchers(terms.entries, self.target_language)
         self._term_source_matchers = _compiled_glossary_matchers(terms.entries)
-        self._protected_acronym_matchers = _compiled_literal_matchers(terms.acronyms)
+        self._protected_acronym_matchers = _compiled_literal_matchers(terms.acronyms, case_sensitive=True)
         self._protected_unit_matchers = _compiled_literal_matchers(terms.units, unit=True)
         self._protected_proper_noun_matchers = _compiled_literal_matchers(terms.proper_nouns)
         self._protected_measurement_matcher = _compiled_measurement_matcher(terms.units)
+        self._ambiguous_units = frozenset(self.tuning.ambiguous_units)
+        self._unit_target_aliases = dict(self.tuning.unit_aliases)
+        self._unit_context_exclusions = _compiled_unit_context_exclusions(self.tuning.unit_context_exclusions)
         self._term_glossary_cache: dict[tuple[str, str], list[dict[str, str]]] = {}
         model_identity = f"{self.engine.name}:{getattr(self.engine, 'model', '')}:{self.model_config_id}"
         self.prompt_version = translation_memory_version(terms, self.tuning, self.target_language, model_identity)
@@ -738,8 +889,19 @@ class DrillingReportTranslator:
             source_text = _clean_text(unit.text)
             if not source_text:
                 continue
+            cleaned_source_text, cleanup_actions = clean_translation_source(source_text)
+            if not cleaned_source_text:
+                cleaned_source_text = source_text
+            if cleanup_actions:
+                self._emit_telemetry(
+                    "translation_source_cleaned",
+                    field_code=unit.field_code,
+                    original_source_text=source_text,
+                    cleaned_source_text=cleaned_source_text,
+                    cleanup_actions=cleanup_actions,
+                )
             source_chars += len(source_text)
-            source_language = detect_language(source_text)
+            source_language = detect_language(cleaned_source_text)
             base = {
                 "entity_type": unit.entity_type,
                 "entity_id": unit.entity_id,
@@ -754,19 +916,25 @@ class DrillingReportTranslator:
                 "created_at": now,
                 "updated_at": now,
             }
-            if not text_needs_translation(source_text, target_language):
-                rows.append({**base, "translated_text": _normalize_item_layout(unit.field_code, source_text), "translation_status": "NOT_REQUIRED", "error_message": ""})
+            if not text_needs_translation(cleaned_source_text, target_language):
+                rows.append({**base, "translated_text": _normalize_item_layout(unit.field_code, cleaned_source_text), "translation_status": "NOT_REQUIRED", "error_message": ""})
                 continue
             memory_text = str(self.translation_memory.get(base["source_hash"], "") or "").strip()
-            if memory_text and not _translation_quality_error(source_text, memory_text, target_language):
+            if memory_text and not _translation_quality_error(cleaned_source_text, memory_text, target_language):
                 rows.append({**base, "translated_text": _normalize_item_layout(unit.field_code, memory_text), "translation_status": "COMPLETED", "error_message": ""})
                 self._emit_telemetry("memory_hit", target_language=target_language, field_code=unit.field_code, source_chars=len(source_text))
                 continue
             glossary_started = time.monotonic()
-            glossary = self._term_glossary(source_text, target_language)
-            model_source_text = _normalize_item_layout(unit.field_code, source_text)
-            protected_text, protected_tokens = self._protect_source_text(model_source_text, target_language)
-            preserve_terms = self._preserve_terms(source_text, glossary)
+            glossary = self._term_glossary(cleaned_source_text, target_language)
+            model_source_text = _normalize_item_layout(unit.field_code, cleaned_source_text)
+            if self.tuning.pipeline_mode == "legacy" or self.tuning.protection_mode == "placeholder":
+                request_source_text, protected_tokens = self._protect_source_text(model_source_text, target_language)
+            else:
+                # Contextual mode deliberately keeps the complete source text in
+                # the model request. Terms are supplied as side-channel guidance
+                # and deterministic checks run after translation.
+                request_source_text, protected_tokens = model_source_text, []
+            preserve_terms = self._preserve_terms(cleaned_source_text, glossary)
             protected_source_terms = {
                 normalize_inline(item.get("source", "")).casefold()
                 for item in protected_tokens
@@ -776,9 +944,9 @@ class DrillingReportTranslator:
                 term for term in preserve_terms
                 if normalize_inline(term).casefold() not in protected_source_terms
             ]
-            remaining_prose = _PROTECTED_PLACEHOLDER_PATTERN.sub("", protected_text)
-            if not text_needs_translation(remaining_prose, target_language):
-                deterministic_text = protected_text
+            remaining_prose = _PROTECTED_PLACEHOLDER_PATTERN.sub("", request_source_text)
+            if self.tuning.pipeline_mode == "legacy" and not text_needs_translation(remaining_prose, target_language):
+                deterministic_text = request_source_text
                 for token_data in protected_tokens:
                     token = str(token_data.get("token", "") or "")
                     replacement = str(token_data.get("replacement", "") or "")
@@ -788,21 +956,24 @@ class DrillingReportTranslator:
                 status = "COMPLETED" if deterministic_text != source_text else "NOT_REQUIRED"
                 rows.append({**base, "translated_text": deterministic_text, "translation_status": status, "error_message": ""})
                 continue
+            if self.tuning.pipeline_mode == "contextual" and _is_technical_literal_fragment(model_source_text):
+                rows.append({**base, "translated_text": model_source_text, "translation_status": "NOT_REQUIRED", "error_message": ""})
+                continue
             glossary_seconds += time.monotonic() - glossary_started
             glossary_hits += len(glossary)
             pending.append({
                 "id": str(len(pending)),
                 "unit": unit,
                 "base": base,
-                "source_text": protected_text,
-                "monitor_source_text": source_text,
+                "source_text": request_source_text,
+                "monitor_source_text": cleaned_source_text,
                 "source_language": source_language,
                 "glossary": glossary,
                 "preserve_terms": preserve_terms,
                 "field_code": unit.field_code,
                 "paragraph_layout": _uses_paragraph_layout(unit.field_code),
                 "context_group": _translation_context_group(unit),
-                "prompt_context": self._prompt_context(protected_tokens, report_context),
+                "prompt_context": self._prompt_context(protected_tokens, report_context, unit.context),
                 "protected_tokens": protected_tokens,
             })
 
@@ -880,6 +1051,27 @@ class DrillingReportTranslator:
                     translated_count=len([item for item in chunk if translated.get(item["id"])]),
                     elapsed_ms=round((time.monotonic() - chunk_started) * 1000),
                 )
+            for item, row in zip(chunk, chunk_rows):
+                translated_text = str(row.get("translated_text", "") or "")
+                self._emit_telemetry(
+                    "translation_item_final",
+                    target_language=target_language,
+                    entity_type=row.get("entity_type", ""),
+                    entity_id=row.get("entity_id", ""),
+                    field_code=row.get("field_code", ""),
+                    original_source_text=item.get("monitor_source_text", ""),
+                    model_source_text=item.get("source_text", ""),
+                    matched_terms=item.get("glossary", []),
+                    protected_terms=item.get("preserve_terms", []),
+                    prompt_context=item.get("prompt_context", {}),
+                    final_text=translated_text,
+                    translation_status=row.get("translation_status", ""),
+                    error_message=row.get("error_message", ""),
+                    quality_checks=(
+                        self.quality_checks(str(item.get("monitor_source_text", "") or ""), translated_text, target_language)
+                        if translated_text else []
+                    ),
+                )
             rows.extend(chunk_rows)
             if chunk_rows and on_rows:
                 on_rows(list(chunk_rows))
@@ -888,24 +1080,124 @@ class DrillingReportTranslator:
                 on_progress(completed_units, len(units))
         return rows
 
-    def prompt_preview(self, text: str, target_language: str) -> str:
-        source_text = _clean_text(text)
-        protected_text, protected_tokens = self._protect_source_text(source_text, target_language)
-        item = {
-            "id": "0",
-            "source_language": detect_language(source_text),
-            "source_text": protected_text,
-            "monitor_source_text": source_text,
-            "glossary": self._term_glossary(source_text, target_language),
-            "prompt_context": self._prompt_context(protected_tokens),
-            "protected_tokens": protected_tokens,
-        }
+    def prompt_preview(
+        self,
+        text: str,
+        target_language: str,
+        *,
+        report_context: dict[str, Any] | None = None,
+        event_context: dict[str, Any] | None = None,
+        field_code: str = "translation_test.text",
+    ) -> str:
+        item = self.translation_diagnostics(
+            text,
+            target_language,
+            report_context=report_context,
+            event_context=event_context,
+            field_code=field_code,
+        )["request_item"]
         if str(self.engine.name or "").lower() == "openai-compatible":
             return (
                 f"System:\n{_prompt_system_message([item])}\n\n"
                 f"User:\n{_openai_batch_prompt([item], target_language, strict=False)}"
             )
         return _ollama_batch_prompt([item], target_language, strict=False)
+
+    def translation_diagnostics(
+        self,
+        text: str,
+        target_language: str,
+        *,
+        report_context: dict[str, Any] | None = None,
+        event_context: dict[str, Any] | None = None,
+        field_code: str = "translation_test.text",
+    ) -> dict[str, Any]:
+        source_text = _clean_text(text)
+        cleaned_source_text, cleanup_actions = clean_translation_source(source_text)
+        cleaned_source_text = cleaned_source_text or source_text
+        if self.tuning.pipeline_mode == "legacy" or self.tuning.protection_mode == "placeholder":
+            request_source_text, protected_tokens = self._protect_source_text(cleaned_source_text, target_language)
+        else:
+            request_source_text, protected_tokens = cleaned_source_text, []
+        glossary = self._term_glossary(cleaned_source_text, target_language)
+        preserve_terms = self._preserve_terms(cleaned_source_text, glossary)
+        item = {
+            "id": "0",
+            "field_code": field_code,
+            "source_language": detect_language(source_text),
+            "source_text": request_source_text,
+            "monitor_source_text": cleaned_source_text,
+            "glossary": glossary,
+            "preserve_terms": preserve_terms,
+            "prompt_context": self._prompt_context(protected_tokens, report_context, event_context),
+            "protected_tokens": protected_tokens,
+        }
+        return {
+            "pipeline_mode": self.tuning.pipeline_mode,
+            "source_text": source_text,
+            "cleaned_source_text": cleaned_source_text,
+            "cleanup_actions": cleanup_actions,
+            "request_source_text": request_source_text,
+            "matched_terms": glossary,
+            "protected_terms": preserve_terms,
+            "placeholder_count": len(protected_tokens),
+            "request_item": item,
+        }
+
+    def quality_checks(self, source_text: str, translated_text: str, target_language: str | None = None) -> list[dict[str, str]]:
+        language = normalize_language(target_language or self.target_language)
+        glossary = self._term_glossary(source_text, language)
+        preserve_terms = self._preserve_terms(source_text, glossary)
+        checks: list[dict[str, str]] = []
+        number_error = _numeric_quality_error(source_text, translated_text, language) if self.tuning.protect_numbers else ""
+        checks.append({
+            "rule": "number_integrity",
+            "label": "数字与数值精度",
+            "status": "failed" if number_error else "passed",
+            "detail": number_error,
+        })
+        missing_preserved = [term for term in preserve_terms if normalize_inline(term).casefold() not in normalize_inline(translated_text).casefold()]
+        checks.append({
+            "rule": "protected_terms",
+            "label": "编号、型号与严格保护项",
+            "status": "failed" if missing_preserved else "passed",
+            "detail": f"missing={missing_preserved[:8]}" if missing_preserved else "",
+        })
+        unit_error = _semantic_unit_quality_error(
+            source_text,
+            translated_text,
+            self._protected_unit_matchers,
+            aliases=self._unit_target_aliases,
+            ambiguous_units=self._ambiguous_units,
+            exclusions=self._unit_context_exclusions,
+        ) if self.tuning.protect_units else ""
+        checks.append({
+            "rule": "unit_integrity",
+            "label": "计量单位语义",
+            "status": "failed" if unit_error else "passed",
+            "detail": unit_error,
+        })
+        action_warning = _action_completeness_warning(source_text, translated_text)
+        checks.append({
+            "rule": "action_completeness",
+            "label": "主要作业动作",
+            "status": "warning" if action_warning else "passed",
+            "detail": action_warning,
+        })
+        preferred_missing = [
+            str(item.get("target", "") or "")
+            for item in glossary
+            if item.get("type") in {"preferred", "phrase"}
+            and str(item.get("target", "") or "")
+            and str(item.get("target", "") or "").casefold() not in translated_text.casefold()
+        ]
+        checks.append({
+            "rule": "terminology_consistency",
+            "label": "标准术语口径",
+            "status": "warning" if preferred_missing else "passed",
+            "detail": f"not_used={preferred_missing[:8]}" if preferred_missing else "",
+        })
+        return checks
 
     def _translate_items_one_by_one(
         self,
@@ -1081,7 +1373,10 @@ class DrillingReportTranslator:
                 part_id = f"{item_id}::protected-part-{index}"
                 ids.append(part_id)
                 natural_fragment = _PROTECTED_PLACEHOLDER_PATTERN.sub("", part.text)
-                if _is_technical_literal_fragment(natural_fragment):
+                if (
+                    _is_technical_literal_fragment(natural_fragment)
+                    or _is_deterministic_protected_fragment(part_id, part.text)
+                ):
                     part_results[part_id] = part.text
                     continue
                 part_item = _translation_part_item(item, part_id, part.text)
@@ -1212,7 +1507,13 @@ class DrillingReportTranslator:
         def add_matches(matchers: list[tuple[str, re.Pattern[str]]], priority: int, *, units: bool = False) -> None:
             for configured_value, matcher in matchers:
                 for match in matcher.finditer(text):
-                    if units and not _unit_match_allowed(text, match, configured_value):
+                    if units and not _unit_match_allowed(
+                        text,
+                        match,
+                        configured_value,
+                        ambiguous_units=self._ambiguous_units,
+                        exclusions=self._unit_context_exclusions,
+                    ):
                         continue
                     candidates.append((match.start(), match.end(), priority, match.group(0)))
 
@@ -1288,6 +1589,7 @@ class DrillingReportTranslator:
             returned_tokens = _PROTECTED_PLACEHOLDER_PATTERN.findall(text)
             if Counter(returned_tokens) != Counter(expected_tokens):
                 invalid[item_id] = f"model changed, removed, or duplicated protected placeholders for item {item_id}"
+                _set_item_repair_context(item, text, invalid[item_id])
                 continue
             text = _repair_protected_token_layout(str(item.get("source_text", "") or ""), text)
             for token_data in protected_tokens:
@@ -1297,7 +1599,8 @@ class DrillingReportTranslator:
                 replacement = str(token_data.get("replacement", "") or "")
                 if token:
                     text = text.replace(token, replacement)
-            text = self._apply_term_replacements_preserving_units(text)
+            if self.tuning.pipeline_mode == "legacy":
+                text = self._apply_term_replacements_preserving_units(text)
             if self.tuning.protect_numbers:
                 source_numbers = Counter(_number_tokens(item.get("monitor_source_text", "")))
                 translated_numbers = Counter(_number_tokens(text))
@@ -1309,10 +1612,31 @@ class DrillingReportTranslator:
                         f"model changed numeric values for item {item_id}; "
                         f"missing={missing}; extra={extra}"
                     )
+                    _set_item_repair_context(item, text, invalid[item_id])
                     continue
-            if self.tuning.protect_units:
-                source_units = Counter(_protected_unit_tokens(item.get("monitor_source_text", ""), self._protected_unit_matchers))
-                translated_units = Counter(_protected_unit_tokens(text, self._protected_unit_matchers))
+            translated_folded = normalize_inline(text).casefold()
+            missing_preserved = [
+                term
+                for term in item.get("preserve_terms", []) if isinstance(item.get("preserve_terms"), list)
+                if normalize_inline(term) and normalize_inline(term).casefold() not in translated_folded
+            ]
+            if missing_preserved:
+                invalid[item_id] = f"model changed or removed protected terms for item {item_id}; missing={missing_preserved[:8]}"
+                _set_item_repair_context(item, text, invalid[item_id])
+                continue
+            if self.tuning.pipeline_mode == "legacy" and self.tuning.protect_units:
+                source_units = Counter(_protected_unit_tokens(
+                    item.get("monitor_source_text", ""),
+                    self._protected_unit_matchers,
+                    ambiguous_units=self._ambiguous_units,
+                    exclusions=self._unit_context_exclusions,
+                ))
+                translated_units = Counter(_protected_unit_tokens(
+                    text,
+                    self._protected_unit_matchers,
+                    ambiguous_units=self._ambiguous_units,
+                    exclusions=self._unit_context_exclusions,
+                ))
                 missing_units = list((source_units - translated_units).elements())[:8]
                 extra_units = list((translated_units - source_units).elements())[:8]
                 if missing_units or extra_units:
@@ -1320,6 +1644,20 @@ class DrillingReportTranslator:
                         f"model changed protected units for item {item_id}; "
                         f"missing={missing_units}; extra={extra_units}"
                     )
+                    _set_item_repair_context(item, text, invalid[item_id])
+                    continue
+            if self.tuning.pipeline_mode == "contextual" and self.tuning.protect_units:
+                unit_error = _semantic_unit_quality_error(
+                    item.get("monitor_source_text", ""),
+                    text,
+                    self._protected_unit_matchers,
+                    aliases=self._unit_target_aliases,
+                    ambiguous_units=self._ambiguous_units,
+                    exclusions=self._unit_context_exclusions,
+                )
+                if unit_error:
+                    invalid[item_id] = f"{unit_error} for item {item_id}"
+                    _set_item_repair_context(item, text, invalid[item_id])
                     continue
             restored[item_id] = text
         return restored, invalid
@@ -1338,7 +1676,7 @@ class DrillingReportTranslator:
         records: list[dict[str, str]] = []
         seen: set[tuple[str, str]] = set()
         for entry, source_value, matcher in self._term_source_matchers:
-            target = entry.value(target_language)
+            target = source_value if entry.strict_preserve else entry.value(target_language)
             if not target:
                 continue
             if not matcher.search(text):
@@ -1347,7 +1685,11 @@ class DrillingReportTranslator:
             if key in seen:
                 continue
             seen.add(key)
-            records.append({"source": source_value, "target": target})
+            records.append({
+                "source": source_value,
+                "target": target,
+                "type": entry.glossary_type,
+            })
         records = records[:30]
         self._term_glossary_cache[cache_key] = [dict(item) for item in records]
         return records
@@ -1366,6 +1708,12 @@ class DrillingReportTranslator:
             match = matcher.search(text)
             if match:
                 values.append(match.group(0))
+        for entry, _source_value, matcher in self._term_source_matchers:
+            if not entry.strict_preserve:
+                continue
+            match = matcher.search(text)
+            if match:
+                values.append(match.group(0))
         values.extend(
             match.group(0)
             for match in _TECHNICAL_IDENTIFIER_PATTERN.finditer(text)
@@ -1377,6 +1725,7 @@ class DrillingReportTranslator:
         self,
         protected_tokens: list[dict[str, str]] | None = None,
         report_context: dict[str, Any] | None = None,
+        event_context: dict[str, Any] | None = None,
     ) -> dict[str, object]:
         protected = [
             str(item.get("source", "") or "")
@@ -1385,12 +1734,31 @@ class DrillingReportTranslator:
             and str(item.get("source", "") or "")
             and not re.match(r"^\s*[-+]?\d", str(item.get("source", "") or ""))
         ]
+        selected_report_context = dict(report_context or {})
+        report_type = str(selected_report_context.get("report_type", "") or "").strip().lower()
+        business_templates = dict(self.tuning.prompt_templates)
+        selected_event_context = dict(event_context or {})
+        selected_field_code = ".".join(filter(None, (
+            str(selected_event_context.get("section", "") or "").strip(),
+            str(selected_event_context.get("content_role", "") or "").strip(),
+        )))
+        experience_rules = [
+            instruction
+            for rule_report_type, rule_field_code, instruction in self.tuning.experience_rules
+            if (not rule_report_type or rule_report_type == report_type)
+            and (not rule_field_code or rule_field_code == selected_field_code)
+        ]
         return {
             "system_prompt": self.tuning.system_prompt,
             "translation_instruction": self.tuning.translation_instruction,
+            "pipeline_mode": self.tuning.pipeline_mode,
+            "protection_mode": self.tuning.protection_mode,
             "protect_numbers": self.tuning.protect_numbers,
             "protected_terms": list(dict.fromkeys(protected))[:40],
-            "report_context": dict(report_context or {}),
+            "report_context": selected_report_context,
+            "event_context": selected_event_context,
+            "business_prompt": business_templates.get(report_type, ""),
+            "experience_rules": list(dict.fromkeys(experience_rules))[:12],
         }
 
     def _apply_term_replacements(self, text: str) -> str:
@@ -1403,7 +1771,13 @@ class DrillingReportTranslator:
         candidates: list[tuple[int, int, str]] = []
         for configured_unit, matcher in self._protected_unit_matchers:
             for match in matcher.finditer(text):
-                if _unit_match_allowed(text, match, configured_unit):
+                if _unit_match_allowed(
+                    text,
+                    match,
+                    configured_unit,
+                    ambiguous_units=self._ambiguous_units,
+                    exclusions=self._unit_context_exclusions,
+                ):
                     candidates.append((match.start(), match.end(), match.group(0)))
         selected: list[tuple[int, int, str]] = []
         for candidate in sorted(candidates, key=lambda item: (item[0], -(item[1] - item[0]))):
@@ -1436,7 +1810,7 @@ def build_translator(
 ) -> DrillingReportTranslator:
     config = config or TranslationConfig.from_env()
     selected_terms = terms or TermsConfig.load(config.terms_path)
-    selected_engine = engine or build_engine(config)
+    selected_engine = engine or build_engine(config, telemetry=telemetry)
     return DrillingReportTranslator(
         selected_engine,
         selected_terms,
@@ -1451,7 +1825,10 @@ def build_translator(
     )
 
 
-def build_engine(config: TranslationConfig) -> TranslationEngine:
+def build_engine(
+    config: TranslationConfig,
+    telemetry: Callable[[dict[str, Any]], None] | None = None,
+) -> TranslationEngine:
     engine = config.engine.lower()
     if engine == "ollama":
         return OllamaTranslationEngine(
@@ -1460,6 +1837,7 @@ def build_engine(config: TranslationConfig) -> TranslationEngine:
             temperature=config.ollama_temperature,
             thinking_mode=config.thinking_mode,
             request_options=config.request_options,
+            telemetry=telemetry,
         )
     if engine in {"openai-compatible", "openai_compatible", "openai"}:
         if not config.openai_base_url or not config.openai_model:
@@ -1471,6 +1849,7 @@ def build_engine(config: TranslationConfig) -> TranslationEngine:
             temperature=config.openai_temperature,
             thinking_mode=config.thinking_mode,
             request_options=config.request_options,
+            telemetry=telemetry,
         )
     if engine in {"noop", "none"}:
         return NoopTranslationEngine()
@@ -1613,6 +1992,7 @@ def iter_payload_text_units(
                     entity_type="daily_report",
                     entity_id=record_id,
                     field_code=f"report_fields.{key}",
+                    context=_report_field_event_context(fields, key),
                 ))
     for section, rows in payload.items():
         if section in {"metadata", "report_fields", "translation_content"} or not isinstance(rows, list):
@@ -1637,8 +2017,64 @@ def iter_payload_text_units(
                         entity_type=section,
                         entity_id=f"{record_id}:{section}:{row_no}",
                         field_code=f"{section}.{key}",
+                        context=_row_event_context(rows, index, section, key, report_type),
                     ))
     return units
+
+
+def _report_field_event_context(fields: dict[str, Any], field_name: str) -> dict[str, Any]:
+    context = {
+        "content_role": field_name,
+        "wellbore": fields.get("wellbore"),
+        "operation_event": fields.get("event"),
+        "primary_reason": fields.get("primaryReason"),
+        "current_depth": fields.get("todayMd") or fields.get("currentMd") or fields.get("currentDepth"),
+        "previous_depth": fields.get("prevMd") or fields.get("previousMd"),
+        "hole_section": fields.get("holeSection") or fields.get("section") or fields.get("holeSize"),
+    }
+    return _compact_event_context(context)
+
+
+def _row_event_context(
+    rows: list[Any],
+    index: int,
+    section: str,
+    field_name: str,
+    report_type: str,
+) -> dict[str, Any]:
+    row = rows[index] if 0 <= index < len(rows) and isinstance(rows[index], dict) else {}
+    previous_row = rows[index - 1] if index > 0 and isinstance(rows[index - 1], dict) else {}
+    next_row = rows[index + 1] if index + 1 < len(rows) and isinstance(rows[index + 1], dict) else {}
+    context = {
+        "content_role": field_name,
+        "report_type": report_type,
+        "section": section,
+        "row_no": row.get("row_no") or index + 1,
+        "start_time": row.get("from") or row.get("start_time") or row.get("startTime"),
+        "end_time": row.get("to") or row.get("end_time") or row.get("endTime"),
+        "duration_hours": row.get("hours") or row.get("duration") or row.get("duration_hours"),
+        "operation_code": row.get("op_code") or row.get("operation_code") or row.get("code"),
+        "operation_type": row.get("op_type") or row.get("operation_type") or row.get("type"),
+        "hole_section": row.get("hole_section") or row.get("holeSection") or row.get("section"),
+        "previous_event": previous_row.get("operation_details") or previous_row.get("comments"),
+        "next_event": next_row.get("operation_details") or next_row.get("comments"),
+    }
+    return _compact_event_context(context)
+
+
+def _compact_event_context(values: dict[str, Any]) -> dict[str, Any]:
+    context: dict[str, Any] = {}
+    for key, value in values.items():
+        if value in (None, "", [], {}):
+            continue
+        if isinstance(value, str):
+            cleaned = normalize_inline(value)
+            if not cleaned:
+                continue
+            context[key] = cleaned[:600]
+        else:
+            context[key] = value
+    return context
 
 
 def _ordered_translation_fields(values: set[str], preferred: tuple[str, ...]) -> list[str]:
@@ -1862,6 +2298,11 @@ def _translation_batch_prompt(
                 item.get("prompt_context", {}).get("segment_context", "")
                 if isinstance(item.get("prompt_context"), dict) else ""
             ),
+            "event_context": (
+                item.get("prompt_context", {}).get("event_context", {})
+                if isinstance(item.get("prompt_context"), dict) else {}
+            ),
+            "repair_context": item.get("repair_context", {}),
         }
         for item in items
     ]
@@ -1878,19 +2319,32 @@ def _translation_batch_prompt(
     context = contexts[0] if contexts else {}
     system_prompt = str(context.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip()
     additional_instruction = str(context.get("translation_instruction", "") or DEFAULT_TRANSLATION_INSTRUCTION).strip()
+    business_prompt = str(context.get("business_prompt", "") or "").strip()
     report_context = context.get("report_context", {}) if isinstance(context.get("report_context"), dict) else {}
     rules = [
         additional_instruction,
-        "结合日报上下文理解作业含义，使用自然、专业、通顺的中文表达，避免逐字硬译。",
-        "保持 source_text 原有段落、换行、列表和项目顺序；不得总结、删减、添加事实。",
-        "应用每条记录中实际命中的 glossary；preserve_terms 中的缩写、单位、公司名和标识符保持原样。",
+        business_prompt,
+        "先理解完整作业过程、动作关系和时序，再使用中国石油钻完井行业自然、专业的中文表达。",
+        "保持作业事件先后顺序，不要求逐词对应或保留西语语序；不得总结、遗漏或添加事实。",
+        "glossary 只包含当前原文命中的术语参考：protected 必须保留，preferred 和 phrase 原则上采用，contextual 由上下文决定；不得机械拼接术语。",
+        "preserve_terms 中的井号、设备型号、BHA 编号、品牌和作业代码保持原样。",
     ]
+    experience_rules = context.get("experience_rules") if isinstance(context.get("experience_rules"), list) else []
+    rules.extend(
+        f"已验证经验：{str(rule).strip()}"
+        for rule in experience_rules
+        if str(rule or "").strip()
+    )
     if context.get("protect_numbers", True):
         rules.append("保留日期、时间、数字、数值精度和设备序列号，不得改写格式。")
     if any(_PROTECTED_PLACEHOLDER_PATTERN.search(str(item.get("source_text", "") or "")) for item in items):
         rules.append("source_text 中形如 [[P0]] 的占位符必须逐字原样保留，不得改写、删除或复制。")
     if any(str(item.get("segment_context", "") or "") for item in compact_items):
         rules.append("带 segment_context 的 source_text 是原句中的自然语言片段；结合脱敏上下文准确翻译该片段，但不要输出上下文或 <PROTECTED> 标记。")
+    if any(isinstance(item.get("event_context"), dict) and item.get("event_context") for item in compact_items):
+        rules.append("event_context 只用于理解当前作业事件的时间、代码、井段和前后动作，不得翻译或输出上下文字段。")
+    if any(isinstance(item.get("repair_context"), dict) and item.get("repair_context") for item in compact_items):
+        rules.append("repair_context 表示初译未通过确定性校验；保留初译整体表达，只修复列出的数字、编号、单位或术语问题，不要重新润色全文。")
     if any(item.get("layout") == "paragraph" for item in compact_items):
         rules.append("layout 为 paragraph 的 description 必须作为一个完整连续段落理解和输出，不得按原 PDF 的视觉换行拆句。")
     if retry_rule:
@@ -1912,6 +2366,20 @@ def _translation_batch_prompt(
 def _translation_output_token_budget(items: list[dict[str, Any]]) -> int:
     source_chars = sum(len(str(item.get("source_text", "") or "")) for item in items)
     return max(4096, min(8192, source_chars * 4 + 2048))
+
+
+def _translation_repair_item(item: dict[str, Any], draft_translation: str, issue: str) -> dict[str, Any]:
+    return {
+        **item,
+        "repair_context": {
+            "draft_translation": str(draft_translation or "")[:12000],
+            "issues": [str(issue or "")[:1000]],
+        },
+    }
+
+
+def _set_item_repair_context(item: dict[str, Any], draft_translation: str, issue: str) -> None:
+    item["repair_context"] = _translation_repair_item(item, draft_translation, issue)["repair_context"]
 
 
 def _prompt_system_message(items: list[dict[str, Any]]) -> str:
@@ -1949,6 +2417,13 @@ def _openai_item_quality_error(item: dict[str, Any], translated_text: str, targe
     if "<PROTECTED>" in str(translated_text or ""):
         return "model leaked protected context marker"
     quality_error = _translation_quality_error(source_text, translated_text, target_language)
+    if (
+        quality_error == "source text was returned unchanged"
+        and normalize_translation_paragraph(source_text).casefold()
+        == normalize_translation_paragraph(translated_text).casefold()
+        and _is_deterministic_protected_fragment(str(item.get("id", "") or ""), source_text)
+    ):
+        quality_error = ""
     if quality_error:
         return quality_error
     expected = Counter(_PROTECTED_PLACEHOLDER_PATTERN.findall(source_text))
@@ -2211,6 +2686,33 @@ def _is_technical_literal_fragment(value: str) -> bool:
     return False
 
 
+def _is_deterministic_protected_fragment(item_id: str, value: str) -> bool:
+    """Recognize generated placeholder fragments that contain no prose to translate.
+
+    Dense protected fields are split into internal ``protected-part`` items. A
+    part containing several already-protected values plus one uppercase label is
+    effectively layout, not an independently translatable sentence. Treating an
+    unchanged model response as a failure makes the whole report fail even when
+    every translatable clause is correct.
+
+    Keep this rule deliberately narrow: it applies only to generated internal
+    parts, requires at least three placeholders, and allows exactly one short
+    uppercase token. Ordinary source fields and multi-word uppercase prose still
+    go through translation and quality validation.
+    """
+    if "::protected-part-" not in str(item_id or ""):
+        return False
+    text = str(value or "")
+    if len(_PROTECTED_PLACEHOLDER_PATTERN.findall(text)) < 3:
+        return False
+    natural = normalize_inline(_PROTECTED_PLACEHOLDER_PATTERN.sub(" ", text))
+    words = re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+", natural)
+    if len(words) != 1:
+        return False
+    word = words[0]
+    return 2 <= len(word) <= 24 and word.upper() == word and not _SPANISH_PROSE_PATTERN.search(word)
+
+
 def _repair_protected_token_layout(source_text: str, translated_text: str) -> str:
     """Restore source boundaries between placeholders before value expansion."""
     source = str(source_text or "")
@@ -2218,9 +2720,15 @@ def _repair_protected_token_layout(source_text: str, translated_text: str) -> st
     matches = list(_PROTECTED_PLACEHOLDER_PATTERN.finditer(source))
     for previous, current in zip(matches, matches[1:]):
         separator = source[previous.end():current.start()]
-        if separator and separator.isspace():
+        # Numeric ranges and ratios are often formatted across PDF line breaks,
+        # for example ``300\n/ 7500``. Models commonly collapse that to
+        # ``[[P0]]/[[P1]]``, which changes two values into one apparent
+        # fraction. Restore any punctuation-only boundary exactly; never touch
+        # a boundary containing prose because the model may legitimately move
+        # words while translating it.
+        if separator and not re.search(r"\w", separator, flags=re.UNICODE):
             repaired = re.sub(
-                rf"{re.escape(previous.group(0))}\s*{re.escape(current.group(0))}",
+                rf"{re.escape(previous.group(0))}[^\w\[]*{re.escape(current.group(0))}",
                 f"{previous.group(0)}{separator}{current.group(0)}",
                 repaired,
             )
@@ -2318,7 +2826,15 @@ def _compiled_glossary_matchers(entries: tuple[TermEntry, ...]) -> list[tuple[Te
                 continue
             seen.add(key)
             matchers.append((entry, source_value, re.compile(_term_regex(source_value), re.IGNORECASE)))
-    return sorted(matchers, key=lambda item: len(item[1]), reverse=True)
+    return sorted(
+        matchers,
+        key=lambda item: (
+            item[0].priority,
+            item[0].glossary_type == "phrase",
+            len(item[1]),
+        ),
+        reverse=True,
+    )
 
 
 _PROTECTED_PLACEHOLDER_PATTERN = re.compile(r"\[\[P\d+]]")
@@ -2339,9 +2855,14 @@ _TECHNICAL_ORDINAL_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _PROTECTED_NUMBER_PATTERN = re.compile(
-    r"(?<![A-Za-z0-9_])[-+]?\d+(?:(?:[,.]\d+)+(?:/\d+)?(?=$|[^0-9_])|(?:/\d+)?(?![A-Za-z0-9_]))"
+    r"(?<![A-Za-z0-9_])[-+]?(?:"
+    r"\d+-\d+/\d+"
+    r"|\d+(?:(?:[,.]\d+)+(?:/\d+)?(?=$|[^0-9_])|(?:/\d+)?(?![A-Za-z0-9_]))"
+    r")"
 )
-_VALIDATION_NUMBER_PATTERN = re.compile(r"(?<![A-Za-z0-9_])\d+(?:[,.]\d+)*(?:/\d+)?")
+_VALIDATION_NUMBER_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_])(?:\d+-\d+/\d+|\d+(?:[,.]\d+)*(?:/\d+)?)"
+)
 _MONTH_NUMBER_BY_NAME = {
     "enero": "1", "january": "1", "jan": "1",
     "febrero": "2", "february": "2", "feb": "2",
@@ -2360,7 +2881,15 @@ _MONTH_NAME_PATTERN = re.compile(
     r"\b(" + "|".join(sorted((re.escape(name) for name in _MONTH_NUMBER_BY_NAME), key=len, reverse=True)) + r")\b",
     re.IGNORECASE,
 )
-_AMBIGUOUS_SHORT_UNITS = {"h", "in", "m"}
+_ACTION_CONCEPTS = (
+    ("drill", re.compile(r"\b(?:perfor(?:a|ó|ando|ar)|drill(?:ed|ing)?)\b", re.IGNORECASE), re.compile(r"钻进|钻至|开钻")),
+    ("pump", re.compile(r"\b(?:bombe(?:a|ó|ando|ar)|pump(?:ed|ing)?)\b", re.IGNORECASE), re.compile(r"泵入|泵送|注入")),
+    ("circulate", re.compile(r"\b(?:circul(?:a|ó|ando|ar)|circulat(?:e|ed|ing))\b", re.IGNORECASE), re.compile(r"循环")),
+    ("trip_out", re.compile(r"\b(?:saca|sacando|sacar|trip(?:ping)?\s+out|pull(?:ed|ing)?)\b", re.IGNORECASE), re.compile(r"起出|起钻|上提")),
+    ("trip_in", re.compile(r"\b(?:baja|bajando|bajar|trip(?:ping)?\s+in|run(?:ning)?\s+in)\b", re.IGNORECASE), re.compile(r"下入|下钻|下放")),
+    ("change", re.compile(r"\b(?:cambia|cambió|cambio|cambiar|chang(?:e|ed|ing))\b", re.IGNORECASE), re.compile(r"更换|换用|替换")),
+    ("test", re.compile(r"\b(?:prueba|probar|test(?:ed|ing)?)\b", re.IGNORECASE), re.compile(r"试验|测试|检验")),
+)
 
 
 def _number_tokens(value: object) -> list[str]:
@@ -2397,57 +2926,117 @@ def translation_memory_version(
     target_language: str,
     model_identity: str = "",
 ) -> str:
+    tuning_material = {
+        "version": tuning.version,
+        "pipeline_mode": tuning.pipeline_mode,
+        "system_prompt": tuning.system_prompt,
+        "translation_instruction": tuning.translation_instruction,
+        "prompt_templates": tuning.prompt_templates,
+        "numbers": tuning.protect_numbers,
+        "units": tuning.protect_units,
+        "acronyms": tuning.protect_acronyms,
+        "proper_nouns": tuning.protect_proper_nouns,
+        "protection_mode": tuning.protection_mode,
+        "ambiguous_units": tuning.ambiguous_units,
+        "unit_aliases": tuning.unit_aliases,
+        "unit_context_exclusions": tuning.unit_context_exclusions,
+    }
+    if tuning.experience_rules:
+        tuning_material["experience_rules"] = tuning.experience_rules
     material = {
         "pipeline": TRANSLATION_PIPELINE_VERSION,
         "target": normalize_language(target_language),
         "model": model_identity,
-        "tuning": {
-            "version": tuning.version,
-            "system_prompt": tuning.system_prompt,
-            "translation_instruction": tuning.translation_instruction,
-            "numbers": tuning.protect_numbers,
-            "units": tuning.protect_units,
-            "acronyms": tuning.protect_acronyms,
-            "proper_nouns": tuning.protect_proper_nouns,
-        },
+        "tuning": tuning_material,
         "protected": {
             "units": terms.units,
             "acronyms": terms.acronyms,
             "proper_nouns": terms.proper_nouns,
         },
-        "locked_terms": [
-            (entry.id, entry.zh, entry.en, entry.es, entry.aliases, entry.enabled, entry.protected)
+        "terms": [
+            (
+                entry.id,
+                entry.zh,
+                entry.en,
+                entry.es,
+                entry.aliases,
+                entry.enabled,
+                entry.protected,
+                entry.term_type,
+                entry.strict_preserve,
+                entry.priority,
+            )
             for entry in terms.entries
-            if entry.enabled and entry.protected
+            if entry.enabled
         ],
     }
     digest = hashlib.sha256(json.dumps(material, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:16]
     return f"{TRANSLATION_PIPELINE_VERSION}-{digest}"[:64]
 
 
-def _compiled_literal_matchers(values: tuple[str, ...], *, unit: bool = False) -> list[tuple[str, re.Pattern[str]]]:
+def _compiled_literal_matchers(
+    values: tuple[str, ...],
+    *,
+    unit: bool = False,
+    case_sensitive: bool = False,
+) -> list[tuple[str, re.Pattern[str]]]:
     matchers: list[tuple[str, re.Pattern[str]]] = []
     for value in values:
         clean_value = str(value or "").strip()
         if not clean_value:
             continue
         escaped = re.escape(clean_value).replace(r"\ ", r"\s+")
-        boundary = rf"(?<![A-Za-z0-9_]){escaped}(?![A-Za-z0-9_])" if unit else _term_regex(clean_value)
-        matchers.append((clean_value, re.compile(boundary, re.IGNORECASE)))
+        # Keep the regex boundary ASCII-only, then let ``_unit_match_allowed``
+        # perform a Unicode-letter check. A broad U+00C0-U+024F range also
+        # contains symbols such as the multiplication sign (×), which is a
+        # valid separator after units such as ``ppg×120``.
+        latin_word = r"A-Za-z0-9_"
+        boundary = rf"(?<![{latin_word}]){escaped}(?![{latin_word}])" if unit else _term_regex(clean_value)
+        flags = 0 if case_sensitive else re.IGNORECASE
+        matchers.append((clean_value, re.compile(boundary, flags)))
     return sorted(matchers, key=lambda item: len(item[0]), reverse=True)
 
 
-def _unit_match_allowed(text: str, match: re.Match[str], configured_unit: str) -> bool:
-    normalized = re.sub(r"[^a-z]", "", configured_unit.casefold())
-    if normalized not in _AMBIGUOUS_SHORT_UNITS:
-        return True
+def _compiled_unit_context_exclusions(
+    values: tuple[tuple[str, str], ...],
+) -> dict[str, tuple[re.Pattern[str], ...]]:
+    compiled: dict[str, list[re.Pattern[str]]] = {}
+    for configured_unit, pattern in values:
+        try:
+            matcher = re.compile(pattern)
+        except re.error:
+            continue
+        compiled.setdefault(configured_unit.casefold(), []).append(matcher)
+    return {unit: tuple(matchers) for unit, matchers in compiled.items()}
+
+
+def _unit_match_allowed(
+    text: str,
+    match: re.Match[str],
+    configured_unit: str,
+    *,
+    ambiguous_units: frozenset[str] = frozenset(),
+    exclusions: dict[str, tuple[re.Pattern[str], ...]] | None = None,
+) -> bool:
+    def is_latin_word_character(value: str) -> bool:
+        if not value:
+            return False
+        if value.isascii():
+            return value.isalnum() or value == "_"
+        return unicodedata.category(value).startswith(("L", "N")) and "LATIN" in unicodedata.name(value, "")
+
+    if match.start() > 0 and is_latin_word_character(text[match.start() - 1]):
+        return False
+    if match.end() < len(text) and is_latin_word_character(text[match.end()]):
+        return False
+    configured_key = configured_unit.casefold()
+    for exclusion in (exclusions or {}).get(configured_key, ()):
+        if any(candidate.start() <= match.start() and candidate.end() >= match.end() for candidate in exclusion.finditer(text)):
+            return False
     before = text[max(0, match.start() - 20):match.start()]
     after = text[match.end():min(len(text), match.end() + 20)]
-    # ``M/LWD`` means measurement/logging while drilling; the leading M is an
-    # acronym component, not the metre unit. Do not turn it into a unit
-    # integrity failure when the translation normalizes the acronym to LWD.
-    if normalized == "m" and re.match(r"^\s*/\s*[A-Z]{2,}\b", after):
-        return False
+    if configured_key not in ambiguous_units:
+        return True
     return bool(
         re.search(r"\d[\d\s.,/'\"-]*$", before)
         or re.match(r"^\s*[/×x*-]\s*(?:\d|[A-Za-z])", after)
@@ -2455,12 +3044,24 @@ def _unit_match_allowed(text: str, match: re.Match[str], configured_unit: str) -
     )
 
 
-def _protected_unit_tokens(text: object, matchers: list[tuple[str, re.Pattern[str]]]) -> list[str]:
+def _protected_unit_tokens(
+    text: object,
+    matchers: list[tuple[str, re.Pattern[str]]],
+    *,
+    ambiguous_units: frozenset[str] = frozenset(),
+    exclusions: dict[str, tuple[re.Pattern[str], ...]] | None = None,
+) -> list[str]:
     value = str(text or "")
     candidates: list[tuple[int, int, str]] = []
     for configured_unit, matcher in matchers:
         for match in matcher.finditer(value):
-            if _unit_match_allowed(value, match, configured_unit):
+            if _unit_match_allowed(
+                value,
+                match,
+                configured_unit,
+                ambiguous_units=ambiguous_units,
+                exclusions=exclusions,
+            ):
                 candidates.append((match.start(), match.end(), match.group(0)))
     selected: list[tuple[int, int, str]] = []
     for candidate in sorted(candidates, key=lambda item: (item[0], -(item[1] - item[0]))):
@@ -2469,6 +3070,74 @@ def _protected_unit_tokens(text: object, matchers: list[tuple[str, re.Pattern[st
             continue
         selected.append(candidate)
     return [token for _start, _end, token in sorted(selected, key=lambda item: item[0])]
+
+
+def _protected_unit_keys(
+    text: object,
+    matchers: list[tuple[str, re.Pattern[str]]],
+    *,
+    ambiguous_units: frozenset[str] = frozenset(),
+    exclusions: dict[str, tuple[re.Pattern[str], ...]] | None = None,
+) -> list[str]:
+    value = str(text or "")
+    candidates: list[tuple[int, int, str]] = []
+    for configured_unit, matcher in matchers:
+        for match in matcher.finditer(value):
+            if _unit_match_allowed(
+                value,
+                match,
+                configured_unit,
+                ambiguous_units=ambiguous_units,
+                exclusions=exclusions,
+            ):
+                candidates.append((match.start(), match.end(), configured_unit.casefold()))
+    selected: list[tuple[int, int, str]] = []
+    for candidate in sorted(candidates, key=lambda item: (item[0], -(item[1] - item[0]))):
+        start, end, _key = candidate
+        if any(start < existing_end and end > existing_start for existing_start, existing_end, _existing in selected):
+            continue
+        selected.append(candidate)
+    return [key for _start, _end, key in sorted(selected, key=lambda item: item[0])]
+
+
+def _semantic_unit_quality_error(
+    source_text: object,
+    translated_text: object,
+    matchers: list[tuple[str, re.Pattern[str]]],
+    *,
+    aliases: dict[str, tuple[str, ...]] | None = None,
+    ambiguous_units: frozenset[str] = frozenset(),
+    exclusions: dict[str, tuple[re.Pattern[str], ...]] | None = None,
+) -> str:
+    source_counts = Counter(_protected_unit_keys(
+        source_text,
+        matchers,
+        ambiguous_units=ambiguous_units,
+        exclusions=exclusions,
+    ))
+    if not source_counts:
+        return ""
+    translated_value = str(translated_text or "")
+    translated_counts = Counter(_protected_unit_keys(
+        translated_value,
+        matchers,
+        ambiguous_units=ambiguous_units,
+        exclusions=exclusions,
+    ))
+    missing: list[str] = []
+    for unit, expected in source_counts.items():
+        localized = sum(translated_value.count(alias) for alias in (aliases or {}).get(unit, ()))
+        actual = translated_counts.get(unit, 0) + localized
+        if actual < expected:
+            missing.extend([unit] * (expected - actual))
+    return f"model removed or changed units; missing={missing[:8]}" if missing else ""
+
+
+def _action_completeness_warning(source_text: object, translated_text: object) -> str:
+    source = str(source_text or "")
+    translated = str(translated_text or "")
+    missing = [name for name, source_pattern, target_pattern in _ACTION_CONCEPTS if source_pattern.search(source) and not target_pattern.search(translated)]
+    return f"translation may omit operation actions: {missing}" if missing else ""
 
 
 def _term_regex(term: str) -> str:
@@ -2497,6 +3166,35 @@ def _clean_text(value: Any) -> str:
     return normalize_multiline(value)
 
 
+_PDF_ARTIFACT_LINE_PATTERN = re.compile(
+    r"^(?:page\s+\d+\s+of\s+\d+|daily\s+operations\s+report|ep\s+petroecuador)$",
+    re.IGNORECASE,
+)
+
+
+def clean_translation_source(value: Any) -> tuple[str, list[str]]:
+    """Remove only high-confidence PDF artifacts while retaining the stored raw source."""
+    text = normalize_multiline(str(value or "").replace("\u00ad", ""))
+    actions: list[str] = []
+    without_split_words = re.sub(
+        r"(?<=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])-\n(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])",
+        "",
+        text,
+    )
+    if without_split_words != text:
+        actions.append("join_hyphenated_line_break")
+    kept_lines: list[str] = []
+    removed_headers = 0
+    for line in without_split_words.splitlines():
+        if _PDF_ARTIFACT_LINE_PATTERN.fullmatch(normalize_inline(line)):
+            removed_headers += 1
+            continue
+        kept_lines.append(line)
+    if removed_headers:
+        actions.append(f"remove_pdf_header_footer:{removed_headers}")
+    return normalize_multiline("\n".join(kept_lines)), actions
+
+
 def _language_label(language: str) -> str:
     return {
         "zh-CN": "Simplified Chinese",
@@ -2516,6 +3214,14 @@ def _term_entry_from_object(item: object) -> TermEntry | None:
     values = {language: str(item.get(language, "") or "").strip() for language in ("zh", "en", "es")}
     if not any(values.values()):
         return None
+    term_type = str(item.get("term_type", "preferred") or "preferred").strip().lower()
+    if term_type not in TERM_TYPES:
+        term_type = "preferred"
+    strict_preserve = bool(item.get("strict_preserve", term_type == "protected"))
+    try:
+        priority = max(0, min(1000, int(item.get("priority", 50) or 50)))
+    except (TypeError, ValueError):
+        priority = 50
     id_values = [value for value in values.values() if value]
     return TermEntry(
         id=str(item.get("id", "") or _stable_term_id(id_values[0], id_values[1] if len(id_values) > 1 else "")),
@@ -2525,6 +3231,9 @@ def _term_entry_from_object(item: object) -> TermEntry | None:
         es=values["es"],
         aliases=aliases,
         protected=bool(item.get("protected", True)),
+        term_type=term_type,
+        strict_preserve=strict_preserve,
+        priority=priority,
         enabled=bool(item.get("enabled", True)),
         updated_at=str(item.get("updated_at", "") or ""),
     )
