@@ -24,7 +24,7 @@ class TranslationExperienceDiagnosisTest(unittest.TestCase):
         self.assertEqual(suggestions[0]["token"], "qpm")
         self.assertEqual(suggestions[0]["record_ids"], ["drilling:WELL-1:2026-01-01:1"])
 
-    def test_suggests_placeholder_mode_when_known_unit_is_only_prompt_protected(self) -> None:
+    def test_known_unit_in_contextual_mode_retries_without_switching_pipeline(self) -> None:
         suggestions = diagnose_translation_failures(
             record_id="drilling:WELL-1:2026-01-01:1",
             report_type="drilling",
@@ -37,7 +37,8 @@ class TranslationExperienceDiagnosisTest(unittest.TestCase):
             tuning={"protections": {"mode": "prompt"}},
         )
 
-        self.assertEqual(suggestions[0]["action_type"], "enable_placeholder")
+        self.assertEqual(suggestions[0]["action_type"], "retry_current_rules")
+        self.assertEqual(suggestions[0]["category"], "contextual_unit_regression")
         self.assertEqual(suggestions[0]["confidence"], "high")
 
     def test_classifies_unregistered_uppercase_term_as_acronym(self) -> None:
@@ -56,7 +57,7 @@ class TranslationExperienceDiagnosisTest(unittest.TestCase):
         self.assertEqual(suggestions[0]["action_type"], "add_protected_acronym")
         self.assertEqual(suggestions[0]["token"], "XYZ")
 
-    def test_generic_semantic_failure_becomes_field_prompt_experience(self) -> None:
+    def test_generic_semantic_failure_is_recorded_without_prompt_mutation(self) -> None:
         suggestions = diagnose_translation_failures(
             record_id="drilling:WELL-1:2026-01-01:1",
             report_type="drilling",
@@ -70,10 +71,11 @@ class TranslationExperienceDiagnosisTest(unittest.TestCase):
         )
 
         suggestion = suggestions[0]
-        self.assertEqual(suggestion["action_type"], "add_prompt_rule")
+        self.assertEqual(suggestion["action_type"], "retry_current_rules")
         self.assertEqual(suggestion["report_type"], "drilling")
         self.assertEqual(suggestion["field_code"], "operations.operation_details")
-        self.assertIn("动作、对象、方向、时序", suggestion["proposed_change"]["instruction"])
+        self.assertEqual(suggestion["proposed_change"], {"action": "retry_current_rules"})
+        self.assertIn("不自动修改 Prompt", suggestion["recommendation"])
 
     def test_transient_error_only_recommends_rerun(self) -> None:
         suggestions = diagnose_translation_failures(
@@ -120,7 +122,7 @@ class TranslationExperienceDiagnosisTest(unittest.TestCase):
             tuning={"protections": {"mode": "placeholder"}},
         )
 
-        self.assertEqual(suggestions[0]["category"], "deterministic_numeric_layout")
+        self.assertEqual(suggestions[0]["category"], "contextual_numeric_regression")
         self.assertEqual(suggestions[0]["action_type"], "retry_current_rules")
         self.assertNotIn("instruction", suggestions[0]["proposed_change"])
 

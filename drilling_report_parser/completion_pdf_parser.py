@@ -30,7 +30,7 @@ def parse_completion_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> 
     fields["otherRemarks"] = _parse_other_remarks(layout_text)
 
     return {
-        "metadata": {"source": "pdf_import", "parser": "completion_pdf_parser_v1", "report_type": "completion"},
+        "metadata": {"source": "pdf_import", "parser": "completion_pdf_parser_v2_ocr", "report_type": "completion"},
         "report_fields": fields,
         "operations": _parse_operations_from_pdf(payload_source),
         "bulks": _parse_bulks(layout_pages),
@@ -49,6 +49,10 @@ def _clean(value: str) -> str:
 def _num(value: str) -> str:
     match = re.search(NUM_RE, value or "")
     return match.group(0).replace(",", "") if match else ""
+
+
+def _ref_datum_number(value: str) -> str:
+    return _num(value)
 
 
 def _date_to_input(value: str) -> str:
@@ -121,7 +125,7 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
         fields["afeNumber"] = _num(afp_line)
     ref_match = re.search(r"Ref Datum:\s*(.*?)\s+Costo diario:\s*(\$?[-\d,.]+)", afp_line)
     if ref_match:
-        fields["refDatum"] = _clean(ref_match.group(1))
+        fields["refDatum"] = _ref_datum_number(ref_match.group(1))
         fields["dailyCost"] = _clean(ref_match.group(2))
 
     afp_cost_line = _first_line(lines, "AFP Costo")

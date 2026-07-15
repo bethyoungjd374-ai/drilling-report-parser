@@ -12,11 +12,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-wob",
@@ -30,11 +30,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-spp",
@@ -48,11 +48,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-mw",
@@ -66,11 +66,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-bop",
@@ -84,11 +84,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-casing",
@@ -102,11 +102,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-cementing",
@@ -122,11 +122,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-tripping-in",
@@ -144,11 +144,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-tripping-out",
@@ -166,11 +166,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-lost-circulation",
@@ -186,11 +186,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-kick",
@@ -206,11 +206,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-stuck-pipe",
@@ -226,11 +226,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-reaming",
@@ -247,11 +247,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-circulate",
@@ -269,11 +269,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "term-drilling",
@@ -289,11 +289,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-06T17:44:26",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-06T17:44:26"
     },
     {
       "id": "3b1f67a5-cfee-4b95-b4fe-488fc91819d3",
@@ -309,11 +309,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "47df5b23-8995-4075-9d03-5c2bcd7fdce9",
@@ -329,11 +329,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "7f3dcf17-7a2c-431e-b57e-7c935909acfe",
@@ -349,11 +349,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "10a9409e-d4e7-486b-bdd6-caa5988010fa",
@@ -369,11 +369,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "15c2c9c7-03d5-4a84-abd0-ed75c62e41c2",
@@ -389,11 +389,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1146ff88-5975-4ae3-8fec-8edc34c7c84e",
@@ -407,11 +407,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a4e0ae13-100b-43b5-a18d-2eebb79ebd45",
@@ -427,11 +427,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f6f35ea8-ead0-450e-8874-833abf8a76d3",
@@ -445,11 +445,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e9ccde5a-3a36-4a48-bac6-6c2324f47182",
@@ -463,11 +463,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6626ab36-f038-4abe-9550-daa2dff5bccb",
@@ -481,11 +481,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "85c63195-5dce-4d84-abd2-5ae9ccd624dd",
@@ -499,11 +499,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "42f1f1cf-780d-458a-9db9-75921a2dc047",
@@ -519,11 +519,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b83d7d60-55f2-48d7-aadc-df20f4ca2fd5",
@@ -539,11 +539,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "7fd1e9fd-9712-4fbe-a319-0922bdbf97fd",
@@ -559,11 +559,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "959d8def-56dd-4f90-b19e-3125fda5112a",
@@ -581,11 +581,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "561be833-0e42-41f5-8b77-85e0e7a9f8a0",
@@ -601,11 +601,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "14818612-a0eb-4ec0-8e36-a970742e240d",
@@ -619,11 +619,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0ab03d8b-9216-46d0-8257-a8258489f6e6",
@@ -641,11 +641,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "38deadd6-a349-4668-9030-135d265aa5c6",
@@ -663,11 +663,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "67cca279-cdd7-4d63-abbb-00b253fa57e0",
@@ -683,11 +683,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ddc86efc-3da0-45ac-8965-0923606e0e1d",
@@ -701,11 +701,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4cdb6a14-f34f-444c-ac49-d5836a7f07d9",
@@ -719,11 +719,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "81f6da3e-5170-45c6-9c43-d0b903efa0e9",
@@ -737,11 +737,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "447fe839-000d-4ddd-8db6-a4f792ac1797",
@@ -759,11 +759,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ffd9fb69-6a92-4030-8ee8-c81c2694a575",
@@ -779,11 +779,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "56541be2-6008-4d05-a3e7-016ba39b5d69",
@@ -801,11 +801,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2e55904e-58b6-43b5-abeb-a2c590055c2c",
@@ -819,11 +819,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ae5241b7-3d52-4bfd-8bf0-7f29139b68b9",
@@ -841,11 +841,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e8376e60-305f-4d15-904b-cddb7c17f1b9",
@@ -861,11 +861,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f2fe5c20-4565-4341-9dde-e8f992426249",
@@ -879,11 +879,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d5aa935c-8fea-44f7-898d-74a5c36954c0",
@@ -902,11 +902,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "38cd9e0d-b35c-41d1-a27d-97904649d561",
@@ -923,11 +923,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "fd66b3bd-0776-4c48-bb23-d9649455d77a",
@@ -948,11 +948,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "06709c62-debc-4fcc-a1ec-090818f0ff27",
@@ -968,11 +968,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d8119db5-6ad5-4bb9-9c7c-7c09c417580c",
@@ -986,11 +986,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4e50973f-206d-4d1a-acd5-06e3429fc786",
@@ -1004,11 +1004,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4739d963-fb68-40f6-ab37-81939b4c8822",
@@ -1026,11 +1026,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9d4096cd-ddb5-4df8-b3b7-f080260f7c60",
@@ -1047,11 +1047,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "801b4f26-4cc3-42a8-91cc-6da54251b2a7",
@@ -1069,11 +1069,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "fccc962a-2afd-48b3-b073-5e3e8e608e37",
@@ -1087,11 +1087,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a334d3fa-7a12-4645-9d8c-fcd29566bba1",
@@ -1107,11 +1107,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "30bd464a-40e3-456d-8e01-a47fe6b48498",
@@ -1127,11 +1127,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b4c2b5d0-a235-45dc-9b22-17ce51045c61",
@@ -1145,11 +1145,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ccedbb4d-b151-4a0f-acef-5645f869587c",
@@ -1165,11 +1165,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c768a578-deea-4092-8321-32dd3cdffe23",
@@ -1183,11 +1183,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ec0a5cc3-e3ba-4079-9046-4840db63816d",
@@ -1201,11 +1201,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1ca5f2e9-e2b3-439e-9377-8e0ce8466bf4",
@@ -1221,11 +1221,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f7b18220-604c-418c-bbe9-f643edbe9efc",
@@ -1239,11 +1239,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "73feb95a-34b9-425b-ba62-c58b6ffe4d30",
@@ -1259,11 +1259,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "64c22d8c-6b06-4781-8064-4c99a1f8f99b",
@@ -1280,11 +1280,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a8440c70-fc21-40c6-a733-748e5d3edb41",
@@ -1300,11 +1300,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3d6064ad-d4d5-4de0-b1c0-7b89ccfb8a69",
@@ -1318,11 +1318,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d425e3be-b6a4-4873-a0bd-7247bbd3f097",
@@ -1336,11 +1336,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "927fb271-2ea2-49d6-8e3e-6bf2ff86ca40",
@@ -1357,11 +1357,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "84aabde6-8542-4a91-8561-6e456098d49b",
@@ -1375,11 +1375,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "da8ea372-1ea2-4986-a716-9e4457b6d52c",
@@ -1393,11 +1393,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c63c612f-dde3-4c05-b655-cbc04413e752",
@@ -1413,11 +1413,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "56eb574c-4509-468d-a45f-37c96fab2a55",
@@ -1435,11 +1435,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e6362fce-0e44-4e5f-8449-45beda4a5d75",
@@ -1455,11 +1455,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "641f6103-6837-4676-8836-1a81629b58be",
@@ -1475,11 +1475,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "55890a91-912e-4868-b75c-327a30b7851e",
@@ -1495,11 +1495,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ffb625fb-5eb1-4e0f-93ab-55a8afd35997",
@@ -1513,11 +1513,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "74abef00-53d7-4d2d-a809-6280cf9b51d5",
@@ -1533,11 +1533,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6e90290c-bdb6-499d-8f6c-3dbae394a754",
@@ -1555,11 +1555,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ab9ff71c-9910-4e77-a270-c193d5f935ae",
@@ -1575,11 +1575,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f8a59d78-3f91-429f-9c51-996e9b06cc0f",
@@ -1595,11 +1595,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c2647c76-f097-4d28-999b-79e37bb2970a",
@@ -1613,11 +1613,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b98ca0e0-ae51-43ea-b425-d247994e0a34",
@@ -1631,11 +1631,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6e5b4d5d-a18f-4462-9352-5c8250d2b9c1",
@@ -1652,11 +1652,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3c25c005-7c0e-4272-a40a-8e25b6fae91d",
@@ -1670,11 +1670,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "77a98638-c09c-4dea-a93d-1feafdb6bea4",
@@ -1688,11 +1688,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6f8df5ff-4cc8-48d0-972b-1066520b4bc6",
@@ -1708,11 +1708,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8556cf70-deee-41b5-8161-f24b4459a910",
@@ -1728,11 +1728,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "fe3081cf-9762-4608-8ca1-c562da2bade1",
@@ -1749,11 +1749,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ae48e842-e065-4475-9b05-8235b4668cb3",
@@ -1770,11 +1770,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3c309138-c814-4909-a831-2cd4dbd518e5",
@@ -1791,11 +1791,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5f3ab2bd-9dd9-4d49-917c-594ca0c3a15a",
@@ -1811,11 +1811,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ebb50128-892b-40f8-a141-6e2fcea14ce4",
@@ -1831,11 +1831,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "187c91d9-3822-45e8-a856-177296092d50",
@@ -1851,11 +1851,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3e9bc2cd-678e-4f9c-9503-a56eb4c86bd9",
@@ -1871,11 +1871,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "47f56a51-6ee7-4515-ae23-f4fc0e303bd6",
@@ -1889,11 +1889,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6c7ad2c6-acbd-4416-a101-ebd07477b727",
@@ -1907,11 +1907,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "40e85879-43f1-459c-83e4-1ab3af420dd9",
@@ -1925,11 +1925,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "08cdef71-bdb5-4a87-936c-9c4d71a0ab71",
@@ -1943,11 +1943,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1879aef0-c9c3-45ad-a43a-86a278a0171b",
@@ -1963,11 +1963,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8a568237-ee1e-4064-aad2-e13a3abb71e2",
@@ -1983,11 +1983,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "46815456-f142-47c1-8720-e2c8ff58b6a3",
@@ -2001,11 +2001,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1cb29cbe-8d4d-4a22-b014-e4c53bea7769",
@@ -2019,11 +2019,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "960e493f-6316-428c-b5a1-70ce081020a7",
@@ -2039,11 +2039,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "463bbb59-9261-49db-a9ab-6bf125524f02",
@@ -2059,11 +2059,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "385c3ec1-4f3c-4f7d-8773-d126e8c1b853",
@@ -2077,11 +2077,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b4a22b25-a82e-4808-9ee1-8d3c215d23bc",
@@ -2097,11 +2097,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e24f4467-717f-46de-ade8-de2456075e59",
@@ -2117,11 +2117,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9e28ea8a-2b02-4556-a106-8028854d5998",
@@ -2138,11 +2138,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "73c7a3a2-c022-4598-941a-a22859aeec83",
@@ -2158,11 +2158,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2761004d-55b2-481a-a3b9-35df505f5b94",
@@ -2178,11 +2178,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3cf2a5f4-fc29-497d-a955-983124594160",
@@ -2196,11 +2196,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "024380b0-cb12-49d2-86e7-c78f529e4054",
@@ -2216,11 +2216,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1318067e-061a-4e8a-bc2b-533cb92668f4",
@@ -2236,11 +2236,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "929cf15f-7bb6-4e97-9497-7e82ee3ab550",
@@ -2257,11 +2257,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e777259c-1f87-47ff-9bc1-b15400b04c68",
@@ -2278,11 +2278,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "69a3526f-be0d-4089-839a-a4a2cb331b34",
@@ -2298,11 +2298,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9fd72766-9362-4acc-8fed-4916d2af2397",
@@ -2318,11 +2318,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "968bca0c-b45c-4c5e-8e54-624274936910",
@@ -2336,11 +2336,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5b652875-681d-49ec-8892-c0820ed8eca8",
@@ -2354,11 +2354,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "70943494-4152-4549-87aa-b5052538808f",
@@ -2372,11 +2372,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1895dfa4-681f-4067-bd34-71642607ef0b",
@@ -2392,11 +2392,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "30778230-f5ae-4485-89fc-5ffca34cd016",
@@ -2412,11 +2412,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5aa36f0e-d8f8-4fea-bdfa-a1bceeb4ab3e",
@@ -2432,11 +2432,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d57c2a55-cfd4-49ab-9a36-8927110a4dd6",
@@ -2450,11 +2450,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e9f2f71a-51af-4832-96a2-e41fe9f4cc3e",
@@ -2470,11 +2470,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "256c6484-b526-4d72-abfa-932821f7e8f2",
@@ -2488,11 +2488,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d124da5a-380e-4396-981e-afb059d6f8e9",
@@ -2508,11 +2508,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2654aefa-d315-418f-bfd7-ae6573abf8c8",
@@ -2526,11 +2526,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "85fefc66-2fc7-48cc-aebf-3eb4d6dcdc40",
@@ -2551,11 +2551,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b2660fa9-b5d5-404c-ad59-dfcc579ae29d",
@@ -2572,11 +2572,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ad529bbb-ec14-4259-bd9a-a6709994dfd4",
@@ -2590,11 +2590,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e8a82210-df91-4328-894f-ac70bb84b9c3",
@@ -2608,11 +2608,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "99cb3d6d-4927-45f1-bf95-9401a0b21eaa",
@@ -2626,11 +2626,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a37a803f-18a7-45ad-8e6e-50ffcbeaa384",
@@ -2644,11 +2644,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1e284f64-52b4-4eb6-b1fe-afca3f9818ba",
@@ -2667,11 +2667,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d4a08e24-2217-44ba-bf4b-a4bb2456b2e7",
@@ -2687,11 +2687,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "26f5628c-efa1-4881-9627-4eadbec7e31b",
@@ -2705,11 +2705,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1de017dd-ebc2-4a5e-bcc0-17e2c3da08fb",
@@ -2725,11 +2725,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "acb38091-a186-44de-82c1-446506c931d8",
@@ -2745,11 +2745,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "097a38e8-f3d1-4d9f-a071-8f358b278d23",
@@ -2763,11 +2763,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "7e93f026-6b5b-4679-b9ce-291bd69f6739",
@@ -2781,11 +2781,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "19cfdfa8-493b-469c-a38e-6e99766443a1",
@@ -2799,11 +2799,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "7416d84f-5973-45c3-ac02-b38f6da88d01",
@@ -2820,11 +2820,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ed9071fd-2275-4b07-a6ed-57ff908fbc58",
@@ -2840,11 +2840,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9d91de26-838c-48e3-98f2-a6f52648641a",
@@ -2860,11 +2860,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b56854d9-8ae2-4194-b526-8687ab169d00",
@@ -2878,11 +2878,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4a2252a9-8c6a-4d7c-999d-2a2e034bee32",
@@ -2896,11 +2896,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "459b62c5-acec-4b6e-aca5-98540156870d",
@@ -2916,11 +2916,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0ab1f195-da54-4d2d-b0d8-8b9a96bc70e2",
@@ -2936,11 +2936,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e1dea3c0-9921-47aa-a2dc-98cc85bf4981",
@@ -2956,11 +2956,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "34ef36e7-d2d5-419a-a7d0-fbaf2e209fa5",
@@ -2976,11 +2976,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5096b6fe-b99c-4fdd-ab11-bd2ed1189464",
@@ -2996,11 +2996,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "06e25871-2743-49db-8201-7102eb739aa6",
@@ -3016,11 +3016,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1ba4c779-6a63-40b7-aeae-5581e97c86be",
@@ -3034,11 +3034,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6722c3ce-4e1d-4bf8-aab1-dd37270a3f70",
@@ -3056,11 +3056,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b329d5a4-a4c0-44df-8a01-8b7adb84aa09",
@@ -3076,11 +3076,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0b47cb86-bd8d-4b36-9702-7829ba032525",
@@ -3096,11 +3096,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3475a6ed-78ab-4074-a1ba-be5e445ef873",
@@ -3114,11 +3114,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f6814399-50dd-47e4-837c-7f53b5624c01",
@@ -3132,11 +3132,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a2347451-8c8e-432a-b79e-8c24e95048f1",
@@ -3150,11 +3150,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "35d391c9-e2ca-4008-81eb-cb720f3c8d0c",
@@ -3170,11 +3170,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2665c906-3cc7-41b9-84ff-0be5f190f6e3",
@@ -3188,11 +3188,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "06f9f5be-98b7-4659-9a48-0c3749e4ec95",
@@ -3206,11 +3206,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b65f8e4b-c5a3-4dbd-b7bb-81638a0bd8a9",
@@ -3226,11 +3226,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d44c062f-bad9-46d0-af0d-ffb183989693",
@@ -3244,11 +3244,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ff8311f0-e214-462a-82ba-f5afa067071e",
@@ -3265,11 +3265,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6c969921-5218-4b64-898e-6e337ad33407",
@@ -3286,11 +3286,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0576da51-4219-4ec2-a152-f13500e4ee87",
@@ -3306,11 +3306,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "92899219-3932-4e21-aab0-5091a413ffc4",
@@ -3326,11 +3326,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "966ed42d-818b-4c96-b1c4-a411a0dd81fa",
@@ -3348,11 +3348,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9db51a73-3138-4dcf-b485-ada12c38a663",
@@ -3368,11 +3368,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "121e9f94-5530-4104-b892-e438d51bff4f",
@@ -3388,11 +3388,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2061cd62-0e7d-4d17-af79-eebca0b6bf45",
@@ -3408,11 +3408,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "25160ced-676e-4110-a48d-4ebe02fd64d7",
@@ -3431,11 +3431,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9be39a46-3828-4291-9ffc-59772b175708",
@@ -3454,11 +3454,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "86f35845-b9ee-4896-8c9c-2143d3ab8496",
@@ -3476,11 +3476,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "52af44c4-9279-4750-9054-dc2978cda3fc",
@@ -3494,11 +3494,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ddc49e5b-7284-4f6e-9ce6-f076b4be6141",
@@ -3512,11 +3512,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1629a6cc-b889-4b13-8e3f-2f2f4e55f563",
@@ -3532,11 +3532,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "22fa8d90-1ac6-4841-9fd1-8e6f6aa0552f",
@@ -3554,11 +3554,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d978364f-863a-41bf-a1b0-56b4df72304d",
@@ -3574,11 +3574,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "93cdecfc-4075-4d58-ad0b-928aa0bbfe0e",
@@ -3597,11 +3597,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "41798536-aa51-461f-9df7-14963d64dd00",
@@ -3619,11 +3619,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e15d7ee6-1796-4d45-8e25-45f6c5929caf",
@@ -3637,11 +3637,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "46c32762-f286-4be4-afb7-89120a23a5bb",
@@ -3658,11 +3658,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3152a4e4-1f54-46dc-be3d-ae83c5c27731",
@@ -3676,11 +3676,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "62c604c4-1ea6-486d-a45d-b9bfee6387f4",
@@ -3696,11 +3696,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e7875e24-769a-45f3-8a9b-575122a2caf8",
@@ -3714,11 +3714,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8f08e3c4-724e-40f1-a483-86a28413da93",
@@ -3732,11 +3732,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f1110008-94a5-4168-8590-78a1a4c45949",
@@ -3752,11 +3752,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0d12e4c0-8794-4733-b083-5c0473c2f658",
@@ -3772,11 +3772,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e81192fc-6f8a-44b2-b842-37d2f000db0d",
@@ -3790,11 +3790,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1f819c17-9f29-43f7-9ab3-e9e92fc94051",
@@ -3808,11 +3808,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "04b6d411-62e1-4df2-a9ea-6907951bc55b",
@@ -3828,11 +3828,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ec629cee-1e02-4ca5-98e4-55e459b6fcfb",
@@ -3846,11 +3846,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2fe30990-25d9-4a64-aef0-ff07fd8dc32b",
@@ -3868,11 +3868,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "42893f29-a541-4fef-8bd1-754bdd0c9083",
@@ -3888,11 +3888,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6f671dc3-e125-4c2e-a188-37f0ed197ced",
@@ -3906,11 +3906,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "88a1ef13-eb15-4e8c-a530-45f5eefbc8cf",
@@ -3924,11 +3924,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "eab823b2-47fd-4844-86e8-bf646c1bab7f",
@@ -3942,11 +3942,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "37748d42-1482-4dae-a82a-a1e9387c963e",
@@ -3964,11 +3964,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "12c84867-ff14-46fc-b6e9-bdf96e845266",
@@ -3986,11 +3986,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8d340de8-5185-4fb4-9682-35cf4009660d",
@@ -4006,11 +4006,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d1113649-710e-42a6-a997-73ef64e4355d",
@@ -4027,11 +4027,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5fc7973c-36f7-4c4f-8fe9-4b50c42808e5",
@@ -4047,11 +4047,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ff54ab1b-7e24-4251-802a-316428c65527",
@@ -4067,11 +4067,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "db3d9159-400a-4915-b1b9-9e323ff2c7af",
@@ -4087,11 +4087,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6a017e17-e1fc-4490-83e5-fd9031bd1f9e",
@@ -4107,11 +4107,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "db11e09f-25f7-4ca2-87b6-fc74048e8787",
@@ -4127,11 +4127,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "77672c50-e256-47a3-89b5-0e23b6f95a91",
@@ -4145,11 +4145,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9e393ee0-4554-414e-b31e-c64ed5cf5ca1",
@@ -4169,11 +4169,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9b69369c-84f9-4b2e-b1ac-8b026ecc05f3",
@@ -4189,11 +4189,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c34feda3-d724-42f2-8962-5683ce139c73",
@@ -4209,11 +4209,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f318cc42-bb94-419c-9332-c1f94fdec2eb",
@@ -4229,11 +4229,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "465f833e-b3f3-4fbf-9503-1ed061197866",
@@ -4249,11 +4249,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "75ef1994-582c-44fc-b455-2edb022119a1",
@@ -4269,11 +4269,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6cfc6aba-4e08-4fac-b49a-1ba48764ac57",
@@ -4287,11 +4287,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f0ebd32e-94be-40ac-bc1d-f2d46bdcbb24",
@@ -4305,11 +4305,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2573c9f7-6009-4e42-b10b-6093b4071c1e",
@@ -4323,11 +4323,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ce09bad2-42c9-4ef4-8269-e86c435d2949",
@@ -4341,11 +4341,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "324afbcb-cb64-438c-b698-190661491b38",
@@ -4359,11 +4359,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2b76d23d-c200-4b2b-9a4d-45855e04ba9b",
@@ -4377,11 +4377,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d9512a3e-6568-4d80-9e40-cb10bd2b5d29",
@@ -4395,11 +4395,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ff4bf2a4-870a-4264-9c0c-c3e63f1834f1",
@@ -4413,11 +4413,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ab1e30d5-47c5-47f8-add5-5bdb4b4fe0e2",
@@ -4433,11 +4433,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "37b68bfb-4563-43b3-a279-a70b53d3d919",
@@ -4451,11 +4451,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f9e8fe46-b232-4fe1-a66e-0a76550af17c",
@@ -4469,11 +4469,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b4abaf18-ed56-4fa3-8006-e624b0bcc6ae",
@@ -4487,11 +4487,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0c22ec3d-a29b-461e-afc7-4234bd533078",
@@ -4505,11 +4505,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a5b5af98-5ed4-4920-a070-060d5b0f704d",
@@ -4523,11 +4523,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d7d40797-020a-416c-85ec-0a325d2f5f18",
@@ -4543,11 +4543,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4449a84d-e335-4a00-a094-19f5cc38269a",
@@ -4561,11 +4561,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2871609b-592e-4abb-806f-11dc99be76af",
@@ -4579,11 +4579,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "552cdf2d-166f-4bfe-b3bc-4e2ae16594bd",
@@ -4604,11 +4604,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "748ac8bf-626d-450a-b1b0-63b8e367c1b5",
@@ -4622,11 +4622,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "23cca666-44a3-4e3e-90a2-0a7a605f4fff",
@@ -4640,11 +4640,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "faad1da7-3d2e-4303-94b4-20fc74e3531d",
@@ -4658,11 +4658,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "602b5bd1-c592-4573-957b-8b7bc902cb4b",
@@ -4676,11 +4676,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "7220b368-bfce-42c3-a423-bd6d37955c89",
@@ -4696,11 +4696,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "eb9bb364-126b-4d19-ad9e-32fcb6fc9e08",
@@ -4714,11 +4714,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bf64c57f-dd7b-4609-ae48-8468b078b956",
@@ -4732,11 +4732,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3e3ec740-555b-40df-9e49-eee68c8f5fe3",
@@ -4752,11 +4752,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "723ec284-96d9-4515-b15a-63d96048dac1",
@@ -4770,11 +4770,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d93fd405-b92b-48c1-85c1-6f127acb7d0b",
@@ -4790,11 +4790,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "68c32067-29c0-4a3b-be1d-0329f4703b88",
@@ -4808,11 +4808,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1cf181df-c0bb-4267-9ad0-7633fc153138",
@@ -4830,11 +4830,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "edb99529-c32d-45ce-8085-98c92fd1f141",
@@ -4848,11 +4848,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "fe49b596-26bc-44c8-8ae9-988fd30cc5b6",
@@ -4866,11 +4866,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "189c7782-ea3f-4a4d-bc78-a8aaddedae48",
@@ -4884,11 +4884,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "690352ad-d757-4e41-bdce-b962b8c6a293",
@@ -4902,11 +4902,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "36c13158-ba87-45ff-aba2-e215cdbd1481",
@@ -4924,11 +4924,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "24ad6642-923b-45fb-b9ff-c95e837c2d21",
@@ -4946,11 +4946,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e1526bd1-5026-4556-9b96-4402bd0e31f3",
@@ -4964,11 +4964,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5bf725bd-d197-444b-93ea-61ee510a254a",
@@ -4982,11 +4982,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e53faa3c-8a0e-4902-906a-114c2f615790",
@@ -5000,11 +5000,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "09f9fc65-4744-4ff2-9db7-d37fcf790f6b",
@@ -5018,11 +5018,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0ded0165-a49e-465e-b710-bda50b1bb370",
@@ -5040,11 +5040,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d97b3fc8-d081-444c-b920-dab12a7b4c01",
@@ -5062,11 +5062,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "add621d2-0132-49f0-84a6-41faa091fcc7",
@@ -5084,11 +5084,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bfe77a9d-4f48-4183-9806-1772d56ea779",
@@ -5106,11 +5106,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f66502c1-5c11-42ad-b25d-77171aa97a2f",
@@ -5129,11 +5129,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b8f5ba03-39cf-445d-8659-7d0ac3a0c664",
@@ -5147,11 +5147,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6dafa7aa-ab5b-40d5-a4e4-a90cb6a2ee07",
@@ -5165,11 +5165,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b6effb41-56f2-47b1-b682-42c9c61f5c37",
@@ -5183,11 +5183,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d70a98d1-ecb3-404f-8c0c-3e7fc1a8661d",
@@ -5201,11 +5201,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6baadeca-cf37-483a-90bf-89373b83767f",
@@ -5219,11 +5219,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "07dd2fa4-7d21-45e3-b356-15ca26310a28",
@@ -5239,11 +5239,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "db74a24f-3174-4af7-865a-3c769c7b40ca",
@@ -5259,11 +5259,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f90c574b-54ef-44a8-a9e4-91d030216202",
@@ -5277,11 +5277,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4eb250c3-33a9-4547-b596-ca16ba33b02e",
@@ -5301,11 +5301,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9a409567-219b-49aa-9a0b-378b2250ffff",
@@ -5321,11 +5321,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "750867ab-cf71-4a58-bc91-2314556c9f96",
@@ -5339,11 +5339,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0c08119a-5661-4a6a-b561-f90e5f6b649a",
@@ -5359,11 +5359,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "59d1be23-58b1-4394-ab29-5e656466f9f7",
@@ -5377,11 +5377,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d280ad72-5760-4845-8db6-fe246e597d30",
@@ -5395,11 +5395,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "43ad0f8c-9051-413e-8401-ba21417e5d5d",
@@ -5413,11 +5413,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b3ce8679-153c-4eb2-85ae-846c83cd32a9",
@@ -5431,11 +5431,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c14a651f-cc6d-4ed7-bf1d-9ecfa56f9d79",
@@ -5449,11 +5449,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3549715f-e260-44c7-a565-23f5cb154d26",
@@ -5467,11 +5467,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f762ddb6-fcca-4ca4-81dd-44376e6b612d",
@@ -5487,11 +5487,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3e2f470c-d34c-473f-96bb-26cdca2f566c",
@@ -5512,11 +5512,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bb61ad3e-a9d0-44ab-ac1d-4152a0812f93",
@@ -5530,11 +5530,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9347d8f2-9b23-4663-b2bb-94d9dcf76d9b",
@@ -5550,11 +5550,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e692281e-9311-4fe4-9dbc-885c181fa967",
@@ -5570,11 +5570,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3dd01ebb-c12f-4dc1-b99b-6a0d7354ffac",
@@ -5588,11 +5588,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "40f52546-077a-465e-99b0-22ef5198b36a",
@@ -5606,11 +5606,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "42308b98-7d0f-40ac-80af-878eaba80d3d",
@@ -5624,11 +5624,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "20db2ec2-3e51-49c7-b455-d218bac0b598",
@@ -5644,11 +5644,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "41671801-39c0-44b9-8580-e7ca8e47768a",
@@ -5662,11 +5662,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0620e5b9-d121-4c4e-8059-f5d7348ae58f",
@@ -5682,11 +5682,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3dfbbaeb-aa0d-4fe8-bb79-47e4e6c01433",
@@ -5700,11 +5700,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c2654acc-46b6-4cc5-b02a-ca569f3f2784",
@@ -5718,11 +5718,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4428c818-5ef9-46e4-bc60-abea5208145d",
@@ -5736,11 +5736,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8498561e-a2c3-4040-9a63-7f54b9b22398",
@@ -5754,11 +5754,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "327c2dd4-36ae-4e00-b6d9-f4fb6a7db0fc",
@@ -5772,11 +5772,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "243457ce-7f5d-4db4-a559-2e88c3874d46",
@@ -5790,11 +5790,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a0779574-770b-4e9a-8ade-4d05cb6d9e66",
@@ -5808,11 +5808,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1bd08bb8-80ac-4094-b91b-bb90fafb6cc4",
@@ -5826,11 +5826,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "25767241-df82-4fb6-a426-8b718af82fdd",
@@ -5844,11 +5844,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f2ea2edd-6531-4f43-bc73-1d676d51b459",
@@ -5864,11 +5864,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "27d91eac-1f28-464d-a40a-b7c4c5299900",
@@ -5882,11 +5882,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4f157b57-0c36-4409-80a2-4afd1fec9e54",
@@ -5900,11 +5900,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8190d632-7b6c-4a8c-9a77-530525583b50",
@@ -5918,11 +5918,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "891c6023-d44c-4c41-9431-5928774a06a8",
@@ -5936,11 +5936,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e031dd5a-e5d6-49e6-b0ed-bf9df2c98fe7",
@@ -5956,11 +5956,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d4a0434e-636e-4533-b7f1-0d9e8f355c2b",
@@ -5974,11 +5974,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1a426c81-456d-4ca9-8c04-e599e6fce814",
@@ -5992,11 +5992,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9f03383a-3e31-41a1-94d4-601165e89e57",
@@ -6010,11 +6010,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "39d83885-1eec-4ab6-9120-e110dc40c30b",
@@ -6028,11 +6028,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9c58a576-10fc-42cb-b20f-ed8b00ba4c69",
@@ -6046,11 +6046,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "75e1f65a-280d-4450-b805-6ff113c77144",
@@ -6064,11 +6064,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "aa010561-a03f-42e1-bdef-8d28eed1c50a",
@@ -6082,11 +6082,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2e74dc0b-6403-4282-b4b1-29045670dfb7",
@@ -6102,11 +6102,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "521c1ea5-00e4-4541-a473-a404fc2f15e5",
@@ -6120,11 +6120,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3343e4a4-748d-4e04-9dba-530f79e35894",
@@ -6138,11 +6138,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "fa42cc2f-3aa8-48b8-8728-b8dc22b02a30",
@@ -6156,11 +6156,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "040e6425-0ffe-41f5-bf95-d90ed22bf076",
@@ -6174,11 +6174,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "74f512b8-0ed6-4303-b6cc-499729aa141e",
@@ -6194,11 +6194,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4295ee48-526f-4df1-8552-75b955dc5227",
@@ -6212,11 +6212,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "aeeedd99-b62e-4622-b408-728c197961d2",
@@ -6234,11 +6234,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "549f1992-7f11-4198-a8c3-ddbde69420af",
@@ -6252,11 +6252,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bed8f74d-1347-43fe-9b44-07747962571d",
@@ -6272,11 +6272,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e8cafb09-f508-4a47-8488-6f95814edb8a",
@@ -6292,11 +6292,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4a1704cd-8ac8-4aac-8a45-5befb742790a",
@@ -6312,11 +6312,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "38b040c3-bd4a-40c8-886a-0601b460f803",
@@ -6332,11 +6332,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "75cd44d0-d708-41b6-8075-cfdf86802924",
@@ -6350,11 +6350,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4c58e792-bd8d-423e-8bbe-73ffeaf7b485",
@@ -6370,11 +6370,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "34543694-0a4b-4e99-9526-22f02939ab05",
@@ -6388,11 +6388,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b7838974-ef95-45f6-aba0-7f97232d8462",
@@ -6406,11 +6406,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1c4da6b9-8e0f-4dc4-b386-63e985bf12b3",
@@ -6424,11 +6424,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "905c3f8e-3252-4dee-b68c-42fa95cc35ec",
@@ -6442,11 +6442,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "efdb0f2e-bc90-46b5-a9ee-416e429103d6",
@@ -6460,11 +6460,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4c650cee-0cba-40bb-a63d-d3deed068d1b",
@@ -6483,11 +6483,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9aac1f33-a1b8-41a9-92b7-9232105939fc",
@@ -6501,11 +6501,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6f169952-7016-4724-85d2-48c3cb6c3690",
@@ -6521,11 +6521,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1ed1c255-eb9c-442d-9f9e-4df610a64175",
@@ -6541,11 +6541,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4a9734da-d905-4612-a269-a7f7b87ef9dd",
@@ -6559,11 +6559,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "42ed612b-0858-4e72-99db-4771f14b10c2",
@@ -6579,11 +6579,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c0aeaea5-961c-4404-8eda-3491b0a718ad",
@@ -6597,11 +6597,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bf53e2c8-e22c-4f77-9dea-c345650f7c5d",
@@ -6617,11 +6617,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a6d0e5c3-65d4-4ffb-9a86-a81b987d3199",
@@ -6638,11 +6638,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "501a8e11-72d5-40d9-ae3e-c256d19ac80b",
@@ -6656,11 +6656,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6afc8c7d-f4cc-4d41-b7dc-907772f5d173",
@@ -6674,11 +6674,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "408e7ac8-3dbe-41b8-ac39-88f41670aea5",
@@ -6692,11 +6692,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2f3f0baa-2267-462c-898a-68a43bdf698c",
@@ -6710,11 +6710,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "151b4473-e264-4e87-abd9-cc6205271bc9",
@@ -6730,11 +6730,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8bf29afe-6746-407f-9c1a-6a5aec0ec0c0",
@@ -6748,11 +6748,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f44e47d9-3529-4b1a-8934-c52513c5eb75",
@@ -6770,11 +6770,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bf4b318c-6631-40a2-99ad-547141597d27",
@@ -6790,11 +6790,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "22460373-b72e-4f36-a310-cb5b3533256f",
@@ -6808,11 +6808,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a8a9151a-12b6-4f6d-a570-3e3d1713604c",
@@ -6831,11 +6831,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "78410f8d-aa71-4e6f-b74f-952766872efa",
@@ -6849,11 +6849,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "28299a58-41ff-49ba-a835-beffc21f5fec",
@@ -6867,11 +6867,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "40e01a2a-7ca1-42b7-98d8-df0228eb7d0c",
@@ -6885,11 +6885,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "48d83bc1-2d0a-4881-b619-816ff3d6da86",
@@ -6903,11 +6903,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ebecae30-2234-4102-8498-1a8ff5852011",
@@ -6921,11 +6921,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "eeea2b51-8bc1-4839-9628-73f03961e492",
@@ -6941,11 +6941,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9b3c2ea0-5930-49e9-85dc-7a9cdb5f3f77",
@@ -6961,11 +6961,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ce622d42-7548-481a-bd83-33d4d92ebf0a",
@@ -6979,11 +6979,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "096c73c2-24aa-4c0c-af7e-b7ee64744cd0",
@@ -6997,11 +6997,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "604ee28a-87fc-41e2-8601-0b62514e8de7",
@@ -7015,11 +7015,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f38c597c-b5c4-4f1a-8a68-5045cf3598f8",
@@ -7033,11 +7033,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e27ebe20-1a36-4360-9eb5-e0914dc10954",
@@ -7051,11 +7051,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "97b2f7c2-b526-4946-974a-94f35f4067b0",
@@ -7069,11 +7069,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "50446816-49e3-4a4c-95a4-fa86a32d113e",
@@ -7087,11 +7087,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c63ed66f-ad75-42d1-9e82-43aa43c6553b",
@@ -7107,11 +7107,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b6c56d0b-8c80-427b-a363-834cd2a97be3",
@@ -7127,11 +7127,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "80a5a261-d42f-43b9-bbcc-d50cfaf75b88",
@@ -7145,11 +7145,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "898168f7-4499-49a6-9107-1a7fc9419091",
@@ -7163,11 +7163,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "46439c1c-514d-4cda-93c1-83d72d549af7",
@@ -7181,11 +7181,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5ba163b8-6a1b-4d3a-802b-9aa5a58bdd50",
@@ -7199,11 +7199,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e1ae7dca-a41c-4426-aae6-3ba70cc4ff05",
@@ -7217,11 +7217,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ff0d533a-2533-4415-b1ac-5cc4287ffb40",
@@ -7235,11 +7235,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "83fdee4e-159a-4bc3-8087-df19c7c54f87",
@@ -7257,11 +7257,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a392ca2a-27e7-4176-bf2c-07dc853cfd5b",
@@ -7275,11 +7275,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "64e0e1a3-cd86-4170-a69d-775abd3f33e9",
@@ -7295,11 +7295,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6a5e4d7e-9215-466e-a8c4-034cd529a72a",
@@ -7315,11 +7315,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6d6d78b9-54a7-4e26-9618-7cd205e89c43",
@@ -7333,11 +7333,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "700d1dc9-b556-4cfa-a8c3-db984c81c9f9",
@@ -7351,11 +7351,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "41a99d00-9c69-4fb0-adf8-54a5ef42688e",
@@ -7369,11 +7369,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "90395411-36c1-4b56-8096-b2288958e373",
@@ -7387,11 +7387,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0b3328b5-802f-4498-9224-bec22b2e85f9",
@@ -7409,11 +7409,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "af076f5e-dc51-4500-a261-2f257600adf7",
@@ -7427,11 +7427,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3dc3bd71-9a3a-44cb-a09d-1a3f4a40dc5a",
@@ -7445,11 +7445,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "67ae8029-c529-491a-ad28-594d4b56f3dc",
@@ -7463,11 +7463,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "179bf307-a281-4a11-92f5-da305dcc2b8b",
@@ -7481,11 +7481,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "53ead1a6-7a14-4fa8-bd92-dd4be3de7465",
@@ -7499,11 +7499,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "56b5134c-f95b-4b1a-9fc1-7cef7059cd22",
@@ -7517,11 +7517,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "09bc3618-618c-42ce-95c2-7b7dc836c8d2",
@@ -7535,11 +7535,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "dcadbb79-def0-429c-9453-ece597a9209a",
@@ -7553,11 +7553,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "36e6e8e6-a240-411a-af7f-db64831d53ff",
@@ -7571,11 +7571,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d6665440-c509-4b23-89d3-a560982b7469",
@@ -7589,11 +7589,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "aa4ad1e4-c555-4270-9a6c-cf1da4955e20",
@@ -7609,11 +7609,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "49ae4850-0029-4258-9e3e-e9b85de1c0a0",
@@ -7627,11 +7627,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "55cb9540-30ed-4aeb-a7b4-3ae6d319c17c",
@@ -7647,11 +7647,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d1f550de-403f-4219-a81d-9f542e1aa6ac",
@@ -7665,11 +7665,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "600d56ca-ed32-4522-917e-de673b30a7de",
@@ -7683,11 +7683,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1cec879a-8750-4786-a57a-59b8bb2ec7fc",
@@ -7701,11 +7701,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "82d704a9-babe-419b-ab6f-fffc82bd0c27",
@@ -7719,11 +7719,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bde62546-efc6-4c1a-a4bf-f5d58f2d999a",
@@ -7737,11 +7737,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bd3ac266-d266-4b0f-947d-830cc47c2c65",
@@ -7757,11 +7757,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1d668561-7cce-42c1-b651-8d35cf3d2d97",
@@ -7775,11 +7775,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e5196b1f-5d3d-4443-a891-bd24f7f740e8",
@@ -7797,11 +7797,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c3b64bea-835e-4dce-8e65-3206624fc7e9",
@@ -7815,11 +7815,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "22d072f1-4c48-4046-86e3-d687d0a50548",
@@ -7835,11 +7835,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5de78fe8-43ad-4ebf-b4f9-ecd97d6f2583",
@@ -7853,11 +7853,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "47febfa6-cbdf-424c-8859-8d8bec661c0a",
@@ -7873,11 +7873,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "c65096ee-1b64-4d5e-8616-bac0fed53c51",
@@ -7891,11 +7891,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "bd9fadbf-83e0-42e3-b070-71a6f26efeb5",
@@ -7911,11 +7911,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3924957a-542c-43a4-89ca-9d35d8d393ea",
@@ -7929,11 +7929,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "70b6b970-c216-495e-8d1f-74b0bf1baf94",
@@ -7949,11 +7949,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3ff623d4-4e18-488f-8042-ec21254c7b8f",
@@ -7969,11 +7969,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1f837da1-106c-462f-8cf1-92c981def6e9",
@@ -7989,11 +7989,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2fb5675e-57af-43c0-a25b-9d080c6add89",
@@ -8009,11 +8009,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "badb9f9d-fa4b-44e8-bf99-808c57389b8d",
@@ -8029,11 +8029,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1643bd7f-a30c-4d72-be8c-c705fee9b75c",
@@ -8047,11 +8047,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d0faa7a9-d7a2-4ecf-bcf9-7eb3cdf35d1b",
@@ -8065,11 +8065,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "88addd99-7e37-472f-9ad9-c42acc382dcc",
@@ -8083,11 +8083,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ce7df12c-940b-4969-94c5-de035ce23cc4",
@@ -8103,11 +8103,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f9997fee-5c4d-40e8-8b6d-74db036b25d1",
@@ -8123,11 +8123,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d8a1d932-60ce-4524-b58b-9198786a49cd",
@@ -8146,11 +8146,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3541639d-083b-4adb-8313-4e9ed33e3b9c",
@@ -8166,11 +8166,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5473afbf-14bb-432e-8ea5-f5973d8ffdaf",
@@ -8186,11 +8186,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "93099802-3381-45cf-9dfa-53e383f838ea",
@@ -8204,11 +8204,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a781e0e4-b70c-49c1-827e-a88e9bd56e2b",
@@ -8225,11 +8225,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5133813e-be28-4f06-80ab-9d6cfad7f141",
@@ -8243,11 +8243,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3eb4fe8f-f38b-428c-973e-0d267b363a60",
@@ -8265,11 +8265,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4deff480-4d1d-4b60-98c5-fc3f7b1bb524",
@@ -8285,11 +8285,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "af60cd62-831e-4914-983a-ff13caa77357",
@@ -8305,11 +8305,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d1f45578-b8da-4072-ad5a-14e1696e725a",
@@ -8325,11 +8325,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "76fda28e-b90d-44b4-ba77-bf1ef8eb5d1b",
@@ -8347,11 +8347,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "7b0a090d-95e3-425f-833e-8c5d6e423b17",
@@ -8370,11 +8370,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "faa5c9b9-283d-40b3-8603-c3a627d771ac",
@@ -8388,11 +8388,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "6ee05888-713d-4234-aa85-83fbdffc852a",
@@ -8406,11 +8406,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3e92d612-c28a-4b35-b4ea-3ee51c121d17",
@@ -8426,11 +8426,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "da0c28a8-ad37-483d-aac7-41f601d70161",
@@ -8444,11 +8444,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5b617083-b885-44b2-9402-56eadfa8dca8",
@@ -8462,11 +8462,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3343770a-b414-4d46-b015-27d830082de3",
@@ -8485,11 +8485,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "5721464e-29db-47a6-a15f-7bdb183149ad",
@@ -8505,11 +8505,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a7118b0b-741c-4f01-bf7f-4ddad62ef13f",
@@ -8523,11 +8523,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "36779fdb-4e64-47c2-8044-e0b2d9d74419",
@@ -8543,11 +8543,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b31f0491-1be4-4a79-a226-537a2b467d55",
@@ -8563,11 +8563,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "266bc7a8-ce69-4af0-be98-837cb817a247",
@@ -8583,11 +8583,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b1f0ad84-1851-4945-96ff-2a6f38035653",
@@ -8601,11 +8601,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d0b012ce-75ac-4ee6-bc01-7b3e9ec1252e",
@@ -8623,11 +8623,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "d545e6b9-9c2d-45f4-9966-988fdfe4384e",
@@ -8641,11 +8641,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "0b9bb77c-7047-4aff-9e03-09d753dbb913",
@@ -8662,11 +8662,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "78db6a20-39bf-4899-9c88-e96a76f3e530",
@@ -8682,11 +8682,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "26a5e42c-16cd-4781-ba55-245ef063ec81",
@@ -8700,11 +8700,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "ddffbe0c-7b2f-43e8-bc38-24cdffe0f337",
@@ -8720,11 +8720,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "a8204479-1030-4909-8c27-a8f7886f967f",
@@ -8738,11 +8738,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "9a4e3485-073d-4058-8277-e58cb5268dca",
@@ -8756,11 +8756,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4ff7bf3b-7137-4d68-b86a-2569918db58a",
@@ -8774,11 +8774,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "891cc95c-6d60-4417-a01d-8a9fe2fddfe5",
@@ -8794,11 +8794,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4478bba8-77e8-42a5-80cd-2df7de797562",
@@ -8812,11 +8812,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "55e64b01-6e3b-47fa-97c0-cdb0229f94db",
@@ -8832,11 +8832,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "35800ea8-170f-48fa-9648-69c5a6dcd572",
@@ -8855,11 +8855,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "53dc2e50-e419-4a59-a61d-3acff09be2cf",
@@ -8877,11 +8877,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "57b3d0f8-a4a8-4a2c-95c0-9e353e26d947",
@@ -8895,11 +8895,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "b2007c26-26a4-42e4-a7e6-5f11462f76f6",
@@ -8917,11 +8917,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "3eb79df2-46de-49be-9265-497793ad10f6",
@@ -8935,11 +8935,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "20ad2ee2-519e-47f7-ba64-4965352f8052",
@@ -8953,11 +8953,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "cfd6b010-3cdd-45e4-9c27-d67649229c61",
@@ -8973,11 +8973,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "35a47d68-5fd1-4499-8426-9770c7350e7e",
@@ -8991,11 +8991,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1b477500-a936-4b0d-878e-3ce6ccff687e",
@@ -9009,11 +9009,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "2a140c73-7b30-42e2-8f76-f97c2536964e",
@@ -9027,11 +9027,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "1b9418df-6946-46a3-ada9-4800b4c80bc4",
@@ -9047,11 +9047,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "e2620ec8-96cd-45d1-9c3b-e65224cfbd93",
@@ -9065,11 +9065,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "f61b1319-714c-46c4-8c40-53efdd253d00",
@@ -9083,11 +9083,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4e11083d-b837-443a-adc9-d3a916cdc006",
@@ -9101,11 +9101,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "8febf627-ee43-457f-b63b-4ab7ca014998",
@@ -9119,11 +9119,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "99548452-9c68-4cbf-a49d-a1ddb6b64b99",
@@ -9137,11 +9137,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "76e005f9-8a75-4a19-8137-862b45b69f68",
@@ -9155,11 +9155,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "4186e213-eff0-46ad-9c0f-461f5465eeb7",
@@ -9175,11 +9175,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "285f5aaa-d0be-4df2-898b-15e0874fc0dd",
@@ -9197,11 +9197,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "165d0918-63c5-4f61-bed3-dd5dc9147304",
@@ -9215,11 +9215,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "13357117-4180-4d1a-bda9-b2195290633b",
@@ -9233,11 +9233,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-10T22:46:34",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-10T22:46:34"
     },
     {
       "id": "term-venta-stp",
@@ -9251,11 +9251,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-12T13:45:00",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-12T13:45:00"
     },
     {
       "id": "term-provided-by-pec",
@@ -9269,11 +9269,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-12T13:45:00",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-12T13:45:00"
     },
     {
       "id": "term-closed-state",
@@ -9289,11 +9289,11 @@
         ]
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-12T13:45:00",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-12T13:45:00"
     },
     {
       "id": "term-as-follows",
@@ -9307,11 +9307,11 @@
         "es": []
       },
       "protected": false,
-      "enabled": true,
-      "updated_at": "2026-07-12T13:45:00",
       "term_type": "preferred",
       "strict_preserve": false,
-      "priority": 50
+      "priority": 50,
+      "enabled": true,
+      "updated_at": "2026-07-12T13:45:00"
     }
   ],
   "protected_terms": {
@@ -9436,7 +9436,6 @@
       "mts",
       "ft",
       "pies",
-      "in",
       "ppg",
       "lpg",
       "sg",

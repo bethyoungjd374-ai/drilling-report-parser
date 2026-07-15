@@ -55,13 +55,21 @@ class TranslationTuningConfigTest(unittest.TestCase):
 
         self.assertNotEqual(first["version"], second["version"])
 
-    def test_contextual_pipeline_is_default_and_legacy_is_available_for_rollback(self) -> None:
+    def test_legacy_pipeline_input_is_retired_and_does_not_change_policy(self) -> None:
         default = _normalize_translation_tuning_config({})
         legacy = _normalize_translation_tuning_config({"pipeline_mode": "legacy"})
 
-        self.assertEqual(default["pipeline_mode"], "contextual")
-        self.assertEqual(legacy["pipeline_mode"], "legacy")
-        self.assertNotEqual(default["version"], legacy["version"])
+        self.assertNotIn("pipeline_mode", default)
+        self.assertNotIn("pipeline_mode", legacy)
+        self.assertEqual(default["version"], legacy["version"])
+
+    def test_auto_translate_on_upload_is_normalized_without_changing_prompt_version(self) -> None:
+        disabled = _normalize_translation_tuning_config({"auto_translate_on_upload": False})
+        enabled = _normalize_translation_tuning_config({"auto_translate_on_upload": True})
+
+        self.assertFalse(disabled["auto_translate_on_upload"])
+        self.assertTrue(enabled["auto_translate_on_upload"])
+        self.assertEqual(disabled["version"], enabled["version"])
 
     def test_business_prompt_templates_are_normalized_and_versioned(self) -> None:
         default = _normalize_translation_tuning_config({})
@@ -90,7 +98,9 @@ class TranslationTuningConfigTest(unittest.TestCase):
         })
 
         protections = config["protections"]
-        self.assertEqual(protections["mode"], "placeholder")
+        self.assertNotIn("mode", protections)
+        self.assertTrue(protections["contextual_translation"])
+        self.assertTrue(protections["validate_results"])
         self.assertEqual(protections["ambiguous_units"], ["H", "in"])
         self.assertEqual(protections["unit_aliases"], {"gpm": ["加仑/分钟"]})
         self.assertEqual(protections["unit_context_exclusions"], [
@@ -98,7 +108,35 @@ class TranslationTuningConfigTest(unittest.TestCase):
         ])
         self.assertNotEqual(config["version"], _normalize_translation_tuning_config({})["version"])
 
-    def test_experience_rules_are_scoped_normalized_and_versioned(self) -> None:
+    def test_legacy_date_setting_is_retired_in_favor_of_prompt(self) -> None:
+        default = _normalize_translation_tuning_config({})
+        chinese = _normalize_translation_tuning_config({"protections": {"date_format": "chinese"}})
+        invalid = _normalize_translation_tuning_config({"protections": {"date_format": "unsupported"}})
+
+        self.assertNotIn("date_format", default["protections"])
+        self.assertNotIn("date_format", chinese["protections"])
+        self.assertNotIn("date_format", invalid["protections"])
+        self.assertEqual(default["version"], chinese["version"])
+        self.assertEqual(default["version"], invalid["version"])
+
+    def test_context_and_result_validation_are_independent_and_versioned(self) -> None:
+        default = _normalize_translation_tuning_config({})
+        no_context = _normalize_translation_tuning_config({"protections": {"contextual_translation": False}})
+        no_validation = _normalize_translation_tuning_config({"protections": {"validate_results": False}})
+        neither = _normalize_translation_tuning_config({"protections": {
+            "contextual_translation": False,
+            "validate_results": False,
+        }})
+
+        self.assertEqual(default["protections"]["contextual_translation"], True)
+        self.assertEqual(default["protections"]["validate_results"], True)
+        self.assertEqual(no_context["protections"]["contextual_translation"], False)
+        self.assertEqual(no_validation["protections"]["validate_results"], False)
+        self.assertEqual(neither["protections"]["contextual_translation"], False)
+        self.assertEqual(neither["protections"]["validate_results"], False)
+        self.assertEqual(len({default["version"], no_context["version"], no_validation["version"], neither["version"]}), 4)
+
+    def test_experience_rules_are_excluded_from_runtime_tuning(self) -> None:
         config = _normalize_translation_tuning_config({
             "experience_rules": [{
                 "id": "experience-1",
@@ -112,9 +150,8 @@ class TranslationTuningConfigTest(unittest.TestCase):
             }],
         })
 
-        self.assertEqual(len(config["experience_rules"]), 1)
-        self.assertEqual(config["experience_rules"][0]["instruction"], "完整保留方向和时序。")
-        self.assertNotEqual(config["version"], _normalize_translation_tuning_config({})["version"])
+        self.assertEqual(config["experience_rules"], [])
+        self.assertEqual(config["version"], _normalize_translation_tuning_config({})["version"])
 
     def test_runtime_revision_changes_with_terms_and_model(self) -> None:
         tuning = _normalize_translation_tuning_config({"prompt": {"system_prompt": "Prompt A"}})

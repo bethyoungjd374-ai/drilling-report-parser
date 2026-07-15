@@ -30,10 +30,12 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from .completion_pdf_parser import parse_completion_pdf_daily_report
+from .database_common import natural_record_id
 from .db_config import mysql_settings
 from .text_structure import normalize_multiline
 from .storage import (
     background_job_lock,
+    clear_extraction_results,
     initialize_database,
     list_npt_confirmation_wells,
     list_ai_job_status,
@@ -110,6 +112,7 @@ TRANSLATION_TERMS_PATH = ROOT / "outputs" / "translation_terms.json"
 TRANSLATION_TUNING_PATH = ROOT / "outputs" / "translation_tuning.json"
 AI_MODELS_PATH = ROOT / "outputs" / "ai_model_configs.json"
 AI_EXTRACTION_RULES_PATH = ROOT / "outputs" / "ai_extraction_rules.json"
+AI_EXTRACTION_PIPELINE_VERSION = "bilingual-evidence-v1"
 DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation" / "drilling_terms.json"
 PRODUCTION_REPORT_REMARKS_PATH = ROOT / "outputs" / "production_report_remarks.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
@@ -145,6 +148,9 @@ TRANSLATION_METRICS_LOCK = threading.Lock()
 TRANSLATION_DEBUG_LOG_LOCK = threading.Lock()
 TRANSLATION_DEBUG_LOG_WRITES = 0
 TRANSLATION_EXPERIENCE_LOCK = threading.RLock()
+TRANSLATION_EXPERIENCE_APPLY_LOCK = threading.Lock()
+TRANSLATION_EXPERIENCE_QUEUE_LOCK = threading.Lock()
+TRANSLATION_EXPERIENCE_QUEUE_THREAD: threading.Thread | None = None
 AI_JOB_MONITOR_LOCK = threading.Lock()
 AI_JOB_MONITOR_CACHE: dict[str, deque[dict[str, object]]] = {
     "translation": deque(maxlen=100),
@@ -824,23 +830,48 @@ class FormHandler(BaseHTTPRequestHandler):
             _write_audit(user, "dismiss_translation_experience", "ai_service", suggestion_id, True, str(result.get("title", "")))
             self._send_json({"ok": True, "suggestion": result, "queued_records": 0})
             return
-        active = _active_ai_job_counts()
-        if active["translation"]:
-            self._send_json({"error": "翻译任务正在运行，请等待当前任务结束后再采纳经验并重跑。", "active_jobs": active}, status=409)
-            return
-        try:
-            suggestion = _apply_translation_experience_suggestion(
-                suggestion_id,
-                actor=str(user.get("username", "") or ""),
-            )
-        except KeyError:
-            self._send_json({"error": "未找到经验建议。"}, status=404)
-            return
-        except ValueError as exc:
-            self._send_json({"error": str(exc)}, status=400)
-            return
-        record_ids = [str(item or "").strip() for item in suggestion.get("record_ids", []) if str(item or "").strip()]
-        queued, skipped = _queue_translation_record_ids(record_ids, mode="continue")
+        actor = str(user.get("username", "") or "")
+        with TRANSLATION_EXPERIENCE_APPLY_LOCK:
+            active = _active_ai_job_counts()
+            if active["translation"]:
+                try:
+                    suggestion = _queue_translation_experience_suggestion(suggestion_id, actor=actor)
+                except KeyError:
+                    self._send_json({"error": "未找到经验建议。"}, status=404)
+                    return
+                except ValueError as exc:
+                    self._send_json({"error": str(exc)}, status=409)
+                    return
+                _start_translation_experience_queue()
+                _write_audit(
+                    user,
+                    "queue_translation_experience",
+                    "ai_service",
+                    suggestion_id,
+                    True,
+                    "waiting for active translations",
+                )
+                self._send_json({
+                    "ok": True,
+                    "deferred": True,
+                    "suggestion": suggestion,
+                    "queued_records": 0,
+                    "pending_records": len(suggestion.get("record_ids", [])),
+                })
+                return
+            try:
+                suggestion = _apply_translation_experience_suggestion(
+                    suggestion_id,
+                    actor=actor,
+                )
+            except KeyError:
+                self._send_json({"error": "未找到经验建议。"}, status=404)
+                return
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, status=400)
+                return
+            record_ids = [str(item or "").strip() for item in suggestion.get("record_ids", []) if str(item or "").strip()]
+            queued, skipped = _queue_translation_record_ids(record_ids, mode="continue")
         _write_audit(
             user,
             "apply_translation_experience",
@@ -852,6 +883,7 @@ class FormHandler(BaseHTTPRequestHandler):
         self._send_json({
             "ok": True,
             "suggestion": suggestion,
+            "deferred": False,
             "queued_records": queued,
             "skipped_records": skipped,
         })
@@ -909,6 +941,10 @@ class FormHandler(BaseHTTPRequestHandler):
         except (ValueError, KeyError) as exc:
             self._send_json({"error": str(exc)}, status=400)
             return
+        _refresh_extraction_after_translation(
+            str(payload.get("record_id", "")),
+            changed_field_code=str(payload.get("field_code", "")),
+        )
         _write_audit(user, "revise_translation", "ai_service", str(payload.get("record_id", "")), True, str(payload.get("field_code", "")))
         self._send_json({"ok": True, **result})
 
@@ -969,7 +1005,6 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         raw_tuning = payload.get("tuning")
         batch_mode = bool(payload.get("batch_mode"))
-        compare_mode = bool(payload.get("compare_mode"))
         tuning_config = _normalize_translation_tuning_config(raw_tuning) if isinstance(raw_tuning, dict) else _load_translation_tuning_config()
         tuning = TranslationTuningConfig.from_data(tuning_config)
         terms = TermsConfig.from_data(_load_translation_terms_config())
@@ -995,57 +1030,6 @@ class FormHandler(BaseHTTPRequestHandler):
             test_payload[test_section] = [{"row_no": "1", test_field_name: source_text}]
         started = time.monotonic()
         try:
-            if compare_mode:
-                comparisons: list[dict[str, object]] = []
-                for pipeline_mode in ("contextual", "legacy"):
-                    mode_started = time.monotonic()
-                    mode_tuning = TranslationTuningConfig.from_data({**tuning_config, "pipeline_mode": pipeline_mode})
-                    mode_translator = build_translator(
-                        config=_translation_config_for_model(model),
-                        terms=terms,
-                        target_language=target_language,
-                        tuning=mode_tuning,
-                    )
-                    mode_diagnostics = mode_translator.translation_diagnostics(
-                        source_text, target_language,
-                        report_context=test_report_context,
-                        event_context=test_event_context,
-                        field_code=test_field_code,
-                    )
-                    mode_result = mode_translator.translate_report_payload(test_payload)
-                    mode_rows = mode_result.get("translation_content") if isinstance(mode_result.get("translation_content"), list) else []
-                    mode_row = mode_rows[0] if mode_rows and isinstance(mode_rows[0], dict) else {}
-                    mode_text = str(mode_row.get("translated_text", "") or "")
-                    comparisons.append({
-                        "pipeline_mode": pipeline_mode,
-                        "ok": str(mode_row.get("translation_status", "")) in {"COMPLETED", "NOT_REQUIRED"},
-                        "translated_text": mode_text,
-                        "elapsed_ms": round((time.monotonic() - mode_started) * 1000),
-                        "prompt_preview": mode_translator.prompt_preview(
-                            source_text, target_language,
-                            report_context=test_report_context,
-                            event_context=test_event_context,
-                            field_code=test_field_code,
-                        ),
-                        "request_source_text": mode_diagnostics["request_source_text"],
-                        "placeholder_count": mode_diagnostics["placeholder_count"],
-                        "checks": mode_translator.quality_checks(str(mode_diagnostics["cleaned_source_text"]), mode_text, target_language) if mode_text else [],
-                        "error": str(mode_row.get("error_message", "") or ""),
-                    })
-                elapsed_ms = round((time.monotonic() - started) * 1000)
-                response = {
-                    "ok": all(bool(item.get("ok")) for item in comparisons),
-                    "compare_mode": True,
-                    "comparisons": comparisons,
-                    "source_language": detect_language(source_text),
-                    "target_language": target_language,
-                    "model_id": model.get("id", ""),
-                    "model_name": model.get("name", ""),
-                    "elapsed_ms": elapsed_ms,
-                }
-                _write_audit(user, "compare_translation_pipelines", "ai_service", str(model.get("name", "")), bool(response["ok"]), f"{elapsed_ms} ms")
-                self._send_json(response)
-                return
             translator = build_translator(
                 config=_translation_config_for_model(model),
                 terms=terms,
@@ -1092,7 +1076,8 @@ class FormHandler(BaseHTTPRequestHandler):
                 "batch_mode": batch_mode,
                 "batch_size": len(rows),
                 "prompt_chars": len(prompt_preview),
-                "pipeline_mode": diagnostics["pipeline_mode"],
+                "contextual_translation": diagnostics["contextual_translation"],
+                "validate_results": diagnostics["validate_results"],
                 "request_source_text": diagnostics["request_source_text"],
                 "cleaned_source_text": diagnostics["cleaned_source_text"],
                 "cleanup_actions": diagnostics["cleanup_actions"],
@@ -1431,7 +1416,7 @@ class FormHandler(BaseHTTPRequestHandler):
             pdf_bytes = upload.data
             payload = parse_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "drilling")
+            self._store_payload(payload, "drilling", from_upload=True)
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except ValueError as exc:
@@ -1445,7 +1430,7 @@ class FormHandler(BaseHTTPRequestHandler):
             pdf_bytes = upload.data
             payload = parse_completion_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "completion")
+            self._store_payload(payload, "completion", from_upload=True)
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except ValueError as exc:
@@ -1459,7 +1444,7 @@ class FormHandler(BaseHTTPRequestHandler):
             pdf_bytes = upload.data
             payload = parse_workover_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "workover")
+            self._store_payload(payload, "workover", from_upload=True)
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except ValueError as exc:
@@ -1473,7 +1458,7 @@ class FormHandler(BaseHTTPRequestHandler):
             pdf_bytes = upload.data
             payload = parse_move_pdf_daily_report(pdf_bytes)
             payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "move")
+            self._store_payload(payload, "move", from_upload=True)
             self._store_source_pdf(payload, pdf_bytes)
             self._send_json(payload)
         except ValueError as exc:
@@ -1780,7 +1765,7 @@ class FormHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _store_payload(self, payload: dict[str, object], report_type: str) -> None:
+    def _store_payload(self, payload: dict[str, object], report_type: str, *, from_upload: bool = False) -> None:
         identity_errors = _report_identity_errors(payload)
         if identity_errors:
             metadata_value = payload.get("metadata", {})
@@ -1790,23 +1775,34 @@ class FormHandler(BaseHTTPRequestHandler):
         metadata = payload.setdefault("metadata", {})
         warnings = list(dict.fromkeys(_normalize_payload_values(payload) + _validation_warnings(payload, report_type)))
         invalidate_translations = True
+        queue_translation = False
         queue_extraction = False
+        reset_extraction_results = False
         if isinstance(metadata, dict):
             metadata["report_type"] = report_type
             metadata.setdefault("status", "parsed")
             metadata.setdefault("source_language", _detect_payload_source_language(payload))
-            existing_payload = _existing_report_payload(str(metadata.get("record_id", "") or ""))
+            tuning_config = _load_translation_tuning_config()
+            auto_translate_on_upload = from_upload and _truthy(tuning_config.get("auto_translate_on_upload", False))
+            fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
+            lookup_record_id = str(metadata.get("record_id", "") or natural_record_id(report_type, fields))
+            existing_payload = _existing_report_payload(lookup_record_id)
             if existing_payload is not None:
                 invalidate_translations = _translation_source_signature(payload) != _translation_source_signature(existing_payload)
+            if auto_translate_on_upload:
+                # Re-uploading is an explicit request to regenerate this report's translations,
+                # even when the parsed source text is byte-for-byte identical.
+                invalidate_translations = True
             if invalidate_translations:
-                tuning = TranslationTuningConfig.from_data(_load_translation_tuning_config())
+                tuning = TranslationTuningConfig.from_data(tuning_config)
                 has_translation_source = bool(iter_payload_text_units(  # type: ignore[arg-type]
                     payload,
                     report_fields=set(tuning.report_fields),
                     row_fields=set(tuning.row_fields),
                     scope_rules=set(tuning.scope_rules) if tuning.scope_rules else None,
                 ))
-                metadata["translation_status"] = "PENDING" if has_translation_source else "NOT_REQUIRED"
+                queue_translation = bool(auto_translate_on_upload and has_translation_source and _translation_jobs_enabled())
+                metadata["translation_status"] = "QUEUED" if queue_translation else "PENDING" if has_translation_source else "NOT_REQUIRED"
                 metadata["translation_progress"] = "0" if has_translation_source else "100"
                 metadata["translation_error"] = ""
                 metadata["translation_version"] = ""
@@ -1818,31 +1814,31 @@ class FormHandler(BaseHTTPRequestHandler):
                         metadata[key] = existing_metadata.get(key, "")
             extraction_config = _load_ai_extraction_config()
             extraction_version = str(extraction_config.get("version", "") or "")
-            extraction_units = [
-                (str(rule.get("id", "")), unit.get("source_row_no", 0), str(unit.get("source_text", "") or ""))
-                for rule in _enabled_extraction_rules(report_type)
-                for unit in _ai_extraction_units(payload, rule)
-            ]
-            old_extraction_units = [
-                (str(rule.get("id", "")), unit.get("source_row_no", 0), str(unit.get("source_text", "") or ""))
-                for rule in _enabled_extraction_rules(report_type)
-                for unit in (_ai_extraction_units(existing_payload, rule) if existing_payload else [])
-            ]
-            extraction_changed = extraction_units != old_extraction_units
-            if extraction_units and (existing_payload is None or extraction_changed):
+            extraction_rules = _enabled_extraction_rules(report_type)
+            extraction_signature, extraction_unit_count = _extraction_input_signature(payload, extraction_rules)
+            old_extraction_signature, old_extraction_unit_count = _extraction_input_signature(existing_payload, extraction_rules) if existing_payload else ("", 0)
+            existing_metadata = existing_payload.get("metadata", {}) if existing_payload else {}
+            existing_extraction_version = str(existing_metadata.get("extraction_version", "") or "") if isinstance(existing_metadata, dict) else ""
+            extraction_changed = (
+                existing_payload is None
+                or extraction_signature != old_extraction_signature
+                or bool(existing_extraction_version and existing_extraction_version != extraction_version)
+            )
+            if extraction_unit_count and extraction_changed:
+                reset_extraction_results = existing_payload is not None
                 queue_extraction = bool(extraction_config.get("auto_execute", True)) and _extraction_jobs_enabled()
                 metadata["extraction_status"] = "QUEUED" if queue_extraction else "PENDING"
                 metadata["extraction_progress"] = "0"
                 metadata["extraction_error"] = ""
                 metadata["extraction_version"] = extraction_version
                 metadata["extraction_updated_at"] = ""
-            elif not extraction_units:
+            elif not extraction_unit_count:
+                reset_extraction_results = bool(existing_payload is not None and old_extraction_unit_count)
                 metadata["extraction_status"] = "NOT_REQUIRED"
                 metadata["extraction_progress"] = "100"
                 metadata["extraction_error"] = ""
                 metadata["extraction_version"] = extraction_version
             elif existing_payload is not None:
-                existing_metadata = existing_payload.get("metadata", {})
                 if isinstance(existing_metadata, dict):
                     for key in ("extraction_status", "extraction_progress", "extraction_error", "extraction_version", "extraction_updated_at"):
                         metadata[key] = existing_metadata.get(key, "")
@@ -1857,8 +1853,15 @@ class FormHandler(BaseHTTPRequestHandler):
         )
         if isinstance(metadata, dict):
             metadata.update(result)
+            record_id = str(metadata.get("record_id", "") or "")
+            if queue_translation:
+                _invalidate_translation_jobs([record_id])
+                _schedule_translation_job(record_id)
+            if reset_extraction_results:
+                _invalidate_extraction_jobs([record_id])
+                clear_extraction_results(DATABASE_PATH, [record_id])
             if queue_extraction:
-                _schedule_extraction_job(str(metadata.get("record_id", "") or ""))
+                _schedule_extraction_job(record_id)
 
     def _store_source_pdf(self, payload: dict[str, object], pdf_bytes: bytes) -> None:
         if not _load_config().get("save_source_pdf", True):
@@ -1988,7 +1991,7 @@ def _existing_report_payload(record_id: str) -> dict[str, object] | None:
         return None
     try:
         return load_report_payload(DATABASE_PATH, record_id)
-    except KeyError:
+    except (KeyError, FileNotFoundError):
         return None
 
 
@@ -2131,6 +2134,18 @@ def _translation_telemetry(record_id: str, generation: int, language: str = ""):
         fields = {key: value for key, value in payload.items() if key != "event"}
         if event in {"translation_source_cleaned", "model_wire_request", "model_wire_response", "translation_item_final"}:
             _write_translation_debug_log(event, record_id=record_id, generation=generation, language=language, **fields)
+            if event == "model_wire_response" and isinstance(fields.get("usage_metrics"), dict) and fields["usage_metrics"]:
+                _write_translation_metric(
+                    "model_usage",
+                    record_id=record_id,
+                    generation=generation,
+                    language=language,
+                    provider=fields.get("provider", ""),
+                    model=fields.get("model", ""),
+                    prompt_prefix_hash=fields.get("prompt_prefix_hash", ""),
+                    elapsed_ms=fields.get("elapsed_ms", 0),
+                    **fields["usage_metrics"],
+                )
             return
         _write_translation_metric(event, record_id=record_id, generation=generation, language=language, **fields)
         if event in {"model_request_start", "model_request_complete", "model_request_retry", "model_request_error"}:
@@ -2286,6 +2301,10 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
             chunk_max_chars=translation_config.chunk_max_chars,
             retry_count=translation_config.retry_count,
             prompt_version=prompt_version,
+            contextual_translation=tuning.contextual_translation,
+            validate_results=tuning.validate_results,
+            protect_numbers=tuning.protect_numbers,
+            protect_units=tuning.protect_units,
         )
         for index, language in enumerate(target_languages, start=1):
             language_started = time.monotonic()
@@ -2407,6 +2426,7 @@ def _run_translation_job_locked(record_id: str, generation: int) -> None:
                 error="",
                 version=prompt_version,
             )
+            _refresh_extraction_after_translation(record_id)
             _write_translation_metric(
                 "job_complete",
                 record_id=record_id,
@@ -2487,7 +2507,7 @@ def _default_config() -> dict[str, object]:
     return {
         "system_name": "钻完井管理平台",
         "default_language": "zh",
-        "records_per_page": 10,
+        "records_per_page": 20,
         "database_engine": "mysql",
         "database_name": settings.database,
         "save_source_pdf": True,
@@ -2758,6 +2778,9 @@ def _apply_translation_experience_suggestion(suggestion_id: str, *, actor: str =
         suggestion = next((item for item in suggestions if str(item.get("id", "") or "") == suggestion_id), None)
         if not isinstance(suggestion, dict):
             raise KeyError(suggestion_id)
+        status = str(suggestion.get("status", "PENDING") or "PENDING").upper()
+        if status not in {"PENDING", "QUEUED"}:
+            raise ValueError("这条经验建议已经处理，无需重复采纳。")
         action_type = str(suggestion.get("action_type", "") or "")
         token = str(suggestion.get("token", "") or "").strip()
         with CONFIG_WRITE_LOCK:
@@ -2775,33 +2798,23 @@ def _apply_translation_experience_suggestion(suggestion_id: str, *, actor: str =
                 config["protected_terms"] = protected
                 _save_translation_terms_config(config)
             elif action_type == "enable_placeholder":
-                config = _load_translation_tuning_config()
-                protections = config.get("protections") if isinstance(config.get("protections"), dict) else {}
-                protections["mode"] = "placeholder"
-                config["protections"] = protections
-                config["updated_at"] = datetime.now().isoformat(timespec="seconds")
-                _save_translation_tuning_config(config)
+                # Old experience records may still contain this retired action.
+                # Never let an automatically generated suggestion switch a
+                # report back to the retired protection pipeline.
+                action_type = "retry_current_rules"
+                suggestion["action_type"] = action_type
+                suggestion["title"] = "按当前上下文保护规则重跑"
+                suggestion["recommendation"] = "旧保护管线已移除；将使用当前策略重跑。"
+                suggestion["proposed_change"] = {"action": action_type}
             elif action_type == "add_prompt_rule":
-                change = suggestion.get("proposed_change") if isinstance(suggestion.get("proposed_change"), dict) else {}
-                instruction = str(change.get("instruction", "") or "").strip()
-                if not instruction:
-                    raise ValueError("经验建议缺少可应用的Prompt规则。")
-                config = _load_translation_tuning_config()
-                rules = config.get("experience_rules") if isinstance(config.get("experience_rules"), list) else []
-                rule_id = f"experience-{str(suggestion.get('fingerprint', '') or '')[:16]}"
-                if not any(isinstance(item, dict) and str(item.get("id", "") or "") == rule_id for item in rules):
-                    rules.append({
-                        "id": rule_id,
-                        "report_type": str(suggestion.get("report_type", "") or ""),
-                        "field_code": str(suggestion.get("field_code", "") or ""),
-                        "instruction": instruction,
-                        "enabled": True,
-                        "source": "translation_experience",
-                        "created_at": datetime.now().isoformat(timespec="seconds"),
-                    })
-                config["experience_rules"] = rules
-                config["updated_at"] = datetime.now().isoformat(timespec="seconds")
-                _save_translation_tuning_config(config)
+                # Backward compatibility for old suggestions. Experience no
+                # longer writes into the production Prompt; applying one only
+                # reruns the affected report with the stable current policy.
+                action_type = "retry_current_rules"
+                suggestion["action_type"] = action_type
+                suggestion["title"] = "按当前稳定策略重跑"
+                suggestion["recommendation"] = "经验仅保留为诊断记录，不再写入正式 Prompt。"
+                suggestion["proposed_change"] = {"action": action_type}
             elif action_type != "retry_current_rules":
                 raise ValueError(f"不支持的经验操作：{action_type}")
         suggestion["status"] = "APPLIED"
@@ -2810,6 +2823,104 @@ def _apply_translation_experience_suggestion(suggestion_id: str, *, actor: str =
         pool["suggestions"] = suggestions
         _save_translation_experience_pool(pool)
         return suggestion
+
+
+def _queue_translation_experience_suggestion(suggestion_id: str, *, actor: str = "") -> dict[str, object]:
+    with TRANSLATION_EXPERIENCE_LOCK:
+        pool = _load_translation_experience_pool()
+        suggestions = pool.get("suggestions") if isinstance(pool.get("suggestions"), list) else []
+        suggestion = next((item for item in suggestions if str(item.get("id", "") or "") == suggestion_id), None)
+        if not isinstance(suggestion, dict):
+            raise KeyError(suggestion_id)
+        status = str(suggestion.get("status", "PENDING") or "PENDING").upper()
+        if status == "QUEUED":
+            return suggestion
+        if status != "PENDING":
+            raise ValueError("这条经验建议已经处理，无需重复采纳。")
+        suggestion["status"] = "QUEUED"
+        suggestion["queued_at"] = datetime.now().isoformat(timespec="seconds")
+        suggestion["queued_by"] = actor
+        pool["suggestions"] = suggestions
+        _save_translation_experience_pool(pool)
+        return suggestion
+
+
+def _drain_queued_translation_experience_once() -> dict[str, object]:
+    """Apply all waiting suggestions together once current translations are idle."""
+    with TRANSLATION_EXPERIENCE_LOCK:
+        pool = _load_translation_experience_pool()
+        waiting = [
+            item for item in pool.get("suggestions", [])
+            if isinstance(item, dict) and str(item.get("status", "") or "").upper() == "QUEUED"
+        ]
+    if not waiting:
+        return {"waiting": False, "applied_suggestions": 0, "queued_records": 0, "skipped_records": 0}
+    if _active_ai_job_counts()["translation"]:
+        return {"waiting": True, "applied_suggestions": 0, "queued_records": 0, "skipped_records": 0}
+    record_ids: list[str] = []
+    applied = 0
+    for item in waiting:
+        suggestion_id = str(item.get("id", "") or "")
+        try:
+            suggestion = _apply_translation_experience_suggestion(
+                suggestion_id,
+                actor=str(item.get("queued_by", "") or "system"),
+            )
+        except (KeyError, ValueError) as exc:
+            _update_translation_experience_status(suggestion_id, status="PENDING")
+            _write_translation_metric("experience_queue_failed", suggestion_id=suggestion_id, error=str(exc)[:500])
+            continue
+        applied += 1
+        record_ids.extend(str(value or "").strip() for value in suggestion.get("record_ids", []) if str(value or "").strip())
+    unique_record_ids = list(dict.fromkeys(record_ids))
+    queued, skipped = _queue_translation_record_ids(unique_record_ids, mode="continue") if unique_record_ids else (0, 0)
+    _write_translation_metric(
+        "experience_queue_applied",
+        suggestion_count=applied,
+        queued_records=queued,
+        skipped_records=skipped,
+    )
+    return {
+        "waiting": False,
+        "applied_suggestions": applied,
+        "queued_records": queued,
+        "skipped_records": skipped,
+    }
+
+
+def _run_translation_experience_queue() -> None:
+    global TRANSLATION_EXPERIENCE_QUEUE_THREAD
+    try:
+        while True:
+            with TRANSLATION_EXPERIENCE_APPLY_LOCK:
+                result = _drain_queued_translation_experience_once()
+            if not result["waiting"]:
+                return
+            time.sleep(0.5)
+    finally:
+        with TRANSLATION_EXPERIENCE_QUEUE_LOCK:
+            TRANSLATION_EXPERIENCE_QUEUE_THREAD = None
+        with TRANSLATION_EXPERIENCE_LOCK:
+            pool = _load_translation_experience_pool()
+            still_waiting = any(
+                isinstance(item, dict) and str(item.get("status", "") or "").upper() == "QUEUED"
+                for item in pool.get("suggestions", [])
+            )
+        if still_waiting:
+            _start_translation_experience_queue()
+
+
+def _start_translation_experience_queue() -> None:
+    global TRANSLATION_EXPERIENCE_QUEUE_THREAD
+    with TRANSLATION_EXPERIENCE_QUEUE_LOCK:
+        if TRANSLATION_EXPERIENCE_QUEUE_THREAD and TRANSLATION_EXPERIENCE_QUEUE_THREAD.is_alive():
+            return
+        TRANSLATION_EXPERIENCE_QUEUE_THREAD = threading.Thread(
+            target=_run_translation_experience_queue,
+            name="drp-translation-experience",
+            daemon=True,
+        )
+        TRANSLATION_EXPERIENCE_QUEUE_THREAD.start()
 
 
 TRANSLATION_REPORT_TYPE_LABELS = {
@@ -2897,7 +3008,7 @@ def _translation_scope_defaults() -> list[dict[str, object]]:
 def _default_translation_tuning_config() -> dict[str, object]:
     raw_languages = os.environ.get("DRP_TRANSLATION_TARGET_LANGUAGES", "zh-CN")
     return _normalize_translation_tuning_config({
-        "pipeline_mode": "contextual",
+        "auto_translate_on_upload": False,
         "scope_rules": _translation_scope_defaults(),
         "target_languages": raw_languages.split(","),
         "prompt": {
@@ -2907,7 +3018,8 @@ def _default_translation_tuning_config() -> dict[str, object]:
         "prompt_templates": dict(DEFAULT_BUSINESS_PROMPT_TEMPLATES),
         "experience_rules": [],
         "protections": {
-            "mode": "prompt",
+            "contextual_translation": True,
+            "validate_results": True,
             "numbers": True,
             "units": True,
             "acronyms": True,
@@ -2988,30 +3100,16 @@ def _normalize_translation_tuning_config(raw: object) -> dict[str, object]:
     prompt_source = source.get("prompt") if isinstance(source.get("prompt"), dict) else {}
     template_source = source.get("prompt_templates") if isinstance(source.get("prompt_templates"), dict) else {}
     protections_source = source.get("protections") if isinstance(source.get("protections"), dict) else {}
+    # Historical experience remains in the experience ledger, but never joins
+    # the production Prompt. This deliberately keeps the runtime policy small
+    # and prevents accumulated failures from changing future translations.
     experience_rules: list[dict[str, object]] = []
-    raw_experience_rules = source.get("experience_rules") if isinstance(source.get("experience_rules"), list) else []
-    for index, item in enumerate(raw_experience_rules):
-        if not isinstance(item, dict):
-            continue
-        instruction = str(item.get("instruction", "") or "").strip()[:1000]
-        if not instruction:
-            continue
-        report_type = str(item.get("report_type", "") or "").strip().lower()
-        if report_type and report_type not in REPORT_TYPE_ORDER:
-            continue
-        field_code = str(item.get("field_code", "") or "").strip()[:128]
-        experience_rules.append({
-            "id": str(item.get("id", "") or f"experience-{index + 1}")[:80],
-            "report_type": report_type,
-            "field_code": field_code,
-            "instruction": instruction,
-            "enabled": _truthy(item.get("enabled", True)),
-            "source": str(item.get("source", "translation_experience") or "translation_experience")[:64],
-            "created_at": str(item.get("created_at", "") or "")[:64],
-        })
-    protection_mode = str(protections_source.get("mode", "prompt") or "prompt").strip().lower()
-    if protection_mode not in {"prompt", "placeholder"}:
-        protection_mode = "prompt"
+    # Retire the legacy placeholder pipeline. Existing installations that only
+    # have the historical mode/date keys migrate to the safe contextual +
+    # deterministic-validation policy; the date representation now lives in
+    # the administrator-authored Prompt instead of a second competing setting.
+    contextual_translation = _truthy(protections_source.get("contextual_translation", True))
+    validate_results = _truthy(protections_source.get("validate_results", True))
     ambiguous_units = _normalized_string_list(protections_source.get("ambiguous_units"))
     raw_unit_aliases = protections_source.get("unit_aliases") if isinstance(protections_source.get("unit_aliases"), dict) else {}
     unit_aliases = {
@@ -3034,11 +3132,8 @@ def _normalize_translation_tuning_config(raw: object) -> dict[str, object]:
             continue
         if units and pattern:
             unit_context_exclusions.append({"units": units, "pattern": pattern})
-    pipeline_mode = str(source.get("pipeline_mode", "contextual") or "contextual").strip().lower()
-    if pipeline_mode not in {"contextual", "legacy"}:
-        pipeline_mode = "contextual"
     normalized: dict[str, object] = {
-        "pipeline_mode": pipeline_mode,
+        "auto_translate_on_upload": _truthy(source.get("auto_translate_on_upload", False)),
         "scope_rules": scope_rules,
         "target_languages": target_languages,
         "prompt": {
@@ -3051,7 +3146,8 @@ def _normalize_translation_tuning_config(raw: object) -> dict[str, object]:
         },
         "experience_rules": experience_rules,
         "protections": {
-            "mode": protection_mode,
+            "contextual_translation": contextual_translation,
+            "validate_results": validate_results,
             "numbers": _truthy(protections_source.get("numbers", True)),
             "units": _truthy(protections_source.get("units", True)),
             "acronyms": _truthy(protections_source.get("acronyms", True)),
@@ -3063,6 +3159,9 @@ def _normalize_translation_tuning_config(raw: object) -> dict[str, object]:
         "scope_catalog": _translation_scope_catalog(),
     }
     fingerprint_source = {key: value for key, value in normalized.items() if key != "scope_catalog"}
+    # Scheduling behavior does not affect translation output and must not make
+    # completed reports stale when the administrator toggles it.
+    fingerprint_source.pop("auto_translate_on_upload", None)
     if not experience_rules:
         # Preserve the pre-experience-pool version until a real rule is added.
         # An empty feature container must not make every completed report stale.
@@ -3085,7 +3184,7 @@ def _default_ai_model_config() -> dict[str, object]:
                 "api_key": "",
                 "model": os.environ.get("DRP_OLLAMA_MODEL", "qwen3.5:9b"),
                 "timeout_seconds": int(float(os.environ.get("DRP_TRANSLATION_TIMEOUT", "120") or "120")),
-                "retry_count": 2,
+                "retry_count": 1,
                 "thinking_mode": "disabled",
                 "enabled": True,
                 "is_default": True,
@@ -3169,7 +3268,7 @@ def _normalize_ai_model(raw: dict[str, object], existing: dict[str, object] | No
         "api_key": api_key,
         "model": str(raw.get("model", "") or existing.get("model", "") or "").strip(),
         "timeout_seconds": _bounded_int(raw.get("timeout_seconds", existing.get("timeout_seconds", 120)), 5, 600, 120),
-        "retry_count": _bounded_int(raw.get("retry_count", existing.get("retry_count", 2)), 0, 10, 2),
+        "retry_count": _bounded_int(raw.get("retry_count", existing.get("retry_count", 1)), 0, 1, 1),
         "chunk_max_chars": chunk_max_chars,
         "thinking_mode": thinking_mode,
         "request_options": request_options,
@@ -3528,7 +3627,10 @@ def _normalize_ai_extraction_config(raw: object) -> dict[str, object]:
         rules.append(rule)
     auto_execute = _truthy(source.get("auto_execute", True))
     fingerprint_source = {
-        "auto_execute": auto_execute,
+        # Keep the historical `true` slot so toggling scheduling alone does not
+        # change the version. Pipeline changes intentionally invalidate it.
+        "auto_execute": True,
+        "pipeline": AI_EXTRACTION_PIPELINE_VERSION,
         "rules": [{key: value for key, value in rule.items() if key != "updated_at"} for rule in rules],
     }
     fingerprint = hashlib.sha256(
@@ -3561,14 +3663,18 @@ def _save_ai_extraction_config(config: dict[str, object]) -> None:
 
 
 def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], source_text: str) -> dict[str, object]:
-    system_prompt = "你是钻完井生产数据提炼助手。严格按证据优先级提取一个字段值，不翻译、不解释、不输出分析过程。无法确定时返回空字符串。"
+    system_prompt = (
+        "你是钻完井生产数据提炼助手。严格按证据优先级提取一个字段值，不翻译、不解释、不输出分析过程。"
+        "输入可能同时包含作业原文和中文参考译文；原文是最终证据，二者冲突时必须以原文为准，"
+        "不得根据译文补充原文不存在的责任关系。无法确定时返回空字符串。"
+    )
     user_prompt = (
         f"规则名称：{rule.get('name', '')}\n"
         f"适用条件：{rule.get('condition', '') or '无额外条件'}\n"
         f"提炼要求：{rule.get('instruction', '')}\n"
         f"输出格式：{rule.get('output_format', 'text')}\n"
         f"目标字段：{rule.get('target_field', '')}\n\n"
-        f"日报原文：\n{source_text[:12000]}\n\n只返回目标字段值。"
+        f"提炼证据：\n{source_text[:12000]}\n\n只返回目标字段值。"
     )
     api_type = str(model.get("api_type", "") or "openai-compatible")
     base_url = str(model.get("base_url", "") or "").rstrip("/")
@@ -3681,13 +3787,57 @@ def _ai_extraction_source_from_payload(payload: dict[str, object], rule: dict[st
     return "\n\n".join(values), len(values)
 
 
+def _extraction_translation_reference(
+    payload: dict[str, object],
+    *,
+    section: str,
+    row_no: int,
+    field: str,
+    source_text: str,
+) -> str:
+    """Return the exact Chinese translation for one current source value."""
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    record_id = str(metadata.get("record_id", "") or "") if isinstance(metadata, dict) else ""
+    entity_id = record_id if section == "report_fields" else f"{record_id}:{section}:{row_no}"
+    field_code = f"{section}.{field}"
+    translations = payload.get("translation_content") if isinstance(payload.get("translation_content"), list) else []
+    expected_hash = source_hash(source_text)
+    for row in translations:
+        if not isinstance(row, dict):
+            continue
+        if (
+            str(row.get("entity_id", "") or "") == entity_id
+            and str(row.get("field_code", "") or "") == field_code
+            and normalize_language(row.get("target_language", "")) == "zh-CN"
+            and str(row.get("translation_status", "") or "") in {"COMPLETED", "NOT_REQUIRED"}
+            and str(row.get("source_hash", "") or "") == expected_hash
+        ):
+            return str(row.get("translated_text", "") or "").strip()
+    return ""
+
+
 def _ai_extraction_units(payload: dict[str, object], rule: dict[str, object]) -> list[dict[str, object]]:
     section = str(rule.get("source_section", "") or "")
     field = str(rule.get("source_field", "") or "")
     if section == "report_fields":
         fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
         text = str(fields.get(field, "") or "").strip()
-        return [{"source_section": section, "source_row_no": 0, "source_field": field, "source_text": text}] if text else []
+        if not text:
+            return []
+        translated_text = _extraction_translation_reference(
+            payload, section=section, row_no=0, field=field, source_text=text,
+        )
+        prompt_text = f"来源原文：\n{text}"
+        if translated_text:
+            prompt_text += f"\n\n中文参考译文（仅辅助理解）：\n{translated_text}\n\n证据规则：如有冲突，以来源原文为准。"
+        return [{
+            "source_section": section,
+            "source_row_no": 0,
+            "source_field": field,
+            "source_text": text,
+            "translated_text": translated_text,
+            "prompt_text": prompt_text,
+        }]
     rows = payload.get(section) if isinstance(payload.get(section), list) else []
     fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
     report_context = {key: fields.get(key) for key in ("reportDate", "wellbore", "rig") if fields.get(key) not in (None, "")}
@@ -3703,14 +3853,47 @@ def _ai_extraction_units(payload: dict[str, object], rule: dict[str, object]) ->
         if not text:
             continue
         context = {key: row.get(key) for key in ("from", "to", "hours", "op_code", "op_sub", "op_type", "confirmed_op_type") if row.get(key) not in (None, "")}
+        translated_text = _extraction_translation_reference(
+            payload, section=section, row_no=row_no, field=field, source_text=text,
+        )
+        prompt_text = (
+            f"日报上下文：{json.dumps(report_context, ensure_ascii=False)}\n"
+            f"明细上下文：{json.dumps(context, ensure_ascii=False)}\n"
+            f"作业原文：\n{text}"
+        )
+        if translated_text:
+            prompt_text += (
+                f"\n\n中文参考译文（仅辅助理解）：\n{translated_text}"
+                "\n\n证据规则：原文是最终证据；如有冲突，以作业原文为准，不得根据译文增加原文不存在的责任关系。"
+            )
         units.append({
             "source_section": section,
             "source_row_no": row_no,
             "source_field": field,
             "source_text": text,
-            "prompt_text": f"日报上下文：{json.dumps(report_context, ensure_ascii=False)}\n明细上下文：{json.dumps(context, ensure_ascii=False)}\n日报原文：{text}",
+            "translated_text": translated_text,
+            "prompt_text": prompt_text,
         })
     return units
+
+
+def _extraction_input_signature(
+    payload: dict[str, object],
+    rules: list[dict[str, object]],
+) -> tuple[str, int]:
+    """Fingerprint every value that can affect a prompt or its row mapping."""
+    source: list[dict[str, object]] = []
+    for rule in rules:
+        for unit in _ai_extraction_units(payload, rule):
+            source.append({
+                "rule_id": str(rule.get("id", "") or ""),
+                "source_section": str(unit.get("source_section", "") or ""),
+                "source_row_no": int(unit.get("source_row_no", 0) or 0),
+                "source_field": str(unit.get("source_field", "") or ""),
+                "prompt_text": str(unit.get("prompt_text", "") or unit.get("source_text", "") or ""),
+            })
+    encoded = json.dumps(source, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest(), len(source)
 
 
 def _enabled_extraction_rules(report_type: str = "") -> list[dict[str, object]]:
@@ -3729,6 +3912,59 @@ def _payload_has_extraction_units(payload: dict[str, object], report_type: str, 
 
 def _extraction_jobs_enabled() -> bool:
     return _active_ai_model() is not None
+
+
+def _translation_is_running_for_extraction(record_id: str) -> bool:
+    try:
+        payload = load_report_payload(DATABASE_PATH, record_id)
+    except (KeyError, FileNotFoundError, ValueError):
+        return False
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    status = str(metadata.get("translation_status", "") or "").strip().upper() if isinstance(metadata, dict) else ""
+    return status in {"QUEUED", "IN_PROGRESS"}
+
+
+def _refresh_extraction_after_translation(record_id: str, *, changed_field_code: str = "") -> bool:
+    """Invalidate extraction when a usable supporting translation changes."""
+    if not record_id:
+        return False
+    try:
+        payload = load_report_payload(DATABASE_PATH, record_id)
+    except (KeyError, FileNotFoundError, ValueError):
+        return False
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    report_type = str(metadata.get("report_type", "") or "") if isinstance(metadata, dict) else ""
+    rules = _enabled_extraction_rules(report_type)
+    if changed_field_code and not any(
+        f"{rule.get('source_section', '')}.{rule.get('source_field', '')}" == changed_field_code
+        for rule in rules
+    ):
+        return False
+    units = [unit for rule in rules for unit in _ai_extraction_units(payload, rule)]
+    current_status = str(metadata.get("extraction_status", "") or "").strip().upper() if isinstance(metadata, dict) else ""
+    if not changed_field_code and current_status in {"QUEUED", "IN_PROGRESS"}:
+        # The already queued task waits for translation and will reload the
+        # bilingual evidence before it starts extracting.
+        return False
+    config = _load_ai_extraction_config()
+    version = str(config.get("version", "") or "")
+    _invalidate_extraction_jobs([record_id])
+    clear_extraction_results(DATABASE_PATH, [record_id])
+    if not units:
+        update_record_extraction_status(DATABASE_PATH, record_id, status="NOT_REQUIRED", progress=100, error="", version=version)
+        return True
+    auto_execute = bool(config.get("auto_execute", True)) and _extraction_jobs_enabled()
+    update_record_extraction_status(
+        DATABASE_PATH,
+        record_id,
+        status="QUEUED" if auto_execute else "PENDING",
+        progress=0,
+        error="",
+        version=version,
+    )
+    if auto_execute:
+        _schedule_extraction_job(record_id)
+    return True
 
 
 def _schedule_extraction_job(record_id: str, *, overwrite: bool = False) -> None:
@@ -3783,11 +4019,27 @@ def _extraction_model(rule: dict[str, object]) -> dict[str, object] | None:
 
 
 def _run_extraction_job(record_id: str, generation: int, overwrite: bool = False) -> None:
+    if _translation_is_running_for_extraction(record_id):
+        _retry_extraction_job_after_translation(record_id, generation, overwrite)
+        return
     with background_job_lock("extraction", record_id) as acquired:
         if not acquired:
             _retry_extraction_job_after_lock(record_id, generation, overwrite)
             return
         _run_extraction_job_locked(record_id, generation, overwrite)
+
+
+def _retry_extraction_job_after_translation(record_id: str, generation: int, overwrite: bool) -> None:
+    def retry() -> None:
+        with EXTRACTION_STATE_LOCK:
+            if EXTRACTION_JOB_GENERATIONS.get(record_id) != generation:
+                return
+            executor = EXTRACTION_EXECUTOR
+        executor.submit(_run_extraction_job, record_id, generation, overwrite)
+
+    timer = threading.Timer(1.0, retry)
+    timer.daemon = True
+    timer.start()
 
 
 def _retry_extraction_job_after_lock(record_id: str, generation: int, overwrite: bool) -> None:
@@ -4880,6 +5132,7 @@ def main() -> None:
     _prune_translation_debug_logs()
     _resume_translation_jobs()
     _resume_extraction_jobs()
+    _start_translation_experience_queue()
     server = ThreadingHTTPServer((args.host, args.port), FormHandler)
     print(f"Drilling report form: http://{args.host}:{args.port}/web_form/")
     server.serve_forever()

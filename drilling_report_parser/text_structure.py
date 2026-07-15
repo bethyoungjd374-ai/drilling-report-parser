@@ -5,10 +5,75 @@ from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 
+_OCR_ACTION_NUMBER_PATTERN = re.compile(
+    r"\b(INGRESA(?:N)?|FILTRA|PERFORA|BOMBEA|CIRCULA|DESPLAZA|RECUPERA|BAJA|SACA)(\d{4,})(?![A-Za-z0-9_])",
+    re.IGNORECASE,
+)
+_OCR_INCH_UNIT = r"(?:IN\b|[\"”″])"
+_OCR_UNICODE_FRACTIONS = {
+    "¼": "1/4", "½": "1/2", "¾": "3/4",
+    "⅛": "1/8", "⅜": "3/8", "⅝": "5/8", "⅞": "7/8",
+}
+
+
 @dataclass(frozen=True)
 class TextPart:
     text: str
     separator_before: str = ""
+
+
+def normalize_pdf_ocr_text(value: Any) -> str:
+    """Repair only high-confidence PDF/OCR errors before field parsing.
+
+    This deliberately avoids locale-dependent guesses such as interpreting
+    every dotted value as a thousands-grouped depth. Ambiguous formatting is
+    left unchanged for downstream validation.
+    """
+    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+    if not text:
+        return ""
+
+    # PDF text extraction sometimes glues a Spanish operation verb to a four-
+    # digit volume/depth. The restricted verb list avoids splitting equipment
+    # identifiers and serial numbers.
+    text = _OCR_ACTION_NUMBER_PATTERN.sub(r"\1 \2", text)
+
+    # Mixed inch fractions can be split across a physical line or extracted as
+    # ``12.1/4``. The following unit/quote makes the intended value unambiguous.
+    text = re.sub(
+        rf"(?<!\d)(\d{{1,2}})[ \t]*\n[ \t]*(\d)/(\d)(?=[ \t]*{_OCR_INCH_UNIT})",
+        r"\1 \2/\3",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        rf"(?<![\d.])(\d{{1,2}})\.(\d)/(\d)(?=[ \t]*{_OCR_INCH_UNIT})",
+        r"\1 \2/\3",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # ``9 58/IN`` is a recurring extraction of ``9 5/8IN``: numerator and
+    # denominator were concatenated before the slash.
+    text = re.sub(
+        rf"(?<!\d)(\d{{1,2}})[ \t]+(\d)(\d)[ \t]*/[ \t]*(?={_OCR_INCH_UNIT})",
+        r"\1 \2/\3",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    for symbol, fraction in _OCR_UNICODE_FRACTIONS.items():
+        text = re.sub(
+            rf"(?<!\d)(\d{{1,2}})[ \t]*{re.escape(symbol)}(?=[ \t]*{_OCR_INCH_UNIT})",
+            rf"\1 {fraction}",
+            text,
+            flags=re.IGNORECASE,
+        )
+
+    # A space after a thousands comma is a PDF word-position artifact. Decimal
+    # commas in the source reports do not use this spacing.
+    text = re.sub(r"(?<![\d,])(\d{1,3}),[ \t]+(?=\d{3}(?:\D|$))", r"\1,", text)
+    return text
 
 
 def normalize_inline(value: Any) -> str:
@@ -55,7 +120,7 @@ def column_text(
         selected = [word for word in selected if abs(float(word["top"]) - top) <= line_tolerance]
     selected.sort(key=lambda word: (round(float(word["top"]), 1), float(word["x0"])))
     if not preserve_lines:
-        return normalize_inline(" ".join(str(word.get("text", "") or "") for word in selected))
+        return normalize_inline(normalize_pdf_ocr_text(" ".join(str(word.get("text", "") or "") for word in selected)))
 
     lines: list[str] = []
     current_top: float | None = None
@@ -71,7 +136,7 @@ def column_text(
         current_words = [str(word.get("text", "") or "")]
     if current_words:
         lines.append(normalize_inline(" ".join(current_words)))
-    return join_text_lines(lines)
+    return join_text_lines(normalize_pdf_ocr_text("\n".join(lines)).split("\n"))
 
 
 def split_preserving_layout(value: Any, max_chars: int) -> list[TextPart]:

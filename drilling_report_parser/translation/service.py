@@ -22,6 +22,7 @@ from ..text_structure import (
     join_translated_parts,
     normalize_inline,
     normalize_multiline,
+    normalize_pdf_ocr_text,
     normalize_translation_paragraph,
     split_preserving_layout,
 )
@@ -32,7 +33,10 @@ LANGUAGES = ("zh-CN",)
 TARGET_LANGUAGE = "zh-CN"
 PROMPT_VERSION = "drilling-daily-v7"
 DEFAULT_SYSTEM_PROMPT = "你是石油钻完井日报专业翻译器，熟悉钻井、完井、修井和搬迁作业术语。"
-DEFAULT_TRANSLATION_INSTRUCTION = "不得总结、删减、解释或添加说明；保持原文信息顺序和技术含义。"
+DEFAULT_TRANSLATION_INSTRUCTION = (
+    "不得总结、删减、解释或添加说明；保持原文事实顺序和技术含义，同时使用符合目标语言习惯的完整句子。"
+    "日期只要求年、月、日数值准确，月份名称和年月日语序必须按目标语言本地化；列表中的每个事项应保持主语、动作、对象和时间完整。"
+)
 DEFAULT_BUSINESS_PROMPT_TEMPLATES = (
     ("drilling", "结合钻进、循环、起下钻、BHA、井深及钻井参数的作业时序，使用中国钻井日报常用表达。"),
     ("completion", "结合完井管柱、射孔、压裂、测试和井口作业语义，使用中国完井日报常用表达。"),
@@ -41,8 +45,7 @@ DEFAULT_BUSINESS_PROMPT_TEMPLATES = (
 )
 DEFAULT_OLLAMA_CHUNK_CHARS = 6000
 DEFAULT_OPENAI_COMPATIBLE_CHUNK_CHARS = 2500
-TRANSLATION_PIPELINE_VERSION = "report-context-v9-contextual-source"
-TRANSLATION_PIPELINE_MODES = {"contextual", "legacy"}
+TRANSLATION_PIPELINE_VERSION = "report-context-v14-deterministic-validation"
 TERM_TYPES = {"protected", "preferred", "contextual", "phrase"}
 TRANSLATABLE_REPORT_FIELDS = {
     "currentOps",
@@ -157,12 +160,13 @@ class TranslationTuningConfig:
     protect_units: bool = True
     protect_acronyms: bool = True
     protect_proper_nouns: bool = True
-    protection_mode: str = "prompt"
+    contextual_translation: bool = True
+    validate_results: bool = True
+    date_format: str = "iso"
     ambiguous_units: tuple[str, ...] = ()
     unit_aliases: tuple[tuple[str, tuple[str, ...]], ...] = ()
     unit_context_exclusions: tuple[tuple[str, str], ...] = ()
     experience_rules: tuple[tuple[str, str, str], ...] = ()
-    pipeline_mode: str = "contextual"
     prompt_templates: tuple[tuple[str, str], ...] = DEFAULT_BUSINESS_PROMPT_TEMPLATES
     version: str = PROMPT_VERSION
     scope_rules: tuple[tuple[str, str, str], ...] = ()
@@ -214,9 +218,8 @@ class TranslationTuningConfig:
             for report_type, default_text in DEFAULT_BUSINESS_PROMPT_TEMPLATES
         )
         protections = source.get("protections") if isinstance(source.get("protections"), dict) else {}
-        protection_mode = str(protections.get("mode", "prompt") or "prompt").strip().lower()
-        if protection_mode not in {"prompt", "placeholder"}:
-            protection_mode = "prompt"
+        contextual_translation = bool(protections.get("contextual_translation", True))
+        validate_results = bool(protections.get("validate_results", True))
         ambiguous_units = tuple(
             dict.fromkeys(
                 str(item or "").strip().casefold()
@@ -259,9 +262,6 @@ class TranslationTuningConfig:
                 str(item.get("field_code", "") or "").strip(),
                 instruction,
             ))
-        pipeline_mode = str(source.get("pipeline_mode", "contextual") or "contextual").strip().lower()
-        if pipeline_mode not in TRANSLATION_PIPELINE_MODES:
-            pipeline_mode = "contextual"
         return cls(
             report_fields=report_fields,
             row_fields=row_fields,
@@ -271,12 +271,12 @@ class TranslationTuningConfig:
             protect_units=bool(protections.get("units", True)),
             protect_acronyms=bool(protections.get("acronyms", True)),
             protect_proper_nouns=bool(protections.get("proper_nouns", True)),
-            protection_mode=protection_mode,
+            contextual_translation=contextual_translation,
+            validate_results=validate_results,
             ambiguous_units=ambiguous_units,
             unit_aliases=unit_aliases,
             unit_context_exclusions=tuple(unit_context_exclusions),
             experience_rules=tuple(experience_rules),
-            pipeline_mode=pipeline_mode,
             prompt_templates=prompt_templates,
             version=str(source.get("version", "") or PROMPT_VERSION).strip(),
             scope_rules=tuple(sorted(set(scope_rules))),
@@ -475,11 +475,13 @@ class OllamaTranslationEngine:
         *,
         strict: bool,
     ) -> dict[str, str]:
+        prompt = _ollama_batch_prompt(items, target_language, strict=strict)
+        prompt_prefix_hash = source_hash(_prompt_system_message(items, target_language))[:16]
         payload = {
             "model": self.model,
             "stream": False,
             "think": self.thinking_mode == "enabled",
-            "prompt": _ollama_batch_prompt(items, target_language, strict=strict),
+            "prompt": prompt,
             "options": {
                 "temperature": self.temperature,
                 "top_p": 0.2,
@@ -488,7 +490,7 @@ class OllamaTranslationEngine:
         }
         payload.update(self.request_options)
         payload["model"] = self.model
-        payload["prompt"] = _ollama_batch_prompt(items, target_language, strict=strict)
+        payload["prompt"] = prompt
         endpoint = f"{self.base_url}/api/generate"
         started = time.monotonic()
         self._trace(
@@ -496,18 +498,21 @@ class OllamaTranslationEngine:
             target_language=target_language,
             strict=strict,
             endpoint=endpoint,
+            prompt_prefix_hash=prompt_prefix_hash,
             request_payload=payload,
         )
         try:
             data = _post_json(endpoint, payload, timeout_seconds)
         except Exception as exc:
-            self._trace("model_wire_response", target_language=target_language, strict=strict, elapsed_ms=round((time.monotonic() - started) * 1000), error=str(exc))
+            self._trace("model_wire_response", target_language=target_language, strict=strict, prompt_prefix_hash=prompt_prefix_hash, elapsed_ms=round((time.monotonic() - started) * 1000), error=str(exc))
             raise
         self._trace(
             "model_wire_response",
             target_language=target_language,
             strict=strict,
+            prompt_prefix_hash=prompt_prefix_hash,
             elapsed_ms=round((time.monotonic() - started) * 1000),
+            usage_metrics=_provider_usage_metrics(data),
             raw_response=data,
         )
         response = str(data.get("response", "") if isinstance(data, dict) else "")
@@ -589,8 +594,16 @@ class OpenAICompatibleTranslationEngine:
                     strict=True,
                 )
                 translated[item_id] = str(retry_result.get(item_id, "") or "")
-                if _openai_item_quality_error(item, translated[item_id], target_language):
-                    protected_item, protected_values = _surgically_protect_values(item)
+                retry_issue = _openai_item_quality_error(item, translated[item_id], target_language)
+                if retry_issue:
+                    # Protect only the class of value that still failed. When a
+                    # required company/model token is missing, masking every
+                    # number also masks date components and can make the repair
+                    # turn a correct date into a fragmented or reordered one.
+                    protected_item, protected_values = _surgically_protect_values(
+                        item,
+                        protect_numbers="numeric values" in retry_issue,
+                    )
                     if protected_values:
                         protected_result = self._request_translation(
                             [protected_item],
@@ -598,10 +611,23 @@ class OpenAICompatibleTranslationEngine:
                             timeout_seconds,
                             strict=True,
                         )
-                        translated[item_id] = _restore_surgically_protected_values(
-                            str(protected_result.get(item_id, "") or ""),
-                            protected_values,
+                        protected_text = str(protected_result.get(item_id, "") or "")
+                        expected_tokens = Counter(
+                            _PROTECTED_PLACEHOLDER_PATTERN.findall(str(protected_item.get("source_text", "") or ""))
                         )
+                        returned_tokens = Counter(_PROTECTED_PLACEHOLDER_PATTERN.findall(protected_text))
+                        # A repair response is allowed to change prose, but it
+                        # must never duplicate one protected value while dropping
+                        # another. Keep the previous strict draft when that
+                        # happens instead of turning a formatting issue into a
+                        # new numeric-value error.
+                        if returned_tokens == expected_tokens:
+                            repaired_text = _restore_surgically_protected_values(
+                                protected_text,
+                                protected_values,
+                            )
+                            if not _openai_item_quality_error(item, repaired_text, target_language):
+                                translated[item_id] = repaired_text
 
         failed = {
             str(item.get("id", "")): _openai_item_quality_error(
@@ -656,8 +682,10 @@ class OpenAICompatibleTranslationEngine:
         *,
         strict: bool,
     ) -> dict[str, str]:
+        system_message = _prompt_system_message(items, target_language)
+        prompt_prefix_hash = source_hash(system_message)[:16]
         messages = [
-            {"role": "system", "content": _prompt_system_message(items)},
+            {"role": "system", "content": system_message},
             {"role": "user", "content": _openai_batch_prompt(items, target_language, strict=strict)},
         ]
         if self.thinking_mode == "disabled" and _needs_qwen_no_think_prefill(self.base_url, self.model):
@@ -684,18 +712,21 @@ class OpenAICompatibleTranslationEngine:
             target_language=target_language,
             strict=strict,
             endpoint=endpoint,
+            prompt_prefix_hash=prompt_prefix_hash,
             request_payload=payload,
         )
         try:
             data = _post_json(endpoint, payload, timeout_seconds, headers=_auth_headers(self.api_key))
         except Exception as exc:
-            self._trace("model_wire_response", target_language=target_language, strict=strict, elapsed_ms=round((time.monotonic() - started) * 1000), error=str(exc))
+            self._trace("model_wire_response", target_language=target_language, strict=strict, prompt_prefix_hash=prompt_prefix_hash, elapsed_ms=round((time.monotonic() - started) * 1000), error=str(exc))
             raise
         self._trace(
             "model_wire_response",
             target_language=target_language,
             strict=strict,
+            prompt_prefix_hash=prompt_prefix_hash,
             elapsed_ms=round((time.monotonic() - started) * 1000),
+            usage_metrics=_provider_usage_metrics(data),
             raw_response=data,
         )
         content = _chat_content(data)
@@ -745,7 +776,10 @@ class DrillingReportTranslator:
         self.target_language = normalize_language(target_language)
         self.timeout_seconds = timeout_seconds
         self.model_config_id = model_config_id or engine.name
-        self.retry_count = max(0, retry_count)
+        # Keep the production path predictable: one initial request and at most
+        # one focused repair/transport retry. More attempts tend to rewrite
+        # already-correct prose and amplify a bad validation diagnosis.
+        self.retry_count = min(1, max(0, retry_count))
         self.tuning = tuning or TranslationTuningConfig()
         self.chunk_max_chars = _translation_chunk_max_chars(engine.name, chunk_max_chars)
         self._term_matchers = _compiled_term_matchers(terms.entries, self.target_language)
@@ -755,7 +789,7 @@ class DrillingReportTranslator:
         self._protected_proper_noun_matchers = _compiled_literal_matchers(terms.proper_nouns)
         self._protected_measurement_matcher = _compiled_measurement_matcher(terms.units)
         self._ambiguous_units = frozenset(self.tuning.ambiguous_units)
-        self._unit_target_aliases = dict(self.tuning.unit_aliases)
+        self._unit_aliases = {unit.casefold(): aliases for unit, aliases in self.tuning.unit_aliases}
         self._unit_context_exclusions = _compiled_unit_context_exclusions(self.tuning.unit_context_exclusions)
         self._term_glossary_cache: dict[tuple[str, str], list[dict[str, str]]] = {}
         model_identity = f"{self.engine.name}:{getattr(self.engine, 'model', '')}:{self.model_config_id}"
@@ -885,6 +919,7 @@ class DrillingReportTranslator:
         glossary_seconds = 0.0
         glossary_hits = 0
         source_chars = 0
+        used_item_ids: set[str] = set()
         for unit in units:
             source_text = _clean_text(unit.text)
             if not source_text:
@@ -927,13 +962,10 @@ class DrillingReportTranslator:
             glossary_started = time.monotonic()
             glossary = self._term_glossary(cleaned_source_text, target_language)
             model_source_text = _normalize_item_layout(unit.field_code, cleaned_source_text)
-            if self.tuning.pipeline_mode == "legacy" or self.tuning.protection_mode == "placeholder":
-                request_source_text, protected_tokens = self._protect_source_text(model_source_text, target_language)
-            else:
-                # Contextual mode deliberately keeps the complete source text in
-                # the model request. Terms are supplied as side-channel guidance
-                # and deterministic checks run after translation.
-                request_source_text, protected_tokens = model_source_text, []
+            request_source_text, protected_tokens = self._prepare_source_for_model(
+                model_source_text,
+                target_language,
+            )
             preserve_terms = self._preserve_terms(cleaned_source_text, glossary)
             protected_source_terms = {
                 normalize_inline(item.get("source", "")).casefold()
@@ -944,25 +976,18 @@ class DrillingReportTranslator:
                 term for term in preserve_terms
                 if normalize_inline(term).casefold() not in protected_source_terms
             ]
-            remaining_prose = _PROTECTED_PLACEHOLDER_PATTERN.sub("", request_source_text)
-            if self.tuning.pipeline_mode == "legacy" and not text_needs_translation(remaining_prose, target_language):
-                deterministic_text = request_source_text
-                for token_data in protected_tokens:
-                    token = str(token_data.get("token", "") or "")
-                    replacement = str(token_data.get("replacement", "") or "")
-                    if token:
-                        deterministic_text = deterministic_text.replace(token, replacement)
-                deterministic_text = _normalize_item_layout(unit.field_code, self._apply_term_replacements_preserving_units(deterministic_text))
-                status = "COMPLETED" if deterministic_text != source_text else "NOT_REQUIRED"
-                rows.append({**base, "translated_text": deterministic_text, "translation_status": status, "error_message": ""})
-                continue
-            if self.tuning.pipeline_mode == "contextual" and _is_technical_literal_fragment(model_source_text):
+            if _is_technical_literal_fragment(model_source_text):
                 rows.append({**base, "translated_text": model_source_text, "translation_status": "NOT_REQUIRED", "error_message": ""})
                 continue
             glossary_seconds += time.monotonic() - glossary_started
             glossary_hits += len(glossary)
+            item_id = _translation_unit_id(unit)
+            if item_id in used_item_ids:
+                identity = f"{unit.entity_id}|{unit.path}|{unit.field_code}"
+                item_id = f"{item_id}-{hashlib.sha256(identity.encode('utf-8')).hexdigest()[:8]}"
+            used_item_ids.add(item_id)
             pending.append({
-                "id": str(len(pending)),
+                "id": item_id,
                 "unit": unit,
                 "base": base,
                 "source_text": request_source_text,
@@ -1098,7 +1123,7 @@ class DrillingReportTranslator:
         )["request_item"]
         if str(self.engine.name or "").lower() == "openai-compatible":
             return (
-                f"System:\n{_prompt_system_message([item])}\n\n"
+                f"System:\n{_prompt_system_message([item], target_language)}\n\n"
                 f"User:\n{_openai_batch_prompt([item], target_language, strict=False)}"
             )
         return _ollama_batch_prompt([item], target_language, strict=False)
@@ -1115,10 +1140,10 @@ class DrillingReportTranslator:
         source_text = _clean_text(text)
         cleaned_source_text, cleanup_actions = clean_translation_source(source_text)
         cleaned_source_text = cleaned_source_text or source_text
-        if self.tuning.pipeline_mode == "legacy" or self.tuning.protection_mode == "placeholder":
-            request_source_text, protected_tokens = self._protect_source_text(cleaned_source_text, target_language)
-        else:
-            request_source_text, protected_tokens = cleaned_source_text, []
+        request_source_text, protected_tokens = self._prepare_source_for_model(
+            cleaned_source_text,
+            target_language,
+        )
         glossary = self._term_glossary(cleaned_source_text, target_language)
         preserve_terms = self._preserve_terms(cleaned_source_text, glossary)
         item = {
@@ -1133,7 +1158,8 @@ class DrillingReportTranslator:
             "protected_tokens": protected_tokens,
         }
         return {
-            "pipeline_mode": self.tuning.pipeline_mode,
+            "contextual_translation": self.tuning.contextual_translation,
+            "validate_results": self.tuning.validate_results,
             "source_text": source_text,
             "cleaned_source_text": cleaned_source_text,
             "cleanup_actions": cleanup_actions,
@@ -1149,33 +1175,50 @@ class DrillingReportTranslator:
         glossary = self._term_glossary(source_text, language)
         preserve_terms = self._preserve_terms(source_text, glossary)
         checks: list[dict[str, str]] = []
-        number_error = _numeric_quality_error(source_text, translated_text, language) if self.tuning.protect_numbers else ""
+        number_error = _numeric_quality_error(
+            source_text,
+            translated_text,
+            language,
+            self.tuning.date_format,
+        ) if self.tuning.validate_results and self.tuning.protect_numbers else ""
         checks.append({
             "rule": "number_integrity",
             "label": "数字与数值精度",
-            "status": "failed" if number_error else "passed",
-            "detail": number_error,
+            "status": "failed" if number_error else "passed" if self.tuning.validate_results else "skipped",
+            "detail": number_error or ("结果校验已关闭" if not self.tuning.validate_results else ""),
         })
-        missing_preserved = [term for term in preserve_terms if normalize_inline(term).casefold() not in normalize_inline(translated_text).casefold()]
+        date_error = _calendar_date_quality_error(
+            source_text,
+            translated_text,
+            language,
+            self.tuning.date_format,
+        ) if self.tuning.validate_results and self.tuning.protect_numbers else ""
+        checks.append({
+            "rule": "calendar_date_localization",
+            "label": "日期顺序与月份本地化",
+            "status": "failed" if date_error else "passed" if self.tuning.validate_results else "skipped",
+            "detail": date_error or ("结果校验已关闭" if not self.tuning.validate_results else ""),
+        })
+        validation_text = _restore_preserved_term_variants(translated_text, preserve_terms)
+        missing_preserved = [term for term in preserve_terms if not _preserved_term_present(term, validation_text)] if self.tuning.validate_results else []
         checks.append({
             "rule": "protected_terms",
             "label": "编号、型号与严格保护项",
-            "status": "failed" if missing_preserved else "passed",
-            "detail": f"missing={missing_preserved[:8]}" if missing_preserved else "",
+            "status": "failed" if missing_preserved else "passed" if self.tuning.validate_results else "skipped",
+            "detail": f"missing={missing_preserved[:8]}" if missing_preserved else ("结果校验已关闭" if not self.tuning.validate_results else ""),
         })
         unit_error = _semantic_unit_quality_error(
             source_text,
             translated_text,
             self._protected_unit_matchers,
-            aliases=self._unit_target_aliases,
             ambiguous_units=self._ambiguous_units,
             exclusions=self._unit_context_exclusions,
-        ) if self.tuning.protect_units else ""
+        ) if self.tuning.validate_results and self.tuning.protect_units else ""
         checks.append({
             "rule": "unit_integrity",
             "label": "计量单位语义",
-            "status": "failed" if unit_error else "passed",
-            "detail": unit_error,
+            "status": "failed" if unit_error else "passed" if self.tuning.validate_results else "skipped",
+            "detail": unit_error or ("结果校验已关闭" if not self.tuning.validate_results else ""),
         })
         action_warning = _action_completeness_warning(source_text, translated_text)
         checks.append({
@@ -1303,7 +1346,12 @@ class DrillingReportTranslator:
         )
         max_item_protected_count = max(
             (
-                len(item.get("protected_tokens", []))
+                sum(
+                    1
+                    for token in item.get("protected_tokens", [])
+                    if not isinstance(token, dict)
+                    or token.get("kind") not in {"calendar_date", "context_unit"}
+                )
                 for item in items
                 if isinstance(item.get("protected_tokens"), list)
             ),
@@ -1497,12 +1545,77 @@ class DrillingReportTranslator:
             reconstructed[item_id] = "".join(pieces)
         return reconstructed
 
+    def _prepare_source_for_model(self, text: str, target_language: str) -> tuple[str, list[dict[str, str]]]:
+        # Contextual mode keeps dates and ordinary numbers visible so the
+        # model can place them naturally in the Chinese sentence. Deterministic
+        # validation can enforce their integrity afterwards when enabled.
+        # Measurement units and compact technical times remain masked because
+        # their spelling is invariant and does not control sentence order.
+        if self.tuning.contextual_translation and (self.tuning.protect_numbers or self.tuning.protect_units):
+            return self._protect_contextual_invariants(text, target_language)
+        return text, []
+
+    def _mask_protection_candidates(
+        self,
+        text: str,
+        candidates: list[tuple[int, int, int, str, str]],
+    ) -> tuple[str, list[dict[str, str]]]:
+        """Mask non-overlapping invariant values while preserving source order."""
+        selected: list[tuple[int, int, int, str, str]] = []
+        for candidate in sorted(candidates, key=lambda item: (item[2], -(item[1] - item[0]), item[0])):
+            start, end, _priority, _replacement, _kind = candidate
+            if any(start < existing_end and end > existing_start for existing_start, existing_end, _p, _r, _k in selected):
+                continue
+            selected.append(candidate)
+        selected.sort(key=lambda item: item[0])
+        if not selected:
+            return text, []
+        pieces: list[str] = []
+        protected_tokens: list[dict[str, str]] = []
+        cursor = 0
+        for index, (start, end, _priority, replacement, kind) in enumerate(selected):
+            token = f"[[P{index}]]"
+            pieces.extend((text[cursor:start], token))
+            protected_tokens.append({
+                "token": token,
+                "replacement": replacement,
+                "source": text[start:end],
+                "kind": kind,
+            })
+            cursor = end
+        pieces.append(text[cursor:])
+        return "".join(pieces), protected_tokens
+
+    def _protect_contextual_invariants(self, text: str, target_language: str) -> tuple[str, list[dict[str, str]]]:
+        candidates: list[tuple[int, int, int, str, str]] = []
+
+        if self.tuning.protect_numbers and normalize_language(target_language) == "zh-CN":
+            for match in _TECHNICAL_TIME_PATTERN.finditer(text):
+                candidates.append((match.start(), match.end(), -2, match.group(0), "technical_time"))
+        if self.tuning.protect_units:
+            # In contextual mode protect only the unit spelling. Masking the
+            # whole measurement (for example ``5/8IN``) hides the numeric fact
+            # and encourages the model to invent a duplicate localized value
+            # next to the placeholder.
+            for configured_value, matcher in self._protected_unit_matchers:
+                for match in matcher.finditer(text):
+                    if not _unit_match_allowed(
+                        text,
+                        match,
+                        configured_value,
+                        ambiguous_units=self._ambiguous_units,
+                        exclusions=self._unit_context_exclusions,
+                    ):
+                        continue
+                    candidates.append((match.start(), match.end(), -1, match.group(0), "context_unit"))
+        return self._mask_protection_candidates(text, candidates)
+
     def _protect_source_text(self, text: str, target_language: str) -> tuple[str, list[dict[str, str]]]:
         # Apply the same hard protection to every provider. Prompt-only unit
         # instructions are not reliable enough: models may localize FT to 英尺 or
         # partially rewrite compound units such as PSI/FT. Measurements and units
         # are therefore masked before the request and restored byte-for-byte.
-        candidates: list[tuple[int, int, int, str]] = []
+        candidates: list[tuple[int, int, int, str, str]] = []
 
         def add_matches(matchers: list[tuple[str, re.Pattern[str]]], priority: int, *, units: bool = False) -> None:
             for configured_value, matcher in matchers:
@@ -1515,11 +1628,11 @@ class DrillingReportTranslator:
                         exclusions=self._unit_context_exclusions,
                     ):
                         continue
-                    candidates.append((match.start(), match.end(), priority, match.group(0)))
+                    candidates.append((match.start(), match.end(), priority, match.group(0), "protected_value"))
 
         if self.tuning.protect_units and self._protected_measurement_matcher:
             for match in self._protected_measurement_matcher.finditer(text):
-                candidates.append((match.start(), match.end(), -1, match.group(0)))
+                candidates.append((match.start(), match.end(), -1, match.group(0), "measurement"))
         if self.tuning.protect_acronyms:
             add_matches(self._protected_acronym_matchers, 0)
         if self.tuning.protect_units:
@@ -1527,17 +1640,32 @@ class DrillingReportTranslator:
         if self.tuning.protect_proper_nouns:
             add_matches(self._protected_proper_noun_matchers, 0)
         if self.tuning.protect_numbers:
+            if normalize_language(target_language) == "zh-CN":
+                for date in _calendar_date_matches(text):
+                    candidates.append((
+                        date.start,
+                        date.end,
+                        -4,
+                        _localized_calendar_date_value(
+                            date.year,
+                            date.month,
+                            date.day,
+                            target_language,
+                            self.tuning.date_format,
+                        ),
+                        "calendar_date",
+                    ))
             # Protect mixed alpha-numeric equipment/well identifiers as one
             # value.  Protecting only their numeric suffix would split ST-80 or
             # SHSG-160 into meaningless prose fragments.
             for match in _TECHNICAL_IDENTIFIER_PATTERN.finditer(text):
-                candidates.append((match.start(), match.end(), -2, match.group(0)))
+                candidates.append((match.start(), match.end(), -2, match.group(0), "technical_identifier"))
             for match in _TECHNICAL_TIME_PATTERN.finditer(text):
-                candidates.append((match.start(), match.end(), -1, match.group(0)))
+                candidates.append((match.start(), match.end(), -1, match.group(0), "technical_time"))
             for match in _TECHNICAL_ORDINAL_PATTERN.finditer(text):
-                candidates.append((match.start(), match.end(), -1, match.group(0)))
+                candidates.append((match.start(), match.end(), -1, match.group(0), "ordinal"))
             for match in _PROTECTED_NUMBER_PATTERN.finditer(text):
-                candidates.append((match.start(), match.end(), 2, match.group(0)))
+                candidates.append((match.start(), match.end(), 2, match.group(0), "number"))
         for entry, _source_value, matcher in self._term_source_matchers:
             if not entry.protected:
                 continue
@@ -1545,28 +1673,9 @@ class DrillingReportTranslator:
             if not replacement:
                 continue
             for match in matcher.finditer(text):
-                candidates.append((match.start(), match.end(), 1, replacement))
+                candidates.append((match.start(), match.end(), 1, replacement, "term"))
 
-        selected: list[tuple[int, int, int, str]] = []
-        for candidate in sorted(candidates, key=lambda item: (item[2], -(item[1] - item[0]), item[0])):
-            start, end, _priority, _replacement = candidate
-            if any(start < existing_end and end > existing_start for existing_start, existing_end, _p, _r in selected):
-                continue
-            selected.append(candidate)
-        selected.sort(key=lambda item: item[0])
-        if not selected:
-            return text, []
-
-        pieces: list[str] = []
-        protected_tokens: list[dict[str, str]] = []
-        cursor = 0
-        for index, (start, end, _priority, replacement) in enumerate(selected):
-            token = f"[[P{index}]]"
-            pieces.extend((text[cursor:start], token))
-            protected_tokens.append({"token": token, "replacement": replacement, "source": text[start:end]})
-            cursor = end
-        pieces.append(text[cursor:])
-        return "".join(pieces), protected_tokens
+        return self._mask_protection_candidates(text, candidates)
 
     def _restore_protected_items_partial(
         self,
@@ -1592,66 +1701,69 @@ class DrillingReportTranslator:
                 _set_item_repair_context(item, text, invalid[item_id])
                 continue
             text = _repair_protected_token_layout(str(item.get("source_text", "") or ""), text)
+            text = self._remove_localized_aliases_beside_unit_tokens(text, protected_tokens)
             for token_data in protected_tokens:
                 if not isinstance(token_data, dict):
                     continue
                 token = str(token_data.get("token", "") or "")
                 replacement = str(token_data.get("replacement", "") or "")
                 if token:
+                    if token_data.get("kind") == "calendar_date":
+                        # The model may move a date in front of a time. If the
+                        # placeholder then touches the time (``[[P0]]14:00``),
+                        # direct expansion creates ``2026-05-3014:00``. Restore
+                        # a numeric boundary before expanding the token.
+                        text = re.sub(rf"{re.escape(token)}(?=\d)", f"{token} ", text)
+                        text = re.sub(rf"(?<=\d){re.escape(token)}", f" {token}", text)
                     text = text.replace(token, replacement)
-            if self.tuning.pipeline_mode == "legacy":
-                text = self._apply_term_replacements_preserving_units(text)
-            if self.tuning.protect_numbers:
-                source_numbers = Counter(_number_tokens(item.get("monitor_source_text", "")))
-                translated_numbers = Counter(_number_tokens(text))
-                missing = list((source_numbers - translated_numbers).elements())[:8]
-                allowed_derived = Counter(_derived_number_tokens(item.get("monitor_source_text", ""), self.target_language))
-                extra = list(((translated_numbers - source_numbers) - allowed_derived).elements())[:8]
-                if missing or extra:
-                    invalid[item_id] = (
-                        f"model changed numeric values for item {item_id}; "
-                        f"missing={missing}; extra={extra}"
-                    )
+            preserve_terms = item.get("preserve_terms", []) if isinstance(item.get("preserve_terms"), list) else []
+            text = _restore_preserved_term_variants(text, preserve_terms)
+            if self.tuning.validate_results and self.tuning.protect_numbers:
+                text = _normalize_yearless_calendar_dates(
+                    item.get("monitor_source_text", ""),
+                    text,
+                    self.target_language,
+                )
+                text = _restore_equivalent_numeric_formats(
+                    item.get("monitor_source_text", ""),
+                    text,
+                    self.target_language,
+                    self.tuning.date_format,
+                )
+                date_error = _calendar_date_quality_error(
+                    item.get("monitor_source_text", ""),
+                    text,
+                    self.target_language,
+                    self.tuning.date_format,
+                )
+                if date_error:
+                    invalid[item_id] = f"{date_error} for item {item_id}"
                     _set_item_repair_context(item, text, invalid[item_id])
                     continue
-            translated_folded = normalize_inline(text).casefold()
+                number_error = _numeric_quality_error(
+                    item.get("monitor_source_text", ""),
+                    text,
+                    self.target_language,
+                    self.tuning.date_format,
+                )
+                if number_error:
+                    invalid[item_id] = f"{number_error} for item {item_id}"
+                    _set_item_repair_context(item, text, invalid[item_id])
+                    continue
             missing_preserved = [
                 term
-                for term in item.get("preserve_terms", []) if isinstance(item.get("preserve_terms"), list)
-                if normalize_inline(term) and normalize_inline(term).casefold() not in translated_folded
-            ]
+                for term in preserve_terms
+                if normalize_inline(term) and not _preserved_term_present(term, text)
+            ] if self.tuning.validate_results else []
             if missing_preserved:
                 invalid[item_id] = f"model changed or removed protected terms for item {item_id}; missing={missing_preserved[:8]}"
                 _set_item_repair_context(item, text, invalid[item_id])
                 continue
-            if self.tuning.pipeline_mode == "legacy" and self.tuning.protect_units:
-                source_units = Counter(_protected_unit_tokens(
-                    item.get("monitor_source_text", ""),
-                    self._protected_unit_matchers,
-                    ambiguous_units=self._ambiguous_units,
-                    exclusions=self._unit_context_exclusions,
-                ))
-                translated_units = Counter(_protected_unit_tokens(
-                    text,
-                    self._protected_unit_matchers,
-                    ambiguous_units=self._ambiguous_units,
-                    exclusions=self._unit_context_exclusions,
-                ))
-                missing_units = list((source_units - translated_units).elements())[:8]
-                extra_units = list((translated_units - source_units).elements())[:8]
-                if missing_units or extra_units:
-                    invalid[item_id] = (
-                        f"model changed protected units for item {item_id}; "
-                        f"missing={missing_units}; extra={extra_units}"
-                    )
-                    _set_item_repair_context(item, text, invalid[item_id])
-                    continue
-            if self.tuning.pipeline_mode == "contextual" and self.tuning.protect_units:
+            if self.tuning.validate_results and self.tuning.protect_units:
                 unit_error = _semantic_unit_quality_error(
                     item.get("monitor_source_text", ""),
                     text,
                     self._protected_unit_matchers,
-                    aliases=self._unit_target_aliases,
                     ambiguous_units=self._ambiguous_units,
                     exclusions=self._unit_context_exclusions,
                 )
@@ -1661,6 +1773,36 @@ class DrillingReportTranslator:
                     continue
             restored[item_id] = text
         return restored, invalid
+
+    def _remove_localized_aliases_beside_unit_tokens(
+        self,
+        text: str,
+        protected_tokens: list[dict[str, Any]],
+    ) -> str:
+        """Drop a translated unit only when it directly duplicates a unit token."""
+        result = str(text or "")
+        configured_units = sorted(self._unit_aliases, key=len, reverse=True)
+        for token_data in protected_tokens:
+            if not isinstance(token_data, dict) or token_data.get("kind") != "context_unit":
+                continue
+            token = str(token_data.get("token", "") or "")
+            replacement = str(token_data.get("replacement", "") or "")
+            if not token or not replacement:
+                continue
+            unit = next(
+                (
+                    value for value in configured_units
+                    if re.search(rf"{re.escape(value)}\s*$", replacement, re.IGNORECASE)
+                ),
+                "",
+            )
+            for alias in self._unit_aliases.get(unit, ()):
+                localized = str(alias or "").strip()
+                if not localized:
+                    continue
+                result = re.sub(rf"{re.escape(localized)}\s*{re.escape(token)}", token, result)
+                result = re.sub(rf"{re.escape(token)}\s*{re.escape(localized)}", token, result)
+        return result
 
     def _restore_protected_items(self, items: list[dict[str, Any]], translated: dict[str, str]) -> dict[str, str]:
         restored, invalid = self._restore_protected_items_partial(items, translated)
@@ -1702,7 +1844,12 @@ class DrillingReportTranslator:
             and normalize_inline(item.get("source", "")).casefold() != normalize_inline(item.get("target", "")).casefold()
         }
         values: list[str] = []
-        for configured, matcher in (*self._protected_acronym_matchers, *self._protected_proper_noun_matchers):
+        enabled_matchers: list[tuple[str, re.Pattern[str]]] = []
+        if self.tuning.protect_acronyms:
+            enabled_matchers.extend(self._protected_acronym_matchers)
+        if self.tuning.protect_proper_nouns:
+            enabled_matchers.extend(self._protected_proper_noun_matchers)
+        for configured, matcher in enabled_matchers:
             if normalize_inline(configured).casefold() in translated_sources:
                 continue
             match = matcher.search(text)
@@ -1714,11 +1861,13 @@ class DrillingReportTranslator:
             match = matcher.search(text)
             if match:
                 values.append(match.group(0))
-        values.extend(
-            match.group(0)
-            for match in _TECHNICAL_IDENTIFIER_PATTERN.finditer(text)
-            if not re.match(r"^\d", match.group(0))
-        )
+        if self.tuning.protect_numbers:
+            values.extend(
+                match.group(0)
+                for match in _TECHNICAL_IDENTIFIER_PATTERN.finditer(text)
+                if not re.match(r"^\d", match.group(0))
+                and not _OCR_ACTION_NUMBER_PATTERN.fullmatch(match.group(0))
+            )
         return list(dict.fromkeys(values))[:40]
 
     def _prompt_context(
@@ -1738,27 +1887,24 @@ class DrillingReportTranslator:
         report_type = str(selected_report_context.get("report_type", "") or "").strip().lower()
         business_templates = dict(self.tuning.prompt_templates)
         selected_event_context = dict(event_context or {})
-        selected_field_code = ".".join(filter(None, (
-            str(selected_event_context.get("section", "") or "").strip(),
-            str(selected_event_context.get("content_role", "") or "").strip(),
-        )))
-        experience_rules = [
-            instruction
-            for rule_report_type, rule_field_code, instruction in self.tuning.experience_rules
-            if (not rule_report_type or rule_report_type == report_type)
-            and (not rule_field_code or rule_field_code == selected_field_code)
-        ]
         return {
             "system_prompt": self.tuning.system_prompt,
             "translation_instruction": self.tuning.translation_instruction,
-            "pipeline_mode": self.tuning.pipeline_mode,
-            "protection_mode": self.tuning.protection_mode,
+            "date_format": self.tuning.date_format,
+            "contextual_translation": self.tuning.contextual_translation,
+            "validate_results": self.tuning.validate_results,
             "protect_numbers": self.tuning.protect_numbers,
+            "protect_units": self.tuning.protect_units,
+            "protect_acronyms": self.tuning.protect_acronyms,
+            "protect_proper_nouns": self.tuning.protect_proper_nouns,
             "protected_terms": list(dict.fromkeys(protected))[:40],
             "report_context": selected_report_context,
             "event_context": selected_event_context,
             "business_prompt": business_templates.get(report_type, ""),
-            "experience_rules": list(dict.fromkeys(experience_rules))[:12],
+            # Failure experience is diagnostic evidence, not a source of
+            # production Prompt instructions. Keeping this empty makes the
+            # baseline Prompt stable across translation runs.
+            "experience_rules": [],
         }
 
     def _apply_term_replacements(self, text: str) -> str:
@@ -2260,6 +2406,61 @@ def _chat_content(data: Any) -> str:
     return str(first.get("text", "") or "")
 
 
+def _provider_usage_metrics(data: object) -> dict[str, int | float | bool]:
+    """Normalize token and prompt-cache counters returned by compatible providers."""
+    if not isinstance(data, dict):
+        return {}
+    usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
+    prompt_details = usage.get("prompt_tokens_details") if isinstance(usage.get("prompt_tokens_details"), dict) else {}
+
+    def first_integer(*values: object) -> int | None:
+        for value in values:
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, (int, float)) and value >= 0:
+                return int(value)
+        return None
+
+    input_tokens = first_integer(
+        usage.get("prompt_tokens"),
+        usage.get("input_tokens"),
+        data.get("prompt_eval_count"),
+    )
+    output_tokens = first_integer(
+        usage.get("completion_tokens"),
+        usage.get("output_tokens"),
+        data.get("eval_count"),
+    )
+    total_tokens = first_integer(usage.get("total_tokens"))
+    if total_tokens is None and input_tokens is not None and output_tokens is not None:
+        total_tokens = input_tokens + output_tokens
+    cached_input_tokens = first_integer(
+        prompt_details.get("cached_tokens"),
+        usage.get("prompt_cache_hit_tokens"),
+        usage.get("cache_read_input_tokens"),
+    )
+    cache_write_input_tokens = first_integer(
+        usage.get("prompt_cache_miss_tokens"),
+        usage.get("cache_creation_input_tokens"),
+    )
+
+    metrics: dict[str, int | float | bool] = {}
+    if input_tokens is not None:
+        metrics["input_tokens"] = input_tokens
+    if output_tokens is not None:
+        metrics["output_tokens"] = output_tokens
+    if total_tokens is not None:
+        metrics["total_tokens"] = total_tokens
+    if cached_input_tokens is not None:
+        metrics["cached_input_tokens"] = cached_input_tokens
+        metrics["prompt_cache_hit"] = cached_input_tokens > 0
+        if input_tokens:
+            metrics["prompt_cache_hit_ratio"] = round(cached_input_tokens / input_tokens, 4)
+    if cache_write_input_tokens is not None:
+        metrics["cache_write_input_tokens"] = cache_write_input_tokens
+    return metrics
+
+
 def _ollama_batch_prompt(items: list[dict[str, Any]], target_language: str, *, strict: bool = False) -> str:
     return "/no_think\n" + _translation_batch_prompt(
         items,
@@ -2307,36 +2508,27 @@ def _translation_batch_prompt(
         for item in items
     ]
     target = normalize_language(target_language)
-    instruction = {
-        "zh-CN": "将每个 source_text 中的西班牙语或英语自然语言完整翻译成简体中文。全大写的西班牙语或英语仍是正文，必须翻译。",
-        "en": "Translate all Spanish or Chinese natural-language prose in every source_text completely into English. ALL-CAPS prose must also be translated.",
-        "es": "Traduce completamente al español todo texto natural en chino o inglés de cada source_text. El texto en MAYÚSCULAS también debe traducirse.",
-    }.get(target, f"Translate every source_text completely into {_language_label(target_language)}.")
-    retry_rule = "上一次结果未满足完整性要求。请重新翻译，并逐项核对原文中的数字、编号和必保术语。" if strict and target == "zh-CN" else (
+    contexts = [item.get("prompt_context", {}) for item in items if isinstance(item.get("prompt_context"), dict)]
+    date_format = _normalize_calendar_date_format(contexts[0].get("date_format", "iso") if contexts else "iso")
+    retry_date_rule = _calendar_date_format_instruction(date_format, authoritative=False)
+    retry_rule = f"上一次结果未满足完整性要求。请重新翻译，并逐项核对{retry_date_rule}、数字、编号和必保术语。" if strict and target == "zh-CN" else (
         "The previous result failed an integrity check. Translate again and verify every number, identifier, and preserved term." if strict else ""
     )
-    contexts = [item.get("prompt_context", {}) for item in items if isinstance(item.get("prompt_context"), dict)]
     context = contexts[0] if contexts else {}
-    system_prompt = str(context.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip()
-    additional_instruction = str(context.get("translation_instruction", "") or DEFAULT_TRANSLATION_INSTRUCTION).strip()
-    business_prompt = str(context.get("business_prompt", "") or "").strip()
-    report_context = context.get("report_context", {}) if isinstance(context.get("report_context"), dict) else {}
-    rules = [
-        additional_instruction,
-        business_prompt,
-        "先理解完整作业过程、动作关系和时序，再使用中国石油钻完井行业自然、专业的中文表达。",
-        "保持作业事件先后顺序，不要求逐词对应或保留西语语序；不得总结、遗漏或添加事实。",
-        "glossary 只包含当前原文命中的术语参考：protected 必须保留，preferred 和 phrase 原则上采用，contextual 由上下文决定；不得机械拼接术语。",
-        "preserve_terms 中的井号、设备型号、BHA 编号、品牌和作业代码保持原样。",
-    ]
+    contextual_translation = bool(context.get("contextual_translation", True))
+    business_prompt = str(context.get("business_prompt", "") or "").strip() if contextual_translation else ""
+    report_context = context.get("report_context", {}) if contextual_translation and isinstance(context.get("report_context"), dict) else {}
+    if not contextual_translation:
+        for compact_item in compact_items:
+            compact_item["segment_context"] = ""
+            compact_item["event_context"] = {}
+    rules = [business_prompt]
     experience_rules = context.get("experience_rules") if isinstance(context.get("experience_rules"), list) else []
     rules.extend(
         f"已验证经验：{str(rule).strip()}"
         for rule in experience_rules
         if str(rule or "").strip()
     )
-    if context.get("protect_numbers", True):
-        rules.append("保留日期、时间、数字、数值精度和设备序列号，不得改写格式。")
     if any(_PROTECTED_PLACEHOLDER_PATTERN.search(str(item.get("source_text", "") or "")) for item in items):
         rules.append("source_text 中形如 [[P0]] 的占位符必须逐字原样保留，不得改写、删除或复制。")
     if any(str(item.get("segment_context", "") or "") for item in compact_items):
@@ -2349,16 +2541,16 @@ def _translation_batch_prompt(
         rules.append("layout 为 paragraph 的 description 必须作为一个完整连续段落理解和输出，不得按原 PDF 的视觉换行拆句。")
     if retry_rule:
         rules.append(retry_rule)
-    system_text = f"{system_prompt}\n" if include_system_prompt else ""
+    system_text = f"{_prompt_system_message(items, target_language)}\n" if include_system_prompt else ""
     return (
         system_text
         +
-        f"{instruction}\n"
+        f"请按固定翻译策略处理以下日报内容。目标语言：{_language_label(target_language)}。\n"
         + "\n".join(f"- {rule}" for rule in rules if rule)
         + "\n"
         + (f"日报上下文（只用于理解，不要翻译或输出）：\n{json.dumps(report_context, ensure_ascii=False)}\n" if report_context else "")
         +
-        "只返回严格 JSON，格式为：{\"items\":[{\"id\":\"0\",\"translated_text\":\"译文\"}]}。每个输入 id 必须返回一条。\n"
+        "每个输入 id 必须返回一条，不得漏项或改变 id。\n"
         f"Input JSON:\n{json.dumps({'items': compact_items}, ensure_ascii=False)}"
     )
 
@@ -2382,10 +2574,39 @@ def _set_item_repair_context(item: dict[str, Any], draft_translation: str, issue
     item["repair_context"] = _translation_repair_item(item, draft_translation, issue)["repair_context"]
 
 
-def _prompt_system_message(items: list[dict[str, Any]]) -> str:
+def _prompt_system_message(items: list[dict[str, Any]], target_language: str) -> str:
     context = items[0].get("prompt_context", {}) if items and isinstance(items[0].get("prompt_context"), dict) else {}
     system_prompt = str(context.get("system_prompt", "") or DEFAULT_SYSTEM_PROMPT).strip()
-    return f"{system_prompt} Return strict JSON only."
+    additional_instruction = str(context.get("translation_instruction", "") or DEFAULT_TRANSLATION_INSTRUCTION).strip()
+    rules = [
+        _target_translation_instruction(target_language),
+        additional_instruction,
+        "glossary 只包含当前原文命中的术语参考：protected 必须保留，preferred 和 phrase 原则上采用，contextual 由上下文决定；不得机械拼接术语。",
+        "preserve_terms 中的井号、设备型号、BHA 编号、品牌和作业代码保持原样。",
+    ]
+    if context.get("contextual_translation", True):
+        rules.extend([
+            "先理解完整作业过程、动作关系和时序，再使用目标语言对应的石油钻完井行业自然、专业表达。",
+            "保持作业事件先后顺序，不要求逐词对应或保留源语言语序；不得总结、遗漏或添加事实。",
+            "对于以破折号、星号或加号连续列出的事项，先识别每个完整事项，再逐项翻译；不得把同一事项的主语、动作、对象或日期拆到相邻事项。",
+        ])
+    if context.get("protect_numbers", True):
+        date_format = _normalize_calendar_date_format(context.get("date_format", "iso"))
+        rules.append(
+            _calendar_date_format_instruction(date_format, authoritative=True)
+            + "其他时间、数字、数值精度和设备序列号不得改变。"
+        )
+    rules.append("只返回严格 JSON，格式为：{\"items\":[{\"id\":\"输入ID\",\"translated_text\":\"译文\"}]}。每个输入 id 必须返回一条。")
+    return f"{system_prompt}\n固定翻译策略：\n" + "\n".join(f"- {rule}" for rule in rules if rule)
+
+
+def _target_translation_instruction(target_language: str) -> str:
+    target = normalize_language(target_language)
+    return {
+        "zh-CN": "将每个 source_text 中的西班牙语或英语自然语言完整翻译成简体中文。全大写的西班牙语或英语仍是正文，必须翻译。",
+        "en": "Translate all Spanish or Chinese natural-language prose in every source_text completely into English. ALL-CAPS prose must also be translated.",
+        "es": "Traduce completamente al español todo texto natural en chino o inglés de cada source_text. El texto en MAYÚSCULAS también debe traducirse.",
+    }.get(target, f"Translate every source_text completely into {_language_label(target_language)}.")
 
 
 def _translation_quality_error(source_text: str, translated_text: str, target_language: str) -> str:
@@ -2412,6 +2633,53 @@ def _translation_quality_error(source_text: str, translated_text: str, target_la
     return ""
 
 
+def _preserved_term_variant_pattern(term: object) -> re.Pattern[str] | None:
+    """Match only separator changes in a protected identifier or name."""
+    value = normalize_inline(term)
+    chunks = re.findall(r"[^\W_]+", value, flags=re.UNICODE)
+    if len(chunks) < 2:
+        return None
+    body = r"[\s._/\-]*".join(re.escape(chunk) for chunk in chunks)
+    return re.compile(rf"(?<!\w){body}(?!\w)", re.IGNORECASE)
+
+
+def _preserved_term_present(term: object, text: object) -> bool:
+    preserved = normalize_inline(term)
+    candidate = normalize_inline(text)
+    if not preserved:
+        return True
+    if preserved.casefold() in candidate.casefold():
+        return True
+    pattern = _preserved_term_variant_pattern(preserved)
+    return bool(pattern and pattern.search(candidate))
+
+
+def _restore_preserved_term_variants(text: object, preserve_terms: object) -> str:
+    """Restore safe punctuation-only variants without inventing a missing term."""
+    result = str(text or "")
+    terms = preserve_terms if isinstance(preserve_terms, (list, tuple)) else []
+    for term in sorted((normalize_inline(value) for value in terms), key=len, reverse=True):
+        if not term or term.casefold() in normalize_inline(result).casefold():
+            continue
+        pattern = _preserved_term_variant_pattern(term)
+        if pattern and pattern.search(result):
+            result = pattern.sub(term, result)
+    return result
+
+
+def _restore_item_validation_placeholders(item: dict[str, Any], text: object) -> str:
+    """Expand the current item's invariant tokens before fact validation."""
+    restored = str(text or "")
+    protected_tokens = item.get("protected_tokens", []) if isinstance(item.get("protected_tokens"), list) else []
+    for token_data in protected_tokens:
+        if not isinstance(token_data, dict):
+            continue
+        token = str(token_data.get("token", "") or "")
+        if token:
+            restored = restored.replace(token, str(token_data.get("replacement", "") or ""))
+    return restored
+
+
 def _openai_item_quality_error(item: dict[str, Any], translated_text: str, target_language: str) -> str:
     source_text = str(item.get("source_text", "") or "")
     if "<PROTECTED>" in str(translated_text or ""):
@@ -2430,34 +2698,232 @@ def _openai_item_quality_error(item: dict[str, Any], translated_text: str, targe
     returned = Counter(_PROTECTED_PLACEHOLDER_PATTERN.findall(str(translated_text or "")))
     if returned != expected:
         return "model changed, removed, or duplicated protected placeholders"
-    number_error = _numeric_quality_error(source_text, translated_text, target_language)
-    if number_error:
-        return number_error
-    translated_folded = normalize_inline(translated_text).casefold()
-    for term in item.get("preserve_terms", []) if isinstance(item.get("preserve_terms"), list) else []:
-        preserved = normalize_inline(term)
-        if preserved and preserved.casefold() not in translated_folded:
-            return f"required preserved term was changed or removed: {preserved}"
+    preserve_terms = item.get("preserve_terms", []) if isinstance(item.get("preserve_terms"), list) else []
+    validation_source = _restore_item_validation_placeholders(item, source_text)
+    validation_text = _restore_item_validation_placeholders(item, translated_text)
+    validation_text = _restore_preserved_term_variants(validation_text, preserve_terms)
+    prompt_context = item.get("prompt_context") if isinstance(item.get("prompt_context"), dict) else {}
+    validate_results = bool(prompt_context.get("validate_results", True))
+    if validate_results and prompt_context.get("protect_numbers", True):
+        date_format = _normalize_calendar_date_format(prompt_context.get("date_format", "iso"))
+        date_error = _calendar_date_quality_error(
+            validation_source,
+            validation_text,
+            target_language,
+            date_format,
+        )
+        if date_error:
+            return date_error
+        number_error = _numeric_quality_error(
+            validation_source,
+            validation_text,
+            target_language,
+            date_format,
+        )
+        if number_error:
+            return number_error
+    if validate_results:
+        for term in preserve_terms:
+            preserved = normalize_inline(term)
+            if preserved and not _preserved_term_present(preserved, validation_text):
+                return f"required preserved term was changed or removed: {preserved}"
     return ""
 
 
-def _numeric_quality_error(source_text: str, translated_text: str, target_language: str) -> str:
-    source_numbers = Counter(_number_tokens(source_text))
-    translated_numbers = Counter(_number_tokens(translated_text))
+def _numeric_quality_error(
+    source_text: str,
+    translated_text: str,
+    target_language: str,
+    date_format: str = "iso",
+) -> str:
+    source_for_numbers, translated_for_numbers = _texts_without_calendar_dates(
+        source_text,
+        translated_text,
+        target_language,
+        date_format,
+    )
+    ordinal_numbers: Counter[str] = Counter()
+    ordinal_spans: list[tuple[int, int]] = []
+    for match in _TECHNICAL_ORDINAL_PATTERN.finditer(source_for_numbers):
+        ordinal_spans.append((match.start(), match.end()))
+        ordinal_numbers.update(item.canonical for item in _validation_number_matches(match.group(0)))
+    source_for_numbers = _mask_spans(source_for_numbers, ordinal_spans)
+    source_numbers = Counter(item.canonical for item in _validation_number_matches(source_for_numbers))
+    translated_numbers = Counter(item.canonical for item in _validation_number_matches(translated_for_numbers))
     missing = list((source_numbers - translated_numbers).elements())[:8]
-    allowed_derived = Counter(_derived_number_tokens(source_text, target_language))
+    allowed_derived = Counter(
+        _canonical_number_token(value)
+        for value in _derived_number_tokens(source_for_numbers, target_language)
+    )
+    # Spanish/English numeric ordinals may naturally become Chinese words
+    # (``1er.`` -> ``第一个``). They are optional numeric renderings: allow the
+    # original digit when the model uses ``第1个``, but do not require it.
+    allowed_derived.update(ordinal_numbers)
     extra = list(((translated_numbers - source_numbers) - allowed_derived).elements())[:8]
     if missing or extra:
         return f"model changed numeric values; missing={missing}; extra={extra}"
     return ""
 
 
-def _surgically_protect_values(item: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, str]]]:
+_UNICODE_FRACTION_VALUES = {
+    "¼": "1/4", "½": "1/2", "¾": "3/4",
+    "⅛": "1/8", "⅜": "3/8", "⅝": "5/8", "⅞": "7/8",
+}
+
+
+@dataclass(frozen=True)
+class _ValidationNumber:
+    start: int
+    end: int
+    source: str
+    canonical: str
+
+
+def _canonical_number_token(value: object, trailing_context: str = "") -> str:
+    """Return a comparison value while retaining the source spelling for output."""
+    token = str(value or "").strip()
+    for symbol, fraction in _UNICODE_FRACTION_VALUES.items():
+        if symbol in token:
+            whole = token.replace(symbol, "").strip(" .-")
+            return f"{whole} {fraction}".strip()
+    malformed_fraction = re.fullmatch(r"(\d+)\s+(\d)(\d)/?", token)
+    if malformed_fraction:
+        return f"{malformed_fraction.group(1)} {malformed_fraction.group(2)}/{malformed_fraction.group(3)}"
+    mixed = re.fullmatch(r"(\d+)(?:\s+|-\s*|\.)(\d+/\d+)", token)
+    if mixed:
+        return f"{mixed.group(1)} {mixed.group(2)}"
+    compact = re.sub(r"\s+", "", token)
+    if re.fullmatch(r"[-+]?\d{1,3}(?:,\d{3})+", compact):
+        return compact.replace(",", "")
+    # In drilling text a dot followed by exactly three digits immediately
+    # before a depth marker is an OCR/locale thousands separator, not a decimal.
+    if re.fullmatch(r"[-+]?\d{1,3}\.\d{3}", compact) and re.match(
+        r"\s*(?:['’′]|ft\b|feet\b|pies\b|m\b|md\b|tvd\b)",
+        trailing_context,
+        re.IGNORECASE,
+    ):
+        return compact.replace(".", "")
+    # Decimal comma and decimal point are equivalent when the fractional part
+    # has one or two digits. The restoration pass puts the source punctuation
+    # back before the translation is persisted.
+    if re.fullmatch(r"[-+]?\d+,\d{1,2}", compact):
+        return compact.replace(",", ".")
+    if re.fullmatch(r"\d+", compact):
+        return str(int(compact))
+    return compact
+
+
+def _validation_number_matches(value: object) -> list[_ValidationNumber]:
+    """Find numeric facts, including common PDF/OCR formatting variants."""
+    text = str(value or "")
+    candidates: list[tuple[int, int, int, str]] = []
+    patterns = (
+        (0, re.compile(r"(?<![A-Za-z0-9_])\d+\s+\d{2}/(?=\s*(?:IN(?=\b|英寸)|[\"”]))", re.IGNORECASE)),
+        (0, re.compile(r"(?<![A-Za-z0-9_])\d+\s+\d{2}(?=\s*(?:英寸|IN(?=\b|英寸)|[\"”]))", re.IGNORECASE)),
+        (0, re.compile(r"(?<![A-Za-z0-9_])\d+(?:\s+|-\s*|\.)\d+/\d+")),
+        (0, re.compile(r"(?<![A-Za-z0-9_])\d+\s*[¼½¾⅛⅜⅝⅞]")),
+        (1, re.compile(r"(?<![A-Za-z0-9_])\d{1,3}(?:,\s+\d{3})+(?!\d)")),
+        (2, _VALIDATION_NUMBER_PATTERN),
+    )
+    for priority, pattern in patterns:
+        for match in pattern.finditer(text):
+            candidates.append((match.start(), match.end(), priority, match.group(0)))
+    # OCR frequently removes the boundary between an action word and a volume
+    # or depth (for example FILTRA1700 or INGRESA10000). A long alphabetic
+    # prefix is required so equipment identifiers such as BHA3 stay untouched.
+    for match in re.finditer(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{5,}(?P<number>\d{4,})(?![A-Za-z0-9_])", text):
+        candidates.append((match.start("number"), match.end("number"), 1, match.group("number")))
+
+    selected: list[tuple[int, int, str]] = []
+    for start, end, priority, source in sorted(candidates, key=lambda item: (item[2], item[0], -(item[1] - item[0]))):
+        if any(start < current_end and end > current_start for current_start, current_end, _ in selected):
+            continue
+        selected.append((start, end, source))
+    selected.sort(key=lambda item: item[0])
+    return [
+        _ValidationNumber(start, end, source, _canonical_number_token(source, text[end:end + 16]))
+        for start, end, source in selected
+    ]
+
+
+def _restored_number_spelling(match: _ValidationNumber) -> str:
+    malformed_fraction = re.fullmatch(r"(\d+)\s+(\d)(\d)/?", match.source.strip())
+    if malformed_fraction:
+        return f"{malformed_fraction.group(1)} {malformed_fraction.group(2)}/{malformed_fraction.group(3)}"
+    return match.source
+
+
+def _restore_equivalent_numeric_formats(
+    source_text: object,
+    translated_text: object,
+    target_language: str,
+    date_format: str = "iso",
+) -> str:
+    """Put grouping separators back exactly as written in the source.
+
+    Quality validation treats ``13000`` and ``13,000`` as the same value. This
+    deterministic pass then restores the source spelling before persistence so
+    the model cannot silently change numeric formatting.
+    """
+    source = str(source_text or "")
+    translated = str(translated_text or "")
+    source_date_spans = _calendar_date_spans(source) if normalize_language(target_language) == "zh-CN" else []
+    source_ordinal_spans = [(match.start(), match.end()) for match in _TECHNICAL_ORDINAL_PATTERN.finditer(source)]
+
+    def overlaps(start: int, end: int, spans: list[tuple[int, int]]) -> bool:
+        return any(start < span_end and end > span_start for span_start, span_end in spans)
+
+    source_spellings: dict[str, list[str]] = {}
+    for match in _validation_number_matches(source):
+        if overlaps(match.start, match.end, source_date_spans + source_ordinal_spans):
+            continue
+        source_spellings.setdefault(match.canonical, []).append(_restored_number_spelling(match))
+
+    translated_date_spans: list[tuple[int, int]] = []
+    if normalize_language(target_language) == "zh-CN":
+        for date in _calendar_date_matches(source):
+            match = _localized_calendar_date_pattern(date, date_format).search(translated)
+            if match:
+                translated_date_spans.append((match.start(), match.end()))
+
+    used: Counter[str] = Counter()
+    pieces: list[str] = []
+    cursor = 0
+    for match in _validation_number_matches(translated):
+        if overlaps(match.start, match.end, translated_date_spans):
+            continue
+        token = match.source
+        canonical = match.canonical
+        choices = source_spellings.get(canonical, [])
+        index = used[canonical]
+        if index >= len(choices):
+            continue
+        source_token = choices[index]
+        used[canonical] += 1
+        if source_token == token:
+            continue
+        pieces.extend((translated[cursor:match.start], source_token))
+        cursor = match.end
+    if not pieces:
+        return translated
+    pieces.append(translated[cursor:])
+    return "".join(pieces)
+
+
+def _surgically_protect_values(
+    item: dict[str, Any],
+    *,
+    protect_numbers: bool = True,
+) -> tuple[dict[str, Any], list[dict[str, str]]]:
     source_text = str(item.get("source_text", "") or "")
     candidates: list[tuple[int, int, str]] = []
-    for matcher in (_TECHNICAL_TIME_PATTERN, _PROTECTED_NUMBER_PATTERN):
-        for match in matcher.finditer(source_text):
-            candidates.append((match.start(), match.end(), match.group(0)))
+    if protect_numbers:
+        calendar_spans = _calendar_date_spans(source_text)
+        for matcher in (_TECHNICAL_TIME_PATTERN, _PROTECTED_NUMBER_PATTERN):
+            for match in matcher.finditer(source_text):
+                if any(match.start() < end and match.end() > start for start, end in calendar_spans):
+                    continue
+                candidates.append((match.start(), match.end(), match.group(0)))
     preserve_terms = item.get("preserve_terms", []) if isinstance(item.get("preserve_terms"), list) else []
     for term in preserve_terms:
         value = str(term or "").strip()
@@ -2582,6 +3048,25 @@ def _translation_context_group(unit: TextUnit) -> str:
     if unit.entity_type == "daily_report" or unit.field_code.startswith("report_fields."):
         return "report_fields"
     return str(unit.entity_type or unit.field_code.partition(".")[0] or "report_fields")
+
+
+def _translation_unit_id(unit: TextUnit) -> str:
+    """Build a short business-readable ID that is stable across chunking and retries."""
+    field_name = str(unit.field_code or unit.path or "text").rsplit(".", 1)[-1]
+    if unit.entity_type == "daily_report" or unit.field_code.startswith("report_fields."):
+        parts = ("report", field_name)
+    else:
+        row_reference = str(unit.entity_id or "").rsplit(":", 1)[-1]
+        if not row_reference:
+            match = re.search(r"\[(\d+)]", str(unit.path or ""))
+            row_reference = str(int(match.group(1)) + 1) if match else "item"
+        parts = (str(unit.entity_type or "item"), row_reference, field_name)
+    return ":".join(_translation_id_component(value) for value in parts)
+
+
+def _translation_id_component(value: object) -> str:
+    component = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(value or "").strip()).strip("-.")
+    return component or "item"
 
 
 def _report_translation_context(payload: dict[str, Any], record_id: str = "") -> dict[str, Any]:
@@ -2854,6 +3339,10 @@ _TECHNICAL_ORDINAL_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_])\d+(?:er|do|ro|to|ta|mo|vo|no)\.?(?![A-Za-z0-9_])",
     re.IGNORECASE,
 )
+_OCR_ACTION_NUMBER_PATTERN = re.compile(
+    r"(?:INGRESA|INGRESAN|FILTRA|PERFORA|BOMBEA|CIRCULA|DESPLAZA|RECUPERA|BAJA|SACA)\d{4,}",
+    re.IGNORECASE,
+)
 _PROTECTED_NUMBER_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_])[-+]?(?:"
     r"\d+-\d+/\d+"
@@ -2877,10 +3366,40 @@ _MONTH_NUMBER_BY_NAME = {
     "noviembre": "11", "november": "11", "nov": "11",
     "diciembre": "12", "december": "12", "dec": "12",
 }
+_MONTH_NAME_ALTERNATION = "|".join(
+    sorted((re.escape(name) for name in _MONTH_NUMBER_BY_NAME), key=len, reverse=True)
+)
 _MONTH_NAME_PATTERN = re.compile(
-    r"\b(" + "|".join(sorted((re.escape(name) for name in _MONTH_NUMBER_BY_NAME), key=len, reverse=True)) + r")\b",
+    r"\b(" + _MONTH_NAME_ALTERNATION + r")\b",
     re.IGNORECASE,
 )
+_DAY_MONTH_DATE_PATTERN = re.compile(
+    r"\b(?P<day>\d{1,2})(?:st|nd|rd|th)?\s+(?:DE\s+)?"
+    r"(?P<month>" + _MONTH_NAME_ALTERNATION + r")"
+    r"(?:\s+(?:DE(?:L)?\s+)?(?P<year>\d{4}))?\b",
+    re.IGNORECASE,
+)
+_MONTH_DAY_DATE_PATTERN = re.compile(
+    r"\b(?P<month>" + _MONTH_NAME_ALTERNATION + r")\s+"
+    r"(?P<day>\d{1,2})(?:st|nd|rd|th)?(?:,\s*|\s+)(?P<year>\d{4})\b",
+    re.IGNORECASE,
+)
+_NUMERIC_DAY_MONTH_DATE_PATTERN = re.compile(
+    r"(?<!\d)(?P<day>\d{1,2})[/-](?P<month>\d{1,2})[/-](?P<year>\d{4})(?!\d)"
+)
+_NUMERIC_YEAR_MONTH_DATE_PATTERN = re.compile(
+    r"(?<!\d)(?P<year>\d{4})[/-](?P<month>\d{1,2})[/-](?P<day>\d{1,2})(?!\d)"
+)
+
+
+@dataclass(frozen=True)
+class _CalendarDate:
+    start: int
+    end: int
+    year: str
+    month: str
+    day: str
+    source: str
 _ACTION_CONCEPTS = (
     ("drill", re.compile(r"\b(?:perfor(?:a|ó|ando|ar)|drill(?:ed|ing)?)\b", re.IGNORECASE), re.compile(r"钻进|钻至|开钻")),
     ("pump", re.compile(r"\b(?:bombe(?:a|ó|ando|ar)|pump(?:ed|ing)?)\b", re.IGNORECASE), re.compile(r"泵入|泵送|注入")),
@@ -2893,16 +3412,214 @@ _ACTION_CONCEPTS = (
 
 
 def _number_tokens(value: object) -> list[str]:
-    # Validation must also see values touching OCR/PDF text (``M3``,
-    # ``5/8IN`` or Chinese date suffixes). Protection remains boundary-aware
-    # so identifiers are not fragmented into excessive placeholders.
-    return _VALIDATION_NUMBER_PATTERN.findall(str(value or ""))
+    return [match.source for match in _validation_number_matches(value)]
 
 
 def _derived_number_tokens(value: object, target_language: str) -> list[str]:
     if normalize_language(target_language) != "zh-CN":
         return []
     return [_MONTH_NUMBER_BY_NAME[match.group(1).casefold()] for match in _MONTH_NAME_PATTERN.finditer(str(value or ""))]
+
+
+def _normalize_calendar_date_format(value: object) -> str:
+    normalized = str(value or "iso").strip().lower()
+    return normalized if normalized in {"iso", "chinese"} else "iso"
+
+
+def _calendar_date_format_instruction(date_format: str, *, authoritative: bool) -> str:
+    selected = _normalize_calendar_date_format(date_format)
+    prefix = "以下日期格式规则优先于其它提示中的日期示例：" if authoritative else "日期格式"
+    if selected == "chinese":
+        return f"{prefix}完整日期统一使用 YYYY年M月D日（如 2026年1月22日），缺少年份时使用 M月D日。"
+    return f"{prefix}完整日期统一使用 ISO YYYY-MM-DD（如 2026-01-22），缺少年份时使用 M月D日。"
+
+
+def _calendar_date_matches(value: object) -> list[_CalendarDate]:
+    """Return every non-overlapping source calendar date in source order."""
+    text = str(value or "")
+    candidates: list[_CalendarDate] = []
+    for pattern in (_DAY_MONTH_DATE_PATTERN, _MONTH_DAY_DATE_PATTERN):
+        for match in pattern.finditer(text):
+            month = _MONTH_NUMBER_BY_NAME.get(match.group("month").casefold(), "")
+            day = str(int(match.group("day")))
+            year = str(match.groupdict().get("year") or "")
+            if month:
+                candidates.append(_CalendarDate(
+                    start=match.start(),
+                    end=match.end(),
+                    year=year,
+                    month=month,
+                    day=day,
+                    source=match.group(0),
+                ))
+    for pattern in (_NUMERIC_DAY_MONTH_DATE_PATTERN, _NUMERIC_YEAR_MONTH_DATE_PATTERN):
+        for match in pattern.finditer(text):
+            year = str(int(match.group("year")))
+            month = str(int(match.group("month")))
+            day = str(int(match.group("day")))
+            if not (1 <= int(month) <= 12 and 1 <= int(day) <= 31):
+                continue
+            candidates.append(_CalendarDate(
+                start=match.start(),
+                end=match.end(),
+                year=year,
+                month=month,
+                day=day,
+                source=match.group(0),
+            ))
+    selected: list[_CalendarDate] = []
+    for candidate in sorted(candidates, key=lambda item: (item.start, -(item.end - item.start))):
+        if any(candidate.start < existing.end and candidate.end > existing.start for existing in selected):
+            continue
+        selected.append(candidate)
+    return selected
+
+
+def _calendar_date_components(value: object) -> list[tuple[str, str, str]]:
+    """Return source calendar dates as ``(year, month, day)`` tuples."""
+    return [(item.year, item.month, item.day) for item in _calendar_date_matches(value)]
+
+
+def _calendar_date_spans(value: object) -> list[tuple[int, int]]:
+    return [(item.start, item.end) for item in _calendar_date_matches(value)]
+
+
+def _localized_calendar_date_value(
+    year: str,
+    month: str,
+    day: str,
+    target_language: str,
+    date_format: str,
+) -> str:
+    if normalize_language(target_language) != "zh-CN":
+        return "-".join(part for part in (year, month, day) if part)
+    if not year:
+        return f"{int(month)}月{int(day)}日"
+    if _normalize_calendar_date_format(date_format) == "chinese":
+        return f"{int(year)}年{int(month)}月{int(day)}日"
+    return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+
+
+def _localized_calendar_date_pattern(date: _CalendarDate, date_format: str) -> re.Pattern[str]:
+    month = str(int(date.month))
+    day = str(int(date.day))
+    if not date.year:
+        return re.compile(rf"(?<!\d)0*{re.escape(month)}\s*月\s*0*{re.escape(day)}\s*(?:日|号)")
+    if _normalize_calendar_date_format(date_format) == "chinese":
+        return re.compile(
+            rf"(?<!\d){re.escape(str(int(date.year)))}\s*年\s*"
+            rf"0*{re.escape(month)}\s*月\s*0*{re.escape(day)}\s*(?:日|号)"
+        )
+    expected = _localized_calendar_date_value(date.year, date.month, date.day, "zh-CN", "iso")
+    return re.compile(rf"(?<!\d){re.escape(expected)}(?!\d)")
+
+
+def _yearful_pattern_for_yearless_date(date: _CalendarDate) -> re.Pattern[str]:
+    month = str(int(date.month))
+    day = str(int(date.day))
+    return re.compile(
+        rf"(?<!\d)(?:\d{{4}}-0*{re.escape(month)}-0*{re.escape(day)}|"
+        rf"\d{{4}}\s*年\s*0*{re.escape(month)}\s*月\s*0*{re.escape(day)}\s*(?:日|号))(?!\d)"
+    )
+
+
+def _calendar_date_output_match(
+    date: _CalendarDate,
+    translated: str,
+    date_format: str,
+) -> re.Match[str] | None:
+    match = _localized_calendar_date_pattern(date, date_format).search(translated)
+    if match or date.year:
+        return match
+    # A model may infer the report year for a source date that only says
+    # "14 de mayo". Treat that as the same calendar day during validation;
+    # persistence removes the inferred year below so no new fact is retained.
+    return _yearful_pattern_for_yearless_date(date).search(translated)
+
+
+def _normalize_yearless_calendar_dates(
+    source_text: object,
+    translated_text: object,
+    target_language: str,
+) -> str:
+    if normalize_language(target_language) != "zh-CN":
+        return str(translated_text or "")
+    translated = str(translated_text or "")
+    for date in _calendar_date_matches(source_text):
+        if date.year or _localized_calendar_date_pattern(date, "iso").search(translated):
+            continue
+        match = _yearful_pattern_for_yearless_date(date).search(translated)
+        if not match:
+            continue
+        replacement = _localized_calendar_date_value("", date.month, date.day, target_language, "iso")
+        translated = translated[:match.start()] + replacement + translated[match.end():]
+    return translated
+
+
+def _mask_spans(value: str, spans: list[tuple[int, int]]) -> str:
+    if not spans:
+        return value
+    pieces: list[str] = []
+    cursor = 0
+    for start, end in spans:
+        pieces.extend((value[cursor:start], " "))
+        cursor = end
+    pieces.append(value[cursor:])
+    return "".join(pieces)
+
+
+def _texts_without_calendar_dates(
+    source_text: object,
+    translated_text: object,
+    target_language: str,
+    date_format: str,
+) -> tuple[str, str]:
+    source = str(source_text or "")
+    translated = str(translated_text or "")
+    if normalize_language(target_language) != "zh-CN":
+        return source, translated
+    dates = _calendar_date_matches(source)
+    if not dates:
+        return source, translated
+    source = _mask_spans(source, [(item.start, item.end) for item in dates])
+    for date in dates:
+        match = _calendar_date_output_match(date, translated, date_format)
+        if match:
+            translated = translated[:match.start()] + " " + translated[match.end():]
+    return source, translated
+
+
+def _calendar_date_quality_error(
+    source_text: object,
+    translated_text: object,
+    target_language: str,
+    date_format: str = "iso",
+) -> str:
+    """Require every source date to use the configured target representation."""
+    if normalize_language(target_language) != "zh-CN":
+        return ""
+    dates = _calendar_date_matches(source_text)
+    if not dates:
+        return ""
+    translated = str(translated_text or "")
+    missing: list[str] = []
+    for date in dates:
+        match = _calendar_date_output_match(date, translated, date_format)
+        if match:
+            translated = translated[:match.start()] + " " + translated[match.end():]
+            continue
+        missing.append(_localized_calendar_date_value(
+            date.year,
+            date.month,
+            date.day,
+            target_language,
+            date_format,
+        ))
+    if missing:
+        selected = _normalize_calendar_date_format(date_format)
+        label = "ISO YYYY-MM-DD" if selected == "iso" else "Chinese YYYY年M月D日"
+        return f"calendar dates were not localized to configured {label} format; missing={missing}"
+    return ""
 
 
 def _compiled_measurement_matcher(values: tuple[str, ...]) -> re.Pattern[str] | None:
@@ -2928,15 +3645,15 @@ def translation_memory_version(
 ) -> str:
     tuning_material = {
         "version": tuning.version,
-        "pipeline_mode": tuning.pipeline_mode,
         "system_prompt": tuning.system_prompt,
         "translation_instruction": tuning.translation_instruction,
         "prompt_templates": tuning.prompt_templates,
+        "contextual_translation": tuning.contextual_translation,
+        "validate_results": tuning.validate_results,
         "numbers": tuning.protect_numbers,
         "units": tuning.protect_units,
         "acronyms": tuning.protect_acronyms,
         "proper_nouns": tuning.protect_proper_nouns,
-        "protection_mode": tuning.protection_mode,
         "ambiguous_units": tuning.ambiguous_units,
         "unit_aliases": tuning.unit_aliases,
         "unit_context_exclusions": tuning.unit_context_exclusions,
@@ -2990,8 +3707,12 @@ def _compiled_literal_matchers(
         # perform a Unicode-letter check. A broad U+00C0-U+024F range also
         # contains symbols such as the multiplication sign (×), which is a
         # valid separator after units such as ``ppg×120``.
-        latin_word = r"A-Za-z0-9_"
-        boundary = rf"(?<![{latin_word}]){escaped}(?![{latin_word}])" if unit else _term_regex(clean_value)
+        # Units may be attached directly to a value (``5/8IN``, ``60BBL``),
+        # so a leading digit is a valid boundary. Letters and underscores still
+        # block matches inside ordinary words and identifiers.
+        unit_prefix_word = r"A-Za-z_"
+        unit_suffix_word = r"A-Za-z0-9_"
+        boundary = rf"(?<![{unit_prefix_word}]){escaped}(?![{unit_suffix_word}])" if unit else _term_regex(clean_value)
         flags = 0 if case_sensitive else re.IGNORECASE
         matchers.append((clean_value, re.compile(boundary, flags)))
     return sorted(matchers, key=lambda item: len(item[0]), reverse=True)
@@ -3025,7 +3746,11 @@ def _unit_match_allowed(
             return value.isalnum() or value == "_"
         return unicodedata.category(value).startswith(("L", "N")) and "LATIN" in unicodedata.name(value, "")
 
-    if match.start() > 0 and is_latin_word_character(text[match.start() - 1]):
+    if (
+        match.start() > 0
+        and is_latin_word_character(text[match.start() - 1])
+        and not text[match.start() - 1].isdigit()
+    ):
         return False
     if match.end() < len(text) and is_latin_word_character(text[match.end()]):
         return False
@@ -3105,7 +3830,6 @@ def _semantic_unit_quality_error(
     translated_text: object,
     matchers: list[tuple[str, re.Pattern[str]]],
     *,
-    aliases: dict[str, tuple[str, ...]] | None = None,
     ambiguous_units: frozenset[str] = frozenset(),
     exclusions: dict[str, tuple[re.Pattern[str], ...]] | None = None,
 ) -> str:
@@ -3126,8 +3850,7 @@ def _semantic_unit_quality_error(
     ))
     missing: list[str] = []
     for unit, expected in source_counts.items():
-        localized = sum(translated_value.count(alias) for alias in (aliases or {}).get(unit, ()))
-        actual = translated_counts.get(unit, 0) + localized
+        actual = translated_counts.get(unit, 0)
         if actual < expected:
             missing.extend([unit] * (expected - actual))
     return f"model removed or changed units; missing={missing[:8]}" if missing else ""
@@ -3176,6 +3899,10 @@ def clean_translation_source(value: Any) -> tuple[str, list[str]]:
     """Remove only high-confidence PDF artifacts while retaining the stored raw source."""
     text = normalize_multiline(str(value or "").replace("\u00ad", ""))
     actions: list[str] = []
+    normalized_ocr = normalize_pdf_ocr_text(text)
+    if normalized_ocr != text:
+        actions.append("normalize_pdf_ocr")
+        text = normalized_ocr
     without_split_words = re.sub(
         r"(?<=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])-\n(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])",
         "",

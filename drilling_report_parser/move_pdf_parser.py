@@ -10,6 +10,7 @@ from .completion_pdf_parser import (
     _clean,
     _collect_block,
     _first_line,
+    _ref_datum_number,
 )
 from .pdf_io import extract_page as _extract_page
 from .pdf_io import pdfplumber_open as _pdfplumber_open
@@ -39,7 +40,7 @@ def parse_move_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[s
     fields = _parse_report_fields(page1_lines, layout_text, plain_text)
 
     return {
-        "metadata": {"source": "pdf_import", "parser": "move_pdf_parser_v1", "report_type": "move"},
+        "metadata": {"source": "pdf_import", "parser": "move_pdf_parser_v2_ocr", "report_type": "move"},
         "report_fields": fields,
         "operations": operations,
     }
@@ -84,10 +85,10 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
 
     ref_match = re.search(r"Ref Datum:\s*(.*?)\s+DFS:", header_line)
     if ref_match:
-        fields["refDatum"] = _clean(ref_match.group(1))
+        fields["refDatum"] = _ref_datum_number(ref_match.group(1))
     else:
         ref_match = re.search(r"(ORIGINAL\s+KB\s+@\S+)", plain_text)
-        fields["refDatum"] = _clean(ref_match.group(1)) if ref_match else ""
+        fields["refDatum"] = _ref_datum_number(ref_match.group(1)) if ref_match else ""
 
     fields["currentOps"] = _collect_block(lines, "Current Ops:", ("24-Hr Summary:",))
     fields["summary24h"] = _collect_block(lines, "24-Hr Summary:", ("24-Hr Forecast:",))

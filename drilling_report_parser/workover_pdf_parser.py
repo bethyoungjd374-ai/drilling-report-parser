@@ -13,6 +13,7 @@ from .completion_pdf_parser import (
     _parse_daily_costs,
     _parse_mud_products,
     _parse_operations_from_pdf,
+    _ref_datum_number,
     _value_between,
 )
 from .pdf_io import extract_page as _extract_page
@@ -35,7 +36,7 @@ def parse_workover_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> di
     fields["otherRemarks"] = _parse_other_remarks(layout_text)
 
     return {
-        "metadata": {"source": "pdf_import", "parser": "workover_pdf_parser_v1", "report_type": "workover"},
+        "metadata": {"source": "pdf_import", "parser": "workover_pdf_parser_v2_ocr", "report_type": "workover"},
         "report_fields": fields,
         "operations": _parse_operations(payload_source),
         "bulks": _parse_bulks(layout_pages),
@@ -85,7 +86,7 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
         fields["afeNumber"] = _clean(_value_after_label_words(afp_line, "AFP Número"))
     ref_match = re.search(r"Ref Datum:\s*(.*?)\s+Costo diario:\s*(\$?[-\d,.]+)", afp_line)
     if ref_match:
-        fields["refDatum"] = _clean(ref_match.group(1))
+        fields["refDatum"] = _ref_datum_number(ref_match.group(1))
         fields["dailyCost"] = _clean(ref_match.group(2))
 
     afp_cost_line = _first_line(lines, "AFP Costo")

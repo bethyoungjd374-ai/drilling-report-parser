@@ -3,13 +3,17 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from drilling_report_parser.completion_pdf_parser import parse_completion_pdf_daily_report
+from drilling_report_parser.completion_pdf_parser import _ref_datum_number, parse_completion_pdf_daily_report
 
 
 SAMPLE_DIR = Path("/Users/wujianhui/Documents/1、Work/厄瓜多尔资料/华为ai任务资料/完井日报")
 
 
 class CompletionPdfParserTest(unittest.TestCase):
+    def test_ref_datum_keeps_only_numeric_value(self) -> None:
+        self.assertEqual(_ref_datum_number("ORIGINAL KB @987.55ft"), "987.55")
+        self.assertEqual(_ref_datum_number("ORIGINAL KB @1,045.17ft"), "1045.17")
+
     def test_parse_schas_completion_sample(self) -> None:
         pdf = SAMPLE_DIR / "06112026-SCHAS-513-SIN-219-PEC-007-V1R1 REPORTE DIARIO DE COMPLETACIÓN.pdf"
         if not pdf.exists():

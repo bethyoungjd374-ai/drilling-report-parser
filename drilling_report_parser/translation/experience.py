@@ -26,8 +26,6 @@ def diagnose_translation_failures(
     The classifier intentionally reasons from generic error families and current
     configuration. It does not embed drilling-specific units or names in code.
     """
-    protections = (tuning or {}).get("protections") if isinstance((tuning or {}).get("protections"), dict) else {}
-    protection_mode = str((protections or {}).get("mode", "prompt") or "prompt").strip().lower()
     terms = protected_terms if isinstance(protected_terms, dict) else {}
     known_units = _folded_values(terms.get("units"))
     known_acronyms = _folded_values(terms.get("acronyms"))
@@ -43,7 +41,6 @@ def diagnose_translation_failures(
             source_text=source_text,
             report_type=report_type,
             field_code=field_code,
-            protection_mode=protection_mode,
             known_units=known_units,
             known_acronyms=known_acronyms,
             known_proper_nouns=known_proper_nouns,
@@ -88,7 +85,6 @@ def _diagnose_error(
     source_text: str,
     report_type: str,
     field_code: str,
-    protection_mode: str,
     known_units: set[str],
     known_acronyms: set[str],
     known_proper_nouns: set[str],
@@ -119,37 +115,33 @@ def _diagnose_error(
                     token=token,
                     title=f"建议把 {token} 加入全局单位保护",
                     cause="质量校验识别到单位缺失，但当前全局单位保护池没有该写法。",
-                    recommendation="加入全局单位保护后采用占位方式原样保留，并重跑受影响日报。",
+                    recommendation="加入全局单位保护后采用确定性保留，并重跑受影响日报。",
                     report_type="",
                     field_code="",
                     confidence="high",
                 ))
-            elif protection_mode != "placeholder":
-                issues.append(_placeholder_issue(report_type, field_code, token))
             else:
                 issues.append(_issue(
-                    category="protected_unit_regression",
-                    action_type="add_prompt_rule",
+                    category="contextual_unit_regression",
+                    action_type="retry_current_rules",
                     token=token,
-                    title=f"已保护单位 {token} 仍触发校验",
-                    cause="该单位已经在全局保护池且严格占位已启用，可能是新语境、目标别名或边界写法。",
-                    recommendation="把本次完整性要求加入对应字段的经验规则，并重跑；若再次出现则标记为回归。",
+                    title=f"上下文单位保护需要重跑（{token}）",
+                    cause=f"{token} 已在全局单位保护范围内，失败应作为保护或校验边界问题排查。",
+                    recommendation="使用当前上下文保护规则重跑。若仍复现，应作为单位恢复逻辑回归处理。",
                     report_type=report_type,
                     field_code=field_code,
-                    confidence="medium",
-                    instruction=_field_integrity_instruction(field_code, token),
+                    confidence="high",
                 ))
         return issues
 
     if "numeric" in folded_error or "数字" in error:
-        if protection_mode != "placeholder":
-            return [_placeholder_issue(report_type, field_code, "数字与精度")]
         return [_issue(
-            category="deterministic_numeric_layout",
+            category="contextual_numeric_regression",
             action_type="retry_current_rules",
-            title="数字占位边界需要确定性恢复",
-            cause="数字已由占位符保护，但模型折叠了分数、范围或相邻数字之间的排版边界；继续补Prompt无法保证格式。",
-            recommendation="使用数字整体保护和标点边界恢复机制自动重跑；无需添加字段Prompt或逐句记忆。",
+            token="数字与精度",
+            title="上下文数字保护需要重跑",
+            cause="结果校验发现日期或计量值发生变化。",
+            recommendation="按当前规则重跑；若仍复现，应修复数字恢复或校验边界。",
             report_type=report_type,
             field_code=field_code,
             confidence="high",
@@ -159,8 +151,8 @@ def _diagnose_error(
         return [_issue(
             category="placeholder_provider_regression",
             action_type="retry_current_rules",
-            title="模型改动了保护占位符",
-            cause="全局保护配置已经命中，但模型返回时删除、复制或改写了占位符。",
+            title="模型改动了内部保护标记",
+            cause="上下文保护已命中，但模型返回时删除、复制或改写了内部保护标记。",
             recommendation="使用已有分段恢复机制自动重跑；重复出现时升级为模型兼容性回归。",
             report_type=report_type,
             field_code=field_code,
@@ -183,10 +175,10 @@ def _diagnose_error(
         for token in missing_values:
             token_folded = token.casefold()
             if token_folded in known_acronyms or token_folded in known_proper_nouns:
-                action_type = "add_prompt_rule"
+                action_type = "retry_current_rules"
                 category = "protected_term_regression"
                 title = f"已保护内容 {token} 仍被改写"
-                recommendation = "加入对应字段的严格保留经验规则并重跑。"
+                recommendation = "按当前保护规则重跑一次；不向正式 Prompt 追加限制。"
                 report_scope = report_type
                 field_scope = field_code
             elif _looks_like_acronym(token):
@@ -212,36 +204,20 @@ def _diagnose_error(
                 recommendation=recommendation,
                 report_type=report_scope,
                 field_code=field_scope,
-                confidence="high" if action_type != "add_prompt_rule" else "medium",
-                instruction=_field_integrity_instruction(field_code, token) if action_type == "add_prompt_rule" else "",
+                confidence="high",
             ))
         return issues
 
     return [_issue(
         category="semantic_or_completeness",
-        action_type="add_prompt_rule",
-        title="建议沉淀字段级翻译经验",
+        action_type="retry_current_rules",
+        title="建议人工复核本次翻译",
         cause="本次失败不属于可直接加入单位、缩写或专名池的确定性错误。",
-        recommendation="将完整翻译与只修复缺失信息的要求加入对应日报类型和字段，并自动重跑。",
+        recommendation="保留错误证据并按当前稳定策略重跑一次；不自动修改 Prompt。",
         report_type=report_type,
         field_code=field_code,
         confidence="medium",
-        instruction=_field_integrity_instruction(field_code, "动作、对象、方向、时序和全部事实"),
     )]
-
-
-def _placeholder_issue(report_type: str, field_code: str, token: str) -> dict[str, Any]:
-    return _issue(
-        category="prompt_only_protection",
-        action_type="enable_placeholder",
-        token=token,
-        title="建议启用严格占位保护",
-        cause=f"{token} 已进入保护范围，但当前仅靠Prompt提醒和事后校验，模型仍可改写或省略。",
-        recommendation="把保护模式切换为严格占位，然后重跑受影响日报。",
-        report_type="",
-        field_code="",
-        confidence="high",
-    )
 
 
 def _issue(
@@ -299,8 +275,3 @@ def _looks_like_acronym(value: str) -> bool:
     token = re.sub(r"[^A-Za-z0-9&/-]", "", value)
     letters = re.sub(r"[^A-Za-z]", "", token)
     return bool(token and letters and len(token) <= 20 and letters.upper() == letters)
-
-
-def _field_integrity_instruction(field_code: str, subject: str) -> str:
-    scope = f"字段 {field_code}" if field_code else "当前字段"
-    return f"翻译{scope}时必须完整保留{subject}；质量修复只补回缺失信息，不得重新改写已经正确的内容。"

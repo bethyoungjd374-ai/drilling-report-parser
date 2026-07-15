@@ -72,6 +72,7 @@ class FormServerImportTest(unittest.TestCase):
             patch.object(form_server, "list_records", side_effect=records),
             patch.object(form_server, "load_operation_translations", side_effect=operation_translations),
             patch.object(form_server, "load_extraction_results", return_value=[]),
+            patch.object(form_server, "clear_extraction_results"),
             patch.object(form_server, "_extraction_jobs_enabled", return_value=False),
         ]
         for patcher in patchers:
@@ -85,6 +86,143 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(form_server._report_identity_errors({"report_fields": {
             "reportDate": "2026-05-22", "wellbore": "PCNC-039", "rig": "SINOPEC 248",
         }}), [])
+
+    def test_uploaded_report_is_auto_translated_and_reupload_is_queued_again(self) -> None:
+        payload = {
+            "metadata": {},
+            "report_fields": {
+                "event": "DEV DRILLING",
+                "reportDate": "2026-05-17",
+                "reportNo": "5",
+                "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248",
+                "currentOps": "DRILL AHEAD.",
+            },
+            "operations": [],
+        }
+        handler = object.__new__(form_server.FormHandler)
+
+        with (
+            patch.object(form_server, "_load_translation_tuning_config", return_value={
+                **form_server._default_translation_tuning_config(),
+                "auto_translate_on_upload": True,
+            }),
+            patch.object(form_server, "_translation_jobs_enabled", return_value=True),
+            patch.object(form_server, "_invalidate_translation_jobs") as invalidate_jobs,
+            patch.object(form_server, "_schedule_translation_job") as schedule_job,
+        ):
+            handler._store_payload(payload, "drilling", from_upload=True)
+            handler._store_payload(payload, "drilling", from_upload=True)
+
+        record_id = "drilling:PCNC-039:2026-05-17:5"
+        self.assertEqual(payload["metadata"]["translation_status"], "QUEUED")
+        self.assertEqual(schedule_job.call_args_list, [unittest.mock.call(record_id), unittest.mock.call(record_id)])
+        self.assertEqual(invalidate_jobs.call_count, 2)
+        self.assertTrue(form_server.save_report_payload.call_args.kwargs["invalidate_translations"])
+
+    def test_manual_report_save_does_not_use_upload_auto_translation(self) -> None:
+        payload = {
+            "metadata": {},
+            "report_fields": {
+                "reportDate": "2026-05-17",
+                "reportNo": "5",
+                "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248",
+                "currentOps": "DRILL AHEAD.",
+            },
+            "operations": [],
+        }
+        handler = object.__new__(form_server.FormHandler)
+
+        with (
+            patch.object(form_server, "_load_translation_tuning_config", return_value={
+                **form_server._default_translation_tuning_config(),
+                "auto_translate_on_upload": True,
+            }),
+            patch.object(form_server, "_translation_jobs_enabled", return_value=True),
+            patch.object(form_server, "_schedule_translation_job") as schedule_job,
+        ):
+            handler._store_payload(payload, "drilling")
+
+        schedule_job.assert_not_called()
+        self.assertEqual(payload["metadata"]["translation_status"], "PENDING")
+
+    def test_extraction_requeues_only_after_relevant_input_changes(self) -> None:
+        payload = {
+            "metadata": {},
+            "report_fields": {
+                "reportDate": "2026-05-17", "reportNo": "5", "wellbore": "PCNC-039",
+                "rig": "SINOPEC 248", "currentOps": "DRILL AHEAD.",
+            },
+            "operations": [{
+                "from": "03:00", "to": "06:00", "hours": "3", "op_code": "BHA",
+                "op_type": "NPT", "operation_details": "NPT A CARGO DE SINOPEC",
+            }],
+        }
+        config = form_server._normalize_ai_extraction_config({
+            "auto_execute": True,
+            "rules": [{
+                "id": "npt-owner", "name": "NPT责任方", "report_type": "drilling",
+                "source_section": "operations", "source_field": "operation_details",
+                "instruction": "提取责任公司", "target_field": "service_line",
+                "output_format": "company", "enabled": True,
+            }],
+        })
+        handler = object.__new__(form_server.FormHandler)
+
+        with (
+            patch.object(form_server, "_load_ai_extraction_config", return_value=config),
+            patch.object(form_server, "_extraction_jobs_enabled", return_value=True),
+            patch.object(form_server, "_schedule_extraction_job") as schedule_job,
+            patch.object(form_server, "_invalidate_extraction_jobs") as invalidate_jobs,
+            patch.object(form_server, "clear_extraction_results") as clear_results,
+        ):
+            handler._store_payload(payload, "drilling", from_upload=True)
+            handler._store_payload(payload, "drilling", from_upload=True)
+            payload["report_fields"]["currentOps"] = "UNRELATED FIELD CHANGED"
+            handler._store_payload(payload, "drilling")
+            payload["operations"][0]["op_code"] = "CIRCULATING"
+            handler._store_payload(payload, "drilling")
+
+        record_id = "drilling:PCNC-039:2026-05-17:5"
+        self.assertEqual(schedule_job.call_args_list, [unittest.mock.call(record_id), unittest.mock.call(record_id)])
+        invalidate_jobs.assert_called_once_with([record_id])
+        clear_results.assert_called_once_with(form_server.DATABASE_PATH, [record_id])
+
+    def test_removing_all_extraction_units_clears_stale_results(self) -> None:
+        payload = {
+            "metadata": {},
+            "report_fields": {
+                "reportDate": "2026-05-17", "reportNo": "5", "wellbore": "PCNC-039", "rig": "SINOPEC 248",
+            },
+            "operations": [{"op_type": "NPT", "operation_details": "WAIT ON SERVICE"}],
+        }
+        config = form_server._normalize_ai_extraction_config({
+            "auto_execute": True,
+            "rules": [{
+                "id": "npt-owner", "name": "NPT责任方", "report_type": "drilling",
+                "source_section": "operations", "source_field": "operation_details",
+                "instruction": "提取责任公司", "target_field": "service_line",
+                "output_format": "company", "enabled": True,
+            }],
+        })
+        handler = object.__new__(form_server.FormHandler)
+
+        with (
+            patch.object(form_server, "_load_ai_extraction_config", return_value=config),
+            patch.object(form_server, "_extraction_jobs_enabled", return_value=True),
+            patch.object(form_server, "_schedule_extraction_job"),
+            patch.object(form_server, "_invalidate_extraction_jobs") as invalidate_jobs,
+            patch.object(form_server, "clear_extraction_results") as clear_results,
+        ):
+            handler._store_payload(payload, "drilling", from_upload=True)
+            payload["operations"] = []
+            handler._store_payload(payload, "drilling")
+
+        record_id = "drilling:PCNC-039:2026-05-17:5"
+        self.assertEqual(payload["metadata"]["extraction_status"], "NOT_REQUIRED")
+        invalidate_jobs.assert_called_once_with([record_id])
+        clear_results.assert_called_once_with(form_server.DATABASE_PATH, [record_id])
 
     def test_lm_studio_qwen_disabled_thinking_payload_uses_compatibility_prefill(self) -> None:
         model = {
@@ -257,6 +395,42 @@ class FormServerImportTest(unittest.TestCase):
             "record_id": "report-1", "status": "IN_PROGRESS", "progress": "38", "error": "", "updated_at": "now",
         })
 
+    def test_translation_telemetry_promotes_provider_cache_usage_to_metrics(self) -> None:
+        emit = form_server._translation_telemetry("report-1", 3, "zh-CN")
+        with (
+            patch.object(form_server, "_write_translation_debug_log") as write_debug,
+            patch.object(form_server, "_write_translation_metric") as write_metric,
+        ):
+            emit({
+                "event": "model_wire_response",
+                "provider": "openai-compatible",
+                "model": "translation-model",
+                "prompt_prefix_hash": "abc123",
+                "elapsed_ms": 240,
+                "usage_metrics": {
+                    "input_tokens": 100,
+                    "cached_input_tokens": 80,
+                    "prompt_cache_hit": True,
+                    "prompt_cache_hit_ratio": 0.8,
+                },
+            })
+
+        write_debug.assert_called_once()
+        write_metric.assert_called_once_with(
+            "model_usage",
+            record_id="report-1",
+            generation=3,
+            language="zh-CN",
+            provider="openai-compatible",
+            model="translation-model",
+            prompt_prefix_hash="abc123",
+            elapsed_ms=240,
+            input_tokens=100,
+            cached_input_tokens=80,
+            prompt_cache_hit=True,
+            prompt_cache_hit_ratio=0.8,
+        )
+
     def test_ai_job_monitor_keeps_separate_translation_and_extraction_streams(self) -> None:
         original_path = form_server.AI_JOB_MONITOR_PATH
         form_server.AI_JOB_MONITOR_PATH = Path(self.repository_tmp.name) / "ai_job_monitor.jsonl"
@@ -328,9 +502,14 @@ class FormServerImportTest(unittest.TestCase):
         }
         first = form_server._normalize_ai_extraction_config(raw)
         second = form_server._normalize_ai_extraction_config(raw)
-        changed = form_server._normalize_ai_extraction_config({**raw, "auto_execute": False})
+        switch_only = form_server._normalize_ai_extraction_config({**raw, "auto_execute": False})
+        changed = form_server._normalize_ai_extraction_config({
+            **raw,
+            "rules": [{**raw["rules"][0], "instruction": "提取责任公司；没有证据则返回空值"}],
+        })
 
         self.assertEqual(first["version"], second["version"])
+        self.assertEqual(first["version"], switch_only["version"])
         self.assertNotEqual(first["version"], changed["version"])
 
     def test_ai_extraction_units_only_include_npt_rows_for_service_line(self) -> None:
@@ -345,6 +524,120 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(len(units), 1)
         self.assertEqual(units[0]["source_row_no"], 2)
         self.assertIn("WAIT ON SINOPEC", units[0]["prompt_text"])
+
+    def test_ai_extraction_unit_uses_only_matching_row_translation(self) -> None:
+        record_id = "drilling:PCNC-039:2026-05-17:5"
+        source = "NPT A CARGO DE SINOPEC"
+        payload = {
+            "metadata": {"record_id": record_id},
+            "report_fields": {"rig": "SINOPEC 248"},
+            "operations": [{"op_type": "NPT", "operation_details": source}],
+            "translation_content": [{
+                "entity_id": f"{record_id}:operations:1",
+                "field_code": "operations.operation_details",
+                "target_language": "zh-CN",
+                "source_hash": form_server.source_hash(source),
+                "translated_text": "NPT由SINOPEC负责",
+                "translation_status": "COMPLETED",
+            }],
+        }
+        rule = {
+            "source_section": "operations", "source_field": "operation_details",
+            "target_field": "service_line", "condition": "仅处理 NPT",
+        }
+
+        unit = form_server._ai_extraction_units(payload, rule)[0]
+
+        self.assertEqual(unit["translated_text"], "NPT由SINOPEC负责")
+        self.assertIn("作业原文", unit["prompt_text"])
+        self.assertIn("中文参考译文（仅辅助理解）", unit["prompt_text"])
+        self.assertIn("以作业原文为准", unit["prompt_text"])
+
+    def test_ai_extraction_unit_rejects_stale_translation(self) -> None:
+        record_id = "drilling:PCNC-039:2026-05-17:5"
+        payload = {
+            "metadata": {"record_id": record_id},
+            "operations": [{"op_type": "NPT", "operation_details": "CURRENT SOURCE"}],
+            "translation_content": [{
+                "entity_id": f"{record_id}:operations:1",
+                "field_code": "operations.operation_details",
+                "target_language": "zh-CN",
+                "source_hash": form_server.source_hash("OLD SOURCE"),
+                "translated_text": "错误旧译文",
+                "translation_status": "COMPLETED",
+            }],
+        }
+        rule = {
+            "source_section": "operations", "source_field": "operation_details",
+            "target_field": "service_line", "condition": "仅处理 NPT",
+        }
+
+        unit = form_server._ai_extraction_units(payload, rule)[0]
+
+        self.assertEqual(unit["translated_text"], "")
+        self.assertNotIn("错误旧译文", unit["prompt_text"])
+
+    def test_extraction_input_signature_includes_prompt_context_and_row_mapping(self) -> None:
+        rule = {
+            "id": "npt-owner", "source_section": "operations", "source_field": "operation_details",
+            "target_field": "service_line", "condition": "仅处理 NPT",
+        }
+        original = {"report_fields": {"rig": "SINOPEC 248"}, "operations": [
+            {"op_type": "NPT", "op_code": "BHA", "operation_details": "WAIT ON SERVICE"},
+        ]}
+        context_changed = {"report_fields": {"rig": "SINOPEC 129"}, "operations": original["operations"]}
+        row_inserted = {"report_fields": original["report_fields"], "operations": [
+            {"op_type": "P", "operation_details": "DRILL"},
+            original["operations"][0],
+        ]}
+
+        original_signature, count = form_server._extraction_input_signature(original, [rule])
+
+        self.assertEqual(count, 1)
+        self.assertNotEqual(original_signature, form_server._extraction_input_signature(context_changed, [rule])[0])
+        self.assertNotEqual(original_signature, form_server._extraction_input_signature(row_inserted, [rule])[0])
+
+    def test_extraction_waits_while_translation_is_running(self) -> None:
+        with (
+            patch.object(form_server, "_translation_is_running_for_extraction", return_value=True),
+            patch.object(form_server, "_retry_extraction_job_after_translation") as retry,
+            patch.object(form_server, "background_job_lock") as job_lock,
+        ):
+            form_server._run_extraction_job("report-1", 7)
+
+        retry.assert_called_once_with("report-1", 7, False)
+        job_lock.assert_not_called()
+
+    def test_translation_revision_requeues_related_extraction(self) -> None:
+        payload = {
+            "metadata": {"record_id": "report-1", "report_type": "drilling", "extraction_status": "COMPLETED"},
+            "operations": [{"op_type": "NPT", "operation_details": "WAIT ON SERVICE"}],
+        }
+        rule = {
+            "id": "npt-owner", "report_type": "drilling", "source_section": "operations",
+            "source_field": "operation_details", "target_field": "service_line", "condition": "仅处理 NPT",
+        }
+        with (
+            patch.object(form_server, "load_report_payload", return_value=payload),
+            patch.object(form_server, "_enabled_extraction_rules", return_value=[rule]),
+            patch.object(form_server, "_load_ai_extraction_config", return_value={"auto_execute": True, "version": "rules-v2"}),
+            patch.object(form_server, "_extraction_jobs_enabled", return_value=True),
+            patch.object(form_server, "_invalidate_extraction_jobs") as invalidate,
+            patch.object(form_server, "clear_extraction_results") as clear,
+            patch.object(form_server, "update_record_extraction_status") as update_status,
+            patch.object(form_server, "_schedule_extraction_job") as schedule,
+        ):
+            refreshed = form_server._refresh_extraction_after_translation(
+                "report-1", changed_field_code="operations.operation_details",
+            )
+
+        self.assertTrue(refreshed)
+        invalidate.assert_called_once_with(["report-1"])
+        clear.assert_called_once_with(form_server.DATABASE_PATH, ["report-1"])
+        update_status.assert_called_once_with(
+            form_server.DATABASE_PATH, "report-1", status="QUEUED", progress=0, error="", version="rules-v2",
+        )
+        schedule.assert_called_once_with("report-1")
 
     def test_all_report_type_rule_accepts_common_operation_field(self) -> None:
         config = form_server._normalize_ai_extraction_config({
@@ -1230,7 +1523,12 @@ class FormServerImportTest(unittest.TestCase):
                     "protected": True,
                     "enabled": True,
                 })
-                post_response = _post_json(server.server_port, "/api/admin/translation-terms", config, cookie)
+                with patch.object(
+                    form_server,
+                    "_active_ai_job_counts",
+                    return_value={"translation": 0, "extraction": 0, "total": 0},
+                ):
+                    post_response = _post_json(server.server_port, "/api/admin/translation-terms", config, cookie)
                 self.assertEqual(post_response["status"], 200, post_response["body"])
                 saved = json.loads(post_response["body"])
                 self.assertTrue(any(term["en"] == "flowline" for term in saved["terms"]))

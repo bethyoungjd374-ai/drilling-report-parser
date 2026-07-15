@@ -126,21 +126,21 @@ body {
 }
 
 .auth-logo {
-  width: 70px;
-  height: 70px;
+  width: 94px;
+  height: 96px;
   display: grid;
   place-items: center;
-  margin-bottom: 26px;
-  border: 1px solid rgba(195, 226, 255, 0.5);
-  border-radius: 12px;
-  background: linear-gradient(145deg, #69b8ff 0%, #0d5fd0 100%);
-  color: #ffffff;
-  box-shadow: 0 12px 30px rgba(20, 112, 231, 0.34);
+  margin-bottom: 24px;
+  padding: 8px;
+  border: 1px solid rgba(214, 236, 250, 0.82);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 38px rgba(0, 33, 72, 0.28), inset 0 0 0 1px rgba(10, 67, 139, 0.06);
 }
 
-.auth-logo .brand-logo-svg {
-  width: 78%;
-  height: 78%;
+.auth-logo .brand-logo-image {
+  width: 100%;
+  height: 100%;
 }
 
 .auth-logo .logo-stroke {
@@ -390,14 +390,16 @@ textarea {
 }
 
 .brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  padding: 3px;
+  border-radius: 9px;
   display: grid;
   place-items: center;
-  background: #ffffff;
+  background: #f8fcff;
   color: #126dc8;
-  box-shadow: inset 0 0 0 1px rgba(18, 109, 200, 0.12);
+  box-shadow: 0 5px 14px rgba(0, 20, 42, 0.18), inset 0 0 0 1px rgba(18, 109, 200, 0.1);
 }
 
 .brand-logo {
@@ -408,6 +410,13 @@ textarea {
   display: block;
   width: 82%;
   height: 82%;
+}
+
+.brand-logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .logo-stroke {
@@ -1632,7 +1641,7 @@ td textarea {
 }
 
 .well-status-marker.dot-no-npt {
-  background: #a9b6c2;
+  background: #25a86b;
 }
 
 .record-main {
@@ -6418,10 +6427,11 @@ body.modal-open {
   }
 
   .auth-logo {
-    width: 54px;
-    height: 54px;
+    width: 66px;
+    height: 68px;
+    padding: 6px;
     margin-bottom: 16px;
-    font-size: 23px;
+    border-radius: 15px;
   }
 
   .auth-kicker {
@@ -7275,6 +7285,12 @@ tbody tr:hover td,
 
 .toast {
   border: 1px solid rgba(255, 255, 255, 0.26);
+}
+
+.toast.liquid-glass {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(8, 36, 58, 0.94) !important;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -8143,6 +8159,25 @@ td textarea {
   overflow-x: clip;
 }
 
+/* Keep page controls available while reviewing long content. */
+.topbar,
+#nptStatsPage .npt-stats-topbar {
+  position: sticky;
+  top: 12px;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 10px 28px rgba(19, 38, 58, 0.13);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@media (max-width: 760px) {
+  .topbar,
+  #nptStatsPage .npt-stats-topbar {
+    top: 8px;
+  }
+}
+
 .module-page,
 .module-page > *,
 .record-dashboard,
@@ -8262,9 +8297,9 @@ td textarea {
 }
 
 :is(body, body:has(#nptStatsPage.active)) .sidebar:not(.admin-sidebar) .brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
   box-shadow: 0 6px 18px rgba(0, 19, 35, 0.22), inset 0 0 0 1px rgba(18, 109, 200, 0.1);
 }
 

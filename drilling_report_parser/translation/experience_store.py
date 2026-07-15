@@ -11,7 +11,7 @@ from pathlib import Path
 from ..runtime_files import atomic_write_json, ensure_parent
 
 
-VALID_STATUSES = {"PENDING", "APPLIED", "VERIFIED", "DISMISSED"}
+VALID_STATUSES = {"PENDING", "QUEUED", "APPLIED", "VERIFIED", "DISMISSED"}
 
 
 def normalize_experience_pool(raw: object) -> dict[str, object]:
@@ -28,6 +28,17 @@ def normalize_experience_pool(raw: object) -> dict[str, object]:
         if status not in VALID_STATUSES:
             status = "PENDING"
         proposed_change = raw_item.get("proposed_change") if isinstance(raw_item.get("proposed_change"), dict) else {}
+        action_type = str(raw_item.get("action_type", "") or "")[:64]
+        title = str(raw_item.get("title", "") or "")[:300]
+        recommendation = str(raw_item.get("recommendation", "") or "")[:1000]
+        if action_type in {"add_prompt_rule", "enable_placeholder"}:
+            # Retire legacy self-modifying actions at the persistence boundary.
+            # Historical evidence remains visible, but it can only request a
+            # rerun with the stable current policy and can never grow Prompt.
+            action_type = "retry_current_rules"
+            title = "按当前稳定策略重跑"
+            recommendation = "经验仅保留为诊断证据，不写入正式 Prompt 或切换翻译管线。"
+            proposed_change = {"action": action_type}
         raw_evidence = raw_item.get("evidence") if isinstance(raw_item.get("evidence"), list) else []
         evidence = [
             {
@@ -44,11 +55,11 @@ def normalize_experience_pool(raw: object) -> dict[str, object]:
             "fingerprint": fingerprint,
             "status": status,
             "category": str(raw_item.get("category", "") or "")[:64],
-            "action_type": str(raw_item.get("action_type", "") or "")[:64],
+            "action_type": action_type,
             "token": str(raw_item.get("token", "") or "")[:128],
-            "title": str(raw_item.get("title", "") or "")[:300],
+            "title": title,
             "cause": str(raw_item.get("cause", "") or "")[:1000],
-            "recommendation": str(raw_item.get("recommendation", "") or "")[:1000],
+            "recommendation": recommendation,
             "report_type": str(raw_item.get("report_type", "") or "")[:32].lower(),
             "field_code": str(raw_item.get("field_code", "") or "")[:128],
             "confidence": str(raw_item.get("confidence", "medium") or "medium")[:16].lower(),
@@ -60,6 +71,8 @@ def normalize_experience_pool(raw: object) -> dict[str, object]:
             "evidence": evidence,
             "first_seen_at": str(raw_item.get("first_seen_at", "") or "")[:64],
             "last_seen_at": str(raw_item.get("last_seen_at", "") or "")[:64],
+            "queued_at": str(raw_item.get("queued_at", "") or "")[:64],
+            "queued_by": str(raw_item.get("queued_by", "") or "")[:128],
             "applied_at": str(raw_item.get("applied_at", "") or "")[:64],
             "applied_by": str(raw_item.get("applied_by", "") or "")[:128],
             "verified_at": str(raw_item.get("verified_at", "") or "")[:64],
@@ -122,6 +135,8 @@ def record_experience_suggestions(
                     "regression_count": 0,
                     "first_seen_at": timestamp,
                     "last_seen_at": timestamp,
+                    "queued_at": "",
+                    "queued_by": "",
                     "applied_at": "",
                     "applied_by": "",
                     "verified_at": "",
@@ -135,7 +150,8 @@ def record_experience_suggestions(
                 previous_status = str(current.get("status", "PENDING") or "PENDING")
                 if previous_status in {"APPLIED", "VERIFIED"}:
                     current["regression_count"] = int(current.get("regression_count", 0) or 0) + 1
-                current["status"] = "PENDING"
+                if previous_status != "QUEUED":
+                    current["status"] = "PENDING"
                 current["last_seen_at"] = timestamp
                 current["occurrence_count"] = (
                     int(current.get("occurrence_count", 0) or 0)
@@ -184,7 +200,10 @@ def update_experience_status(
         if normalized_status not in VALID_STATUSES:
             raise ValueError(f"Unsupported experience status: {status}")
         suggestion["status"] = normalized_status
-        if normalized_status == "APPLIED":
+        if normalized_status == "QUEUED":
+            suggestion["queued_at"] = timestamp
+            suggestion["queued_by"] = actor
+        elif normalized_status == "APPLIED":
             suggestion["applied_at"] = timestamp
             suggestion["applied_by"] = actor
         elif normalized_status == "VERIFIED":

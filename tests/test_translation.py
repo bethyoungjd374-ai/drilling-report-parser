@@ -13,11 +13,15 @@ from drilling_report_parser.translation.service import (
     TranslationQualityError,
     TranslationTuningConfig,
     TranslationTransportError,
+    _calendar_date_quality_error,
     _numeric_quality_error,
+    _normalize_yearless_calendar_dates,
     _openai_item_quality_error,
     _check_provider_circuit,
     _PROVIDER_CIRCUIT_LOCK,
     _PROVIDER_CIRCUITS,
+    _restore_equivalent_numeric_formats,
+    _restore_preserved_term_variants,
     _restore_surgically_protected_values,
     _repair_protected_token_layout,
     _surgically_protect_values,
@@ -33,8 +37,8 @@ from drilling_report_parser.translation.service import (
 )
 
 
-def legacy_tuning(**overrides):
-    return TranslationTuningConfig(pipeline_mode="legacy", **overrides)
+def default_tuning(**overrides):
+    return TranslationTuningConfig(**overrides)
 
 
 class FakeLocalEngine:
@@ -69,9 +73,9 @@ class RepairingTranslationEngine:
         self.items.extend(items)
         return {
             str(item["id"]): (
-                "使用BHA钻进至3200英尺。"
+                "使用BHA钻进至3200 [[P0]]。"
                 if item.get("repair_context")
-                else "钻进至3200英尺。"
+                else "钻进至3200 [[P0]]。"
             )
             for item in items
         }
@@ -160,9 +164,9 @@ class PartialFailureEngine:
         del target_language, timeout_seconds
         self.batch_sizes.append(len(items))
         results = {}
-        for item in items:
+        for index, item in enumerate(items):
             tokens = re.findall(r"\[\[P\d+]]", item["source_text"])
-            if len(items) > 1 and str(item["id"]) == "1":
+            if len(items) > 1 and index == 1:
                 tokens = []
             results[str(item["id"])] = "已完成翻译 " + " ".join(tokens)
         return results
@@ -215,9 +219,45 @@ class MonthLocalizationEngine:
         del target_language, timeout_seconds
         return {
             str(item["id"]): str(item["source_text"])
-            .replace("DESDE EL", "自")
-            .replace("DE MAYO DE", "年5月")
-            .replace(".", "日。")
+            .replace("DESDE EL 8 DE MAYO DE 2026.", "自2026-05-08起。")
+            for item in items
+        }
+
+
+class DateBeforeTimeEngine:
+    name = "date-before-time"
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        return {
+            str(item["id"]): "PCNC-039井钻进作业于[[P0]]14:00结束。"
+            for item in items
+        }
+
+
+class NumericDatePromptEngine:
+    name = "numeric-date-prompt"
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        return {
+            str(item["id"]): str(item["source_text"])
+            .replace("INGRESA EL 25/05/2026 A LAS [[P0]].", "于2026-05-25 [[P0]]进场。")
+            for item in items
+        }
+
+
+class MultipleDatePromptEngine:
+    name = "multiple-date-prompt"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def translate_items(self, items, target_language, timeout_seconds):
+        del target_language, timeout_seconds
+        self.calls += 1
+        return {
+            str(item["id"]): "服务自2026-01-22起；转运自2026-03-27起；车辆自2026-05-08起进场；服务自5月14日起；持续至5月18日。"
             for item in items
         }
 
@@ -348,6 +388,18 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertTrue(any(value["replacement"] == "WO#01" for value in values))
         self.assertTrue(restored.endswith("WO#01"))
 
+    def test_surgical_term_repair_keeps_calendar_date_visible_to_model(self) -> None:
+        source = "INGRESA DESDE EL 8 DE MAYO 2026 VEHICULO DE HALLIBURTON CON 10 TON."
+
+        protected, values = _surgically_protect_values(
+            {"id": "1", "source_text": source, "preserve_terms": ["HALLIBURTON"]},
+        )
+
+        self.assertIn("8 DE MAYO 2026", protected["source_text"])
+        self.assertNotIn("HALLIBURTON", protected["source_text"])
+        self.assertNotIn(" 10 TON", protected["source_text"])
+        self.assertEqual([value["replacement"] for value in values], ["HALLIBURTON", "10"])
+
     def test_long_text_part_only_carries_terms_present_in_that_part(self) -> None:
         item = {
             "id": "0",
@@ -416,11 +468,18 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("join_hyphenated_line_break", actions)
         self.assertIn("remove_pdf_header_footer:2", actions)
 
-        engine = RecordingTranslationEngine("钻进至10832英尺。")
+        engine = RecordingTranslationEngine("钻进至10832 [[P0]]。")
         translator = DrillingReportTranslator(engine, TermsConfig.from_data({"protected_terms": {"units": ["ft"]}}), target_language="zh-CN")
         row = translator.translate_report_payload({"report_fields": {"currentOps": raw}})["translation_content"][0]
         self.assertEqual(row["source_text"], raw)
-        self.assertEqual(engine.items[0]["source_text"], cleaned)
+        self.assertEqual(engine.items[0]["source_text"], "PERFORÓ HASTA 10832 [[P0]].")
+        self.assertEqual(row["translated_text"], "钻进至10832 ft。")
+
+    def test_translation_fallback_uses_shared_ocr_normalization_for_existing_records(self) -> None:
+        cleaned, actions = clean_translation_source('FILTRA1700 BBL Y CASING 9 58/IN.')
+
+        self.assertEqual(cleaned, 'FILTRA 1700 BBL Y CASING 9 5/8IN.')
+        self.assertIn("normalize_pdf_ocr", actions)
 
     def test_operation_event_context_includes_adjacent_actions_without_changing_source(self) -> None:
         engine = RecordingTranslationEngine("已完成作业。")
@@ -484,7 +543,7 @@ class TranslationServiceTest(unittest.TestCase):
 
     def test_contextual_pipeline_sends_complete_source_and_typed_matched_terms(self) -> None:
         source = "SACA BHA #3 DESDE 3200 ft PARA CAMBIO DE BROCA PDC."
-        engine = RecordingTranslationEngine("从3200 ft起出BHA #3，更换PDC钻头。")
+        engine = RecordingTranslationEngine("从3200 [[P0]]起出BHA #3，更换PDC钻头。")
         terms = TermsConfig.from_data({
             "terms": [
                 {"id": "pdc", "es": "broca PDC", "zh": "PDC钻头", "term_type": "phrase", "priority": 100},
@@ -497,8 +556,8 @@ class TranslationServiceTest(unittest.TestCase):
         result = translator.translate_report_payload({"report_fields": {"currentOps": source}})
 
         request_item = engine.items[0]
-        self.assertEqual(request_item["source_text"], source)
-        self.assertNotIn("[[P", request_item["source_text"])
+        self.assertEqual(request_item["source_text"], "SACA BHA #3 DESDE 3200 [[P0]] PARA CAMBIO DE BROCA PDC.")
+        self.assertNotIn("3200 ft", request_item["source_text"])
         self.assertEqual(request_item["preserve_terms"], ["BHA"])
         self.assertEqual(
             [(item["source"], item["type"]) for item in request_item["glossary"]],
@@ -536,10 +595,10 @@ class TranslationServiceTest(unittest.TestCase):
 
         row = result["translation_content"][0]
         self.assertEqual(row["translation_status"], "COMPLETED")
-        self.assertEqual(row["translated_text"], "使用BHA钻进至3200英尺。")
+        self.assertEqual(row["translated_text"], "使用BHA钻进至3200 ft。")
         self.assertEqual(len(engine.items), 2)
         repair = engine.items[1]["repair_context"]
-        self.assertEqual(repair["draft_translation"], "钻进至3200英尺。")
+        self.assertEqual(repair["draft_translation"], "钻进至3200 ft。")
         self.assertIn("BHA", repair["issues"][0])
 
         checks = translator.quality_checks("DRILL WITH BHA TO 3200 ft.", row["translated_text"])
@@ -578,6 +637,19 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(len(rows), 6)
         self.assertEqual(engine.batch_sizes, [6])
         self.assertTrue(all(row["translation_status"] == "COMPLETED" for row in rows))
+
+    def test_translation_items_use_stable_business_readable_ids(self) -> None:
+        engine = CountingEngine()
+        translator = DrillingReportTranslator(engine, self.terms, target_language="zh-CN", chunk_max_chars=2400)
+
+        translator.translate_report_payload({
+            "metadata": {"record_id": "drilling:PCNC-040:2026-06-11:11"},
+            "report_fields": {"currentOps": "DRILL AHEAD WITH STABLE RETURNS."},
+            "operations": [{"row_no": 7, "operation_details": "CIRCULATE BOTTOMS UP UNTIL CLEAN."}],
+        })
+
+        item_ids = [str(item["id"]) for batch in engine.batches for item in batch]
+        self.assertEqual(item_ids, ["report:currentOps", "operations:7:operation_details"])
 
     def test_applies_saved_translation_content_to_payload(self) -> None:
         payload = {
@@ -695,7 +767,7 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("逐句翻译，禁止合并句子", preview)
         self.assertIn("ROP", preview)
 
-    def test_scoped_experience_rule_is_injected_only_for_matching_field(self) -> None:
+    def test_experience_rule_does_not_change_the_production_prompt(self) -> None:
         tuning = TranslationTuningConfig.from_data({
             "experience_rules": [{
                 "report_type": "drilling",
@@ -721,13 +793,14 @@ class TranslationServiceTest(unittest.TestCase):
             field_code="report_fields.currentOps",
         )
 
-        self.assertIn("已验证经验：完整保留方向和时序。", matching)
+        self.assertNotIn("完整保留方向和时序。", matching)
         self.assertNotIn("完整保留方向和时序。", other)
 
+    @unittest.skip("legacy all-value placeholder pipeline removed")
     def test_data_driven_protection_masks_and_restores_original_units(self) -> None:
         engine = ProtectedTokenEngine()
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "ft/hr"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "DRILL FROM 3,200 FT AT 17.5 ft/hr."},
@@ -742,11 +815,12 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("3,200 FT", translated_text)
         self.assertIn("17.5 ft/hr", translated_text)
 
+    @unittest.skip("legacy all-value placeholder pipeline removed")
     def test_openai_compatible_uses_hard_unit_protection_and_longest_compound_match(self) -> None:
         engine = ProtectedTokenEngine()
         engine.name = "openai-compatible"
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "psi", "psi/ft", "ft/hr"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "GRADIENT 0.16 PSI/FT; DRILL AT 45 FT/HR."},
@@ -760,6 +834,7 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("0.16 PSI/FT", translated_text)
         self.assertIn("45 FT/HR", translated_text)
 
+    @unittest.skip("legacy post-translation replacement pipeline removed")
     def test_protected_unit_is_not_rewritten_by_post_translation_glossary(self) -> None:
         engine = ProtectedTokenEngine()
         engine.name = "openai-compatible"
@@ -767,7 +842,7 @@ class TranslationServiceTest(unittest.TestCase):
             "terms": [{"id": "rpm", "en": "RPM", "zh": "转速", "protected": True, "enabled": True}],
             "protected_terms": {"units": ["rpm"]},
         })
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "ROTATE AT 120 RPM."},
@@ -777,10 +852,11 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("120 RPM", translated_text)
         self.assertNotIn("转速", translated_text)
 
+    @unittest.skip("legacy placeholder recovery pipeline removed")
     def test_placeholder_failure_recovers_with_structured_segments(self) -> None:
         engine = PlaceholderRejectingEngine()
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "DRILL TO 3200 FT."},
@@ -793,10 +869,11 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertTrue(any("[[P" in str(item.get("source_text", "")) for item in engine.items))
         self.assertTrue(any("[[P" not in str(item.get("source_text", "")) for item in engine.items))
 
+    @unittest.skip("legacy placeholder recovery pipeline removed")
     def test_placeholder_dense_item_uses_segments_before_model_request(self) -> None:
         engine = PlaceholderRejectingEngine()
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "psi"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "DRILL 100 FT, 200 FT, 300 FT; TEST 400 PSI AND 500 PSI."},
@@ -858,9 +935,10 @@ class TranslationServiceTest(unittest.TestCase):
 
         self.assertNotIn("00INCIDENTES", preserved)
 
+    @unittest.skip("legacy numeric placeholder pipeline removed")
     def test_standalone_numbers_use_compact_protection_and_restore_precision(self) -> None:
         engine = ProtectedTokenEngine()
-        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "REPORT 2026 HAS 15 ITEMS."},
@@ -871,9 +949,10 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("2026", result["translation_content"][0]["translated_text"])
         self.assertIn("15", result["translation_content"][0]["translated_text"])
 
+    @unittest.skip("legacy numeric placeholder pipeline removed")
     def test_compact_technical_time_is_protected_without_false_extra_numbers(self) -> None:
         engine = ProtectedTokenEngine()
-        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "INGRESA EL 25-01-2026 A LAS 06H00 AM."},
@@ -883,9 +962,10 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
         self.assertIn("06H00", result["translation_content"][0]["translated_text"])
 
+    @unittest.skip("legacy numeric placeholder pipeline removed")
     def test_spanish_numeric_ordinals_are_protected_as_complete_values(self) -> None:
         engine = ProtectedTokenEngine()
-        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "OBSERVA RUPTURA DE 1er. TAPON Y LIBERA 2do. TAPON."},
@@ -898,9 +978,10 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("1er.", result["translation_content"][0]["translated_text"])
         self.assertIn("2do.", result["translation_content"][0]["translated_text"])
 
+    @unittest.skip("legacy numeric placeholder pipeline removed")
     def test_decimal_touching_following_text_is_protected_as_one_value(self) -> None:
         engine = ProtectedTokenEngine()
-        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, TermsConfig.from_data({}), target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"incidentComments": "N Days since Last LTA 188.00INCIDENTES SIN REPORTAR EN 24 HORAS."},
@@ -910,7 +991,7 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
         self.assertIn("188.00", result["translation_content"][0]["translated_text"])
 
-    def test_numeric_month_localization_is_not_treated_as_an_extra_value(self) -> None:
+    def test_iso_date_padding_is_not_treated_as_an_extra_numeric_value(self) -> None:
         translator = DrillingReportTranslator(
             MonthLocalizationEngine(),
             TermsConfig.from_data({}),
@@ -924,7 +1005,280 @@ class TranslationServiceTest(unittest.TestCase):
 
         row = result["translation_content"][0]
         self.assertEqual(row["translation_status"], "COMPLETED")
-        self.assertIn("5月", row["translated_text"])
+        self.assertIn("2026-05-08", row["translated_text"])
+        self.assertEqual(_numeric_quality_error(
+            "DESDE EL 8 DE MAYO DE 2026.",
+            "自2026-05-08起。",
+            "zh-CN",
+            "iso",
+        ), "")
+
+    def test_moved_date_placeholder_is_separated_from_following_time(self) -> None:
+        translator = DrillingReportTranslator(
+            DateBeforeTimeEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+        )
+        source = "FINALIZA EVENTO DE PERFORACION DEL POZO PCNC-039 @ LAS 14:00 HRS. DEL 30 DE MAYO DEL 2026"
+        restored, invalid = translator._restore_protected_items_partial(
+            [{
+                "id": "report:currentOps",
+                "source_text": "FINALIZA EVENTO DE PERFORACION DEL POZO PCNC-039 @ LAS 14:00 HRS. DEL [[P0]]",
+                "monitor_source_text": source,
+                "protected_tokens": [{
+                    "token": "[[P0]]",
+                    "replacement": "2026-05-30",
+                    "source": "30 DE MAYO DEL 2026",
+                    "kind": "calendar_date",
+                }],
+                "preserve_terms": [],
+            }],
+            {"report:currentOps": "PCNC-039井钻进作业于[[P0]]14:00结束。"},
+        )
+
+        self.assertEqual(invalid, {})
+        self.assertIn("2026-05-30 14:00", restored["report:currentOps"])
+
+    def test_numeric_day_month_date_and_compact_time_are_protected(self) -> None:
+        translator = DrillingReportTranslator(
+            NumericDatePromptEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+        )
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "INGRESA EL 25/05/2026 A LAS 07H00."},
+        })
+
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        self.assertIn("2026-05-25", row["translated_text"])
+        self.assertIn("07H00", row["translated_text"])
+        self.assertEqual(
+            _calendar_date_quality_error(
+                "INGRESA EL 25/05/2026 A LAS 07H00.",
+                "于2026-05-25 07H00进场。",
+                "zh-CN",
+                "iso",
+            ),
+            "",
+        )
+
+    def test_numeric_ordinals_may_be_rendered_as_chinese_words(self) -> None:
+        source = "OBSERVA RUPTURA DE 1er. TAPON Y LIBERA 2do. TAPON."
+        translated = "观察到第一个胶塞破裂，并释放第二个胶塞。"
+
+        self.assertEqual(_numeric_quality_error(source, translated, "zh-CN"), "")
+
+    def test_inferred_year_is_removed_from_source_date_without_year(self) -> None:
+        source = "SERVICIO DESDE EL 14 DE MAYO HASTA EL 18 DE MAYO."
+        translated = "服务自2026-05-14起，持续至2026-05-18。"
+
+        self.assertEqual(_calendar_date_quality_error(source, translated, "zh-CN", "iso"), "")
+        self.assertEqual(
+            _normalize_yearless_calendar_dates(source, translated, "zh-CN"),
+            "服务自5月14日起，持续至5月18日。",
+        )
+
+    def test_grouping_separator_is_equivalent_and_restored_to_source_spelling(self) -> None:
+        source = "DESDE 5,923 PIES; TORQUE 13000 LBS-FT."
+        translated = "自5923英尺起；扭矩为13,000磅-英尺。"
+
+        self.assertEqual(_numeric_quality_error(source, translated, "zh-CN"), "")
+        self.assertEqual(
+            _restore_equivalent_numeric_formats(source, translated, "zh-CN"),
+            "自5,923英尺起；扭矩为13000磅-英尺。",
+        )
+
+    def test_ocr_attached_number_is_still_validated(self) -> None:
+        source = "FILTRA1700 BBL Y LUEGO INGRESA10000 GAL."
+        translated = "过滤1700 BBL，随后进入10000 GAL。"
+
+        self.assertEqual(_numeric_quality_error(source, translated, "zh-CN"), "")
+
+    def test_decimal_separator_variants_are_equivalent_and_restored_by_occurrence(self) -> None:
+        source = 'CALIBRES 2.25", 2.25" Y 2,25".'
+        translated = '尺寸为2,25”、2,25”和2.25”。'
+
+        self.assertEqual(_numeric_quality_error(source, translated, "zh-CN"), "")
+        self.assertEqual(
+            _restore_equivalent_numeric_formats(source, translated, "zh-CN"),
+            '尺寸为2.25”、2.25”和2,25”。',
+        )
+
+    def test_depth_grouping_and_spaced_grouping_are_equivalent(self) -> None:
+        self.assertEqual(_numeric_quality_error("PERFORA A 9.937' MD.", "钻至9937英尺MD。", "zh-CN"), "")
+        self.assertEqual(_numeric_quality_error("DESDE 8, 668' MD.", "自8668英尺MD。", "zh-CN"), "")
+        self.assertEqual(_numeric_quality_error('BROCA DE 8\n1/2".', '8 1/2英寸钻头。', "zh-CN"), "")
+
+    def test_mixed_fraction_variants_are_equivalent_and_restored(self) -> None:
+        source = 'ENSAMBLA 12 ¼" Y BAJA 12.1/4".'
+        translated = '组装12 1/4”并下入12-1/4”。'
+
+        self.assertEqual(_numeric_quality_error(source, translated, "zh-CN"), "")
+        self.assertEqual(
+            _restore_equivalent_numeric_formats(source, translated, "zh-CN"),
+            '组装12 ¼”并下入12.1/4”。',
+        )
+        self.assertEqual(
+            _numeric_quality_error("350. 980. 40. 1/2", "350。980。40。1/2", "zh-CN"),
+            "",
+        )
+
+    def test_ocr_fraction_missing_denominator_separator_is_normalized(self) -> None:
+        source = 'INSPECCION DE CASING 9 58/IN.'
+        translated = '检查9 5/8英寸套管。'
+
+        self.assertEqual(_numeric_quality_error(source, translated, "zh-CN"), "")
+        self.assertEqual(
+            _restore_equivalent_numeric_formats(source, translated, "zh-CN"),
+            '检查9 5/8英寸套管。',
+        )
+        self.assertEqual(_numeric_quality_error('CASING 9 5/8"', "套管9 58英寸", "zh-CN"), "")
+        self.assertEqual(_numeric_quality_error('CASING 9 5/8IN', "套管9 58/IN英寸", "zh-CN"), "")
+
+    def test_integer_leading_zero_is_equivalent_and_restored(self) -> None:
+        self.assertEqual(_numeric_quality_error("BHA #1", "BHA #01", "zh-CN"), "")
+        self.assertEqual(_restore_equivalent_numeric_formats("BHA #1", "BHA #01", "zh-CN"), "BHA #1")
+
+    def test_protected_identifier_separator_variant_is_restored_but_missing_name_is_not_invented(self) -> None:
+        self.assertEqual(_restore_preserved_term_variants("下入 L80 套管。", ["L-80"]), "下入 L-80 套管。")
+        self.assertEqual(_restore_preserved_term_variants("承包商进场。", ["SINOPEC"]), "承包商进场。")
+
+    def test_ocr_action_with_attached_number_is_not_a_protected_identifier(self) -> None:
+        translator = DrillingReportTranslator(
+            RecordingTranslationEngine("进入1400加仑。"),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+        )
+
+        self.assertNotIn("INGRESA1400", translator._preserve_terms("INGRESA1400 GAL", []))
+
+    def test_calendar_dates_follow_configured_format_and_report_all_missing_dates(self) -> None:
+        source = "DESDE EL 22 DE ENERO DE 2026; DESDE EL 8 DE MAYO 2026; HASTA EL 18 DE MAYO."
+
+        self.assertEqual(
+            _calendar_date_quality_error(
+                source,
+                "自2026-01-22起；自2026-05-08起；持续至5月18日。",
+                "zh-CN",
+                "iso",
+            ),
+            "",
+        )
+        self.assertEqual(
+            _calendar_date_quality_error(
+                source,
+                "自2026年1月22日起；自2026年5月8日起；持续至5月18日。",
+                "zh-CN",
+                "chinese",
+            ),
+            "",
+        )
+        error = _calendar_date_quality_error(source, "自2026-01-22起。", "zh-CN", "iso")
+        self.assertIn("2026-05-08", error)
+        self.assertIn("5月18日", error)
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_compatible_retries_malformed_localized_date(self, post_json) -> None:
+        post_json.side_effect = [
+            {"choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"车辆自8年5月2026日起进场。"}]}'}}]},
+            {"choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"车辆自2026-05-08起进场。"}]}'}}]},
+        ]
+        engine = OpenAICompatibleTranslationEngine("https://example.test", "test-model")
+
+        translated = engine.translate_items(
+            [{"id": "0", "source_language": "es", "source_text": "INGRESA DESDE EL 8 DE MAYO 2026 VEHICULO.", "glossary": []}],
+            "zh-CN",
+            60,
+        )
+
+        self.assertEqual(translated["0"], "车辆自2026-05-08起进场。")
+        self.assertEqual(post_json.call_count, 2)
+        retry_prompt = post_json.call_args_list[1].args[1]["messages"][1]["content"]
+        self.assertIn("ISO YYYY-MM-DD", retry_prompt)
+
+    def test_prompt_mode_keeps_long_list_and_dates_in_full_context(self) -> None:
+        translator = DrillingReportTranslator(
+            ProtectedTokenEngine(),
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            tuning=TranslationTuningConfig(),
+        )
+        source = (
+            "-SERVICIO DESDE EL 22 DE ENERO DE 2026. "
+            "-INGRESA VEHICULO DESDE EL 8 DE MAYO 2026 PARA MOVILIZACION DE PERSONAL."
+        )
+
+        diagnostics = translator.translation_diagnostics(source, "zh-CN", field_code="report_fields.otherRemarks")
+        preview = translator.prompt_preview(source, "zh-CN", field_code="report_fields.otherRemarks")
+
+        self.assertEqual(diagnostics["placeholder_count"], 0)
+        self.assertIn("ENERO", diagnostics["request_source_text"])
+        self.assertIn("MAYO", diagnostics["request_source_text"])
+        self.assertNotIn("[[P", diagnostics["request_source_text"])
+        self.assertIn("先识别每个完整事项", preview)
+        self.assertIn("ISO YYYY-MM-DD", preview)
+
+    def test_other_remarks_multiple_dates_are_preserved_in_contextual_mode(self) -> None:
+        source = (
+            "-SERVICIO DESDE EL 22 DE ENERO DE 2026. "
+            "-TRASLADO DESDE EL 27 DE MARZO DE 2026. "
+            "-INGRESA VEHICULO DESDE EL 8 DE MAYO 2026. "
+            "-SERVICIO DESDE EL 14 DE MAYO. "
+            "-PERMANECE HASTA EL 18 DE MAYO."
+        )
+        expected_dates = ["2026-01-22", "2026-03-27", "2026-05-08", "5月14日", "5月18日"]
+
+        engine = MultipleDatePromptEngine()
+        translator = DrillingReportTranslator(
+            engine,
+            TermsConfig.from_data({}),
+            target_language="zh-CN",
+            retry_count=0,
+            tuning=TranslationTuningConfig(),
+        )
+
+        diagnostics = translator.translation_diagnostics(
+            source,
+            "zh-CN",
+            field_code="report_fields.otherRemarks",
+        )
+        result = translator.translate_report_payload({"report_fields": {"otherRemarks": source}})
+
+        self.assertEqual(diagnostics["placeholder_count"], 0)
+        self.assertEqual(diagnostics["request_item"]["protected_tokens"], [])
+        self.assertIn("ENERO", diagnostics["request_source_text"])
+        self.assertIn("MAYO", diagnostics["request_source_text"])
+        self.assertEqual(engine.calls, 1)
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        for expected in expected_dates:
+            self.assertIn(expected, row["translated_text"])
+
+    def test_context_and_result_validation_switches_are_independent(self) -> None:
+        raw_translator = DrillingReportTranslator(
+            RecordingTranslationEngine("完成作业。"),
+            TermsConfig.from_data({"protected_terms": {"units": ["GPM"]}}),
+            target_language="zh-CN",
+            retry_count=0,
+            tuning=TranslationTuningConfig(
+                contextual_translation=False,
+                validate_results=False,
+            ),
+        )
+
+        diagnostics = raw_translator.translation_diagnostics("BOMBEA 450 GPM.", "zh-CN")
+        result = raw_translator.translate_report_payload({"report_fields": {"currentOps": "BOMBEA 450 GPM."}})
+
+        self.assertEqual(diagnostics["placeholder_count"], 0)
+        self.assertIn("450 GPM", diagnostics["request_source_text"])
+        self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
+        self.assertTrue(all(check["status"] == "skipped" for check in raw_translator.quality_checks(
+            "BOMBEA 450 GPM.", "完成作业。", "zh-CN"
+        )[:4]))
 
     def test_unit_identifier_digit_is_not_treated_as_a_changed_value(self) -> None:
         translator = DrillingReportTranslator(
@@ -949,7 +1303,7 @@ class TranslationServiceTest(unittest.TestCase):
             engine,
             terms,
             target_language="zh-CN",
-            tuning=legacy_tuning(protect_numbers=False),
+            tuning=default_tuning(protect_numbers=False),
         )
 
         translator.translate_report_payload({
@@ -960,6 +1314,7 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertNotIn("kPa", model_text)
         self.assertIn("3200 FT", model_text)
 
+    @unittest.skip("legacy global placeholder pipeline removed")
     def test_global_acronyms_proper_nouns_and_ambiguous_units_use_context(self) -> None:
         engine = ProtectedTokenEngine()
         terms = TermsConfig.from_data({
@@ -969,7 +1324,7 @@ class TranslationServiceTest(unittest.TestCase):
             engine,
             terms,
             target_language="zh-CN",
-            tuning=legacy_tuning(ambiguous_units=("in",)),
+            tuning=default_tuning(ambiguous_units=("in",)),
         )
 
         result = translator.translate_report_payload({
@@ -985,6 +1340,75 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("BHA", translated_text)
         self.assertIn("SINOPEC", translated_text)
         self.assertIn("12.25 in", translated_text)
+
+    def test_unchecked_global_protection_categories_are_fully_disabled(self) -> None:
+        terms = TermsConfig.from_data({
+            "protected_terms": {
+                "acronyms": ["BHA"],
+                "units": ["ft"],
+                "proper_nouns": ["SINOPEC"],
+            },
+        })
+        translator = DrillingReportTranslator(
+            ProtectedTokenEngine(),
+            terms,
+            target_language="zh-CN",
+            tuning=default_tuning(
+                protect_numbers=False,
+                protect_units=False,
+                protect_acronyms=False,
+                protect_proper_nouns=False,
+            ),
+        )
+        source = "BHA FOR SINOPEC DRILLS ST-80 TO 3200 ft ON 8 MAY 2026."
+
+        diagnostics = translator.translation_diagnostics(source, "zh-CN")
+        checks = translator.quality_checks(source, "钻具为承包商钻进。", "zh-CN")
+
+        self.assertEqual(diagnostics["placeholder_count"], 0)
+        self.assertEqual(diagnostics["protected_terms"], [])
+        self.assertEqual(next(check for check in checks if check["rule"] == "number_integrity")["status"], "passed")
+        self.assertEqual(next(check for check in checks if check["rule"] == "calendar_date_localization")["status"], "passed")
+        self.assertEqual(next(check for check in checks if check["rule"] == "unit_integrity")["status"], "passed")
+        self.assertEqual(
+            _openai_item_quality_error({
+                "id": "report:currentOps",
+                "source_text": source,
+                "preserve_terms": [],
+                "prompt_context": {"protect_numbers": False},
+            }, "钻具为承包商钻进。", "zh-CN"),
+            "",
+        )
+
+    @unittest.skip("legacy strict-term placeholder pipeline removed")
+    def test_explicit_strict_term_remains_protected_when_global_categories_are_off(self) -> None:
+        terms = TermsConfig.from_data({
+            "terms": [{
+                "id": "strict-special-tool",
+                "en": "SPECIAL-TOOL",
+                "zh": "SPECIAL-TOOL",
+                "term_type": "protected",
+                "strict_preserve": True,
+                "protected": True,
+                "enabled": True,
+            }],
+        })
+        translator = DrillingReportTranslator(
+            ProtectedTokenEngine(),
+            terms,
+            target_language="zh-CN",
+            tuning=default_tuning(
+                protect_numbers=False,
+                protect_units=False,
+                protect_acronyms=False,
+                protect_proper_nouns=False,
+            ),
+        )
+
+        diagnostics = translator.translation_diagnostics("RUN SPECIAL-TOOL IN HOLE.", "zh-CN")
+
+        self.assertEqual(diagnostics["placeholder_count"], 1)
+        self.assertIn("SPECIAL-TOOL", diagnostics["protected_terms"])
 
     def test_global_acronyms_require_exact_case(self) -> None:
         terms = TermsConfig.from_data({"protected_terms": {"acronyms": ["ES"]}})
@@ -1017,7 +1441,7 @@ class TranslationServiceTest(unittest.TestCase):
         unit_check = next(check for check in checks if check["rule"] == "unit_integrity")
         self.assertEqual(unit_check["status"], "passed")
 
-    def test_localized_units_and_clock_suffix_are_semantically_valid(self) -> None:
+    def test_localized_units_do_not_pass_original_unit_integrity_check(self) -> None:
         terms = TermsConfig.from_data({
             "protected_terms": {"units": ["l", "ton", "m3", "hrs"]},
         })
@@ -1044,7 +1468,8 @@ class TranslationServiceTest(unittest.TestCase):
         )
 
         unit_check = next(check for check in checks if check["rule"] == "unit_integrity")
-        self.assertEqual(unit_check["status"], "passed")
+        self.assertEqual(unit_check["status"], "failed")
+        self.assertIn("ton", unit_check["detail"])
 
     def test_m_in_m_lwd_is_not_treated_as_metre_unit(self) -> None:
         engine = ProtectedTokenEngine()
@@ -1053,7 +1478,7 @@ class TranslationServiceTest(unittest.TestCase):
             engine,
             terms,
             target_language="zh-CN",
-            tuning=legacy_tuning(
+            tuning=default_tuning(
                 ambiguous_units=("m",),
                 unit_context_exclusions=(("m", r"\bM\s*/\s*[A-Z]{2,}\b"),),
             ),
@@ -1066,6 +1491,7 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(result["translation_content"][0]["translation_status"], "COMPLETED")
         self.assertIn("M/ LWD", engine.items[0]["source_text"])
 
+    @unittest.skip("selectable placeholder mode removed")
     def test_contextual_placeholder_mode_enforces_global_protection(self) -> None:
         engine = ProtectedTokenEngine()
         terms = TermsConfig.from_data({
@@ -1090,6 +1516,64 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertIn("450 GPM", translated)
         self.assertIn("120 RPM", translated)
         self.assertIn("11.0 PPG", translated)
+
+    def test_prompt_mode_preserves_units_without_fragmenting_the_full_context(self) -> None:
+        engine = RecordingTranslationEngine(
+            "泵入450 [[P0]]，转速120 [[P1]]，泥浆密度11.0 [[P2]]，压力3200 [[P3]]，深度7600 [[P4]]。"
+        )
+        terms = TermsConfig.from_data({
+            "protected_terms": {"units": ["gpm", "rpm", "ppg", "psi", "ft"]},
+        })
+        translator = DrillingReportTranslator(
+            engine,
+            terms,
+            target_language="zh-CN",
+            tuning=TranslationTuningConfig(),
+        )
+        source = "BOMBEA 450 GPM A 120 RPM CON LODO 11.0 PPG, 3200 PSI Y PROFUNDIDAD 7600 FT."
+
+        diagnostics = translator.translation_diagnostics(source, "zh-CN")
+        result = translator.translate_report_payload({"report_fields": {"currentOps": source}})
+
+        self.assertEqual(diagnostics["placeholder_count"], 5)
+        self.assertNotIn("GPM", diagnostics["request_source_text"])
+        self.assertNotIn("PSI", diagnostics["request_source_text"])
+        self.assertEqual(len(engine.items), 1)
+        self.assertNotIn("::protected-part-", engine.items[0]["id"])
+        row = result["translation_content"][0]
+        self.assertEqual(row["translation_status"], "COMPLETED")
+        for value in ("450 GPM", "120 RPM", "11.0 PPG", "3200 PSI", "7600 FT"):
+            self.assertIn(value, row["translated_text"])
+
+    def test_contextual_unit_placeholder_keeps_fraction_visible_and_removes_duplicate_alias(self) -> None:
+        engine = RecordingTranslationEngine("检查9 5/8英寸[[P0]]套管。")
+        terms = TermsConfig.from_data({"protected_terms": {"units": ["in"]}})
+        translator = DrillingReportTranslator(
+            engine,
+            terms,
+            target_language="zh-CN",
+            tuning=TranslationTuningConfig(
+                ambiguous_units=("in",),
+                unit_aliases=(("in", ("英寸",)),),
+            ),
+        )
+
+        result = translator.translate_report_payload({
+            "report_fields": {"currentOps": "INSPECCION CASING 9 5/8IN."},
+        })
+
+        self.assertEqual(engine.items[0]["source_text"], "INSPECCION CASING 9 5/8[[P0]].")
+        self.assertEqual(result["translation_content"][0]["translated_text"], "检查9 5/8IN套管。")
+
+    def test_provider_validates_numeric_facts_after_expanding_unit_placeholder(self) -> None:
+        item = {
+            "id": "report:otherRemarks",
+            "source_text": "CASING 9 58/[[P0]]",
+            "protected_tokens": [{"token": "[[P0]]", "replacement": "IN", "kind": "context_unit"}],
+            "prompt_context": {"protect_numbers": True, "date_format": "iso"},
+        }
+
+        self.assertEqual(_openai_item_quality_error(item, "套管9 5/8[[P0]]", "zh-CN"), "")
 
     def test_unit_context_exclusions_are_loaded_from_tuning(self) -> None:
         terms = TermsConfig.from_data({
@@ -1118,13 +1602,14 @@ class TranslationServiceTest(unittest.TestCase):
         unit_check = next(check for check in checks if check["rule"] == "unit_integrity")
         self.assertEqual(unit_check["status"], "passed")
 
+    @unittest.skip("legacy deterministic glossary replacement pipeline removed")
     def test_locked_glossary_term_is_restored_to_configured_target(self) -> None:
         engine = ProtectedTokenEngine()
         terms = TermsConfig.from_data({
             "terms": [{"id": "dp", "en": "drill pipe", "zh": "钻杆", "protected": True, "enabled": True}],
             "protected_terms": {},
         })
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "RUN DRILL PIPE."},
@@ -1138,7 +1623,7 @@ class TranslationServiceTest(unittest.TestCase):
     def test_missing_protected_placeholder_is_retried_then_rejected(self) -> None:
         engine = ProtectedTokenEngine(drop_tokens=True)
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=1, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=1, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "DRILL TO 3200 FT."},
@@ -1149,10 +1634,11 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertEqual(row["translation_status"], "FAILED")
         self.assertIn("protected placeholders", row["error_message"])
 
+    @unittest.skip("legacy placeholder recovery pipeline removed")
     def test_batch_placeholder_failure_retries_only_the_invalid_item(self) -> None:
         engine = PartialFailureEngine()
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {
@@ -1235,7 +1721,7 @@ class TranslationServiceTest(unittest.TestCase):
 
     def test_prompt_only_includes_protections_hit_by_current_text(self) -> None:
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft", "psi"], "acronyms": ["BHA"]}})
-        translator = DrillingReportTranslator(ProtectedTokenEngine(), terms, target_language="zh-CN", tuning=legacy_tuning())
+        translator = DrillingReportTranslator(ProtectedTokenEngine(), terms, target_language="zh-CN", tuning=default_tuning())
 
         preview = translator.prompt_preview("DRILL TO 3200 ft.", "zh-CN")
 
@@ -1243,10 +1729,11 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertNotIn("psi", preview)
         self.assertNotIn("BHA", preview.split("Input JSON:\n", 1)[1])
 
+    @unittest.skip("legacy all-value placeholder pipeline removed")
     def test_reordered_protected_placeholders_are_allowed_when_all_are_preserved(self) -> None:
         engine = ProtectedTokenEngine(reverse_tokens=True)
         terms = TermsConfig.from_data({"protected_terms": {"units": ["ft"]}})
-        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=legacy_tuning())
+        translator = DrillingReportTranslator(engine, terms, target_language="zh-CN", retry_count=0, tuning=default_tuning())
 
         result = translator.translate_report_payload({
             "report_fields": {"currentOps": "DRILL FROM 3200 FT TO 5300 FT."},
@@ -1392,7 +1879,7 @@ class TranslationServiceTest(unittest.TestCase):
             prompt = payload["messages"][1]["content"]
             request_item = json.loads(prompt.split("Input JSON:\n", 1)[1])["items"][0]
             return {"choices": [{"message": {"content": json.dumps({
-                "items": [{"id": "0", "translated_text": "下入 BHA。\n- 进行压力试验 3000 PSI。"}],
+                "items": [{"id": request_item["id"], "translated_text": "下入 BHA。\n- 进行压力试验 3000 PSI。"}],
             }, ensure_ascii=False)}}]}
 
         post_json.side_effect = response
@@ -1424,7 +1911,15 @@ class TranslationServiceTest(unittest.TestCase):
 
     @patch("drilling_report_parser.translation.service._post_json")
     def test_provider_telemetry_records_full_request_and_raw_response_without_api_key(self, post_json) -> None:
-        raw_response = {"choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"继续钻进。"}]}'}}], "usage": {"total_tokens": 42}}
+        raw_response = {
+            "choices": [{"message": {"content": '{"items":[{"id":"0","translated_text":"继续钻进。"}]}'}}],
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 20,
+                "total_tokens": 120,
+                "prompt_tokens_details": {"cached_tokens": 80},
+            },
+        }
         post_json.return_value = raw_response
         events = []
         engine = OpenAICompatibleTranslationEngine(
@@ -1447,6 +1942,10 @@ class TranslationServiceTest(unittest.TestCase):
         self.assertNotIn("top-secret", json.dumps(request_event, ensure_ascii=False))
         self.assertEqual(response_event["event"], "model_wire_response")
         self.assertEqual(response_event["raw_response"], raw_response)
+        self.assertEqual(response_event["usage_metrics"]["cached_input_tokens"], 80)
+        self.assertEqual(response_event["usage_metrics"]["prompt_cache_hit_ratio"], 0.8)
+        self.assertTrue(response_event["usage_metrics"]["prompt_cache_hit"])
+        self.assertEqual(request_event["prompt_prefix_hash"], response_event["prompt_prefix_hash"])
 
     def test_description_is_translated_as_one_paragraph(self) -> None:
         engine = CountingEngine()
@@ -1539,9 +2038,45 @@ class TranslationServiceTest(unittest.TestCase):
 
         payload = post_json.call_args.args[1]
         self.assertIn("SYSTEM ROLE", payload["messages"][0]["content"])
+        self.assertIn("glossary 只包含当前原文命中的术语参考", payload["messages"][0]["content"])
         self.assertNotIn("SYSTEM ROLE", payload["messages"][1]["content"])
+        self.assertNotIn("glossary 只包含当前原文命中的术语参考", payload["messages"][1]["content"])
         self.assertNotIn("/no_think", payload["messages"][1]["content"])
         self.assertGreaterEqual(payload["max_tokens"], 4096)
+
+    @patch("drilling_report_parser.translation.service._post_json")
+    def test_openai_static_policy_prefix_is_reused_across_dynamic_batches(self, post_json) -> None:
+        def response(_url, payload, _timeout, **_kwargs):
+            request_item = json.loads(payload["messages"][1]["content"].split("Input JSON:\n", 1)[1])["items"][0]
+            return {"choices": [{"message": {"content": json.dumps({
+                "items": [{"id": request_item["id"], "translated_text": "已完成翻译。"}],
+            }, ensure_ascii=False)}}]}
+
+        post_json.side_effect = response
+        events = []
+        engine = OpenAICompatibleTranslationEngine(
+            "https://example.test",
+            "test-model",
+            request_options={"prompt_cache_key": "daily-report-translation"},
+            telemetry=events.append,
+        )
+
+        for item_id, business_prompt in (("a", "钻井业务规则"), ("b", "完井业务规则")):
+            engine.translate_items([{
+                "id": item_id,
+                "source_language": "en",
+                "source_text": "DRILL AHEAD.",
+                "glossary": [],
+                "prompt_context": {"system_prompt": "SYSTEM ROLE", "business_prompt": business_prompt},
+            }], "zh-CN", 60)
+
+        payloads = [call.args[1] for call in post_json.call_args_list]
+        self.assertEqual(payloads[0]["messages"][0]["content"], payloads[1]["messages"][0]["content"])
+        self.assertIn("钻井业务规则", payloads[0]["messages"][1]["content"])
+        self.assertIn("完井业务规则", payloads[1]["messages"][1]["content"])
+        self.assertEqual(payloads[0]["prompt_cache_key"], "daily-report-translation")
+        request_events = [event for event in events if event["event"] == "model_wire_request"]
+        self.assertEqual(request_events[0]["prompt_prefix_hash"], request_events[1]["prompt_prefix_hash"])
 
     @patch("drilling_report_parser.translation.service._post_json")
     def test_lm_studio_qwen_disabled_thinking_uses_prefill_and_template_switch(self, post_json) -> None:

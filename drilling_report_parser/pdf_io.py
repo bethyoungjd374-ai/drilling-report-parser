@@ -9,6 +9,8 @@ from typing import BinaryIO
 import pdfplumber
 from pypdf import PdfReader
 
+from .text_structure import normalize_pdf_ocr_text
+
 
 PdfSource = str | Path | bytes | BinaryIO
 PdfPayload = str | Path | bytes
@@ -32,10 +34,12 @@ def extract_page(page: object, mode: str) -> str:
     extract_text = getattr(page, "extract_text")
     try:
         if mode == "layout":
-            return extract_text(extraction_mode="layout") or ""
-        return extract_text() or ""
+            text = extract_text(extraction_mode="layout") or ""
+        else:
+            text = extract_text() or ""
     except Exception:
-        return extract_text() or ""
+        text = extract_text() or ""
+    return normalize_pdf_ocr_text(text)
 
 
 def pdfplumber_open(source: str | Path | bytes):

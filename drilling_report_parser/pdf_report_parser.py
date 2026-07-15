@@ -31,11 +31,11 @@ def parse_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, A
     bha_components = _parse_bha_components(page1_lines)
     fields.update(_parse_bha_fields(page1_lines, bha_components))
     fields.update(_parse_mud_fields(page1_lines))
-    fields.update(_parse_incidents(layout_text))
+    fields.update(_parse_incidents(layout_pages))
     fields["otherRemarks"] = _parse_other_remarks(layout_text)
 
     return {
-        "metadata": {"source": "pdf_import", "parser": "pdf_report_parser_v1"},
+        "metadata": {"source": "pdf_import", "parser": "pdf_report_parser_v2_ocr"},
         "report_fields": fields,
         "survey_data": survey,
         "bit_record": [{
@@ -138,7 +138,7 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     rig_match = re.search(r"Wellbore:\s*00\s+SINOPEC\s+(\d+)\s*Rig:", rig_line)
     if rig_match:
         fields["rig"] = _clean_rig(f"SINOPEC {rig_match.group(1)}")
-    fields["refDatum"] = _value_between(rig_line, "Ref Datum:", "DFS:")
+    fields["refDatum"] = _num(_value_between(rig_line, "Ref Datum:", "DFS:"))
 
     today_line = _first_line(lines, "Today's MD:")
     fields["todayMd"] = _num(_value_between(today_line, "Today's MD:", "Progress:"))
@@ -327,19 +327,69 @@ def _parse_mud_comments(lines: list[str]) -> str:
     return _clean(" ".join(parts))
 
 
-def _parse_incidents(layout_text: str) -> dict[str, str]:
+def _parse_incidents(layout_pages: list[str] | str) -> dict[str, str]:
+    pages = [layout_pages] if isinstance(layout_pages, str) else layout_pages
+    layout_text = "\n".join(pages)
     fields: dict[str, str] = {}
     safety = re.search(r"Safety Incident\?\s*([YN])", layout_text)
     env = re.search(r"Environ Incident\?\s*([YN])", layout_text)
     fields["safetyIncident"] = safety.group(1) if safety else "N"
     fields["environmentIncident"] = env.group(1) if env else "N"
-    ri = re.search(r"Days since Last RI:\s*([0-9.]+)", layout_text)
-    lta = re.search(r"Days since Last LTA\s*([0-9.]*)", layout_text)
+    ri = re.search(r"Days since Last RI:[ \t]*([0-9]+(?:\.[0-9]+)?)", layout_text)
+    lta = re.search(r"Days since Last LTA[ \t]*:?[ \t]*([0-9]+(?:\.[0-9]+)?)", layout_text)
     fields["daysSinceRi"] = ri.group(1) if ri else ""
-    fields["daysSinceLta"] = lta.group(1) if lta and lta.group(1) else fields["daysSinceRi"]
-    inc = re.search(r"Incident Comments:\s*(.*?)(?:Days since Last RI|Other Remarks:|POB:|6/\d{1,2}/\d{4})", layout_text, re.S)
-    fields["incidentComments"] = _clean(inc.group(1)) if inc else ""
+    fields["daysSinceLta"] = lta.group(1) if lta else fields["daysSinceRi"]
+    fields["incidentComments"] = _parse_incident_comments(pages)
     return fields
+
+
+def _parse_incident_comments(layout_pages: list[str]) -> str:
+    """Read the incident comment column without crossing a physical PDF page."""
+    for page in layout_pages:
+        lines = page.splitlines()
+        start_index = next((index for index, line in enumerate(lines) if "Incident Comments:" in line), None)
+        if start_index is None:
+            continue
+
+        parts: list[str] = []
+        first = lines[start_index].split("Incident Comments:", 1)[1]
+        if first.strip():
+            parts.append(first)
+
+        for line in lines[start_index + 1:]:
+            if _is_report_page_artifact(line) or "Other Remarks:" in line or "POB:" in line:
+                break
+            if "Safety Incident?" in line:
+                continue
+            if "Environ Incident?" in line:
+                line = re.sub(
+                    r"^.*?Environ Incident\?[ \t]*[YN]?[ \t]+Days since Last LTA"
+                    r"[ \t]*:?[ \t]*(?:[0-9]+(?:\.[0-9]+)?[ \t]*)?",
+                    "",
+                    line,
+                    flags=re.IGNORECASE,
+                )
+            if line.strip():
+                parts.append(line)
+        return _clean(" ".join(parts))
+    return ""
+
+
+def _is_report_page_artifact(line: str) -> bool:
+    text = _clean(line)
+    if not text:
+        return False
+    if re.search(
+        r"\b\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}(?:AM|PM)\s+Page\s+\d+\s+of\s+\d+\b",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        return True
+    if text.upper() in {"EP PETROECUADOR", "DAILY OPERATIONS REPORT"}:
+        return True
+    if text.startswith("Event:") and "Date:" in text:
+        return True
+    return text.startswith("Prim. Reason:") and "Report No:" in text
 
 
 def _parse_other_remarks(layout_text: str) -> str:
@@ -396,6 +446,20 @@ def _operation_end_top(words: list[dict[str, Any]], header_top: float, page_heig
         word["top"] for word in words
         if word["top"] > header_top + 20 and word["x0"] < 120 and word["text"] in markers
     ]
+    # The right-hand "Incident Comments:" heading is commonly drawn about one
+    # point above the left-hand Safety/Environ labels.  Using only the left
+    # label as the table boundary therefore lets the heading (and sometimes
+    # the day counter beside it) leak into the final operation description.
+    for incident in words:
+        if incident["top"] <= header_top + 20 or incident["text"].casefold() != "incident":
+            continue
+        if any(
+            other["text"].casefold().rstrip(":") == "comments"
+            and 0 <= other["x0"] - incident["x1"] <= 15
+            and abs(other["top"] - incident["top"]) <= 3
+            for other in words
+        ):
+            candidates.append(incident["top"])
     return min(candidates) if candidates else page_height - 30
 
 
@@ -474,6 +538,17 @@ def _clean_op_sub(value: str) -> str:
 def _clean_operation_details(value: str) -> str:
     text = normalize_multiline(value)
     text = text.replace(" ,", ",").replace(" .", ".").replace(" :", ":")
+    # Defensive fallback for OCR/layout variants whose section heading is not
+    # perfectly aligned with the PDF table boundary.  Strip only a trailing
+    # heading (optionally followed by its numeric counter), never real comment
+    # prose that follows the heading.
+    text = re.sub(
+        r"(?:^|\n)\s*(?:Incident\s+Comments|Incident\s+Remarks|事故(?:说明|备注))\s*:\s*"
+        r"(?:\d+(?:\.\d+)?)?\s*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
     return normalize_multiline(text)
 
 
