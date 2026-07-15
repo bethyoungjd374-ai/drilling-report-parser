@@ -27,6 +27,12 @@ const adminState = {
   selectedAiModelId: "",
   aiModelTestResult: null,
   projectTeams: { teams: [], projects: [], pending_wells: [] },
+  governance: {
+    regions: [], companies: [], fields: [], blocks: [], teams: [], drillingRigs: [], workoverRigs: [], rigs: [], wells: [], wellbores: [],
+    contracts: [], projects: [], aliases: [], appendixCategories: [], appendixValues: [],
+    assignments: [], wellAssignments: [], issues: [], classifications: [], rules: [], snapshot: null,
+    masterEntity: "regions", masterView: "entities", appendixCategoryId: "", standardizationView: "pending"
+  },
   translationTerms: { terms: [], protected_terms: {} },
   translationTuning: { scope_rules: [], scope_catalog: { report_types: [] }, target_languages: ["zh-CN"], prompt: {}, protections: {} },
   translationTuningView: "fields",
@@ -72,6 +78,11 @@ async function adminRequest(path, options = {}) {
   return window.NexoHttp.requestJson(path, options, "后台请求失败");
 }
 
+async function optionalAdminRequest(path) {
+  try { return await adminRequest(path); }
+  catch (error) { console.warn(`可选后台能力未启用：${path}`, error); return { items: [] }; }
+}
+
 async function loadAdminSession() {
   try {
     const payload = await adminRequest("/api/admin/session");
@@ -94,7 +105,10 @@ async function loadAdminSession() {
 
 async function loadAdminData() {
   try {
-    const [users, config, aiModels, aiExtraction, aiExtractionQueue, projectTeams, translationTerms, translationTuning, translationExperience, translationQueue, dataStatus, records, logs] = await Promise.all([
+    const [users, config, aiModels, aiExtraction, aiExtractionQueue, projectTeams, translationTerms, translationTuning, translationExperience, translationQueue, dataStatus, records, logs,
+      masterRegions, masterCompanies, masterFields, masterBlocks, masterTeams, masterDrillingRigs, masterWorkoverRigs, masterWells, masterWellbores,
+      masterContracts, masterProjects, masterAliases, appendixCategories, appendixValues,
+      assignments, wellAssignments, qualityIssues, classifications, classificationRules] = await Promise.all([
       adminRequest("/api/admin/users"),
       adminRequest("/api/admin/config"),
       adminRequest("/api/admin/ai-models"),
@@ -108,6 +122,25 @@ async function loadAdminData() {
       adminRequest("/api/admin/data-status"),
       adminRequest("/api/records"),
       adminRequest("/api/admin/audit-logs"),
+      optionalAdminRequest("/api/admin/master-data/regions?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/companies?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/fields?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/blocks?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/teams?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/drilling-rigs?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/workover-rigs?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/wells?limit=1000"),
+      optionalAdminRequest("/api/admin/master-data/wellbores?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/contracts?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/projects?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/aliases?limit=1000"),
+      optionalAdminRequest("/api/admin/master-data/appendix-categories?limit=500"),
+      optionalAdminRequest("/api/admin/master-data/appendix-values?limit=2000"),
+      optionalAdminRequest("/api/admin/assignments?kind=project-team"),
+      optionalAdminRequest("/api/admin/assignments?kind=project-well"),
+      optionalAdminRequest("/api/admin/data-quality/issues?status=OPEN&limit=500"),
+      optionalAdminRequest("/api/admin/time-classification/queue?limit=500"),
+      optionalAdminRequest("/api/admin/time-classification/rules"),
     ]);
     adminState.users = users.users || [];
     adminState.roles = users.roles || [];
@@ -125,6 +158,16 @@ async function loadAdminData() {
     adminState.dataStatus = dataStatus;
     adminState.records = records.records || [];
     adminState.logs = logs.logs || [];
+    adminState.governance = {
+      ...adminState.governance,
+      regions: masterRegions.items || [], companies: masterCompanies.items || [], organizations: masterCompanies.items || [], fields: masterFields.items || [],
+      blocks: masterBlocks.items || [], teams: masterTeams.items || [], drillingRigs: masterDrillingRigs.items || [], workoverRigs: masterWorkoverRigs.items || [],
+      rigs: [...(masterDrillingRigs.items || []), ...(masterWorkoverRigs.items || [])], wells: masterWells.items || [], wellbores: masterWellbores.items || [],
+      contracts: masterContracts.items || [], projects: masterProjects.items || [], aliases: masterAliases.items || [],
+      appendixCategories: appendixCategories.items || [], appendixValues: appendixValues.items || [],
+      assignments: assignments.items || [], wellAssignments: wellAssignments.items || [], issues: qualityIssues.items || [],
+      classifications: classifications.items || [], rules: classificationRules.items || [],
+    };
     adminState.logsPage = 1;
     renderAdminPanels();
     scheduleAdminQueuePoll();
@@ -345,9 +388,10 @@ function renderAdminPanels() {
   renderAdminAiModels();
   renderAdminAiExtraction();
   renderAdminProjects();
+  renderAdminGovernance();
+  renderAdminDataGovernance();
   renderAdminTranslationTuning();
   renderAdminConfig();
-  renderAdminData();
   renderAdminLogs();
   switchAdminTab(adminState.tab || "overview");
 }
@@ -369,10 +413,645 @@ function renderAdminOverview() {
         <span><strong>账号与角色</strong><small>新增、启停账号并分配固定角色</small></span>
         <span><strong>项目队伍</strong><small>维护合同、队伍和项目井号归属</small></span>
         <span><strong>系统参数</strong><small>维护记录分页、语言和源文件策略</small></span>
-        <span><strong>数据维护</strong><small>查看 MySQL 连接和记录状态</small></span>
+        <span><strong>数据标准化</strong><small>处理名称识别、唯一归属和时效分类问题</small></span>
       </div>
     </section>
   `;
+}
+
+const MASTER_ENTITY_DEFINITIONS = {
+  regions: { label: "国家/区域", state: "regions", code: "region_code", name: "region_name", fields: [
+    ["region_code", "区域编码", "text"], ["region_name", "区域名称", "text"], ["region_type_code", "区域类型", "appendix:REGION_TYPE"],
+    ["iso_alpha2", "ISO二字码", "text"], ["parent_id", "上级区域", "regions"]
+  ] },
+  companies: { label: "公司", state: "companies", code: "organization_code", name: "organization_name", fields: [
+    ["organization_code", "公司编码", "text"], ["organization_name", "公司简称", "text"], ["legal_name", "法定名称", "text"],
+    ["organization_type", "公司类型", "appendix:COMPANY_TYPE"], ["country_region_id", "所在国家/区域", "regions"], ["parent_id", "上级公司", "companies"]
+  ] },
+  fields: { label: "油田", state: "fields", code: "field_code", name: "field_name", fields: [
+    ["field_code", "油田编码", "text"], ["field_name", "油田名称", "text"], ["region_id", "国家/区域", "regions"],
+    ["operator_company_id", "作业者", "companies"], ["field_type_code", "油田类型", "appendix:FIELD_TYPE"],
+    ["lifecycle_status_code", "生命周期", "appendix:FIELD_STATUS"]
+  ] },
+  blocks: { label: "区块", state: "blocks", code: "block_code", name: "block_name", fields: [
+    ["block_code", "区块编码", "text"], ["block_name", "区块名称", "text"], ["field_id", "所属油田", "fields"],
+    ["region_id", "国家/区域", "regions"], ["operator_company_id", "作业者", "companies"],
+    ["block_type_code", "区块类型", "appendix:BLOCK_TYPE"], ["parent_id", "上级区块", "blocks"]
+  ] },
+  teams: { label: "队伍", state: "teams", code: "team_code", name: "team_name", fields: [
+    ["team_code", "队伍编码", "text"], ["team_name", "队伍名称", "text"], ["team_type_code", "队伍类型", "appendix:TEAM_TYPE"],
+    ["company_id", "所属公司", "companies"], ["model_code", "设备型号", "appendix:RIG_TYPE"]
+  ] },
+  "drilling-rigs": { hidden: true, label: "钻机", state: "drillingRigs", code: "rig_code", name: "rig_name", fields: [
+    ["rig_code", "钻机编码", "text"], ["rig_name", "钻机名称", "text"], ["team_id", "所属队伍", "teams"],
+    ["owner_organization_id", "资产公司", "companies"], ["manufacturer", "制造商", "text"], ["model_code", "设备型号", "appendix:RIG_TYPE"],
+    ["drive_type_code", "驱动方式", "appendix:RIG_DRIVE_TYPE"], ["rated_depth_m", "额定钻深(m)", "number"],
+    ["equipment_status_code", "设备状态", "appendix:EQUIPMENT_STATUS"]
+  ] },
+  "workover-rigs": { hidden: true, label: "修井机", state: "workoverRigs", code: "rig_code", name: "rig_name", fields: [
+    ["rig_code", "修井机编码", "text"], ["rig_name", "修井机名称", "text"], ["team_id", "所属队伍", "teams"],
+    ["owner_organization_id", "资产公司", "companies"], ["manufacturer", "制造商", "text"], ["model_code", "设备型号", "appendix:RIG_TYPE"],
+    ["rated_power_hp", "额定功率(HP)", "number"], ["drive_type_code", "驱动方式", "appendix:RIG_DRIVE_TYPE"],
+    ["equipment_status_code", "设备状态", "appendix:EQUIPMENT_STATUS"]
+  ] },
+  wells: { label: "井", state: "wells", code: "well_code", name: "well_name", fields: [
+    ["well_code", "井编码", "text"], ["well_name", "井名称", "text"], ["field_id", "所属油田", "fields"], ["block_id", "所属区块", "blocks"],
+    ["operator_company_id", "作业者", "companies"], ["well_type_code", "井用途", "appendix:WELL_TYPE"],
+    ["surface_latitude", "井口纬度", "number"], ["surface_longitude", "井口经度", "number"],
+    ["lifecycle_status_code", "生命周期", "appendix:WELL_STATUS"]
+  ] },
+  wellbores: { label: "井筒", state: "wellbores", code: "wellbore_code", name: "wellbore_name", fields: [
+    ["wellbore_code", "井筒编码", "text"], ["wellbore_name", "井筒名称", "text"], ["well_id", "所属井", "wells"],
+    ["parent_wellbore_id", "父井筒", "wellbores"], ["wellbore_profile_code", "井筒轨迹类型", "appendix:WELLBORE_PROFILE"],
+    ["trajectory_status_code", "轨迹状态", "appendix:TRAJECTORY_STATUS"], ["kickoff_md_m", "造斜点MD(m)", "number"],
+    ["planned_td_md_m", "设计井深MD(m)", "number"]
+  ] },
+  "appendix-categories": { hidden: true, label: "附录类别", state: "appendixCategories", code: "category_code", name: "category_name", fields: [
+    ["category_code", "类别编码", "text"], ["category_name", "类别名称", "text"], ["parent_id", "上级类别", "appendix-categories"],
+    ["level_no", "层级", "number"], ["description", "说明", "textarea"]
+  ] },
+  "appendix-values": { hidden: true, label: "附录值", state: "appendixValues", code: "value_code", name: "value_name", fields: [
+    ["category_id", "所属类别", "appendix-categories"], ["value_code", "值编码", "text"], ["value_name", "值名称", "text"],
+    ["parent_value_id", "上级值", "appendix-values"], ["level_no", "层级", "number"], ["sort_order", "排序", "number"],
+    ["display_color", "显示颜色", "color"], ["description", "说明", "textarea"]
+  ] },
+};
+
+function masterEntityItems(entity) {
+  const definition = MASTER_ENTITY_DEFINITIONS[entity];
+  return definition ? (adminState.governance?.[definition.state] || []) : [];
+}
+
+function masterOptionLabel(source, item = {}) {
+  const entity = Object.entries(MASTER_ENTITY_DEFINITIONS).find(([, definition]) => definition.state === source)?.[0];
+  const definition = entity ? MASTER_ENTITY_DEFINITIONS[entity] : null;
+  return definition ? `${item[definition.code] || ""} ${item[definition.name] || ""}`.trim() : String(item.id || "");
+}
+
+function masterDataPanelMarkup(data) {
+  const visibleDefinitions = Object.entries(MASTER_ENTITY_DEFINITIONS).filter(([, item]) => !item.hidden);
+  const entity = data.masterEntity && MASTER_ENTITY_DEFINITIONS[data.masterEntity] && !MASTER_ENTITY_DEFINITIONS[data.masterEntity].hidden ? data.masterEntity : "regions";
+  const definition = MASTER_ENTITY_DEFINITIONS[entity];
+  const items = masterEntityItems(entity);
+  return `<section class="panel">
+    <div class="panel-heading"><div><h2>标准主数据</h2><span class="panel-note">未被引用的数据可以删除；已引用数据须先解除关系，或改为停用</span></div><button class="button small" type="button" data-new-master-entity="${escapeHtml(entity)}">新增${escapeHtml(definition.label)}</button></div>
+    <nav class="tuning-tabs" aria-label="主数据类型">${visibleDefinitions.map(([key, item]) => `<button class="tuning-tab ${key === entity ? "active" : ""}" type="button" data-master-entity="${escapeHtml(key)}">${escapeHtml(item.label)} <span class="tuning-tab-count">${masterEntityItems(key).length}</span></button>`).join("")}</nav>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>稳定ID</th><th>编码</th><th>名称</th><th>状态</th><th>版本</th><th>最近修改</th><th>操作</th></tr></thead><tbody>${items.map((item) => `<tr>
+      <td>${escapeHtml(item.id)}</td><td><strong>${escapeHtml(item[definition.code] || "-")}</strong></td><td>${escapeHtml(item[definition.name] || "-")}</td>
+      <td><span class="status-pill ${item.status === "active" ? "uploaded" : "failed"}">${escapeHtml(item.status || "-")}</span></td><td>${escapeHtml(item.version || 1)}</td>
+      <td>${escapeHtml(item.updated_at || "-")}</td><td><button class="link-button" type="button" data-edit-master-entity="${escapeHtml(entity)}" data-master-id="${escapeHtml(item.id)}">编辑</button><button class="link-button danger-link" type="button" data-delete-master-entity="${escapeHtml(entity)}" data-master-id="${escapeHtml(item.id)}">删除</button></td>
+    </tr>`).join("") || `<tr><td colspan="7">当前没有${escapeHtml(definition.label)}主数据</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+function appendixPanelMarkup(data) {
+  const categories = data.appendixCategories || [];
+  const selectedId = String(data.appendixCategoryId || categories[0]?.id || "");
+  data.appendixCategoryId = selectedId;
+  const selected = categories.find((item) => String(item.id) === selectedId) || {};
+  const values = (data.appendixValues || []).filter((item) => String(item.category_id) === selectedId);
+  const valueById = new Map((data.appendixValues || []).map((item) => [String(item.id), item]));
+  return `<section class="panel">
+    <div class="panel-heading"><div><h2>附录</h2><span class="panel-note">统一维护各主数据下拉选项；类别和值均使用稳定编码，并支持父子层级</span></div><button class="button small" type="button" data-new-appendix-category>新增类别</button></div>
+    <div class="master-appendix-layout">
+      <aside class="master-appendix-categories"><div class="master-appendix-title">枚举类别</div>${categories.map((item) => `<button class="master-appendix-category ${String(item.id) === selectedId ? "active" : ""}" type="button" data-appendix-category="${escapeHtml(item.id)}"><span><strong>${escapeHtml(item.category_name)}</strong><small>${escapeHtml(item.category_code)}</small></span><em>${(data.appendixValues || []).filter((value) => String(value.category_id) === String(item.id)).length}</em></button>`).join("") || `<p class="panel-note">尚未配置附录类别</p>`}</aside>
+      <div class="master-appendix-values">
+        <div class="panel-heading compact-heading"><div><h3>${escapeHtml(selected.category_name || "枚举值")}</h3><span class="panel-note">${escapeHtml(selected.category_code || "请先创建类别")}${selected.description ? ` · ${escapeHtml(selected.description)}` : ""}</span></div><div class="admin-actions heading-actions">${selected.id ? `<button class="button secondary small" type="button" data-edit-master-entity="appendix-categories" data-master-id="${escapeHtml(selected.id)}">编辑类别</button><button class="button secondary small danger-button" type="button" data-delete-master-entity="appendix-categories" data-master-id="${escapeHtml(selected.id)}">删除类别</button><button class="button small" type="button" data-new-appendix-value="${escapeHtml(selected.id)}">新增枚举值</button>` : ""}</div></div>
+        <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>编码</th><th>名称</th><th>显示颜色</th><th>上级值</th><th>层级</th><th>排序</th><th>状态</th><th>操作</th></tr></thead><tbody>${values.map((item) => `<tr><td><strong>${escapeHtml(item.value_code)}</strong></td><td>${escapeHtml(item.value_name)}</td><td><span class="appendix-color-swatch" style="--appendix-color:${escapeHtml(item.display_color || "#94a3b8")}"></span>${escapeHtml(item.display_color || "-")}</td><td>${escapeHtml(valueById.get(String(item.parent_value_id))?.value_name || "-")}</td><td>${escapeHtml(item.level_no ?? 1)}</td><td>${escapeHtml(item.sort_order ?? 0)}</td><td><span class="status-pill ${item.status === "active" ? "uploaded" : "failed"}">${item.status === "active" ? "启用" : "停用"}</span></td><td><button class="link-button" type="button" data-edit-master-entity="appendix-values" data-master-id="${escapeHtml(item.id)}">编辑</button><button class="link-button danger-link" type="button" data-delete-master-entity="appendix-values" data-master-id="${escapeHtml(item.id)}">删除</button></td></tr>`).join("") || `<tr><td colspan="8">当前类别暂无枚举值</td></tr>`}</tbody></table></div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function classificationRuleValue(rule = {}) {
+  if (typeof rule.classification_json === "object" && rule.classification_json) return rule.classification_json;
+  try { return JSON.parse(rule.classification_json || "{}"); } catch { return {}; }
+}
+
+function timeRulePanelMarkup(data) {
+  return `<section class="panel"><div class="panel-heading"><div><h2>工作量分类规则</h2><span class="panel-note">OP CODE / OP SUB 精确规则优先，关键词规则次之；规则补充工作量等维度，不覆盖原日报 P / SC / NPT</span></div><div class="admin-actions heading-actions"><button class="button secondary small" type="button" data-reclassify-time-facts>重新应用规则</button><button class="button small" type="button" data-new-time-rule>新增规则</button></div></div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>优先级</th><th>规则</th><th>匹配条件</th><th>分类结果</th><th>版本</th><th>状态</th><th>操作</th></tr></thead><tbody>${(data.rules || []).map((rule) => {
+      const classification = classificationRuleValue(rule);
+      return `<tr><td>${escapeHtml(rule.priority)}</td><td><strong>${escapeHtml(rule.rule_name)}</strong><small>${escapeHtml(rule.rule_code)}</small></td>
+        <td>${escapeHtml([rule.op_code_pattern && `CODE=${rule.op_code_pattern}`, rule.op_sub_pattern && `SUB=${rule.op_sub_pattern}`, rule.keyword_pattern && `关键词=${rule.keyword_pattern}`].filter(Boolean).join("；") || "-")}</td>
+        <td>${escapeHtml([classification.confirmed_op_type, classification.work_bucket, classification.billing_status, classification.responsibility, classification.cause_code].filter(Boolean).join(" / ") || "-")}</td>
+        <td>${escapeHtml(rule.rule_version || "-")}</td><td>${escapeHtml(rule.status || "-")}</td><td><button class="link-button" type="button" data-edit-time-rule="${escapeHtml(rule.id)}">编辑</button></td></tr>`;
+    }).join("") || `<tr><td colspan="7">尚未配置规则；未命中数据会进入人工确认队列</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+function openTimeRuleModal(id = "") {
+  const rule = (adminState.governance.rules || []).find((item) => String(item.id) === String(id)) || {};
+  const classification = classificationRuleValue(rule);
+  const select = (name, values, current) => `<select name="${name}"><option value="">未设置</option>${values.map(([value, label]) => `<option value="${value}" ${value === current ? "selected" : ""}>${label}</option>`).join("")}</select>`;
+  openAdminModal(rule.id ? "编辑时间分类规则" : "新增时间分类规则", `
+    <input type="hidden" name="timeRuleId" value="${escapeHtml(rule.id || "")}" /><input type="hidden" name="timeRuleVersion" value="${escapeHtml(rule.version || "")}" />
+    <div class="admin-modal-form compact">
+      <label>规则编码<input name="timeRuleCode" value="${escapeHtml(rule.rule_code || "")}" /></label><label>规则名称<input name="timeRuleName" value="${escapeHtml(rule.rule_name || "")}" /></label>
+      <label>优先级<input name="timeRulePriority" type="number" value="${escapeHtml(rule.priority ?? 100)}" /></label>
+      <label>OP CODE 正则<input name="timeRuleOpCode" value="${escapeHtml(rule.op_code_pattern || "")}" placeholder="如 ^DRILLING$" /></label>
+      <label>OP SUB 正则<input name="timeRuleOpSub" value="${escapeHtml(rule.op_sub_pattern || "")}" /></label>
+      <label class="wide">描述关键词正则<input name="timeRuleKeyword" value="${escapeHtml(rule.keyword_pattern || "")}" /></label>
+      <label>生产属性${select("timeRuleProductive", [["PRODUCTION","生产"],["NON_PRODUCTION","非生产"]], classification.productive_flag)}</label>
+      <label>缺失类型候选${select("timeRuleOpType", [["P","P"],["SC","SC"],["NPT","NPT"]], classification.confirmed_op_type)}</label>
+      <label>工作量分类${select("timeRuleBucket", [["OPERATION","作业"],["MOVE","搬迁"],["STANDBY_STAFFED","有人待工"],["STANDBY_UNSTAFFED","无人待工"],["FORCE_MAJEURE","不可抗力"],["MAINTENANCE","维修"]], classification.work_bucket)}</label>
+      <label>计费状态${select("timeRuleBilling", [["FULL_RATE","全日费"],["PARTIAL_RATE","部分日费"],["ZERO_RATE","零日费"]], classification.billing_status)}</label>
+      <label>责任方${select("timeRuleResponsibility", [["OURS","我方"],["CLIENT","甲方"],["THIRD_PARTY","第三方"],["FORCE_MAJEURE","不可抗力"]], classification.responsibility)}</label>
+      <label>原因编码<input name="timeRuleCause" value="${escapeHtml(classification.cause_code || "")}" /></label><label>服务线<input name="timeRuleServiceLine" value="${escapeHtml(classification.service_line || "")}" /></label>
+      <label>状态<select name="timeRuleStatus"><option value="active" ${rule.status !== "inactive" ? "selected" : ""}>启用</option><option value="inactive" ${rule.status === "inactive" ? "selected" : ""}>停用</option></select></label>
+      <label class="wide">变更原因<input name="timeRuleReason" placeholder="必填" /></label>
+    </div>`, `<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button" type="button" data-save-time-rule>保存规则</button>`);
+}
+
+async function saveTimeRuleFromModal() {
+  const value = (name) => document.querySelector(`[name="${name}"]`)?.value || "";
+  if (!value("timeRuleReason").trim()) return showToast("请填写变更原因");
+  const payload = {
+    id: Number(value("timeRuleId")) || undefined, version: Number(value("timeRuleVersion")) || undefined,
+    rule_code: value("timeRuleCode"), rule_name: value("timeRuleName"), priority: Number(value("timeRulePriority") || 100),
+    op_code_pattern: value("timeRuleOpCode"), op_sub_pattern: value("timeRuleOpSub"), keyword_pattern: value("timeRuleKeyword"),
+    classification: { productive_flag: value("timeRuleProductive"), confirmed_op_type: value("timeRuleOpType"), work_bucket: value("timeRuleBucket"),
+      billing_status: value("timeRuleBilling"), responsibility: value("timeRuleResponsibility"), cause_code: value("timeRuleCause"), service_line: value("timeRuleServiceLine") },
+    status: value("timeRuleStatus"), change_reason: value("timeRuleReason"),
+  };
+  try {
+    await adminRequest("/api/admin/time-classification/rules", { method: payload.id ? "PATCH" : "POST", body: JSON.stringify(payload) });
+    const response = await adminRequest("/api/admin/time-classification/rules");
+    adminState.governance.rules = response.items || [];
+    closeAdminModal(); renderAdminDataGovernance(); showToast("分类规则已保存");
+  } catch (error) { showToast(error.message); }
+}
+
+async function reclassifyTimeFacts() {
+  try {
+    const response = await adminRequest("/api/admin/time-classification/reclassify", { method: "POST", body: "{}" });
+    await refreshGovernanceQueues();
+    showToast(`已重算 ${response.result?.processed || 0} 条，仍待确认 ${response.result?.pending || 0} 条`);
+  } catch (error) { showToast(error.message); }
+}
+
+function openMasterEntityModal(entity, id = "", preset = {}) {
+  const definition = MASTER_ENTITY_DEFINITIONS[entity];
+  if (!definition) return;
+  const item = { ...preset, ...(masterEntityItems(entity).find((row) => String(row.id) === String(id)) || {}) };
+  const fields = definition.fields.map(([key, label, type]) => {
+    const value = item[key] ?? "";
+    if (String(type).startsWith("appendix:")) {
+      const categoryCode = String(type).slice("appendix:".length);
+      const category = (adminState.governance.appendixCategories || []).find((row) => row.category_code === categoryCode);
+      const options = (adminState.governance.appendixValues || []).filter((row) => String(row.category_id) === String(category?.id) && row.status === "active");
+      return `<label>${escapeHtml(label)}<select data-master-field="${escapeHtml(key)}"><option value="">未设置</option>${options.map((option) => `<option value="${escapeHtml(option.value_code)}" ${String(option.value_code) === String(value) ? "selected" : ""}>${escapeHtml(`${option.value_name} (${option.value_code})`)}</option>`).join("")}</select></label>`;
+    }
+    if (MASTER_ENTITY_DEFINITIONS[type]) {
+      const reference = MASTER_ENTITY_DEFINITIONS[type];
+      let options = adminState.governance?.[reference.state] || [];
+      if (entity === "appendix-values" && type === "appendix-values" && item.category_id) options = options.filter((option) => String(option.category_id) === String(item.category_id));
+      return `<label>${escapeHtml(label)}<select data-master-field="${escapeHtml(key)}"><option value="">未设置</option>${options.filter((option) => String(option.id) !== String(id) || type !== entity).map((option) => `<option value="${escapeHtml(option.id)}" ${String(option.id) === String(value) ? "selected" : ""}>${escapeHtml(masterOptionLabel(reference.state, option))}</option>`).join("")}</select></label>`;
+    }
+    if (type === "textarea") return `<label class="wide">${escapeHtml(label)}<textarea data-master-field="${escapeHtml(key)}">${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}</textarea></label>`;
+    return `<label>${escapeHtml(label)}<input data-master-field="${escapeHtml(key)}" type="${type}" value="${escapeHtml(type === "date" ? String(value).slice(0, 10) : value)}" /></label>`;
+  }).join("");
+  openAdminModal(
+    `${item.id ? "编辑" : "新增"}${definition.label}`,
+    `<input type="hidden" data-master-record-id value="${escapeHtml(item.id || "")}" /><input type="hidden" data-master-version value="${escapeHtml(item.version || "")}" />
+    <div class="admin-modal-form compact" data-master-entity-form="${escapeHtml(entity)}">${fields}
+      <label>状态<select data-master-field="status"><option value="active" ${item.status !== "inactive" ? "selected" : ""}>启用</option><option value="inactive" ${item.status === "inactive" ? "selected" : ""}>停用</option></select></label>
+      <label class="wide">变更原因<input data-master-field="change_reason" value="" placeholder="新增、修改或停用均必须填写" /></label>
+    </div>`,
+    `${item.id ? `<button class="button secondary danger-button" type="button" data-delete-master-entity="${escapeHtml(entity)}" data-master-id="${escapeHtml(item.id)}">删除</button>` : ""}<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button" type="button" data-save-master-entity="${escapeHtml(entity)}">保存</button>`
+  );
+}
+
+function openDeleteMasterEntityModal(entity, id) {
+  const definition = MASTER_ENTITY_DEFINITIONS[entity];
+  const item = masterEntityItems(entity).find((row) => String(row.id) === String(id));
+  if (!definition || !item) return showToast("未找到要删除的数据，请刷新后重试");
+  const code = item[definition.code] || item.id;
+  const name = item[definition.name] || code;
+  openAdminModal(
+    `删除${definition.label}`,
+    `<div class="master-delete-warning"><strong>确认删除“${escapeHtml(name)}”吗？</strong><p>仅未被引用的数据可以彻底删除。若存在下级数据、项目关系、日报或别名引用，系统会拒绝并提示引用来源。</p></div>
+    <div class="admin-modal-form compact" data-delete-master-form>
+      <label>稳定ID<input value="${escapeHtml(item.id)}" disabled /></label>
+      <label>编码<input value="${escapeHtml(code)}" disabled /></label>
+      <label class="wide">删除原因<input data-delete-master-reason placeholder="请说明删除原因" /></label>
+    </div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button danger-button" type="button" data-confirm-delete-master-entity="${escapeHtml(entity)}" data-master-id="${escapeHtml(item.id)}" data-master-version="${escapeHtml(item.version || 1)}">确认删除</button>`
+  );
+}
+
+async function deleteMasterEntityFromModal(entity, id, version) {
+  const reason = document.querySelector("[data-delete-master-reason]")?.value?.trim() || "";
+  if (!reason) return showToast("请填写删除原因");
+  try {
+    await adminRequest(`/api/admin/master-data/${entity}`, { method: "DELETE", body: JSON.stringify({ id: Number(id), version: Number(version), change_reason: reason }) });
+    const response = await adminRequest(`/api/admin/master-data/${entity}?limit=1000`);
+    adminState.governance[MASTER_ENTITY_DEFINITIONS[entity].state] = response.items || [];
+    if (entity === "appendix-categories") adminState.governance.appendixCategoryId = String(response.items?.[0]?.id || "");
+    closeAdminModal(); renderAdminGovernance(); showToast("主数据已删除");
+  } catch (error) { showToast(error.message); }
+}
+
+async function saveMasterEntityFromModal(entity) {
+  const form = document.querySelector(`[data-master-entity-form="${entity}"]`);
+  if (!form) return;
+  const payload = {};
+  form.querySelectorAll("[data-master-field]").forEach((input) => { payload[input.dataset.masterField] = input.value; });
+  payload.id = Number(document.querySelector("[data-master-record-id]")?.value || 0) || undefined;
+  payload.version = Number(document.querySelector("[data-master-version]")?.value || 0) || undefined;
+  if (!String(payload.change_reason || "").trim()) return showToast("请填写变更原因");
+  Object.keys(payload).filter((key) => key.endsWith("_id")).forEach((key) => { payload[key] = payload[key] ? Number(payload[key]) : null; });
+  try {
+    await adminRequest(`/api/admin/master-data/${entity}`, { method: payload.id ? "PATCH" : "POST", body: JSON.stringify(payload) });
+    const response = await adminRequest(`/api/admin/master-data/${entity}?limit=1000`);
+    adminState.governance[MASTER_ENTITY_DEFINITIONS[entity].state] = response.items || [];
+    closeAdminModal(); renderAdminGovernance(); showToast("主数据已保存");
+  } catch (error) { showToast(error.message); }
+}
+
+function renderAdminGovernance() {
+  const host = document.querySelector('[data-admin-panel="governance"]');
+  if (!host) return;
+  const data = adminState.governance || {};
+  const masterStates = Object.values(MASTER_ENTITY_DEFINITIONS).filter((item) => !item.hidden).map((item) => item.state);
+  const masterCount = masterStates
+    .reduce((total, key) => total + (data[key] || []).length, 0);
+  const activeCount = masterStates
+    .reduce((total, key) => total + (data[key] || []).filter((item) => item.status === "active").length, 0);
+  host.innerHTML = `
+    <section class="admin-kpi-grid">
+      ${adminKpi("主数据类型", masterStates.length, "OSDU精简属性", "overview")}
+      ${adminKpi("实体数据", masterCount, "全部使用稳定ID", "database")}
+      ${adminKpi("启用实体", activeCount, "可用于业务关系", "users")}
+      ${adminKpi("附录类别", (data.appendixCategories || []).length, `${(data.appendixValues || []).length} 个枚举值`, "logs")}
+    </section>
+    <nav class="tuning-tabs master-view-tabs" aria-label="主数据管理视图"><button class="tuning-tab ${data.masterView !== "appendix" ? "active" : ""}" type="button" data-master-view="entities">实体数据</button><button class="tuning-tab ${data.masterView === "appendix" ? "active" : ""}" type="button" data-master-view="appendix">附录</button></nav>
+    ${data.masterView === "appendix" ? appendixPanelMarkup(data) : masterDataPanelMarkup(data)}`;
+}
+
+function qualityIssueDetails(item = {}) {
+  if (typeof item.details_json === "object" && item.details_json) return item.details_json;
+  try { return JSON.parse(item.details_json || "{}"); } catch { return {}; }
+}
+
+function qualityIssueTypeLabel(type = "") {
+  return ({
+    ALIAS_REVIEW: "名称待识别",
+    CLASSIFICATION_PENDING: "分类信息待补充",
+    HOURS_NOT_24: "日报工时不平",
+    UNASSIGNED: "项目归属缺失",
+    AMBIGUOUS: "项目归属冲突",
+    MASTER_NOT_FOUND: "主数据缺失",
+    NORMALIZATION_FAILED: "标准化失败",
+  })[String(type).toUpperCase()] || type || "数据待核对";
+}
+
+function qualityIssueGuidance(item = {}) {
+  const type = String(item.issue_type || "").toUpperCase();
+  const details = qualityIssueDetails(item);
+  if (type === "CLASSIFICATION_PENDING") return `${Number(details.pending_count || 0)} 条作业活动需要补充工作量分类，或原日报类型尚未提取；已提取的 P / SC / NPT 原值不需要重复确认。`;
+  if (type === "HOURS_NOT_24") return `日报作业合计 ${Number(details.total_hours || 0).toFixed(2)} 小时，与 24 小时相差 ${Math.abs(Number(details.difference || 0)).toFixed(2)} 小时。`;
+  if (type === "ALIAS_REVIEW") {
+    const candidates = [details.left, details.right].filter(Boolean);
+    if (candidates.length > 1) return `“${candidates.join("”与“")}”可能是同一实体，需要人工判断是否建立名称映射。`;
+    return `来源名称“${details.raw_value || details.alias_value || candidates[0] || "未识别名称"}”尚未映射到标准实体。`;
+  }
+  if (type === "UNASSIGNED") return "当前日报没有找到唯一有效的项目归属。";
+  if (type === "AMBIGUOUS") return "当前日报同时命中多个项目关系，必须调整有效期或井范围。";
+  return details.message || details.reason || details.raw_value || item.resolution_note || "需要人工核对后才能进入正式统计。";
+}
+
+function qualityIssueSubject(item = {}) {
+  const details = qualityIssueDetails(item);
+  const candidates = [details.left, details.right].filter(Boolean);
+  if (candidates.length) return `${standardEntityTypeLabel(item.entity_type)}：${candidates.join(" / ")}`;
+  return item.record_id || item.entity_id || "-";
+}
+
+function standardEntityTypeLabel(type = "") {
+  return ({ block: "区块", rig: "队伍", well: "井", wellbore: "井筒", project: "项目" })[String(type).toLowerCase()] || type || "实体";
+}
+
+function qualityIssueAction(item = {}) {
+  const type = String(item.issue_type || "").toUpperCase();
+  if (type === "ALIAS_REVIEW" || type === "MASTER_NOT_FOUND") return { route: "aliases", label: "维护名称映射" };
+  if (type === "CLASSIFICATION_PENDING") return { route: "classification", label: "补充分类信息" };
+  if (type === "UNASSIGNED" || type === "AMBIGUOUS") return { route: "projects", label: "调整项目归属" };
+  if (type === "HOURS_NOT_24" || type === "NORMALIZATION_FAILED") return { route: "daily-report", label: "检查原始日报" };
+  return { route: "results", label: "查看标准化结果" };
+}
+
+function standardEntityLabel(items = [], id, nameField, codeField) {
+  if (!id) return "未匹配";
+  const item = items.find((row) => String(row.id) === String(id));
+  if (!item) return `稳定ID ${id}`;
+  return item[nameField] || item[codeField] || `稳定ID ${id}`;
+}
+
+function standardizationResultRows(data = {}) {
+  const records = adminState.records || [];
+  return records.slice(0, 200).map((record) => {
+    const status = String(record.master_match_status || "").toUpperCase();
+    const rig = standardEntityLabel(data.rigs || [], record.rig_id, "rig_name", "rig_code");
+    const wellbore = standardEntityLabel(data.wellbores || [], record.wellbore_id, "wellbore_name", "wellbore_code");
+    const project = standardEntityLabel(data.projects || [], record.project_id, "project_name", "project_code");
+    const statusLabel = ({ MATCHED: "已建立唯一归属", UNASSIGNED: "待确定归属", AMBIGUOUS: "归属存在冲突", NORMALIZATION_FAILED: "标准化失败" })[status] || (status || "待处理");
+    return `<tr>
+      <td>${escapeHtml(record.report_date || record.reportDate || "-")}</td>
+      <td><strong>${escapeHtml(record.rig || "-")}</strong><small>${escapeHtml(record.wellbore || "-")}</small></td>
+      <td><strong>${escapeHtml(rig)}</strong><small>${escapeHtml(wellbore)}</small></td>
+      <td><strong>${escapeHtml(project)}</strong><small>${record.job_id ? `作业实例 #${escapeHtml(record.job_id)}` : "尚未建立作业实例"}</small></td>
+      <td><span class="status-pill ${status === "MATCHED" ? "uploaded" : "failed"}">${escapeHtml(statusLabel)}</span>
+        <details class="standardization-id-details"><summary>追溯ID</summary><small>设备 ${escapeHtml(record.rig_id || "-")} · 井筒 ${escapeHtml(record.wellbore_id || "-")} · 项目 ${escapeHtml(record.project_id || "-")} · 作业 ${escapeHtml(record.job_id || "-")}</small></details>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function standardizationPendingMarkup(data, issues, classifications) {
+  const issueRows = issues.slice(0, 100).map((item) => {
+    const action = qualityIssueAction(item);
+    return `<tr>
+      <td><span class="status-pill failed">${escapeHtml(qualityIssueTypeLabel(item.issue_type))}</span><small>${escapeHtml(item.issue_type || "")}</small></td>
+      <td>${escapeHtml(qualityIssueSubject(item))}</td>
+      <td>${escapeHtml(qualityIssueGuidance(item))}</td>
+      <td><strong>${escapeHtml(action.label)}</strong><small>处理完成后再关闭问题</small></td>
+      <td><div class="admin-actions compact-actions"><button class="link-button" type="button" data-standardization-route="${escapeHtml(action.route)}">${escapeHtml(action.label)}</button><button class="link-button danger-link" type="button" data-resolve-quality-issue="${escapeHtml(item.id)}">完成后关闭</button></div></td>
+    </tr>`;
+  }).join("");
+  const classificationRows = classifications.slice(0, 100).map((item) => `<tr>
+    <td>${escapeHtml(item.report_date || "-")}</td><td>${escapeHtml(item.record_id || "-")}</td>
+    <td><strong>${escapeHtml(item.op_code || "-")}</strong><small>${escapeHtml(item.op_sub || "-")}</small></td><td>${escapeHtml(item.hours || 0)} h</td>
+    <td><span class="status-pill ${item.source_op_type ? "uploaded" : "failed"}">${escapeHtml(item.source_op_type || "未提取")}</span></td>
+    <td>${escapeHtml(workBucketLabel(item.work_bucket))}</td>
+    <td><button class="link-button" type="button" data-confirm-classification="${escapeHtml(item.activity_id)}">${item.source_op_type ? "补充分类" : "补录类型"}</button></td>
+  </tr>`).join("");
+  return `
+    <section class="panel"><div class="panel-heading"><div><h2>待处理问题</h2><span class="panel-note">先按“建议去向”修正来源、主数据或关系，再关闭问题；关闭问题不会自动修改业务数据</span></div><span class="standardization-count-badge">${issues.length} 条</span></div>
+      <div class="table-wrap"><table class="record-table admin-table standardization-issue-table"><thead><tr><th>问题类型</th><th>涉及对象</th><th>为什么不能直接统计</th><th>正确处理方式</th><th>操作</th></tr></thead><tbody>${issueRows || `<tr><td colspan="5">当前没有待处理的数据质量问题</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="panel standardization-classification-panel"><div class="panel-heading"><div><h2>工作量分类补充</h2><span class="panel-note">P、SC、NPT直接采用原日报明确值；这里只补充工作量、计费、责任和原因等统计维度</span></div><span class="standardization-count-badge">${classifications.length} 条</span></div>
+      <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期</th><th>日报</th><th>作业编码</th><th>时长</th><th>原日报类型</th><th>工作量分类</th><th>处理</th></tr></thead><tbody>${classificationRows || `<tr><td colspan="7">当前没有需要补充的分类信息</td></tr>`}</tbody></table></div>
+    </section>`;
+}
+
+function workBucketLabel(value = "") {
+  return ({
+    OPERATION: "作业", MOVE: "搬迁", STANDBY_STAFFED: "有人待工",
+    STANDBY_UNSTAFFED: "无人待工", FORCE_MAJEURE: "不可抗力", MAINTENANCE: "维修",
+  })[String(value || "").toUpperCase()] || "未分类";
+}
+
+function standardizationRulesMarkup(data) {
+  return `<section class="standardization-rules-intro"><strong>规则的作用</strong><span>别名把来源名称识别为标准实体；分类规则只补充工作量、计费、责任、原因和服务线。原日报明确的 P、SC、NPT 始终优先，规则不能覆盖。</span></section>
+    ${aliasGovernancePanelMarkup(data)}
+    ${timeRulePanelMarkup(data)}`;
+}
+
+function standardizationResultsMarkup(data) {
+  const rows = standardizationResultRows(data);
+  return `<section class="panel"><div class="panel-heading"><div><h2>标准化结果</h2><span class="panel-note">这里用于核对加工结果，不在此修改主数据或项目关系；“已建立唯一归属”的日报才能进入项目统计</span></div><button class="button secondary small" type="button" data-standardization-route="pending">查看待处理问题</button></div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期</th><th>原始日报值</th><th>识别后的队伍 / 井筒</th><th>项目 / 作业实例</th><th>统计状态</th></tr></thead><tbody>${rows || `<tr><td colspan="5">当前没有日报记录</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+function renderAdminDataGovernance() {
+  const host = document.querySelector('[data-admin-panel="dataGovernance"]');
+  if (!host) return;
+  const data = adminState.governance || {};
+  const issues = data.issues || [];
+  const classifications = data.classifications || [];
+  const records = adminState.records || [];
+  const matchedCount = records.filter((item) => String(item.master_match_status || "").toUpperCase() === "MATCHED").length;
+  const view = data.standardizationView || "pending";
+  host.innerHTML = `
+    <section class="panel standardization-hero">
+      <div class="standardization-hero-copy"><span class="standardization-kicker">DATA OPERATIONS</span><h2>数据标准化工作台</h2><p>把日报中的原始井号、队伍名称和作业描述，加工成可唯一归属、可分类、可追溯的统计事实。本模块负责发现问题和组织处理，不替代主数据、项目关系或原始日报维护。</p></div>
+      <div class="standardization-scope">
+        <div><strong>在这里处理</strong><span>名称识别、异常队列、原类型核对、工作量分类补充</span></div>
+        <div><strong>到关联模块维护</strong><span>标准实体、项目关系、原始日报内容</span></div>
+      </div>
+    </section>
+    <section class="standardization-flow" aria-label="日报标准化处理流程">
+      <article><span>1</span><div><strong>原始日报</strong><small>保留 PDF 解析原值</small></div><a href="/web_form/">查看日报</a></article>
+      <article><span>2</span><div><strong>名称识别</strong><small>依赖主数据与别名</small></div><button type="button" data-admin-tab="governance">主数据管理</button></article>
+      <article><span>3</span><div><strong>唯一归属</strong><small>项目、队伍、井筒有效期</small></div><button type="button" data-admin-tab="projects">项目与队伍</button></article>
+      <article><span>4</span><div><strong>分类补充</strong><small>原日报类型直接采用</small></div><button type="button" data-standardization-route="classification">补充队列</button></article>
+      <article><span>5</span><div><strong>标准事实</strong><small>供统计和报表使用</small></div><button type="button" data-standardization-route="results">核对结果</button></article>
+    </section>
+    <section class="admin-kpi-grid standardization-kpis">
+      ${adminKpi("待处理问题", issues.length, "修正后才能正式统计", "logs")}
+      ${adminKpi("待补充分类", classifications.length, "原类型不重复确认", "overview")}
+      ${adminKpi("唯一归属日报", matchedCount, `共 ${records.length} 份日报`, "database")}
+      ${adminKpi("识别与分类规则", (data.aliases || []).filter((item) => item.status === "active").length + (data.rules || []).filter((item) => item.status === "active").length, "启用规则与别名", "settings")}
+    </section>
+    <nav class="tuning-tabs standardization-tabs" aria-label="数据标准化工作台视图">
+      <button class="tuning-tab ${view === "pending" ? "active" : ""}" type="button" data-standardization-view="pending">待处理与确认 <em>${issues.length + classifications.length}</em></button>
+      <button class="tuning-tab ${view === "rules" ? "active" : ""}" type="button" data-standardization-view="rules">识别与分类规则</button>
+      <button class="tuning-tab ${view === "results" ? "active" : ""}" type="button" data-standardization-view="results">标准化结果</button>
+    </nav>
+    ${view === "rules" ? standardizationRulesMarkup(data) : view === "results" ? standardizationResultsMarkup(data) : standardizationPendingMarkup(data, issues, classifications)}`;
+}
+
+function aliasGovernancePanelMarkup(data) {
+  return `<section class="panel"><div class="panel-heading"><h2>名称别名与识别映射</h2><span class="panel-note">别名属于解析标准化规则，不属于实体基本属性</span></div>
+    <input name="masterAliasId" type="hidden" /><input name="masterAliasVersion" type="hidden" />
+    <div class="admin-config-grid"><label>原始名称<input name="masterAliasValue" placeholder="例如 W905" /></label>
+    <label>标准实体<select name="masterAliasTarget">
+      <optgroup label="井队">${(data.rigs || []).map((item) => `<option value="rig:${escapeHtml(item.id)}">${escapeHtml(item.rig_name || item.rig_code)}</option>`).join("")}</optgroup>
+      <optgroup label="井筒">${(data.wellbores || []).map((item) => `<option value="wellbore:${escapeHtml(item.id)}">${escapeHtml(item.wellbore_name || item.wellbore_code)}</option>`).join("")}</optgroup>
+      <optgroup label="区块">${(data.blocks || []).map((item) => `<option value="block:${escapeHtml(item.id)}">${escapeHtml(item.block_name || item.block_code)}</option>`).join("")}</optgroup>
+      <optgroup label="项目">${(data.projects || []).map((item) => `<option value="project:${escapeHtml(item.id)}">${escapeHtml(item.project_name || item.project_code)}</option>`).join("")}</optgroup>
+    </select></label><label>状态<select name="masterAliasStatus"><option value="active">启用</option><option value="inactive">停用</option></select></label><label>确认原因<input name="masterAliasReason" placeholder="必填" /></label></div>
+    <div class="admin-actions"><button class="button" type="button" data-save-master-alias>确认别名</button></div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>类型</th><th>原始名称</th><th>标准化名称</th><th>目标ID</th><th>确认状态</th><th>状态</th><th>操作</th></tr></thead><tbody>${(data.aliases || []).map((item) => `<tr><td>${escapeHtml(item.entity_type)}</td><td>${escapeHtml(item.alias_value)}</td><td>${escapeHtml(item.normalized_alias)}</td><td>${escapeHtml(item.entity_id)}</td><td>${escapeHtml(item.confirmation_status)}</td><td>${escapeHtml(item.status)}</td><td><button class="link-button" type="button" data-edit-master-alias="${escapeHtml(item.id)}">调整</button></td></tr>`).join("")}</tbody></table></div>
+  </section>`;
+}
+
+function switchStandardizationView(view = "pending", focusSelector = "") {
+  adminState.governance.standardizationView = ["pending", "rules", "results"].includes(view) ? view : "pending";
+  renderAdminDataGovernance();
+  if (focusSelector) window.requestAnimationFrame(() => document.querySelector(focusSelector)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+function followStandardizationRoute(route = "") {
+  if (route === "aliases") return switchStandardizationView("rules", '[name="masterAliasValue"]');
+  if (route === "classification") return switchStandardizationView("pending", ".standardization-classification-panel");
+  if (route === "projects") return switchAdminTab("projects");
+  if (route === "daily-report") {
+    window.location.href = "/web_form/";
+    return;
+  }
+  return switchStandardizationView(route === "results" ? "results" : "pending");
+}
+
+async function refreshGovernanceQueues() {
+  const [issues, classifications] = await Promise.all([
+    adminRequest("/api/admin/data-quality/issues?status=OPEN&limit=500"),
+    adminRequest("/api/admin/time-classification/queue?limit=500"),
+  ]);
+  adminState.governance.issues = issues.items || [];
+  adminState.governance.classifications = classifications.items || [];
+  renderAdminDataGovernance();
+}
+
+async function resolveGovernanceIssue(id) {
+  const item = (adminState.governance.issues || []).find((row) => String(row.id) === String(id));
+  if (!item) return;
+  const note = window.prompt("请输入处理说明（仅标记状态；如需更正主数据请先完成更正）：", "已人工核对");
+  if (!note) return;
+  try {
+    await adminRequest(`/api/admin/data-quality/issues/${item.id}/resolve`, { method: "POST", body: JSON.stringify({ version: item.version, resolution_note: note }) });
+    await refreshGovernanceQueues();
+    showToast("质量问题已处理");
+  } catch (error) { showToast(error.message); }
+}
+
+function confirmGovernanceClassification(id) {
+  const item = (adminState.governance.classifications || []).find((row) => String(row.activity_id) === String(id));
+  if (!item) return;
+  const options = (values, current) => `<option value="" ${current ? "" : "selected"}>请选择</option>${values.map(([value, label]) => `<option value="${value}" ${value === current ? "selected" : ""}>${label}</option>`).join("")}`;
+  const sourceType = String(item.source_op_type || "").toUpperCase();
+  openAdminModal("补充分类信息", `
+    <input type="hidden" name="classificationActivityId" value="${escapeHtml(item.activity_id)}" /><input type="hidden" name="classificationVersion" value="${escapeHtml(item.version)}" />
+    <div class="admin-note-grid"><span><strong>${escapeHtml(item.op_code || "-")} / ${escapeHtml(item.op_sub || "-")}</strong><small>${escapeHtml(item.operation_details || "-")}</small></span><span><strong>原日报类型</strong><small>${escapeHtml(sourceType || "未提取，需要核对原表")}</small></span></div>
+    <div class="admin-modal-form compact">
+      <label>生产属性<select name="classificationProductive">${options([["PRODUCTION","生产"],["NON_PRODUCTION","非生产"]], item.productive_flag)}</select></label>
+      <label>统计类型（仅用于纠错）<select name="classificationOpType">${options([["P","P"],["SC","SC"],["NPT","NPT"]], item.confirmed_op_type || sourceType)}</select></label>
+      <label>工作量分类<select name="classificationBucket">${options([["OPERATION","作业"],["MOVE","搬迁"],["STANDBY_STAFFED","有人待工"],["STANDBY_UNSTAFFED","无人待工"],["FORCE_MAJEURE","不可抗力"],["MAINTENANCE","维修"]], item.work_bucket)}</select></label>
+      <label>计费状态<select name="classificationBilling">${options([["FULL_RATE","全日费"],["PARTIAL_RATE","部分日费"],["ZERO_RATE","零日费"]], item.billing_status)}</select></label>
+      <label>责任方<select name="classificationResponsibility">${options([["OURS","我方"],["CLIENT","甲方"],["THIRD_PARTY","第三方"],["FORCE_MAJEURE","不可抗力"]], item.responsibility)}</select></label>
+      <label>原因编码<input name="classificationCause" value="${escapeHtml(item.cause_code || "")}" placeholder="设备、工具、人员、物资、社区、天气、事故" /></label>
+      <label>服务线<input name="classificationServiceLine" value="${escapeHtml(item.service_line || "")}" /></label>
+      <label class="wide">确认原因<input name="classificationReason" placeholder="必填" /></label>
+    </div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button" type="button" data-save-classification-confirmation>保存分类</button>`
+  );
+}
+
+async function saveGovernanceClassification() {
+  const value = (name) => document.querySelector(`[name="${name}"]`)?.value || "";
+  if (!value("classificationReason").trim()) return showToast("请填写确认原因");
+  try {
+    await adminRequest("/api/admin/time-classification/confirm", { method: "POST", body: JSON.stringify({
+      activity_id: Number(value("classificationActivityId")), version: Number(value("classificationVersion")),
+      productive_flag: value("classificationProductive"), confirmed_op_type: value("classificationOpType"),
+      work_bucket: value("classificationBucket"), billing_status: value("classificationBilling"),
+      responsibility: value("classificationResponsibility"), cause_code: value("classificationCause"),
+      service_line: value("classificationServiceLine"), change_reason: value("classificationReason"),
+    }) });
+    closeAdminModal(); await refreshGovernanceQueues();
+    showToast("分类信息已保存");
+  } catch (error) { showToast(error.message); }
+}
+
+async function saveProjectRigAssignment() {
+  const host = document.querySelector('[data-admin-panel="governance"]');
+  const reason = host?.querySelector('[name="assignmentReason"]')?.value.trim() || "";
+  if (!reason) return showToast("请填写变更原因");
+  try {
+    await adminRequest("/api/admin/assignments", { method: "POST", body: JSON.stringify({
+      kind: "project-rig", project_id: Number(host?.querySelector('[name="assignmentProjectId"]')?.value || 0),
+      rig_id: Number(host?.querySelector('[name="assignmentRigId"]')?.value || 0),
+      id: Number(host?.querySelector('[name="assignmentId"]')?.value || 0) || undefined,
+      version: Number(host?.querySelector('[name="assignmentVersion"]')?.value || 0) || undefined,
+      valid_from: host?.querySelector('[name="assignmentValidFrom"]')?.value || "",
+      valid_to: host?.querySelector('[name="assignmentValidTo"]')?.value || "",
+      service_discipline: host?.querySelector('[name="assignmentDiscipline"]')?.value.trim() || "",
+      priority: 100, status: host?.querySelector('[name="assignmentStatus"]')?.value || "active", change_reason: reason,
+    }) });
+    const response = await adminRequest("/api/admin/assignments?kind=project-rig");
+    adminState.governance.assignments = response.items || [];
+    renderAdminGovernance();
+    showToast("派遣关系已生效");
+  } catch (error) { showToast(error.message); }
+}
+
+function editProjectRigAssignment(id) {
+  const item = (adminState.governance.assignments || []).find((row) => String(row.id) === String(id));
+  const host = document.querySelector('[data-admin-panel="governance"]');
+  if (!item || !host) return;
+  host.querySelector('[name="assignmentId"]').value = item.id;
+  host.querySelector('[name="assignmentVersion"]').value = item.version;
+  host.querySelector('[name="assignmentProjectId"]').value = item.project_id;
+  host.querySelector('[name="assignmentRigId"]').value = item.rig_id;
+  host.querySelector('[name="assignmentValidFrom"]').value = String(item.valid_from || "").slice(0, 10);
+  host.querySelector('[name="assignmentValidTo"]').value = String(item.valid_to || "").slice(0, 10);
+  host.querySelector('[name="assignmentDiscipline"]').value = item.service_discipline || "";
+  host.querySelector('[name="assignmentStatus"]').value = item.status || "active";
+  host.querySelector('[name="assignmentReason"]').value = "";
+  host.querySelector('[name="assignmentReason"]').focus();
+}
+
+async function saveProjectWellAssignment() {
+  const host = document.querySelector('[data-admin-panel="governance"]');
+  const reason = host?.querySelector('[name="wellScopeReason"]')?.value.trim() || "";
+  if (!reason) return showToast("请填写变更原因");
+  try {
+    await adminRequest("/api/admin/assignments", { method: "POST", body: JSON.stringify({
+      kind: "project-well", id: Number(host?.querySelector('[name="wellAssignmentIdV2"]')?.value || 0) || undefined,
+      version: Number(host?.querySelector('[name="wellAssignmentVersionV2"]')?.value || 0) || undefined,
+      project_id: Number(host?.querySelector('[name="wellScopeProjectId"]')?.value || 0),
+      wellbore_id: Number(host?.querySelector('[name="wellScopeWellboreId"]')?.value || 0),
+      job_type: host?.querySelector('[name="wellScopeJobType"]')?.value || "",
+      valid_from: host?.querySelector('[name="wellScopeValidFrom"]')?.value || "",
+      valid_to: host?.querySelector('[name="wellScopeValidTo"]')?.value || "",
+      status: host?.querySelector('[name="wellScopeStatus"]')?.value || "active", change_reason: reason,
+    }) });
+    const response = await adminRequest("/api/admin/assignments?kind=project-well");
+    adminState.governance.wellAssignments = response.items || [];
+    renderAdminGovernance(); showToast("项目井范围已保存");
+  } catch (error) { showToast(error.message); }
+}
+
+function editProjectWellAssignment(id) {
+  const item = (adminState.governance.wellAssignments || []).find((row) => String(row.id) === String(id));
+  const host = document.querySelector('[data-admin-panel="governance"]');
+  if (!item || !host) return;
+  host.querySelector('[name="wellAssignmentIdV2"]').value = item.id;
+  host.querySelector('[name="wellAssignmentVersionV2"]').value = item.version;
+  host.querySelector('[name="wellScopeProjectId"]').value = item.project_id;
+  host.querySelector('[name="wellScopeWellboreId"]').value = item.wellbore_id;
+  host.querySelector('[name="wellScopeJobType"]').value = item.job_type || "";
+  host.querySelector('[name="wellScopeValidFrom"]').value = String(item.valid_from || "").slice(0, 10);
+  host.querySelector('[name="wellScopeValidTo"]').value = String(item.valid_to || "").slice(0, 10);
+  host.querySelector('[name="wellScopeStatus"]').value = item.status || "active";
+  host.querySelector('[name="wellScopeReason"]').value = "";
+  host.querySelector('[name="wellScopeReason"]').focus();
+}
+
+async function saveMasterAlias() {
+  const host = document.querySelector('[data-admin-panel="dataGovernance"]');
+  const aliasValue = host?.querySelector('[name="masterAliasValue"]')?.value.trim() || "";
+  const reason = host?.querySelector('[name="masterAliasReason"]')?.value.trim() || "";
+  const [entityType, entityId] = (host?.querySelector('[name="masterAliasTarget"]')?.value || "").split(":");
+  if (!aliasValue || !entityType || !entityId || !reason) return showToast("请填写原始名称、标准实体和确认原因");
+  try {
+    await adminRequest("/api/admin/master-data/aliases", { method: "POST", body: JSON.stringify({
+      entity_type: entityType, source_system: "manual", alias_value: aliasValue,
+      id: Number(host?.querySelector('[name="masterAliasId"]')?.value || 0) || undefined,
+      version: Number(host?.querySelector('[name="masterAliasVersion"]')?.value || 0) || undefined,
+      entity_id: Number(entityId), confirmation_status: "confirmed",
+      status: host?.querySelector('[name="masterAliasStatus"]')?.value || "active", change_reason: reason,
+    }) });
+    const response = await adminRequest("/api/admin/master-data/aliases?limit=1000");
+    adminState.governance.aliases = response.items || [];
+    showToast("别名已确认并立即生效");
+    renderAdminDataGovernance();
+  } catch (error) { showToast(error.message); }
+}
+
+function editMasterAlias(id) {
+  const item = (adminState.governance.aliases || []).find((row) => String(row.id) === String(id));
+  const host = document.querySelector('[data-admin-panel="dataGovernance"]');
+  if (!item || !host) return;
+  host.querySelector('[name="masterAliasId"]').value = item.id;
+  host.querySelector('[name="masterAliasVersion"]').value = item.version;
+  host.querySelector('[name="masterAliasValue"]').value = item.alias_value || "";
+  host.querySelector('[name="masterAliasTarget"]').value = `${item.entity_type}:${item.entity_id}`;
+  host.querySelector('[name="masterAliasStatus"]').value = item.status || "active";
+  host.querySelector('[name="masterAliasReason"]').value = "";
+  host.querySelector('[name="masterAliasReason"]').focus();
 }
 
 function adminKpi(label, value, caption, icon, attributes = "") {
@@ -821,6 +1500,10 @@ function emptyAiExtractionRule() {
 
 function renderAdminProjects() {
   const host = document.querySelector('[data-admin-panel="projects"]');
+  if (adminState.dataStatus?.features?.master_data_v2) {
+    renderAdminProjectRelationships(host);
+    return;
+  }
   const config = adminState.projectTeams || { teams: [], projects: [], pending_wells: [] };
   const teams = config.teams || [];
   const projects = config.projects || [];
@@ -852,6 +1535,75 @@ function renderAdminProjects() {
       </table></div>
     </section>
   `;
+}
+
+function renderAdminProjectRelationships(host) {
+  if (!host) return;
+  const data = adminState.governance || {};
+  const projects = data.projects || [];
+  const teams = data.teams || [];
+  const contracts = data.contracts || [];
+  const assignments = data.assignments || [];
+  const wellAssignments = data.wellAssignments || [];
+  const contractById = new Map(contracts.map((item) => [String(item.id), item]));
+  const projectById = new Map(projects.map((item) => [String(item.id), item]));
+  const teamById = new Map(teams.map((item) => [String(item.id), item]));
+  const wellboreById = new Map((data.wellbores || []).map((item) => [String(item.id), item]));
+  const activeTeams = assignments.filter((item) => item.status === "active");
+  const activeWells = wellAssignments.filter((item) => item.status === "active");
+  const conflictTeamIds = projectTeamConflictIds(activeTeams);
+  const projectRows = projects.map((project) => {
+    const contract = contractById.get(String(project.contract_id)) || {};
+    const projectTeams = activeTeams.filter((item) => String(item.project_id) === String(project.id));
+    const projectWells = activeWells.filter((item) => String(item.project_id) === String(project.id));
+    return `<tr><td><strong>${escapeHtml(project.project_name || project.project_code)}</strong><small>${escapeHtml(project.project_code)}</small></td>
+      <td>${escapeHtml(contract.contract_no || "-")}</td><td>${escapeHtml(projectPeriodText({ start_date: project.valid_from, end_date: project.valid_to }))}</td>
+      <td><span class="status-pill ${project.status === "active" ? "uploaded" : "failed"}">${project.status === "active" ? "启用" : "停用"}</span></td>
+      <td>${projectTeams.length} 队 / ${projectWells.length} 井</td><td><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">维护关系</button></td></tr>`;
+  }).join("");
+  const teamRows = teams.map((team) => {
+    const rows = activeTeams.filter((item) => String(item.team_id) === String(team.id));
+    const projectNames = rows.map((item) => projectById.get(String(item.project_id))?.project_name || item.project_id);
+    const periods = rows.map((item) => `${String(item.valid_from || "").slice(0, 10)} 至 ${String(item.valid_to || "长期").slice(0, 10)}`);
+    return `<tr><td><strong>${escapeHtml(team.team_name || team.team_code)}</strong><small>${escapeHtml(team.team_code)}</small></td>
+      <td>${escapeHtml(projectNames.join("、") || "未派遣")}</td><td>${periods.map(escapeHtml).join("<br>") || "-"}</td>
+      <td><span class="status-pill ${conflictTeamIds.has(String(team.id)) ? "failed" : "uploaded"}">${conflictTeamIds.has(String(team.id)) ? "有效期冲突" : "正常"}</span></td><td>${escapeHtml(team.status || "-")}</td></tr>`;
+  }).join("");
+  const wellRows = activeWells.map((item) => `<tr><td><strong>${escapeHtml(wellboreById.get(String(item.wellbore_id))?.wellbore_name || item.wellbore_id)}</strong></td>
+    <td>${escapeHtml(projectById.get(String(item.project_id))?.project_name || item.project_id)}</td><td>${escapeHtml(item.job_type || "全部作业")}</td>
+    <td>${escapeHtml(String(item.valid_from || "").slice(0, 10))} 至 ${escapeHtml(item.valid_to ? String(item.valid_to).slice(0, 10) : "长期")}</td></tr>`).join("");
+  host.innerHTML = `
+    <section class="admin-kpi-grid compact">
+      ${adminKpi("项目", projects.length, `${projects.filter((item) => item.status === "active").length} 个启用`, "database")}
+      ${adminKpi("标准队伍", teams.length, "来自主数据", "users")}
+      ${adminKpi("有效派遣", activeTeams.length, "项目 ↔ 队伍", "overview")}
+      ${adminKpi("关系冲突", conflictTeamIds.size, `${activeWells.length} 个有效井范围`, "logs")}
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><div><h2>项目关系维护</h2><span class="panel-note">按项目集中维护队伍派遣和井范围；队伍、井和井筒属性请到“主数据管理”修改</span></div></div>
+      <div class="table-wrap"><table class="record-table admin-table project-table"><thead><tr><th>项目</th><th>合同号</th><th>项目周期</th><th>状态</th><th>队伍 / 井</th><th>操作</th></tr></thead><tbody>${projectRows || `<tr><td colspan="6">暂无项目主数据</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="panel"><div class="panel-heading"><h2>队伍派遣总览</h2><span class="panel-note">一个队伍在同一有效时段只能归属一个项目；采用 [开始, 结束) 有效期</span></div>
+      <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>队伍</th><th>归属项目</th><th>有效期</th><th>关系状态</th><th>主数据状态</th></tr></thead><tbody>${teamRows || `<tr><td colspan="5">暂无队伍主数据</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="panel"><div class="panel-heading"><h2>项目井范围总览</h2><span class="panel-note">井级范围优先于仅按井队匹配</span></div>
+      <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>井筒</th><th>归属项目</th><th>作业类型</th><th>有效期</th></tr></thead><tbody>${wellRows || `<tr><td colspan="4">暂无项目井范围</td></tr>`}</tbody></table></div>
+    </section>`;
+}
+
+function projectTeamConflictIds(assignments = []) {
+  const conflicts = new Set();
+  assignments.forEach((left, index) => {
+    assignments.slice(index + 1).forEach((right) => {
+      if (String(left.team_id) !== String(right.team_id)) return;
+      const leftStart = new Date(left.valid_from).getTime();
+      const rightStart = new Date(right.valid_from).getTime();
+      const leftEnd = left.valid_to ? new Date(left.valid_to).getTime() : Number.POSITIVE_INFINITY;
+      const rightEnd = right.valid_to ? new Date(right.valid_to).getTime() : Number.POSITIVE_INFINITY;
+      if (leftStart < rightEnd && rightStart < leftEnd) conflicts.add(String(left.team_id));
+    });
+  });
+  return conflicts;
 }
 
 function wellAssignmentRows(config = {}) {
@@ -1452,7 +2204,63 @@ function projectRigRows(project = {}) {
   return rigs.map((rig, index) => projectRigRow(rig, index)).join("");
 }
 
+function v2RelationshipOptions(items, selected, valueKey, labelKeys) {
+  return (items || []).map((item) => {
+    const label = [...new Set(labelKeys.map((key) => item[key]).filter(Boolean))].join(" / ") || item[valueKey];
+    return `<option value="${escapeHtml(item[valueKey])}" ${String(item[valueKey]) === String(selected) ? "selected" : ""}>${escapeHtml(label)}</option>`;
+  }).join("");
+}
+
+function v2ProjectRigRow(item = {}) {
+  const conflict = item.status !== "inactive" && projectTeamConflictIds((adminState.governance.assignments || []).filter((row) => row.status === "active")).has(String(item.team_id));
+  return `<div class="admin-project-rig-row ${conflict ? "relation-row-conflict" : ""}" data-v2-project-rig-row>
+    <input type="hidden" name="v2RelationId" value="${escapeHtml(item.id || "")}" /><input type="hidden" name="v2RelationVersion" value="${escapeHtml(item.version || "")}" />
+    <label>队伍 ${conflict ? `<span class="relation-conflict-note">有效期冲突</span>` : ""}<select name="v2RelationTeamId"><option value="">选择队伍</option>${v2RelationshipOptions(adminState.governance.teams, item.team_id, "id", ["team_name", "team_code"])}</select></label>
+    <label>开始日期<input name="v2RelationStart" type="date" value="${escapeHtml(String(item.valid_from || "").slice(0, 10))}" /></label>
+    <label>结束日期（不含）<input name="v2RelationEnd" type="date" value="${escapeHtml(String(item.valid_to || "").slice(0, 10))}" /></label>
+    <label>服务专业<input name="v2RelationDiscipline" value="${escapeHtml(item.service_discipline || "")}" placeholder="钻井 / 修井 / 完井" /></label>
+    <label>业务说明<input name="v2RelationNote" value="${escapeHtml(item.assignment_note || "")}" placeholder="关系范围说明" /></label>
+    <label>状态<select name="v2RelationStatus"><option value="active" ${item.status !== "inactive" ? "selected" : ""}>启用</option><option value="inactive" ${item.status === "inactive" ? "selected" : ""}>停用</option></select></label>
+    <button class="icon-button" type="button" data-v2-remove-relation-row aria-label="停用或移除队伍关系">×</button>
+  </div>`;
+}
+
+function v2ProjectWellRow(item = {}) {
+  return `<div class="admin-project-rig-row" data-v2-project-well-row>
+    <input type="hidden" name="v2WellRelationId" value="${escapeHtml(item.id || "")}" /><input type="hidden" name="v2WellRelationVersion" value="${escapeHtml(item.version || "")}" />
+    <label>井筒<select name="v2WellRelationWellboreId"><option value="">选择井筒</option>${v2RelationshipOptions(adminState.governance.wellbores, item.wellbore_id, "id", ["wellbore_name", "wellbore_code"])}</select></label>
+    <label>作业类型<select name="v2WellRelationJobType"><option value="" ${!item.job_type ? "selected" : ""}>全部作业</option><option value="drilling" ${item.job_type === "drilling" ? "selected" : ""}>钻井</option><option value="completion" ${item.job_type === "completion" ? "selected" : ""}>完井</option><option value="workover" ${item.job_type === "workover" ? "selected" : ""}>修井</option><option value="move" ${item.job_type === "move" ? "selected" : ""}>搬迁</option></select></label>
+    <label>开始日期<input name="v2WellRelationStart" type="date" value="${escapeHtml(String(item.valid_from || "").slice(0, 10))}" /></label>
+    <label>结束日期（不含）<input name="v2WellRelationEnd" type="date" value="${escapeHtml(String(item.valid_to || "").slice(0, 10))}" /></label>
+    <label>业务说明<input name="v2WellRelationNote" value="${escapeHtml(item.scope_note || "")}" placeholder="井范围说明" /></label>
+    <label>状态<select name="v2WellRelationStatus"><option value="active" ${item.status !== "inactive" ? "selected" : ""}>启用</option><option value="inactive" ${item.status === "inactive" ? "selected" : ""}>停用</option></select></label>
+    <button class="icon-button" type="button" data-v2-remove-relation-row aria-label="停用或移除井范围">×</button>
+  </div>`;
+}
+
+function openProjectRelationshipModal(id) {
+  const data = adminState.governance || {};
+  const project = (data.projects || []).find((item) => String(item.id) === String(id));
+  if (!project) return showToast("项目主数据不存在");
+  const contract = (data.contracts || []).find((item) => String(item.id) === String(project.contract_id)) || {};
+  const rigRows = (data.assignments || []).filter((item) => String(item.project_id) === String(project.id));
+  const wellRows = (data.wellAssignments || []).filter((item) => String(item.project_id) === String(project.id));
+  openAdminModal("维护项目关系", `
+    <input type="hidden" name="v2RelationshipProjectId" value="${escapeHtml(project.id)}" />
+    <div class="admin-note-grid"><span><strong>${escapeHtml(project.project_name || project.project_code)}</strong><small>${escapeHtml(project.project_code)} · 合同 ${escapeHtml(contract.contract_no || "未关联")} · ${escapeHtml(String(project.valid_from || "-").slice(0, 10))} 至 ${escapeHtml(project.valid_to ? String(project.valid_to).slice(0, 10) : "长期")}</small></span></div>
+    <section class="admin-modal-subsection"><div class="panel-heading compact-heading"><div><h3>队伍派遣</h3><span class="panel-note">维护项目与队伍的有效期关系，采用 [开始, 结束)</span></div><button class="button secondary small" type="button" data-v2-add-project-rig>添加队伍</button></div>
+      <div class="admin-project-rig-list" data-v2-project-rig-list>${rigRows.map(v2ProjectRigRow).join("") || v2ProjectRigRow({ valid_from: project.valid_from, valid_to: project.valid_to })}</div>
+    </section>
+    <section class="admin-modal-subsection"><div class="panel-heading compact-heading"><div><h3>项目井范围</h3><span class="panel-note">同一井筒可按作业类型分别配置</span></div><button class="button secondary small" type="button" data-v2-add-project-well>添加井筒</button></div>
+      <div class="admin-project-rig-list" data-v2-project-well-list>${wellRows.map(v2ProjectWellRow).join("") || v2ProjectWellRow({ valid_from: project.valid_from, valid_to: project.valid_to })}</div>
+    </section>
+    <div class="admin-modal-form compact"><label class="wide">变更原因<input name="v2RelationshipReason" placeholder="必填；将写入每条关系的审计记录" /></label></div>`,
+    `<button class="button secondary" type="button" data-admin-modal-close>取消</button><button class="button" type="button" data-v2-save-project-relationships>保存全部关系</button>`
+  );
+}
+
 function openProjectModal(id = "") {
+  if (adminState.dataStatus?.features?.master_data_v2) return openProjectRelationshipModal(id);
   const project = (adminState.projectTeams.projects || []).find((item) => item.id === id) || {};
   const isEdit = Boolean(project.id);
   openAdminModal(
@@ -1547,15 +2355,6 @@ function renderAdminConfig() {
     </section>`;
   host.querySelector('[name="default_language"]').value = config.default_language || "zh";
   host.querySelector('[name="save_source_pdf"]').value = String(config.save_source_pdf !== false);
-}
-
-function renderAdminData() {
-  const host = document.querySelector('[data-admin-panel="data"]');
-  const status = adminState.dataStatus || {};
-  const byType = status.by_type || {};
-  host.innerHTML = `
-    <section class="admin-kpi-grid">${adminKpi("总记录", status.records || 0, "全部日报", "database")}${adminKpi("钻井日报", byType.drilling || 0, "drilling", "overview")}${adminKpi("完井日报", byType.completion || 0, "completion", "shield")}${adminKpi("修井 / 搬迁", `${byType.workover || 0} / ${byType.move || 0}`, "workover / move", "logs")}</section>
-    <section class="panel"><div class="panel-heading"><h2>数据维护</h2><span class="panel-note">当前运行时只使用 MySQL；Excel 文件库已移除</span></div><div class="admin-note-grid"><span><strong>数据库</strong><small>${escapeHtml(status.database_name || "-")}</small></span><span><strong>连接</strong><small>${escapeHtml(`${status.database_host || ""}:${status.database_port || ""}`)}</small></span><span><strong>状态</strong><small>${status.mysql?.available ? "可用" : escapeHtml(status.mysql?.error || "不可用")}</small></span></div></section>`;
 }
 
 function renderAdminLogs() {
@@ -2611,6 +3410,51 @@ function saveProjectContract() {
   saveProjectTeamConfig("项目合同已保存");
 }
 
+async function saveV2ProjectRelationships() {
+  const modal = document.querySelector(".admin-modal");
+  if (!modal) return;
+  const projectId = Number(modal.querySelector('[name="v2RelationshipProjectId"]')?.value || 0);
+  const changeReason = modal.querySelector('[name="v2RelationshipReason"]')?.value.trim() || "";
+  if (!changeReason) return showToast("请填写变更原因");
+  const teamAssignments = [...modal.querySelectorAll("[data-v2-project-rig-row]")].map((row) => ({
+    id: Number(row.querySelector('[name="v2RelationId"]')?.value || 0) || undefined,
+    version: Number(row.querySelector('[name="v2RelationVersion"]')?.value || 0) || undefined,
+    team_id: Number(row.querySelector('[name="v2RelationTeamId"]')?.value || 0),
+    valid_from: row.querySelector('[name="v2RelationStart"]')?.value || "",
+    valid_to: row.querySelector('[name="v2RelationEnd"]')?.value || "",
+    service_discipline: row.querySelector('[name="v2RelationDiscipline"]')?.value.trim() || "",
+    assignment_note: row.querySelector('[name="v2RelationNote"]')?.value.trim() || "",
+    priority: 100, status: row.querySelector('[name="v2RelationStatus"]')?.value || "active",
+  })).filter((item) => item.id || item.team_id);
+  const wellScopes = [...modal.querySelectorAll("[data-v2-project-well-row]")].map((row) => ({
+    id: Number(row.querySelector('[name="v2WellRelationId"]')?.value || 0) || undefined,
+    version: Number(row.querySelector('[name="v2WellRelationVersion"]')?.value || 0) || undefined,
+    wellbore_id: Number(row.querySelector('[name="v2WellRelationWellboreId"]')?.value || 0),
+    job_type: row.querySelector('[name="v2WellRelationJobType"]')?.value || "",
+    scope_note: row.querySelector('[name="v2WellRelationNote"]')?.value.trim() || "",
+    valid_from: row.querySelector('[name="v2WellRelationStart"]')?.value || "",
+    valid_to: row.querySelector('[name="v2WellRelationEnd"]')?.value || "",
+    status: row.querySelector('[name="v2WellRelationStatus"]')?.value || "active",
+  })).filter((item) => item.id || item.wellbore_id);
+  const invalidTeam = teamAssignments.find((item) => item.status === "active" && (!item.team_id || !item.valid_from));
+  const invalidWell = wellScopes.find((item) => item.status === "active" && (!item.wellbore_id || !item.valid_from));
+  if (invalidTeam || invalidWell) return showToast("启用的关系必须选择实体并填写开始日期");
+  try {
+    await adminRequest("/api/admin/project-relationships", { method: "POST", body: JSON.stringify({
+      project_id: projectId, team_assignments: teamAssignments, well_scopes: wellScopes, change_reason: changeReason,
+    }) });
+    const [teamResponse, wellResponse, legacyResponse] = await Promise.all([
+      adminRequest("/api/admin/assignments?kind=project-team"),
+      adminRequest("/api/admin/assignments?kind=project-well"),
+      adminRequest("/api/admin/project-teams"),
+    ]);
+    adminState.governance.assignments = teamResponse.items || [];
+    adminState.governance.wellAssignments = wellResponse.items || [];
+    adminState.projectTeams = { teams: legacyResponse.teams || [], projects: legacyResponse.projects || [], pending_wells: legacyResponse.pending_wells || [] };
+    closeAdminModal(); renderAdminProjects(); showToast("项目关系已保存并更新兼容配置");
+  } catch (error) { showToast(error.message); }
+}
+
 function saveTeam() {
   const modal = document.querySelector(".admin-modal");
   const id = modal?.querySelector('[name="teamId"]')?.value || "";
@@ -2742,6 +3586,48 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     return switchAdminTab(tab.dataset.adminTab);
   }
+  const standardizationView = event.target.closest("[data-standardization-view]");
+  if (standardizationView) return switchStandardizationView(standardizationView.dataset.standardizationView);
+  const standardizationRoute = event.target.closest("[data-standardization-route]");
+  if (standardizationRoute) return followStandardizationRoute(standardizationRoute.dataset.standardizationRoute);
+  if (event.target.closest("[data-save-project-rig-assignment]")) return saveProjectRigAssignment();
+  if (event.target.closest("[data-save-project-well-assignment]")) return saveProjectWellAssignment();
+  const editRigAssignment = event.target.closest("[data-edit-project-rig-assignment]");
+  if (editRigAssignment) return editProjectRigAssignment(editRigAssignment.dataset.editProjectRigAssignment);
+  const editWellScope = event.target.closest("[data-edit-project-well-assignment]");
+  if (editWellScope) return editProjectWellAssignment(editWellScope.dataset.editProjectWellAssignment);
+  if (event.target.closest("[data-save-master-alias]")) return saveMasterAlias();
+  const editAlias = event.target.closest("[data-edit-master-alias]");
+  if (editAlias) return editMasterAlias(editAlias.dataset.editMasterAlias);
+  const masterView = event.target.closest("[data-master-view]");
+  if (masterView) { adminState.governance.masterView = masterView.dataset.masterView || "entities"; return renderAdminGovernance(); }
+  const masterTab = event.target.closest("[data-master-entity]");
+  if (masterTab) { adminState.governance.masterEntity = masterTab.dataset.masterEntity || "regions"; adminState.governance.masterView = "entities"; return renderAdminGovernance(); }
+  const appendixCategory = event.target.closest("[data-appendix-category]");
+  if (appendixCategory) { adminState.governance.appendixCategoryId = appendixCategory.dataset.appendixCategory || ""; return renderAdminGovernance(); }
+  if (event.target.closest("[data-new-appendix-category]")) return openMasterEntityModal("appendix-categories");
+  const newAppendixValue = event.target.closest("[data-new-appendix-value]");
+  if (newAppendixValue) return openMasterEntityModal("appendix-values", "", { category_id: Number(newAppendixValue.dataset.newAppendixValue) || null, level_no: 1, sort_order: 0 });
+  const newMaster = event.target.closest("[data-new-master-entity]");
+  if (newMaster) return openMasterEntityModal(newMaster.dataset.newMasterEntity);
+  const editMaster = event.target.closest("[data-edit-master-entity]");
+  if (editMaster) return openMasterEntityModal(editMaster.dataset.editMasterEntity, editMaster.dataset.masterId);
+  const deleteMaster = event.target.closest("[data-delete-master-entity]");
+  if (deleteMaster) return openDeleteMasterEntityModal(deleteMaster.dataset.deleteMasterEntity, deleteMaster.dataset.masterId);
+  const confirmDeleteMaster = event.target.closest("[data-confirm-delete-master-entity]");
+  if (confirmDeleteMaster) return deleteMasterEntityFromModal(confirmDeleteMaster.dataset.confirmDeleteMasterEntity, confirmDeleteMaster.dataset.masterId, confirmDeleteMaster.dataset.masterVersion);
+  const saveMaster = event.target.closest("[data-save-master-entity]");
+  if (saveMaster) return saveMasterEntityFromModal(saveMaster.dataset.saveMasterEntity);
+  if (event.target.closest("[data-new-time-rule]")) return openTimeRuleModal();
+  const editTimeRule = event.target.closest("[data-edit-time-rule]");
+  if (editTimeRule) return openTimeRuleModal(editTimeRule.dataset.editTimeRule);
+  if (event.target.closest("[data-save-time-rule]")) return saveTimeRuleFromModal();
+  if (event.target.closest("[data-reclassify-time-facts]")) return reclassifyTimeFacts();
+  const qualityIssue = event.target.closest("[data-resolve-quality-issue]");
+  if (qualityIssue) return resolveGovernanceIssue(qualityIssue.dataset.resolveQualityIssue);
+  const classification = event.target.closest("[data-confirm-classification]");
+  if (classification) return confirmGovernanceClassification(classification.dataset.confirmClassification);
+  if (event.target.closest("[data-save-classification-confirmation]")) return saveGovernanceClassification();
   const adminPageButton = event.target.closest("[data-admin-page]");
   if (adminPageButton) return setAdminPage(adminPageButton.dataset.adminPage, Number(adminPageButton.dataset.adminPageValue || 1));
   const edit = event.target.closest("[data-admin-edit-user]");
@@ -2832,6 +3718,34 @@ document.addEventListener("click", (event) => {
     adminState.translationTerms.terms = (adminState.translationTerms.terms || []).filter((term) => term.id !== id);
     return saveTranslationTerms();
   }
+  if (event.target.closest("[data-open-master-projects]")) {
+    adminState.governance.masterEntity = "teams";
+    adminState.governance.masterView = "entities";
+    renderAdminGovernance();
+    return switchAdminTab("governance");
+  }
+  if (event.target.closest("[data-v2-add-project-rig]")) {
+    document.querySelector("[data-v2-project-rig-list]")?.insertAdjacentHTML("beforeend", v2ProjectRigRow({}));
+    return;
+  }
+  if (event.target.closest("[data-v2-add-project-well]")) {
+    document.querySelector("[data-v2-project-well-list]")?.insertAdjacentHTML("beforeend", v2ProjectWellRow({}));
+    return;
+  }
+  const removeV2Relation = event.target.closest("[data-v2-remove-relation-row]");
+  if (removeV2Relation) {
+    const row = removeV2Relation.closest("[data-v2-project-rig-row], [data-v2-project-well-row]");
+    const id = row?.querySelector('[name="v2RelationId"], [name="v2WellRelationId"]')?.value || "";
+    if (!id) row?.remove();
+    else {
+      const status = row.querySelector('[name="v2RelationStatus"], [name="v2WellRelationStatus"]');
+      if (status) status.value = "inactive";
+      row.classList.add("relation-row-inactive");
+      showToast("该关系将在保存后停用");
+    }
+    return;
+  }
+  if (event.target.closest("[data-v2-save-project-relationships]")) return saveV2ProjectRelationships();
   const addProjectRig = event.target.closest("[data-admin-add-project-rig]");
   if (addProjectRig) {
     const list = document.querySelector("[data-project-rig-list]");

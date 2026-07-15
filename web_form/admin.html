@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 系统后台</title>
     <link rel="icon" type="image/svg+xml" href="/web_form/assets/drilling-completion-logo.svg" />
-    <link rel="stylesheet" href="/web_form/styles.css?v=npt-well-markers-1" />
+    <link rel="stylesheet" href="/web_form/styles.css?v=source-time-type-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -29,6 +29,8 @@
             <div class="menu-items">
               <a href="#" class="menu-link admin-menu-link active" data-admin-tab="overview"><img class="menu-item-icon" src="/web_form/icons/nav/gauge.svg" alt="" /><span>总览</span></a>
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="projects"><img class="menu-item-icon" src="/web_form/icons/nav/briefcase.svg" alt="" /><span>项目与队伍</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="governance"><img class="menu-item-icon" src="/web_form/icons/nav/database.svg" alt="" /><span>主数据管理</span></a>
+              <a href="#" class="menu-link admin-menu-link" data-admin-tab="dataGovernance"><img class="menu-item-icon" src="/web_form/icons/nav/list-details.svg" alt="" /><span>数据标准化</span></a>
             </div>
           </div>
           <div class="menu-group open">
@@ -53,7 +55,6 @@
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="users"><img class="menu-item-icon" src="/web_form/icons/nav/users.svg" alt="" /><span>账号管理</span></a>
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="roles"><img class="menu-item-icon" src="/web_form/icons/nav/shield-check.svg" alt="" /><span>角色权限</span></a>
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="config"><img class="menu-item-icon" src="/web_form/icons/nav/settings.svg" alt="" /><span>系统参数</span></a>
-              <a href="#" class="menu-link admin-menu-link" data-admin-tab="data"><img class="menu-item-icon" src="/web_form/icons/nav/database.svg" alt="" /><span>数据维护</span></a>
               <a href="#" class="menu-link admin-menu-link" data-admin-tab="logs"><img class="menu-item-icon" src="/web_form/icons/nav/list-details.svg" alt="" /><span>审计日志</span></a>
             </div>
           </div>
@@ -71,7 +72,7 @@
           <div>
             <p class="page-kicker">SYSTEM ADMIN</p>
             <h1>系统后台</h1>
-            <p class="source-file-name">账号权限、系统参数、数据维护与操作审计</p>
+            <p class="source-file-name">账号权限、系统参数与操作审计</p>
           </div>
           <div class="top-actions">
             <button class="button secondary" type="button" data-admin-logout>退出登录</button>
@@ -85,9 +86,10 @@
           <section class="admin-panel" data-admin-panel="aiModels" hidden></section>
           <section class="admin-panel" data-admin-panel="aiExtraction" hidden></section>
           <section class="admin-panel" data-admin-panel="projects" hidden></section>
+          <section class="admin-panel" data-admin-panel="governance" hidden></section>
+          <section class="admin-panel" data-admin-panel="dataGovernance" hidden></section>
           <section class="admin-panel" data-admin-panel="translationTuning" hidden></section>
           <section class="admin-panel" data-admin-panel="config" hidden></section>
-          <section class="admin-panel" data-admin-panel="data" hidden></section>
           <section class="admin-panel" data-admin-panel="logs" hidden></section>
         </section>
       </main>
@@ -95,6 +97,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/web_form/liquid-glass.js"></script>
     <script src="/web_form/http-client.js?v=1"></script>
-    <script src="/web_form/admin.js?v=global-page-size-20"></script>
+    <script src="/web_form/admin.js?v=source-time-type-v1"></script>
   </body>
 </html>

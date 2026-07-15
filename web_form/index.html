@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" type="image/svg+xml" href="./assets/drilling-completion-logo.svg" />
-    <link rel="stylesheet" href="./styles.css?v=npt-well-markers-1" />
+    <link rel="stylesheet" href="./styles.css?v=failed-import-delete-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -149,20 +149,22 @@
 
             <section class="panel" id="well-control">
               <div class="panel-heading">
-                <h2 data-i18n="sectionWellControl">井控与液压</h2>
-                <span class="panel-note" data-i18n="noteWellControl">套管、BOP、泵压、扭矩和钩载</span>
+                <h2 data-i18n="sectionWellControl">施工参数</h2>
+                <span class="panel-note" data-i18n="noteWellControl">套管、井控试压、泵压、钻柱重量和扭矩</span>
               </div>
               <div class="field-grid four">
-                <label>Last Casing Size (in)<input name="lastCasingSize" /></label>
-                <label>Last Casing Depth (ft)<input name="lastCasingDepth" /></label>
-                <label>Next Casing Size (in)<input name="nextCasingSize" /></label>
-                <label>Next Casing Depth (ft)<input name="nextCasingDepth" /></label>
-                <label>Form Test/EMW (ppg)<input name="formTestEmw" /></label>
-                <label>Last BOP Press Test<input name="lastBopPressTest" /></label>
+                <label>Last Casing Size (in)<input name="lastCasingSize" type="number" min="0" step="0.001" inputmode="decimal" /></label>
+                <label>Last Casing Depth (ft)<input name="lastCasingDepth" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+                <label>Next Casing Size (in)<input name="nextCasingSize" type="number" min="0" step="0.001" inputmode="decimal" /></label>
+                <label>Next Casing Depth (ft)<input name="nextCasingDepth" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+                <label>Formation Test Type<select name="formTestType"><option value="">-</option><option value="FIT">FIT</option><option value="LOT">LOT</option></select></label>
+                <label>Formation Test EMW (ppg)<input name="formTestEmw" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+                <label>Last BOP Pressure Test Date<input name="lastBopPressTest" type="date" /></label>
                 <label>Pump Rate (gpm)<input name="pumpRate" type="number" min="0" step="0.1" /></label>
                 <label>Pump Press (psi)<input name="pumpPress" type="number" min="0" step="0.01" /></label>
-                <label>String Wt Up/Dn<input name="stringWeightUpDown" /></label>
-                <label>Torque On Btm<input name="torqueOnBottom" /></label>
+                <label>String Weight Up (kip)<input name="stringWeightUp" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+                <label>String Weight Down (kip)<input name="stringWeightDown" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+                <label>Torque On Bottom (ft-lbf)<input name="torqueOnBottom" type="number" min="0" step="0.1" inputmode="decimal" /></label>
               </div>
             </section>
 
@@ -216,14 +218,16 @@
                 <h2 data-i18n="sectionBitBha">钻头与 BHA</h2>
               </div>
               <div class="field-grid four compact">
-                <label>Bit No<input name="bitNo" /></label>
-                <label>Bit Size (in)<input name="bitSize" /></label>
+                <label>Bit Sequence No<input name="bitNo" /></label>
+                <label>Bit Size (in)<input name="bitSize" type="number" min="0" step="0.001" inputmode="decimal" /></label>
                 <label>Manufacturer<input name="bitManufacturer" /></label>
-                <label>Serial No<input name="bitSerial" /></label>
+                <label>Bit Serial No<input name="bitSerial" /></label>
+                <label>Bit Wear I-O-D-L<input name="bitWearIodl" /></label>
+                <label>Bit Wear B-G-O-R<input name="bitWearBgor" /></label>
                 <label>BHA No<input name="bhaNo" /></label>
-                <label>MD In (ft)<input name="bhaMdIn" /></label>
-                <label>MD Out (ft)<input name="bhaMdOut" /></label>
-                <label>Total Length (ft)<input name="bhaTotalLength" type="number" min="0" step="0.01" /></label>
+                <label>MD In (ft)<input name="bhaMdIn" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+                <label>MD Out (ft)<input name="bhaMdOut" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+                <label>Total Length (ft)<input name="bhaTotalLength" type="number" min="0" step="0.01" inputmode="decimal" /></label>
               </div>
               <div class="table-wrap">
                 <table id="bhaTable" data-table="bha_components">
@@ -964,6 +968,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=global-page-size-20"></script>
+    <script src="./app.js?v=failed-import-delete-v1"></script>
   </body>
 </html>

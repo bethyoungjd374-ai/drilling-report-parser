@@ -77,6 +77,10 @@ def initialize_database() -> None:
                         continue
                     cursor.execute(statement)
                 _ensure_report_record_columns(cursor)
+                _ensure_project_relationship_columns(cursor)
+                _ensure_master_data_v3_columns(cursor)
+                _migrate_master_data_v3(cursor)
+                _ensure_report_record_indexes(cursor)
                 _ensure_translation_content_indexes(cursor)
             connection.commit()
         _DATABASE_INITIALIZED = True
@@ -117,12 +121,219 @@ def _ensure_report_record_columns(cursor: Any) -> None:
         ("extraction_error", "TEXT NULL AFTER extraction_progress"),
         ("extraction_version", "VARCHAR(64) NOT NULL DEFAULT '' AFTER extraction_error"),
         ("extraction_updated_at", "VARCHAR(64) NOT NULL DEFAULT '' AFTER extraction_version"),
+        ("rig_id", "BIGINT UNSIGNED NULL AFTER rig"),
+        ("wellbore_id", "BIGINT UNSIGNED NULL AFTER rig_id"),
+        ("project_id", "BIGINT UNSIGNED NULL AFTER wellbore_id"),
+        ("job_id", "BIGINT UNSIGNED NULL AFTER project_id"),
+        ("master_match_status", "VARCHAR(32) NOT NULL DEFAULT '' AFTER job_id"),
+        ("master_match_message", "TEXT NULL AFTER master_match_status"),
     )
     for column, definition in migrations:
         if column in columns:
             continue
         cursor.execute(f"ALTER TABLE report_records ADD COLUMN {column} {definition}")
         columns.add(column)
+
+
+def _ensure_project_relationship_columns(cursor: Any) -> None:
+    migrations = {
+        "rel_project_rig_assignment": (
+            ("assignment_note", "VARCHAR(512) NOT NULL DEFAULT '' AFTER service_discipline"),
+        ),
+        "rel_project_well_scope": (
+            ("scope_note", "VARCHAR(512) NOT NULL DEFAULT '' AFTER job_type"),
+        ),
+    }
+    for table, definitions in migrations.items():
+        cursor.execute(f"SHOW COLUMNS FROM {table}")
+        columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
+        for column, definition in definitions:
+            if column not in columns:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def _ensure_master_data_v3_columns(cursor: Any) -> None:
+    migrations = {
+        "md_organization": (
+            ("legal_name", "VARCHAR(255) NOT NULL DEFAULT '' AFTER organization_type"),
+            ("country_region_id", "BIGINT UNSIGNED NULL AFTER legal_name"),
+        ),
+        "md_block": (
+            ("field_id", "BIGINT UNSIGNED NULL AFTER parent_id"),
+            ("region_id", "BIGINT UNSIGNED NULL AFTER field_id"),
+            ("operator_company_id", "BIGINT UNSIGNED NULL AFTER region_id"),
+            ("block_type_code", "VARCHAR(64) NOT NULL DEFAULT 'OPERATING_AREA' AFTER operator_company_id"),
+        ),
+        "md_team": (
+            ("model_code", "VARCHAR(64) NOT NULL DEFAULT '' AFTER company_id"),
+        ),
+        "md_rig": (
+            ("team_id", "BIGINT UNSIGNED NULL AFTER rig_type"),
+            ("manufacturer", "VARCHAR(128) NOT NULL DEFAULT '' AFTER team_id"),
+            ("model_code", "VARCHAR(64) NOT NULL DEFAULT '' AFTER manufacturer"),
+            ("drive_type_code", "VARCHAR(64) NOT NULL DEFAULT '' AFTER model_code"),
+            ("rated_power_hp", "DECIMAL(12,2) NULL AFTER drive_type_code"),
+            ("rated_depth_m", "DECIMAL(12,2) NULL AFTER rated_power_hp"),
+            ("equipment_status_code", "VARCHAR(64) NOT NULL DEFAULT 'AVAILABLE' AFTER rated_depth_m"),
+        ),
+        "md_well": (
+            ("field_id", "BIGINT UNSIGNED NULL AFTER block_id"),
+            ("operator_company_id", "BIGINT UNSIGNED NULL AFTER field_id"),
+            ("well_type_code", "VARCHAR(64) NOT NULL DEFAULT 'DEVELOPMENT' AFTER operator_company_id"),
+            ("surface_latitude", "DECIMAL(10,7) NULL AFTER well_type_code"),
+            ("surface_longitude", "DECIMAL(10,7) NULL AFTER surface_latitude"),
+            ("lifecycle_status_code", "VARCHAR(64) NOT NULL DEFAULT 'ACTIVE' AFTER surface_longitude"),
+        ),
+        "md_wellbore": (
+            ("wellbore_profile_code", "VARCHAR(64) NOT NULL DEFAULT 'VERTICAL' AFTER well_type"),
+            ("trajectory_status_code", "VARCHAR(64) NOT NULL DEFAULT 'PLANNED' AFTER wellbore_profile_code"),
+            ("kickoff_md_m", "DECIMAL(12,2) NULL AFTER trajectory_status_code"),
+            ("planned_td_md_m", "DECIMAL(12,2) NULL AFTER kickoff_md_m"),
+        ),
+        "md_appendix_value": (
+            ("display_color", "VARCHAR(16) NOT NULL DEFAULT '' AFTER sort_order"),
+        ),
+    }
+    for table, definitions in migrations.items():
+        cursor.execute(f"SHOW COLUMNS FROM {table}")
+        columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
+        for column, definition in definitions:
+            if column not in columns:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def _migrate_master_data_v3(cursor: Any) -> None:
+    categories = (
+        ("REGION_TYPE", "国家/区域类型", "OSDU geographic context 精简枚举"),
+        ("COMPANY_TYPE", "公司类型", "OSDU organisation 精简枚举"),
+        ("FIELD_TYPE", "油田类型", "陆上/海上油田"),
+        ("FIELD_STATUS", "油田生命周期", "油田生命周期状态"),
+        ("BLOCK_TYPE", "区块类型", "许可区块或作业区"),
+        ("TEAM_TYPE", "队伍类型", "钻井、修井或综合服务队"),
+        ("EQUIPMENT_STATUS", "设备状态", "钻机/修井机运行状态"),
+        ("RIG_DRIVE_TYPE", "设备驱动方式", "机械、电驱或液压"),
+        ("RIG_TYPE", "钻机型号", "钻机和修井机规格型号"),
+        ("WELL_TYPE", "井用途", "井的业务用途"),
+        ("WELL_STATUS", "井生命周期", "井生命周期状态"),
+        ("WELLBORE_PROFILE", "井筒轨迹类型", "井筒轨迹轮廓"),
+        ("TRAJECTORY_STATUS", "轨迹状态", "井筒轨迹计划与执行状态"),
+        ("TIME_TYPE", "时效类型", "日报作业时效分类及显示颜色"),
+    )
+    cursor.executemany(
+        "INSERT INTO md_appendix_category (category_code,category_name,description,status,change_reason,created_by,updated_by) "
+        "VALUES (%s,%s,%s,'active','OSDU精简附录初始化','system','system') "
+        "ON DUPLICATE KEY UPDATE category_code=VALUES(category_code)",
+        categories,
+    )
+    values = {
+        "REGION_TYPE": (("COUNTRY", "国家"), ("ADMIN_REGION", "行政区域"), ("BUSINESS_REGION", "业务区域")),
+        "COMPANY_TYPE": (("OPERATOR", "作业者"), ("SERVICE_COMPANY", "油服公司"), ("CONTRACTOR", "承包商"), ("INTERNAL_UNIT", "内部单位")),
+        "FIELD_TYPE": (("ONSHORE", "陆上"), ("OFFSHORE", "海上")),
+        "FIELD_STATUS": (("PLANNED", "规划"), ("ACTIVE", "在产"), ("SUSPENDED", "暂停"), ("ABANDONED", "废弃")),
+        "BLOCK_TYPE": (("CONCESSION", "特许区"), ("LICENSE_BLOCK", "许可区块"), ("OPERATING_AREA", "作业区")),
+        "TEAM_TYPE": (("DRILLING", "钻井队"), ("WORKOVER", "修井队"), ("INTEGRATED", "综合服务队")),
+        "EQUIPMENT_STATUS": (("AVAILABLE", "可用"), ("OPERATING", "作业中"), ("MAINTENANCE", "维修"), ("SUSPENDED", "停用"), ("RETIRED", "退役")),
+        "RIG_DRIVE_TYPE": (("MECHANICAL", "机械驱动"), ("ELECTRIC", "电驱动"), ("HYDRAULIC", "液压驱动")),
+        "RIG_TYPE": (("ZJ70D", "ZJ70D钻机"), ("ZJ30", "ZJ30钻机"), ("XJ650", "XJ650修井机"), ("650HP", "650HP修井机")),
+        "WELL_TYPE": (("EXPLORATION", "探井"), ("APPRAISAL", "评价井"), ("DEVELOPMENT", "开发井"), ("INJECTION", "注入井"), ("OBSERVATION", "观察井")),
+        "WELL_STATUS": (("PLANNED", "计划"), ("DRILLING", "钻进中"), ("COMPLETED", "已完井"), ("SUSPENDED", "暂停"), ("ABANDONED", "废弃"), ("ACTIVE", "有效")),
+        "WELLBORE_PROFILE": (("VERTICAL", "直井"), ("DIRECTIONAL", "定向井"), ("HORIZONTAL", "水平井"), ("SIDETRACK", "侧钻井筒")),
+        "TRAJECTORY_STATUS": (("PLANNED", "计划"), ("ACTUAL", "实钻"), ("REVISED", "修订")),
+    }
+    for category_code, rows in values.items():
+        cursor.execute("SELECT id FROM md_appendix_category WHERE category_code=%s", (category_code,))
+        category_id = int(cursor.fetchone()["id"])
+        cursor.executemany(
+            "INSERT INTO md_appendix_value (category_id,value_code,value_name,status,change_reason,created_by,updated_by) "
+            "VALUES (%s,%s,%s,'active','OSDU精简附录初始化','system','system') "
+            "ON DUPLICATE KEY UPDATE value_code=VALUES(value_code)",
+            [(category_id, code, name) for code, name in rows],
+        )
+    cursor.execute("SELECT id FROM md_appendix_category WHERE category_code='TIME_TYPE'")
+    time_type_category_id = int(cursor.fetchone()["id"])
+    cursor.executemany(
+        "INSERT INTO md_appendix_value "
+        "(category_id,value_code,value_name,sort_order,display_color,status,change_reason,created_by,updated_by) "
+        "VALUES (%s,%s,%s,%s,%s,'active','时效类型附录初始化','system','system') "
+        "ON DUPLICATE KEY UPDATE "
+        "value_name=VALUES(value_name),sort_order=VALUES(sort_order),"
+        "display_color=IF(display_color='',VALUES(display_color),display_color)",
+        [
+            (time_type_category_id, "P", "P", 10, "#16875B"),
+            (time_type_category_id, "SC", "SC", 20, "#B7791F"),
+            (time_type_category_id, "NPT", "NPT", 30, "#D43F3A"),
+        ],
+    )
+    cursor.execute(
+        "INSERT INTO md_geo_region (region_code,region_name,region_type_code,iso_alpha2,status,change_reason,created_by,updated_by) "
+        "VALUES ('EC','厄瓜多尔','COUNTRY','EC','active','现有数据迁移','migration','migration') "
+        "ON DUPLICATE KEY UPDATE region_name=VALUES(region_name),iso_alpha2=VALUES(iso_alpha2)"
+    )
+    cursor.execute("SELECT id FROM md_geo_region WHERE region_code='EC'")
+    ecuador_id = int(cursor.fetchone()["id"])
+    cursor.execute(
+        "UPDATE md_organization SET legal_name=IF(legal_name='',organization_name,legal_name), "
+        "organization_type=IF(organization_type IN ('','regional_company'),'INTERNAL_UNIT',UPPER(organization_type)), "
+        "country_region_id=COALESCE(country_region_id,%s)",
+        (ecuador_id,),
+    )
+    cursor.execute(
+        "INSERT INTO md_field (field_code,field_name,region_id,field_type_code,lifecycle_status_code,status,change_reason,created_by,updated_by) "
+        "SELECT block_code,block_name,%s,'ONSHORE','ACTIVE',status,'现有区块候选迁移','migration','migration' FROM md_block "
+        "ON DUPLICATE KEY UPDATE field_name=VALUES(field_name),region_id=VALUES(region_id)",
+        (ecuador_id,),
+    )
+    cursor.execute(
+        "UPDATE md_block block JOIN md_field field ON field.field_code=block.block_code "
+        "SET block.field_id=COALESCE(block.field_id,field.id),block.region_id=COALESCE(block.region_id,%s)",
+        (ecuador_id,),
+    )
+    cursor.execute(
+        "INSERT INTO md_team (team_code,team_name,team_type_code,company_id,status,change_reason,created_by,updated_by) "
+        "SELECT rig_code,rig_name,IF(rig_type='workover','WORKOVER','DRILLING'),owner_organization_id,status,'现有井队迁移','migration','migration' FROM md_rig "
+        "ON DUPLICATE KEY UPDATE team_name=VALUES(team_name),team_type_code=VALUES(team_type_code),company_id=VALUES(company_id)"
+    )
+    cursor.execute(
+        "UPDATE md_rig rig JOIN md_team team ON team.team_code=rig.rig_code "
+        "LEFT JOIN md_rig_model model ON model.id=rig.rig_model_id "
+        "SET rig.team_id=team.id,rig.manufacturer=IF(rig.manufacturer='','SINOPEC',rig.manufacturer),"
+        "rig.model_code=IF(rig.model_code='',COALESCE(model.model_code,''),rig.model_code),"
+        "rig.equipment_status_code=IF(rig.equipment_status_code='','AVAILABLE',rig.equipment_status_code)"
+    )
+    cursor.execute(
+        "UPDATE md_team team JOIN md_rig rig ON rig.team_id=team.id "
+        "SET team.model_code=IF(team.model_code='',rig.model_code,team.model_code)"
+    )
+    cursor.execute(
+        "INSERT INTO rel_project_team_assignment (project_id,team_id,valid_from,valid_to,service_discipline,assignment_note,priority,status,change_reason,created_by,updated_by) "
+        "SELECT relation.project_id,rig.team_id,relation.valid_from,relation.valid_to,relation.service_discipline,relation.assignment_note,relation.priority,relation.status,'由井队关系迁移','migration','migration' "
+        "FROM rel_project_rig_assignment relation JOIN md_rig rig ON rig.id=relation.rig_id WHERE rig.team_id IS NOT NULL "
+        "ON DUPLICATE KEY UPDATE valid_to=VALUES(valid_to),status=VALUES(status),assignment_note=VALUES(assignment_note)"
+    )
+    cursor.execute(
+        "UPDATE md_well well LEFT JOIN md_block block ON block.id=well.block_id "
+        "SET well.field_id=COALESCE(well.field_id,block.field_id),well.operator_company_id=COALESCE(well.operator_company_id,block.operator_company_id)"
+    )
+    cursor.execute(
+        "UPDATE md_wellbore SET wellbore_profile_code=CASE "
+        "WHEN well_type LIKE '%水平%' THEN 'HORIZONTAL' WHEN well_type LIKE '%定向%' THEN 'DIRECTIONAL' "
+        "WHEN parent_wellbore_id IS NOT NULL THEN 'SIDETRACK' ELSE wellbore_profile_code END"
+    )
+
+
+def _ensure_report_record_indexes(cursor: Any) -> None:
+    cursor.execute("SHOW INDEX FROM report_records")
+    indexes = {str(row.get("Key_name", "") or "") for row in cursor.fetchall()}
+    if "idx_report_records_master_refs" not in indexes:
+        cursor.execute(
+            "CREATE INDEX idx_report_records_master_refs "
+            "ON report_records (project_id, rig_id, wellbore_id, job_id)"
+        )
+    if "idx_report_records_match_status" not in indexes:
+        cursor.execute(
+            "CREATE INDEX idx_report_records_match_status "
+            "ON report_records (master_match_status)"
+        )
 
 
 def _ensure_translation_content_indexes(cursor: Any) -> None:
@@ -151,6 +362,7 @@ def save_report_payload(
     record_id = str(metadata.get("record_id") or payload.get("record_id") or _natural_record_id(report_type, fields) or _generated_record_id(report_type))
     source_file = source_file or str(metadata.get("source_file") or "")
     now = _now()
+    normalization: dict[str, Any] = {}
 
     with _connect() as connection:
         with connection.cursor() as cursor:
@@ -185,10 +397,43 @@ def save_report_payload(
                         """,
                         (record_id, module_name, row_no, _json_dumps(row)),
                     )
+            try:
+                from .report_normalization_service import synchronize_saved_report
+
+                normalization = synchronize_saved_report(
+                    cursor,
+                    record_id=record_id,
+                    report_type=report_type,
+                    fields=fields,
+                    operations=[
+                        row for row in (payload.get("operations", []) or [])
+                        if isinstance(row, dict)
+                    ],
+                    actor=str(metadata.get("updated_by", "") or metadata.get("confirmed_by", "") or "system"),
+                )
+            except Exception as exc:
+                normalization = {
+                    "record_id": record_id,
+                    "normalization_status": "NORMALIZATION_FAILED",
+                    "error": str(exc),
+                }
+                cursor.execute(
+                    """
+                    UPDATE report_records
+                    SET master_match_status='NORMALIZATION_FAILED', master_match_message=%s
+                    WHERE record_id=%s
+                    """,
+                    (str(exc)[:2000], record_id),
+                )
             if invalidate_translations:
                 cursor.execute("DELETE FROM translation_content WHERE record_id=%s", (record_id,))
         connection.commit()
-    return {"record_id": record_id, "database_path": "mysql", "updated_at": updated_at}
+    return {
+        "record_id": record_id,
+        "database_path": "mysql",
+        "updated_at": updated_at,
+        "normalization": normalization,
+    }
 
 
 def load_report_payload(database_path: str | Path | None, record_id: str) -> dict[str, Any]:
@@ -1134,6 +1379,15 @@ def save_npt_confirmation(
                     """,
                     (_json_dumps(row_json), record_id, row_no),
                 )
+                if submit:
+                    _sync_npt_type_fact(
+                        cursor,
+                        record_id=record_id,
+                        row_no=row_no,
+                        confirmed_type=confirmed_type,
+                        actor=_text(confirmed_by) or "system",
+                        note=_text(note),
+                    )
                 touched_ids.add(record_id)
             for record_id in allowed_record_ids:
                 if submit:
@@ -1157,6 +1411,43 @@ def save_npt_confirmation(
                     )
         connection.commit()
     return {"wellbore": wellbore, "updated_records": len(touched_ids), "status": "confirmed" if submit else "draft", "locked": submit, "updated_at": now}
+
+
+def _sync_npt_type_fact(
+    cursor: Any,
+    *,
+    record_id: str,
+    row_no: int,
+    confirmed_type: str,
+    actor: str,
+    note: str,
+) -> None:
+    cursor.execute(
+        "SELECT c.*,a.id activity_id FROM fact_daily_report d "
+        "JOIN fact_activity a ON a.daily_report_id=d.id AND a.source_row_no=%s "
+        "LEFT JOIN fact_time_classification c ON c.activity_id=a.id WHERE d.record_id=%s",
+        (row_no, record_id),
+    )
+    previous = cursor.fetchone()
+    if not previous or not previous.get("activity_id"):
+        return
+    activity_id = int(previous["activity_id"])
+    revised = {
+        "confirmed_op_type": confirmed_type,
+        "productive_flag": "PRODUCTION" if confirmed_type == "P" else "NON_PRODUCTION",
+    }
+    cursor.execute(
+        "INSERT INTO time_classification_revision "
+        "(activity_id,previous_json,revised_json,revision_type,reason,created_by) "
+        "VALUES (%s,%s,%s,'legacy_npt',%s,%s)",
+        (activity_id, _json_dumps(previous), _json_dumps(revised), note or "同步既有NPT确认结果", actor),
+    )
+    cursor.execute(
+        "UPDATE fact_time_classification SET confirmed_op_type=%s,productive_flag=%s,"
+        "confirmed_at=NOW(),confirmed_by=%s,change_reason=%s,updated_by=%s,version=version+1 "
+        "WHERE activity_id=%s",
+        (confirmed_type, revised["productive_flag"], actor, note or "同步既有NPT确认结果", actor, activity_id),
+    )
 
 
 def is_available() -> bool:
@@ -1298,6 +1589,12 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
         "reportNo": _text(row.get("report_no")),
         "wellbore": _text(row.get("wellbore")),
         "rig": _text(row.get("rig")),
+        "rig_id": _text(row.get("rig_id")),
+        "wellbore_id": _text(row.get("wellbore_id")),
+        "project_id": _text(row.get("project_id")),
+        "job_id": _text(row.get("job_id")),
+        "master_match_status": _text(row.get("master_match_status")),
+        "master_match_message": _text(row.get("master_match_message")),
         "status": _text(row.get("status")),
         "source_language": _text(row.get("source_language")),
         "translation_status": _text(row.get("translation_status")),
@@ -1333,6 +1630,12 @@ def _payload_metadata(row: dict[str, Any]) -> dict[str, str]:
         "report_type": _text(row.get("report_type")),
         "source_file": _text(row.get("source_file")),
         "parser": _text(row.get("parser")),
+        "rig_id": _text(row.get("rig_id")),
+        "wellbore_id": _text(row.get("wellbore_id")),
+        "project_id": _text(row.get("project_id")),
+        "job_id": _text(row.get("job_id")),
+        "master_match_status": _text(row.get("master_match_status")),
+        "master_match_message": _text(row.get("master_match_message")),
         "source_language": _text(row.get("source_language")),
         "translation_status": _text(row.get("translation_status")),
         "translation_progress": _text(row.get("translation_progress")),

@@ -23,12 +23,13 @@ COMMON_FIELD_COLUMNS = [
 
 DRILLING_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
     "todayMd", "prevMd", "progress", "rotHrsToday", "lastCasing", "lastCasingSize",
-    "lastCasingDepth", "nextCasing", "nextCasingSize", "nextCasingDepth", "formTestEmw",
-    "lastBopPressTest", "pumpRate", "pumpPress", "stringWeightUpDown", "torqueOnBottom",
+    "lastCasingDepth", "nextCasing", "nextCasingSize", "nextCasingDepth", "formTestType", "formTestEmw",
+    "lastBopPressTest", "pumpRate", "pumpPress", "stringWeightUp", "stringWeightDown",
+    "stringWeightUpDown", "torqueOnBottom",
     "mudEngineer", "sampleFrom", "mudType", "mudTime", "mudMd", "mudDensity",
     "mudTemperature", "rheologyTemp", "viscosity", "pv", "yp", "gel10s", "gel10m",
     "gel30m", "apiWl", "oilPercent", "waterPercent", "sand", "ecd", "mudComments",
-    "bitNo", "bitSize", "bitManufacturer", "bitSerial", "bhaNo", "bhaMdIn",
+    "bitNo", "bitSize", "bitManufacturer", "bitSerial", "bitWearIodl", "bitWearBgor", "bhaNo", "bhaMdIn",
     "bhaMdOut", "bhaTotalLength", "safetyIncident", "environmentIncident",
     "daysSinceRi", "daysSinceLta", "incidentComments",
 ]

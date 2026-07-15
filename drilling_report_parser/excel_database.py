@@ -114,6 +114,8 @@ DRILLING_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
     "bitSize",
     "bitManufacturer",
     "bitSerial",
+    "bitWearIodl",
+    "bitWearBgor",
     "bhaNo",
     "bhaMdIn",
     "bhaMdOut",

@@ -11,17 +11,17 @@ const i18n = {
       descRigProductionSummary: "基于日报解析数据，按井队、日报类型和月份展示生产作业时效。", descProductionDetailReport: "按项目周期、井队和井号归属查询生产时效明细。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
-      navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "井控与液压", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
+      navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "施工参数", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "成本与库存", navIncidents: "事故与备注",
       importPdf: "导入 PDF 日报", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationRunningShort: "翻译中", translationReady: "日报语言已切换。", translationFailed: "翻译数据暂不可用，请确认本地大模型服务或后台翻译任务状态。", translationPreviewNotice: "当前显示数据库译文，只读展示；切回原文可编辑原始日报。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "数据库状态", backRecords: "返回记录", databaseSaved: "已保存到 MySQL 数据库。", databaseSaveFailed: "保存 MySQL 数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
-      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", parseDoneStatus: "解析完成", failed: "失败", warningStatus: "有告警", pending: "待补传", translationPendingStatus: "待翻译", translationQueuedStatus: "排队中", translationRunningStatus: "翻译中", translationDoneStatus: "翻译完成", translationNotRequiredStatus: "无需翻译", translationFailedStatus: "翻译失败", translationNotReady: "译文未完成，完成后才能切换语言。", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号",
+      uploadDashboardTitle: "日报管理 Dashboard", wellSelection: "井选择", searchWell: "搜索井号", reportCalendar: "日报日历", uploadRecords: "上传文件记录", allTypes: "全部类型", allStatuses: "全部状态", exportList: "导出", preview: "查看", download: "下载", detail: "详情", uploaded: "已完成", queued: "排队中", parsing: "解析中", parseDoneStatus: "解析完成", failed: "失败", warningStatus: "有告警", pending: "待补传", translationPendingStatus: "待翻译", translationQueuedStatus: "排队中", translationRunningStatus: "翻译中", translationDoneStatus: "翻译完成", translationNotRequiredStatus: "无需翻译", translationFailedStatus: "翻译失败", translationNotReady: "译文未完成，完成后才能切换语言。", noRecords: "暂无上传记录", addWell: "添加新井", selectedWell: "当前井", monthlyUploaded: "本月已上传", monthlyPending: "待补传", reportKinds: "日报类型", monthlyUploaders: "本月上传人", calendarHint: "提示：点击已有完成记录的日期可直接预览", recordsCount: "条记录", uploader: "上传人", uploadTime: "上传时间", fileName: "文件名称", status: "状态", operation: "操作", date: "日期", well: "井号", reportType: "日报类型", page: "页", prevPage: "上一页", nextPage: "下一页", sourcePdfMissing: "源文件未保存，请重新导入该日报后查看。", sourcePdfTitle: "源文件PDF", sortFirstUpload: "初传", sortLastUpload: "最近", sortWellName: "井号", deleteFailedImport: "删除", failedImportDeleted: "失败的导入记录已删除。",
       metricCompletion: "完成度", metricIssues: "校验问题", metricHours: "作业合计", metricProgress: "进尺", metricIntervals: "射孔区间", metricWellDate: "井号 / 日期", metricDailyHours: "当日作业时长", metricNptHours: "NPT时长", metricDataCompleteness: "数据完整性",
       metricWorkDays: "作业天数", metricNptShare: "NPT时长 / 占比", metricPScShare: "P / SC工况占比", metricReportCompleteness: "日报完整性", metricMoveDrillingDays: "搬迁 / 钻井", noWells: "暂无已识别井号",
       analyticsKicker: "数据看板", analyticsProductionScope: "基于已保存到 Excel 库的日报解析数据", analyticsNptScope: "基于已保存到 Excel 库的日报解析数据；分类按日报作业代码 / 作业子项汇总", search: "查询", reset: "重置", wellborePlaceholder: "请输入井号",
       chartRigHours: "各井队累计NPT排名", chartOperationMix: "作业时效构成", chartMonthlyHours: "单井作业甘特图", chartNptRig: "各井队NPT对比 (h)", chartNptReason: "作业代码 / 作业子项分布", chartNptWell: "各井NPT排行", chartNptMonthly: "月度NPT趋势 (h)", productionDetailTitle: "生产报表明细", nptDetailTitle: "NPT统计明细", analyticsRowHint: "点击行可打开日报详情", productionReportRowHint: "点击井号新开日报首页并选中该井", nptRowHint: "按日报作业代码 / 作业子项原文汇总，点击行可追溯日报",
       kpiRigCount: "井队数", kpiNptRigCount: "NPT井队数", kpiWellCount: "涉及井数", kpiTotalHours: "总作业时长", kpiTotalNpt: "总NPT", kpiReportCompleteness: "日报完整性", kpiNptEvents: "NPT事件数", analyticsDefaultCaption: "基于已入库日报", analyticsNptCaption: "按作业代码 / 作业子项汇总", analyticsCompletenessCaption: "缺失 {missing} 天 / 告警 {warning} 天", noAnalyticsData: "暂无可统计数据", noExportData: "暂无可导出数据", normalStatus: "正常", reasonMissing: "未填写作业代码 / 作业子项",
       allRigs: "全部井队", allProjects: "全部项目", allReportTypes: "全部类型", allReasons: "全部分类", scopeByRig: "按井队", scopeByProject: "按项目", productionNptCaption: "累计 NPT 时长（h）", nptHoursCaption: "NPT 时长（h）", nptDailyShareCaption: "日均 NPT 占比（%）", nptNotePlaceholder: "请输入备注内容（选填）", opCodeSub: "作业代码 / 子项", opCode: "作业代码", opSub: "作业子项", category: "分类", tableProject: "项目", tableContractProject: "合同(项目)", tableRig: "井队", tableWell: "井号", tableReportType: "日报类型", tableStartDate: "开工时间", tableEndDate: "完工时间", tableMoveDate: "搬迁日期", tableDrillingStartDate: "开钻日期", tableDrillingFinishDate: "完钻日期", tableCompletionDate: "完井日期", tableWorkoverDate: "修井日期", tableDrillingHours: "钻井(h)", tableCompletionHours: "完井(h)", tableWorkoverHours: "修井(h)", tableMoveHours: "搬迁(h)", tableNptHours: "NPT(h)", tableRemarks: "备注", tableDate: "日期", tableOperationDetails: "作业详情",
-      sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "井控与液压", sectionSurvey: "测斜数据（最近 6 条）", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "作业明细", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
-      noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、BOP、泵压、扭矩和钩载", noteIncidents: "HSE 状态、同步作业和其他说明",
+      sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "施工参数", sectionSurvey: "测斜数据（最近 6 条）", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "作业明细", sectionCosts: "成本与库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
+      noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、井控试压、泵压、钻柱重量和扭矩", noteIncidents: "HSE 状态、同步作业和其他说明",
       completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "对应搬迁 PDF 顶部日报抬头、AFE 和井队信息", moveNoteRemarks: "其他现场备注原文",
       rulesTitle: "基础条件限制规则", liveValidation: "实时校验",
       uploadedDays: "已上传", daysUnit: "天", missingDate: "缺失日期",
@@ -31,9 +31,9 @@ const i18n = {
     },
     fields: {
       event: "事件", reportDate: "日期", project: "项目", date_from: "日期起", date_to: "日期止", scope_type: "筛选方式", scope_value: "井队", nptConfirmNote: "备注说明", report_type: "日报类型", reason: "作业代码 / 子项", nptWellbore: "井号", nptRig: "井队", nptStatus: "确认状态", reportNo: "报告编号", wellbore: "井号", rig: "井队", primaryReason: "主要原因", afeNumber: "AFE 编号", refDatum: "参考基准 (ft)", todayMd: "当日 MD (ft)", prevMd: "前日 MD (ft)", progress: "进尺 (ft)", rotHrsToday: "当日旋转时长 (h)",
-      currentOps: "当前作业", summary24h: "24 小时总结", forecast24h: "未来 24 小时计划", lastCasing: "上一层套管", lastCasingSize: "上一层套管尺寸 (in)", lastCasingDepth: "上一层套管深度 (ft)", nextCasing: "下一层套管", nextCasingSize: "下一层套管尺寸 (in)", nextCasingDepth: "下一层套管深度 (ft)", formTestEmw: "地层测试 / EMW (ppg)", lastBopPressTest: "最近一次 BOP 试压", pumpRate: "泵排量 (gpm)", pumpPress: "泵压 (psi)", stringWeightUpDown: "钻柱上提/下放重量", torqueOnBottom: "井底扭矩",
+      currentOps: "当前作业", summary24h: "24 小时总结", forecast24h: "未来 24 小时计划", lastCasing: "上一层套管", lastCasingSize: "上一层套管尺寸 (in)", lastCasingDepth: "上一层套管深度 (ft)", nextCasing: "下一层套管", nextCasingSize: "下一层套管尺寸 (in)", nextCasingDepth: "下一层套管深度 (ft)", formTestType: "地层测试类型", formTestEmw: "地层测试 EMW (ppg)", lastBopPressTest: "最近一次 BOP 试压日期", pumpRate: "泵排量 (gpm)", pumpPress: "泵压 (psi)", stringWeightUp: "钻柱上提重量 (kip)", stringWeightDown: "钻柱下放重量 (kip)", stringWeightUpDown: "钻柱上提/下放重量", torqueOnBottom: "井底扭矩 (ft-lbf)",
       mudEngineer: "泥浆工程师", sampleFrom: "取样位置", mudType: "泥浆类型", mudTimeMd: "时间 / MD", mudTime: "泥浆取样时间", mudMd: "泥浆取样 MD (ft)", mudDensity: "密度 (ppg)", mudTemperature: "泥浆温度 (°F)", rheologyTemp: "流变测试温度 (°F)", viscosity: "黏度 (sec/qt)", pvYp: "PV / YP", pv: "塑性黏度 PV (cP)", yp: "动切力 YP (lb/100ft²)", gels: "静切力 10s/10m/30m (lb/100ft²)", gel10s: "10 秒静切力 (lb/100ft²)", gel10m: "10 分钟静切力 (lb/100ft²)", gel30m: "30 分钟静切力 (lb/100ft²)", apiWl: "API 失水 (cc/30min)", oilWater: "油 / 水", oilPercent: "含油量 (%)", waterPercent: "含水量 (%)", sand: "含砂量 (%)", ecd: "当量循环密度 ECD (ppg)", mudComments: "泥浆备注",
-      bitNo: "钻头编号", bitSize: "钻头尺寸 (in)", bitManufacturer: "制造商", bitSerial: "序列号", bhaNo: "BHA 编号", bhaMdIn: "入井 MD (ft)", bhaMdOut: "出井 MD (ft)", bhaTotalLength: "总长度 (ft)", safetyIncident: "是否发生安全事故？", environmentIncident: "是否发生环境事故？", daysSinceRi: "距上次 RI 天数", daysSinceLta: "距上次 LTA 天数", incidentComments: "事故说明", otherRemarks: "其他备注",
+      bitNo: "钻头序号", bitSize: "钻头尺寸 (in)", bitManufacturer: "制造商", bitSerial: "钻头序列号", bitWearIodl: "钻头磨损 I-O-D-L", bitWearBgor: "钻头磨损 B-G-O-R", bhaNo: "BHA 编号", bhaMdIn: "入井 MD (ft)", bhaMdOut: "出井 MD (ft)", bhaTotalLength: "总长度 (ft)", safetyIncident: "是否发生安全事故？", environmentIncident: "是否发生环境事故？", daysSinceRi: "距上次 RI 天数", daysSinceLta: "距上次 LTA 天数", incidentComments: "事故说明", otherRemarks: "其他备注",
       description: "说明", operationStartDate: "作业开始日期", workoverNo: "修井编号", afeCost: "AFP 成本 (USD)", dailyCost: "当日成本 (USD)", cumulativeCost: "累计成本 (USD)", supervisor1: "监督 1", supervisor2: "监督 2", engineer: "工程师", pamEngineer: "PAM 工程师", geologist: "地质师", totalPersonnel: "现场总人数", safetyComments: "安全备注", groundElev: "地面海拔 (ft)", afeMdDays: "AFE 设计井深/天数 (ft/d)"
     },
     rules: [
@@ -41,7 +41,7 @@ const i18n = {
       "<strong>日期：</strong>日报日期不能晚于当前日期。",
       "<strong>井深：</strong>Today's MD 必须大于等于 Prev MD，Progress 应等于两者差值，允许 0.5 ft 误差。",
       "<strong>工时：</strong>Operations 明细 Hrs 合计必须为 24.00 小时，允许 0.05 小时误差。",
-      "<strong>作业行：</strong>From、To、Hrs、Op Code、Type、Operation Details 至少应完整填写；Type 只能是 P 或 NPT。",
+      "<strong>作业行：</strong>From、To、Hrs、Op Code、Type、Operation Details 至少应完整填写；Type 只能是附录中的 P、SC 或 NPT。",
       "<strong>测斜：</strong>Survey MD 不能大于 Today's MD，Incl 范围 0 到 180，DLS 不能为负。",
       "<strong>泥浆：</strong>Density 推荐 6 到 20 ppg，Sand 推荐不超过 10%。",
       "<strong>设备：</strong>BHA 组件 OD、ID、Jts、Length 不能为负，OD 应大于等于 ID。",
@@ -71,7 +71,7 @@ const i18n = {
       "<strong>备注：</strong>Other Remarks 可保留 PDF 末页原文，便于人工复核。"
     ],
     msg: {
-      required: "{field} 为必填项。", futureDate: "日报日期不能晚于当前日期。", operationStartDate: "Operation Start 不能晚于日报日期。", mdOrder: "Today's MD 必须大于等于 Prev MD。", progressMismatch: "Progress 与井深差值不一致，当前差值为 {value} ft。", operationMissingTable: "作业明细不能为空。", operationHours: "Operations 工时合计应为 24.00 h，当前为 {value} h。", operationMissing: "作业明细第 {row} 行缺少 {field}。", operationTimeMismatch: "作业明细第 {row} 行 From/To 对应时长为 {value} h，与 Hrs 不一致。", operationType: "作业明细第 {row} 行 Type 为空或不是 P/NPT，请复核。", completionOperationType: "完井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", workoverOperationType: "修井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", moveOperationType: "搬迁作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", operationHourRange: "作业明细第 {row} 行 Hrs 必须在 0 到 24 之间。", intervalDepth: "射孔区间第 {row} 行 Base MD 应大于等于 Top MD。", intervalLength: "射孔区间第 {row} 行 Length 不能为负。", surveyMd: "测斜第 {row} 行 MD 不能大于 Today's MD。", surveyIncl: "测斜第 {row} 行 Incl 应在 0 到 180 之间。", surveyDls: "测斜第 {row} 行 DLS 不能为负。", mudDensity: "泥浆 Density 推荐范围为 6 到 20 ppg。", sand: "泥浆 Sand 超过 10%，请复核。", bhaOdId: "BHA 第 {row} 行 OD 应大于等于 ID。", bhaNegative: "BHA 第 {row} 行存在负数。", negativeValue: "第 {row} 行 {field} 不能为负。", incidentRequired: "发生 Safety 或 Environmental Incident 时，Incident Comments 必填。"
+      required: "{field} 为必填项。", futureDate: "日报日期不能晚于当前日期。", operationStartDate: "Operation Start 不能晚于日报日期。", mdOrder: "Today's MD 必须大于等于 Prev MD。", progressMismatch: "Progress 与井深差值不一致，当前差值为 {value} ft。", operationMissingTable: "作业明细不能为空。", operationHours: "Operations 工时合计应为 24.00 h，当前为 {value} h。", operationMissing: "作业明细第 {row} 行缺少 {field}。", operationTimeMismatch: "作业明细第 {row} 行 From/To 对应时长为 {value} h，与 Hrs 不一致。", operationType: "作业明细第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", completionOperationType: "完井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", workoverOperationType: "修井作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", moveOperationType: "搬迁作业第 {row} 行 Type 为空或不是 P/SC/NPT，请复核。", operationHourRange: "作业明细第 {row} 行 Hrs 必须在 0 到 24 之间。", intervalDepth: "射孔区间第 {row} 行 Base MD 应大于等于 Top MD。", intervalLength: "射孔区间第 {row} 行 Length 不能为负。", surveyMd: "测斜第 {row} 行 MD 不能大于 Today's MD。", surveyIncl: "测斜第 {row} 行 Incl 应在 0 到 180 之间。", surveyDls: "测斜第 {row} 行 DLS 不能为负。", mudDensity: "泥浆 Density 推荐范围为 6 到 20 ppg。", sand: "泥浆 Sand 超过 10%，请复核。", bhaOdId: "BHA 第 {row} 行 OD 应大于等于 ID。", bhaNegative: "BHA 第 {row} 行存在负数。", negativeValue: "第 {row} 行 {field} 不能为负。", incidentRequired: "发生 Safety 或 Environmental Incident 时，Incident Comments 必填。"
     }
   },
   en: {
@@ -86,17 +86,17 @@ const i18n = {
       descRigProductionSummary: "Show production time by rig, report type, and month from parsed daily reports.", descProductionDetailReport: "Query production time details by project period, rig, and well assignment.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
-      navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Well Control & Hydraulics", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
+      navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Operational Parameters", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Costs & Bulks", navIncidents: "Incidents & Remarks",
       importPdf: "Import PDF Report", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationRunningShort: "Translating", translationReady: "Report language switched.", translationFailed: "Translation data is not available. Check the local model service or translation task status.", translationPreviewNotice: "Database translation is shown read-only. Switch back to Original to edit the source report.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Database Status", backRecords: "Back to Records", databaseSaved: "Saved to MySQL.", databaseSaveFailed: "Failed to save to MySQL.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
-      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", parseDoneStatus: "Parsing complete", failed: "Failed", warningStatus: "Warnings", pending: "Pending", translationQueuedStatus: "Translation queued", translationRunningStatus: "Translating", translationDoneStatus: "Translation done", translationFailedStatus: "Translation failed", translationNotReady: "Translation is not complete yet. Language switching is available after completion.", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well",
+      uploadDashboardTitle: "Daily Report Dashboard", wellSelection: "Well Selection", searchWell: "Search well", reportCalendar: "Report Calendar", uploadRecords: "Upload Records", allTypes: "All Types", allStatuses: "All Statuses", exportList: "Export", preview: "View", download: "Download", detail: "Details", uploaded: "Complete", queued: "Queued", parsing: "Parsing", parseDoneStatus: "Parsing complete", failed: "Failed", warningStatus: "Warnings", pending: "Pending", translationQueuedStatus: "Translation queued", translationRunningStatus: "Translating", translationDoneStatus: "Translation done", translationFailedStatus: "Translation failed", translationNotReady: "Translation is not complete yet. Language switching is available after completion.", noRecords: "No upload records", addWell: "Add Well", selectedWell: "Selected Well", monthlyUploaded: "Uploaded This Month", monthlyPending: "Pending Uploads", reportKinds: "Report Types", monthlyUploaders: "Uploaders This Month", calendarHint: "Tip: click a completed calendar date to preview it", recordsCount: "records", uploader: "Uploader", uploadTime: "Upload Time", fileName: "File Name", status: "Status", operation: "Actions", date: "Date", well: "Well", reportType: "Report Type", page: "Page", prevPage: "Previous", nextPage: "Next", sourcePdfMissing: "The source PDF was not saved. Re-import this report to view it.", sourcePdfTitle: "Source PDF", sortFirstUpload: "First", sortLastUpload: "Latest", sortWellName: "Well", deleteFailedImport: "Delete", failedImportDeleted: "Failed import record deleted.",
       metricCompletion: "Completion", metricIssues: "Validation Issues", metricHours: "Operation Total", metricProgress: "Progress", metricIntervals: "Intervals", metricWellDate: "Well / Date", metricDailyHours: "Daily Hours", metricNptHours: "NPT Hours", metricDataCompleteness: "Data Completeness",
       metricWorkDays: "Work Days", metricNptShare: "NPT Hours / Share", metricPScShare: "P / SC Share", metricReportCompleteness: "Report Completeness", metricMoveDrillingDays: "Move / Drilling", noWells: "No identified wells",
       analyticsKicker: "Analytics", analyticsProductionScope: "Based on daily report data saved in the Excel library", analyticsNptScope: "Based on daily report data saved in the Excel library; grouped by report OP Code / OP Sub", search: "Search", reset: "Reset", wellborePlaceholder: "Enter well",
       chartRigHours: "Rig Cumulative NPT Ranking", chartOperationMix: "Operation Mix", chartMonthlyHours: "Well Operation Gantt", chartNptRig: "Rig NPT Comparison (h)", chartNptReason: "OP Code / OP Sub Distribution", chartNptWell: "Well NPT Ranking", chartNptMonthly: "Monthly NPT Trend (h)", productionDetailTitle: "Production Report Details", nptDetailTitle: "NPT Details", analyticsRowHint: "Click a row to open the report details", productionReportRowHint: "Click a well to open its report homepage in a new tab", nptRowHint: "Grouped by original OP Code / OP Sub from reports; click a row to trace the report",
       kpiRigCount: "Rig Count", kpiNptRigCount: "NPT Rig Count", kpiWellCount: "Wells", kpiTotalHours: "Total Hours", kpiTotalNpt: "Total NPT", kpiReportCompleteness: "Report Completeness", kpiNptEvents: "NPT Events", analyticsDefaultCaption: "Based on saved reports", analyticsNptCaption: "Grouped by OP Code / OP Sub", analyticsCompletenessCaption: "Missing {missing} days / Warnings {warning} days", noAnalyticsData: "No data available", noExportData: "No data to export", normalStatus: "Normal", reasonMissing: "No OP Code / OP Sub",
       allRigs: "All Rigs", allProjects: "All Projects", allReportTypes: "All Types", allReasons: "All Categories", opCodeSub: "OP Code / OP Sub", opCode: "OP Code", opSub: "OP Sub", category: "Category", tableProject: "Project", tableContractProject: "Contract (Project)", tableRig: "Rig", tableWell: "Well", tableReportType: "Report Type", tableStartDate: "Start Date", tableEndDate: "End Date", tableMoveDate: "Move Date", tableDrillingStartDate: "Drilling Start", tableDrillingFinishDate: "Drilling Finish", tableCompletionDate: "Completion Date", tableWorkoverDate: "Workover Date", tableDrillingHours: "Drilling (h)", tableCompletionHours: "Completion (h)", tableWorkoverHours: "Workover (h)", tableMoveHours: "Move (h)", tableNptHours: "NPT (h)", tableRemarks: "Remarks", tableDate: "Date", tableOperationDetails: "Operation Details",
-      sectionBasic: "Basic Info", sectionSummary: "Operations Summary", sectionWellControl: "Well Control & Hydraulics", sectionSurvey: "Survey Data (Last 6)", sectionMud: "Mud Data", sectionBitBha: "Bit & BHA", sectionOperations: "Operations", sectionCosts: "Costs & Bulks", sectionIncidents: "Incidents & Remarks", sectionPersonnel: "Personnel", sectionPerforationIntervals: "Perforated Intervals",
-      noteBasic: "Header and well information from the PDF template", noteSummary: "Current operation, 24-hour summary, and next plan", noteWellControl: "Casing, BOP, pump pressure, torque, and hookload", noteIncidents: "HSE status, simultaneous operations, and remarks",
+      sectionBasic: "Basic Info", sectionSummary: "Operations Summary", sectionWellControl: "Operational Parameters", sectionSurvey: "Survey Data (Last 6)", sectionMud: "Mud Data", sectionBitBha: "Bit & BHA", sectionOperations: "Operations", sectionCosts: "Costs & Bulks", sectionIncidents: "Incidents & Remarks", sectionPersonnel: "Personnel", sectionPerforationIntervals: "Perforated Intervals",
+      noteBasic: "Header and well information from the PDF template", noteSummary: "Current operation, 24-hour summary, and next plan", noteWellControl: "Casing, pressure tests, pump parameters, string weight, and torque", noteIncidents: "HSE status, simultaneous operations, and remarks",
       completionNoteBasic: "Completion PDF header, AFP, and well information", completionNotePersonnel: "Supervisors, engineers, geologist, and total personnel", completionNoteRemarks: "Safety comments, solids control, and field remarks", workoverNoteBasic: "Workover PDF header, AFP, and well information", workoverNotePersonnel: "Supervisors, engineers, geologist, and total personnel", workoverNoteRemarks: "Safety comments, solids control, and field remarks",
       rulesTitle: "Basic Validation Rules", liveValidation: "Live Validation",
       uploadedDays: "Uploaded", daysUnit: "days", missingDate: "Missing",
@@ -106,9 +106,9 @@ const i18n = {
     },
     fields: {
       event: "Event", reportDate: "Date", project: "Project", date_from: "Date From", date_to: "Date To", report_type: "Report Type", reason: "OP Code / OP Sub", nptWellbore: "Wellbore", nptRig: "Rig", nptStatus: "Confirmation Status", reportNo: "Report No", wellbore: "Wellbore", rig: "Rig", primaryReason: "Primary Reason", afeNumber: "AFE Number", refDatum: "Reference Datum (ft)", todayMd: "Today's MD (ft)", prevMd: "Previous MD (ft)", progress: "Progress (ft)", rotHrsToday: "Rotating Hours Today (h)",
-      currentOps: "Current Operations", summary24h: "24-Hour Summary", forecast24h: "24-Hour Forecast", lastCasing: "Last Casing", lastCasingSize: "Last Casing Size (in)", lastCasingDepth: "Last Casing Depth (ft)", nextCasing: "Next Casing", nextCasingSize: "Next Casing Size (in)", nextCasingDepth: "Next Casing Depth (ft)", formTestEmw: "Formation Test / EMW (ppg)", lastBopPressTest: "Last BOP Pressure Test", pumpRate: "Pump Rate (gpm)", pumpPress: "Pump Pressure (psi)", stringWeightUpDown: "String Weight Up/Down", torqueOnBottom: "Torque On Bottom",
+      currentOps: "Current Operations", summary24h: "24-Hour Summary", forecast24h: "24-Hour Forecast", lastCasing: "Last Casing", lastCasingSize: "Last Casing Size (in)", lastCasingDepth: "Last Casing Depth (ft)", nextCasing: "Next Casing", nextCasingSize: "Next Casing Size (in)", nextCasingDepth: "Next Casing Depth (ft)", formTestType: "Formation Test Type", formTestEmw: "Formation Test EMW (ppg)", lastBopPressTest: "Last BOP Pressure Test Date", pumpRate: "Pump Rate (gpm)", pumpPress: "Pump Pressure (psi)", stringWeightUp: "String Weight Up (kip)", stringWeightDown: "String Weight Down (kip)", stringWeightUpDown: "String Weight Up/Down", torqueOnBottom: "Torque On Bottom (ft-lbf)",
       mudEngineer: "Mud Engineer", sampleFrom: "Sample From", mudType: "Mud Type", mudTimeMd: "Time / MD", mudTime: "Mud Time", mudMd: "Mud MD (ft)", mudDensity: "Density (ppg)", mudTemperature: "Mud Temp (°F)", rheologyTemp: "Rheology Temp (°F)", viscosity: "Viscosity (sec/qt)", pvYp: "PV / YP", pv: "PV (cP)", yp: "YP (lb/100ft²)", gels: "Gels 10s/10m/30m (lb/100ft²)", gel10s: "Gel 10s (lb/100ft²)", gel10m: "Gel 10m (lb/100ft²)", gel30m: "Gel 30m (lb/100ft²)", apiWl: "API WL (cc/30min)", oilWater: "Oil / Water", oilPercent: "Oil (%)", waterPercent: "Water (%)", sand: "Sand (%)", ecd: "ECD (ppg)", mudComments: "Mud Comments",
-      bitNo: "Bit No", bitSize: "Bit Size (in)", bitManufacturer: "Manufacturer", bitSerial: "Serial No", bhaNo: "BHA No", bhaMdIn: "MD In (ft)", bhaMdOut: "MD Out (ft)", bhaTotalLength: "Total Length (ft)", safetyIncident: "Safety Incident?", environmentIncident: "Environmental Incident?", daysSinceRi: "Days since Last RI", daysSinceLta: "Days since Last LTA", incidentComments: "Incident Comments", otherRemarks: "Other Remarks",
+      bitNo: "Bit Sequence No", bitSize: "Bit Size (in)", bitManufacturer: "Manufacturer", bitSerial: "Bit Serial No", bitWearIodl: "Bit Wear I-O-D-L", bitWearBgor: "Bit Wear B-G-O-R", bhaNo: "BHA No", bhaMdIn: "MD In (ft)", bhaMdOut: "MD Out (ft)", bhaTotalLength: "Total Length (ft)", safetyIncident: "Safety Incident?", environmentIncident: "Environmental Incident?", daysSinceRi: "Days since Last RI", daysSinceLta: "Days since Last LTA", incidentComments: "Incident Comments", otherRemarks: "Other Remarks",
       description: "Description", operationStartDate: "Operation Start", workoverNo: "WO No", afeCost: "AFP Cost (USD)", dailyCost: "Daily Cost (USD)", cumulativeCost: "Cumulative Cost (USD)", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Engineer", pamEngineer: "PAM Engineer", geologist: "Geologist", totalPersonnel: "Total Personnel", safetyComments: "Safety Comments", groundElev: "Ground Elev (ft)", afeMdDays: "AFE MD/Days (ft/d)"
     },
     rules: [
@@ -116,7 +116,7 @@ const i18n = {
       "<strong>Date:</strong> report date cannot be later than today.",
       "<strong>Depth:</strong> Today's MD must be greater than or equal to Previous MD; Progress should match the difference with 0.5 ft tolerance.",
       "<strong>Hours:</strong> Operations Hrs must total 24.00 hours with 0.05 h tolerance.",
-      "<strong>Operation rows:</strong> From, To, Hrs, Op Code, Type, and Operation Details should be complete; Type must be P or NPT.",
+      "<strong>Operation rows:</strong> From, To, Hrs, Op Code, Type, and Operation Details should be complete; Type must be P, SC, or NPT from the appendix.",
       "<strong>Survey:</strong> Survey MD cannot exceed Today's MD; Incl must be 0 to 180; DLS cannot be negative.",
       "<strong>Mud:</strong> Density should be 6 to 20 ppg; Sand should not exceed 10%.",
       "<strong>Equipment:</strong> BHA OD, ID, Jts, and Length cannot be negative; OD should be greater than or equal to ID.",
@@ -146,7 +146,7 @@ const i18n = {
       "<strong>Remarks:</strong> Other Remarks can keep the original final-page text for manual review."
     ],
     msg: {
-      required: "{field} is required.", futureDate: "Report date cannot be later than today.", operationStartDate: "Operation Start cannot be later than the report date.", mdOrder: "Today's MD must be greater than or equal to Previous MD.", progressMismatch: "Progress does not match the MD difference. Current difference is {value} ft.", operationMissingTable: "Operations cannot be empty.", operationHours: "Operations total must be 24.00 h. Current total is {value} h.", operationMissing: "Operations row {row} is missing {field}.", operationTimeMismatch: "Operations row {row} From/To duration is {value} h and does not match Hrs.", operationType: "Operations row {row} Type is empty or not P/NPT; please review.", completionOperationType: "Completion operation row {row} Type is empty or not P/SC/NPT; please review.", workoverOperationType: "Workover operation row {row} Type is empty or not P/SC/NPT; please review.", moveOperationType: "Move operation row {row} Type is empty or not P/SC/NPT; please review.", operationHourRange: "Operations row {row} Hrs must be between 0 and 24.", intervalDepth: "Perforated interval row {row} Base MD should be greater than or equal to Top MD.", intervalLength: "Perforated interval row {row} Length cannot be negative.", surveyMd: "Survey row {row} MD cannot exceed Today's MD.", surveyIncl: "Survey row {row} Incl must be between 0 and 180.", surveyDls: "Survey row {row} DLS cannot be negative.", mudDensity: "Mud density should be between 6 and 20 ppg.", sand: "Mud sand is above 10%; please review.", bhaOdId: "BHA row {row} OD should be greater than or equal to ID.", bhaNegative: "BHA row {row} contains a negative value.", negativeValue: "Row {row} {field} cannot be negative.", incidentRequired: "Incident Comments are required when Safety or Environmental Incident is Y."
+      required: "{field} is required.", futureDate: "Report date cannot be later than today.", operationStartDate: "Operation Start cannot be later than the report date.", mdOrder: "Today's MD must be greater than or equal to Previous MD.", progressMismatch: "Progress does not match the MD difference. Current difference is {value} ft.", operationMissingTable: "Operations cannot be empty.", operationHours: "Operations total must be 24.00 h. Current total is {value} h.", operationMissing: "Operations row {row} is missing {field}.", operationTimeMismatch: "Operations row {row} From/To duration is {value} h and does not match Hrs.", operationType: "Operations row {row} Type is empty or not P/SC/NPT; please review.", completionOperationType: "Completion operation row {row} Type is empty or not P/SC/NPT; please review.", workoverOperationType: "Workover operation row {row} Type is empty or not P/SC/NPT; please review.", moveOperationType: "Move operation row {row} Type is empty or not P/SC/NPT; please review.", operationHourRange: "Operations row {row} Hrs must be between 0 and 24.", intervalDepth: "Perforated interval row {row} Base MD should be greater than or equal to Top MD.", intervalLength: "Perforated interval row {row} Length cannot be negative.", surveyMd: "Survey row {row} MD cannot exceed Today's MD.", surveyIncl: "Survey row {row} Incl must be between 0 and 180.", surveyDls: "Survey row {row} DLS cannot be negative.", mudDensity: "Mud density should be between 6 and 20 ppg.", sand: "Mud sand is above 10%; please review.", bhaOdId: "BHA row {row} OD should be greater than or equal to ID.", bhaNegative: "BHA row {row} contains a negative value.", negativeValue: "Row {row} {field} cannot be negative.", incidentRequired: "Incident Comments are required when Safety or Environmental Incident is Y."
     }
   },
   es: {
@@ -161,17 +161,17 @@ const i18n = {
       descRigProductionSummary: "Muestra tiempos de producción por equipo, tipo de reporte y mes desde reportes diarios procesados.", descProductionDetailReport: "Consulta detalles de producción por periodo de proyecto, equipo y asignación de pozo.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
-      navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Control de Pozo e Hidráulica", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
+      navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Parámetros Operacionales", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Costos e Inventario", navIncidents: "Incidentes y Observaciones",
       importPdf: "Importar Reporte PDF", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationRunningShort: "Traduciendo", translationReady: "Idioma del reporte cambiado.", translationFailed: "Los datos traducidos no están disponibles. Revise el modelo local o el estado de la tarea.", translationPreviewNotice: "Se muestra la traducción de base de datos en modo lectura. Vuelva a Original para editar el reporte fuente.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Estado BD", backRecords: "Volver a registros", databaseSaved: "Guardado en MySQL.", databaseSaveFailed: "No se pudo guardar en MySQL.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
-      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", parseDoneStatus: "Análisis completo", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", translationQueuedStatus: "Traducción en cola", translationRunningStatus: "Traduciendo", translationDoneStatus: "Traducción completa", translationFailedStatus: "Traducción falló", translationNotReady: "La traducción aún no está completa. El cambio de idioma estará disponible al finalizar.", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo",
+      uploadDashboardTitle: "Panel de Reportes Diarios", wellSelection: "Selección de Pozo", searchWell: "Buscar pozo", reportCalendar: "Calendario", uploadRecords: "Registros de Carga", allTypes: "Todos los tipos", allStatuses: "Todos los estados", exportList: "Exportar", preview: "Ver", download: "Descargar", detail: "Detalle", uploaded: "Completo", queued: "En cola", parsing: "Analizando", parseDoneStatus: "Análisis completo", failed: "Falló", warningStatus: "Alertas", pending: "Pendiente", translationQueuedStatus: "Traducción en cola", translationRunningStatus: "Traduciendo", translationDoneStatus: "Traducción completa", translationFailedStatus: "Traducción falló", translationNotReady: "La traducción aún no está completa. El cambio de idioma estará disponible al finalizar.", noRecords: "Sin registros", addWell: "Agregar pozo", selectedWell: "Pozo actual", monthlyUploaded: "Cargados del mes", monthlyPending: "Pendientes", reportKinds: "Tipos de reporte", monthlyUploaders: "Cargadores del mes", calendarHint: "Tip: haga clic en una fecha completada para previsualizar", recordsCount: "registros", uploader: "Usuario", uploadTime: "Hora de carga", fileName: "Archivo", status: "Estado", operation: "Acciones", date: "Fecha", well: "Pozo", reportType: "Tipo", page: "Página", prevPage: "Anterior", nextPage: "Siguiente", sourcePdfMissing: "El PDF fuente no se guardó. Vuelva a importarlo para verlo.", sourcePdfTitle: "PDF fuente", sortFirstUpload: "Prim.", sortLastUpload: "Rec.", sortWellName: "Pozo", deleteFailedImport: "Eliminar", failedImportDeleted: "Se eliminó el registro de importación fallida.",
       metricCompletion: "Avance", metricIssues: "Alertas", metricHours: "Total Operativo", metricProgress: "Progreso", metricIntervals: "Intervalos", metricWellDate: "Pozo / Fecha", metricDailyHours: "Horas del Día", metricNptHours: "Horas NPT", metricDataCompleteness: "Integridad de Datos",
       metricWorkDays: "Días Operativos", metricNptShare: "Horas NPT / %", metricPScShare: "% P / SC", metricReportCompleteness: "Integridad del Reporte", metricMoveDrillingDays: "Movilización / Perforación", noWells: "No hay pozos identificados",
       analyticsKicker: "Panel de Datos", analyticsProductionScope: "Basado en reportes diarios guardados en la biblioteca Excel", analyticsNptScope: "Basado en reportes diarios guardados en la biblioteca Excel; agrupado por código y subcódigo de operación", search: "Consultar", reset: "Restablecer", wellborePlaceholder: "Ingrese pozo",
       chartRigHours: "Ranking NPT acumulado por taladro", chartOperationMix: "Composición Operativa", chartMonthlyHours: "Gantt de Operaciones por Pozo", chartNptRig: "Comparación NPT por Taladro (h)", chartNptReason: "Distribución por Código / Subcódigo", chartNptWell: "Ranking NPT por Pozo", chartNptMonthly: "Tendencia Mensual NPT (h)", productionDetailTitle: "Detalle del Reporte de Producción", nptDetailTitle: "Detalle NPT", analyticsRowHint: "Haga clic en una fila para abrir el detalle del reporte", productionReportRowHint: "Haga clic en un pozo para abrir su página diaria en una pestaña nueva", nptRowHint: "Agrupado por código / subcódigo original del reporte; haga clic en una fila para rastrear el reporte",
       kpiRigCount: "Taladros", kpiNptRigCount: "Taladros con NPT", kpiWellCount: "Pozos", kpiTotalHours: "Horas Totales", kpiTotalNpt: "NPT Total", kpiReportCompleteness: "Integridad del Reporte", kpiNptEvents: "Eventos NPT", analyticsDefaultCaption: "Basado en reportes guardados", analyticsNptCaption: "Agrupado por código / subcódigo", analyticsCompletenessCaption: "Faltan {missing} días / Alertas {warning} días", noAnalyticsData: "No hay datos para estadística", noExportData: "No hay datos para exportar", normalStatus: "Normal", reasonMissing: "Sin código / subcódigo",
       allRigs: "Todos los taladros", allProjects: "Todos los proyectos", allReportTypes: "Todos los tipos", allReasons: "Todas las categorías", scopeByRig: "Por taladro", scopeByProject: "Por proyecto", productionNptCaption: "Horas NPT acumuladas (h)", nptHoursCaption: "Horas NPT (h)", nptDailyShareCaption: "Promedio diario de NPT (%)", nptNotePlaceholder: "Ingrese observaciones (opcional)", opCodeSub: "Código / Subcódigo", opCode: "Código Op", opSub: "Subcódigo Op", category: "Categoría", tableProject: "Proyecto", tableContractProject: "Contrato (Proyecto)", tableRig: "Taladro", tableWell: "Pozo", tableReportType: "Tipo de Reporte", tableStartDate: "Fecha Inicio", tableEndDate: "Fecha Fin", tableMoveDate: "Fecha Movilización", tableDrillingStartDate: "Inicio Perforación", tableDrillingFinishDate: "Fin Perforación", tableCompletionDate: "Fecha Completación", tableWorkoverDate: "Fecha Workover", tableDrillingHours: "Perforación (h)", tableCompletionHours: "Completación (h)", tableWorkoverHours: "Workover (h)", tableMoveHours: "Movilización (h)", tableNptHours: "NPT (h)", tableRemarks: "Observaciones", tableDate: "Fecha", tableOperationDetails: "Detalle de Operación",
-      sectionBasic: "Información Básica", sectionSummary: "Resumen Operacional", sectionWellControl: "Control de Pozo e Hidráulica", sectionSurvey: "Datos Direccionales (Últimos 6)", sectionMud: "Datos de Lodo", sectionBitBha: "Broca y BHA", sectionOperations: "Operaciones", sectionCosts: "Costos e Inventario", sectionIncidents: "Incidentes y Observaciones", sectionPersonnel: "Personal", sectionPerforationIntervals: "Intervalos Cañoneados",
-      noteBasic: "Encabezado e información del pozo según la plantilla PDF", noteSummary: "Operación actual, resumen de 24 horas y plan siguiente", noteWellControl: "Casing, BOP, presión de bomba, torque y hookload", noteIncidents: "Estado HSE, operaciones simultáneas y observaciones",
+      sectionBasic: "Información Básica", sectionSummary: "Resumen Operacional", sectionWellControl: "Parámetros Operacionales", sectionSurvey: "Datos Direccionales (Últimos 6)", sectionMud: "Datos de Lodo", sectionBitBha: "Broca y BHA", sectionOperations: "Operaciones", sectionCosts: "Costos e Inventario", sectionIncidents: "Incidentes y Observaciones", sectionPersonnel: "Personal", sectionPerforationIntervals: "Intervalos Cañoneados",
+      noteBasic: "Encabezado e información del pozo según la plantilla PDF", noteSummary: "Operación actual, resumen de 24 horas y plan siguiente", noteWellControl: "Casing, pruebas de presión, parámetros de bomba, peso de sarta y torque", noteIncidents: "Estado HSE, operaciones simultáneas y observaciones",
       completionNoteBasic: "Encabezado PDF de completación, AFP e información del pozo", completionNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", completionNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo", workoverNoteBasic: "Encabezado PDF de workover, AFP e información del pozo", workoverNotePersonnel: "Supervisores, ingenieros, geólogo y personal total", workoverNoteRemarks: "Comentarios de seguridad, control de sólidos y observaciones de campo",
       rulesTitle: "Reglas Básicas de Validación", liveValidation: "Validación en Vivo",
       uploadedDays: "Cargados", daysUnit: "días", missingDate: "Faltante",
@@ -181,9 +181,9 @@ const i18n = {
     },
     fields: {
       event: "Evento", reportDate: "Fecha", project: "Proyecto", date_from: "Fecha Inicio", date_to: "Fecha Fin", scope_type: "Modo de filtro", scope_value: "Taladro", nptConfirmNote: "Observaciones", report_type: "Tipo de Reporte", reason: "Código / Subcódigo", nptWellbore: "Pozo", nptRig: "Taladro", nptStatus: "Estado de Confirmación", reportNo: "No. de Reporte", wellbore: "Pozo", rig: "Taladro", primaryReason: "Razón Principal", afeNumber: "Número AFE", refDatum: "Datum de Referencia (ft)", todayMd: "MD de Hoy (ft)", prevMd: "MD Anterior (ft)", progress: "Progreso (ft)", rotHrsToday: "Horas Rotando Hoy (h)",
-      currentOps: "Operación Actual", summary24h: "Resumen 24 h", forecast24h: "Pronóstico 24 h", lastCasing: "Último Casing", lastCasingSize: "Tamaño Último Casing (in)", lastCasingDepth: "Profundidad Último Casing (ft)", nextCasing: "Próximo Casing", nextCasingSize: "Tamaño Próximo Casing (in)", nextCasingDepth: "Profundidad Próximo Casing (ft)", formTestEmw: "Prueba Formación / EMW (ppg)", lastBopPressTest: "Última Prueba BOP", pumpRate: "Caudal Bomba (gpm)", pumpPress: "Presión Bomba (psi)", stringWeightUpDown: "Peso Sarta Arriba/Abajo", torqueOnBottom: "Torque en Fondo",
+      currentOps: "Operación Actual", summary24h: "Resumen 24 h", forecast24h: "Pronóstico 24 h", lastCasing: "Último Casing", lastCasingSize: "Tamaño Último Casing (in)", lastCasingDepth: "Profundidad Último Casing (ft)", nextCasing: "Próximo Casing", nextCasingSize: "Tamaño Próximo Casing (in)", nextCasingDepth: "Profundidad Próximo Casing (ft)", formTestType: "Tipo de Prueba de Formación", formTestEmw: "EMW de Prueba de Formación (ppg)", lastBopPressTest: "Fecha de Última Prueba BOP", pumpRate: "Caudal Bomba (gpm)", pumpPress: "Presión Bomba (psi)", stringWeightUp: "Peso de Sarta Arriba (kip)", stringWeightDown: "Peso de Sarta Abajo (kip)", stringWeightUpDown: "Peso Sarta Arriba/Abajo", torqueOnBottom: "Torque en Fondo (ft-lbf)",
       mudEngineer: "Ingeniero de Lodo", sampleFrom: "Muestra de", mudType: "Tipo de Lodo", mudTimeMd: "Hora / MD", mudTime: "Hora Lodo", mudMd: "MD Lodo (ft)", mudDensity: "Densidad (ppg)", mudTemperature: "Temp. Lodo (°F)", rheologyTemp: "Temp. Reología (°F)", viscosity: "Viscosidad (sec/qt)", pvYp: "PV / YP", pv: "PV (cP)", yp: "YP (lb/100ft²)", gels: "Geles 10s/10m/30m (lb/100ft²)", gel10s: "Gel 10s (lb/100ft²)", gel10m: "Gel 10m (lb/100ft²)", gel30m: "Gel 30m (lb/100ft²)", apiWl: "API WL (cc/30min)", oilWater: "Aceite / Agua", oilPercent: "Aceite (%)", waterPercent: "Agua (%)", sand: "Arena (%)", ecd: "ECD (ppg)", mudComments: "Comentarios de Lodo",
-      bitNo: "No. Broca", bitSize: "Tamaño Broca (in)", bitManufacturer: "Fabricante", bitSerial: "No. Serie", bhaNo: "No. BHA", bhaMdIn: "MD Entrada (ft)", bhaMdOut: "MD Salida (ft)", bhaTotalLength: "Longitud Total (ft)", safetyIncident: "¿Incidente de Seguridad?", environmentIncident: "¿Incidente Ambiental?", daysSinceRi: "Días desde Último RI", daysSinceLta: "Días desde Último LTA", incidentComments: "Comentarios de Incidente", otherRemarks: "Otras Observaciones",
+      bitNo: "Secuencia de Broca", bitSize: "Tamaño Broca (in)", bitManufacturer: "Fabricante", bitSerial: "Serie de Broca", bitWearIodl: "Desgaste I-O-D-L", bitWearBgor: "Desgaste B-G-O-R", bhaNo: "No. BHA", bhaMdIn: "MD Entrada (ft)", bhaMdOut: "MD Salida (ft)", bhaTotalLength: "Longitud Total (ft)", safetyIncident: "¿Incidente de Seguridad?", environmentIncident: "¿Incidente Ambiental?", daysSinceRi: "Días desde Último RI", daysSinceLta: "Días desde Último LTA", incidentComments: "Comentarios de Incidente", otherRemarks: "Otras Observaciones",
       description: "Descripción", operationStartDate: "Inicio OPR", workoverNo: "No. WO", afeCost: "Costo AFP (USD)", dailyCost: "Costo Diario (USD)", cumulativeCost: "Costo Acumulado (USD)", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Ingeniero", pamEngineer: "Ingeniero PAM", geologist: "Geólogo", totalPersonnel: "Total Personal", safetyComments: "Comentarios de Seguridad", groundElev: "Elevación Terreno (ft)", afeMdDays: "AFE MD/Días (ft/d)"
     },
     rules: [
@@ -191,7 +191,7 @@ const i18n = {
       "<strong>Fecha:</strong> la fecha del reporte no puede ser posterior a hoy.",
       "<strong>Profundidad:</strong> el MD de hoy debe ser mayor o igual al MD anterior; el progreso debe coincidir con tolerancia de 0.5 ft.",
       "<strong>Horas:</strong> las Hrs de operaciones deben sumar 24.00 horas con tolerancia de 0.05 h.",
-      "<strong>Filas de operación:</strong> Desde, Hasta, Hrs, Código Op, Tipo y Detalle deben estar completos; Tipo debe ser P o NPT.",
+      "<strong>Filas de operación:</strong> Desde, Hasta, Hrs, Código Op, Tipo y Detalle deben estar completos; Tipo debe ser P, SC o NPT del apéndice.",
       "<strong>Survey:</strong> MD no puede superar el MD de hoy; Incl debe estar entre 0 y 180; DLS no puede ser negativo.",
       "<strong>Lodo:</strong> densidad entre 6 y 20 ppg; arena no mayor a 10%.",
       "<strong>Equipo:</strong> OD, ID, Jts y Longitud de BHA no pueden ser negativos; OD debe ser mayor o igual a ID.",
@@ -221,7 +221,7 @@ const i18n = {
       "<strong>Observaciones:</strong> Other Remarks puede conservar el texto original de la última página para revisión manual."
     ],
     msg: {
-      required: "{field} es obligatorio.", futureDate: "La fecha del reporte no puede ser posterior a hoy.", operationStartDate: "Inicio OPR no puede ser posterior a la fecha del reporte.", mdOrder: "El MD de hoy debe ser mayor o igual al MD anterior.", progressMismatch: "El progreso no coincide con la diferencia de MD. La diferencia actual es {value} ft.", operationMissingTable: "Las operaciones no pueden estar vacías.", operationHours: "El total de operaciones debe ser 24.00 h. El total actual es {value} h.", operationMissing: "La fila de operaciones {row} no tiene {field}.", operationTimeMismatch: "La duración Desde/Hasta de la fila {row} es {value} h y no coincide con Hrs.", operationType: "El Tipo en la fila de operaciones {row} está vacío o no es P/NPT; revisar.", completionOperationType: "El Tipo en la fila de completación {row} está vacío o no es P/SC/NPT; revisar.", workoverOperationType: "El Tipo en la fila de workover {row} está vacío o no es P/SC/NPT; revisar.", moveOperationType: "El Tipo en la fila de traslado {row} está vacío o no es P/SC/NPT; revisar.", operationHourRange: "Las Hrs de la fila {row} deben estar entre 0 y 24.", intervalDepth: "En intervalo cañoneado fila {row}, Base MD debe ser mayor o igual que Tope MD.", intervalLength: "La Longitud del intervalo cañoneado fila {row} no puede ser negativa.", surveyMd: "El MD de survey en la fila {row} no puede superar el MD de hoy.", surveyIncl: "La inclinación en la fila {row} debe estar entre 0 y 180.", surveyDls: "El DLS en la fila {row} no puede ser negativo.", mudDensity: "La densidad del lodo debe estar entre 6 y 20 ppg.", sand: "La arena del lodo supera 10%; revisar.", bhaOdId: "En BHA fila {row}, OD debe ser mayor o igual que ID.", bhaNegative: "La fila BHA {row} contiene un valor negativo.", negativeValue: "Fila {row}: {field} no puede ser negativo.", incidentRequired: "Los comentarios son obligatorios cuando Safety o Environmental Incident es Y."
+      required: "{field} es obligatorio.", futureDate: "La fecha del reporte no puede ser posterior a hoy.", operationStartDate: "Inicio OPR no puede ser posterior a la fecha del reporte.", mdOrder: "El MD de hoy debe ser mayor o igual al MD anterior.", progressMismatch: "El progreso no coincide con la diferencia de MD. La diferencia actual es {value} ft.", operationMissingTable: "Las operaciones no pueden estar vacías.", operationHours: "El total de operaciones debe ser 24.00 h. El total actual es {value} h.", operationMissing: "La fila de operaciones {row} no tiene {field}.", operationTimeMismatch: "La duración Desde/Hasta de la fila {row} es {value} h y no coincide con Hrs.", operationType: "El Tipo en la fila de operaciones {row} está vacío o no es P/SC/NPT; revisar.", completionOperationType: "El Tipo en la fila de completación {row} está vacío o no es P/SC/NPT; revisar.", workoverOperationType: "El Tipo en la fila de workover {row} está vacío o no es P/SC/NPT; revisar.", moveOperationType: "El Tipo en la fila de traslado {row} está vacío o no es P/SC/NPT; revisar.", operationHourRange: "Las Hrs de la fila {row} deben estar entre 0 y 24.", intervalDepth: "En intervalo cañoneado fila {row}, Base MD debe ser mayor o igual que Tope MD.", intervalLength: "La Longitud del intervalo cañoneado fila {row} no puede ser negativa.", surveyMd: "El MD de survey en la fila {row} no puede superar el MD de hoy.", surveyIncl: "La inclinación en la fila {row} debe estar entre 0 y 180.", surveyDls: "El DLS en la fila {row} no puede ser negativo.", mudDensity: "La densidad del lodo debe estar entre 6 y 20 ppg.", sand: "La arena del lodo supera 10%; revisar.", bhaOdId: "En BHA fila {row}, OD debe ser mayor o igual que ID.", bhaNegative: "La fila BHA {row} contiene un valor negativo.", negativeValue: "Fila {row}: {field} no puede ser negativo.", incidentRequired: "Los comentarios son obligatorios cuando Safety o Environmental Incident es Y."
     }
   }
 };
@@ -247,21 +247,32 @@ Object.assign(i18n.es.ui, {
   wellHasNptTitle: "El pozo registra NPT en su historial", wellNoNptTitle: "El pozo no registra NPT en su historial",
 });
 
+const DEFAULT_TIME_TYPE_VALUES = [
+  { value_code: "P", value_name: "P", display_color: "#16875B" },
+  { value_code: "SC", value_name: "SC", display_color: "#B7791F" },
+  { value_code: "NPT", value_name: "NPT", display_color: "#D43F3A" },
+];
+let timeTypeValues = [...DEFAULT_TIME_TYPE_VALUES];
+
+function timeTypeCodes() {
+  return timeTypeValues.map((item) => String(item.value_code || "").trim().toUpperCase()).filter(Boolean);
+}
+
 const tableSchemas = {
   surveyTable: [{ name: "md", type: "number" }, { name: "incl", type: "number" }, { name: "azi", type: "number" }, { name: "tvd", type: "number" }, { name: "vse", type: "number" }, { name: "ns", type: "number" }, { name: "dls", type: "number" }, { name: "build", type: "number" }],
   bhaTable: [{ name: "component", type: "text" }, { name: "od", type: "number" }, { name: "id", type: "number" }, { name: "joints", type: "number" }, { name: "length", type: "number" }],
-  operationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: ["", "P", "NPT"] }, { name: "operation_details", type: "textarea" }],
+  operationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: timeTypeCodes() }, { name: "operation_details", type: "textarea" }],
   costTable: [{ name: "cost_description", type: "text" }, { name: "vendor", type: "text" }, { name: "amount", type: "number" }],
   bulkTable: [{ name: "bulk", type: "text" }, { name: "qty_start", type: "number" }, { name: "qty_used", type: "number" }, { name: "qty_end", type: "number" }],
-  completionOperationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: ["", "P", "SC", "NPT"] }, { name: "operation_details", type: "textarea" }],
+  completionOperationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: timeTypeCodes() }, { name: "operation_details", type: "textarea" }],
   completionBulkTable: [{ name: "bulk", type: "text" }, { name: "qty_start", type: "number" }, { name: "qty_used", type: "number" }, { name: "qty_end", type: "number" }],
   completionCostTable: [{ name: "cost_description", type: "text" }, { name: "vendor", type: "text" }, { name: "amount", type: "number" }],
   perforationIntervalsTable: [{ name: "formation", type: "text" }, { name: "top_md", type: "number" }, { name: "base_md", type: "number" }, { name: "length", type: "number" }, { name: "density", type: "number" }, { name: "charges", type: "text" }, { name: "phase", type: "number" }, { name: "penetration", type: "number" }, { name: "diameter", type: "number" }, { name: "date", type: "text" }, { name: "status", type: "text" }, { name: "comments", type: "textarea" }],
-  workoverOperationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: ["", "P", "SC", "NPT"] }, { name: "operation_details", type: "textarea" }],
+  workoverOperationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: timeTypeCodes() }, { name: "operation_details", type: "textarea" }],
   workoverBulkTable: [{ name: "bulk", type: "text" }, { name: "qty_start", type: "number" }, { name: "qty_used", type: "number" }, { name: "qty_end", type: "number" }],
   workoverCostTable: [{ name: "cost_description", type: "text" }, { name: "vendor", type: "text" }, { name: "amount", type: "number" }],
   workoverIntervalsTable: [{ name: "formation", type: "text" }, { name: "top_md", type: "number" }, { name: "base_md", type: "number" }, { name: "length", type: "number" }, { name: "density", type: "number" }, { name: "charges", type: "text" }, { name: "phase", type: "number" }, { name: "penetration", type: "number" }, { name: "diameter", type: "number" }, { name: "date", type: "text" }, { name: "status", type: "text" }, { name: "comments", type: "textarea" }],
-  moveOperationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: ["", "P", "SC", "NPT"] }, { name: "operation_details", type: "textarea" }]
+  moveOperationsTable: [{ name: "from", type: "text" }, { name: "to", type: "text" }, { name: "hours", type: "number" }, { name: "op_code", type: "text" }, { name: "op_sub", type: "text" }, { name: "op_type", type: "select", options: timeTypeCodes() }, { name: "operation_details", type: "textarea" }]
 };
 
 const drillingTableIds = ["surveyTable", "bhaTable", "operationsTable", "costTable", "bulkTable"];
@@ -483,6 +494,7 @@ async function loadFrontSession() {
       window.location.href = `/login/?next=${encodeURIComponent("/web_form/")}`;
       return;
     }
+    await loadTimeTypeValues();
     renderFrontUserBar();
     renderFrontAdminEntry();
     applyFrontPermissions();
@@ -1009,12 +1021,15 @@ function makeInput(field, value = "") {
     (field.options || []).forEach((optionValue) => {
       const option = document.createElement("option");
       option.value = optionValue;
-      option.textContent = optionValue || "-";
+      option.textContent = optionValue;
+      const reference = timeTypeValues.find((item) => item.value_code === optionValue);
+      if (field.name === "op_type" && reference?.display_color) option.style.color = reference.display_color;
       control.appendChild(option);
     });
   }
   control.value = value;
   if (field.name === "op_type") {
+    if (!timeTypeCodes().includes(String(value || "").trim().toUpperCase())) control.selectedIndex = 0;
     control.classList.add("operation-type-select");
     syncOperationTypeStyle(control);
     control.addEventListener("change", () => syncOperationTypeStyle(control));
@@ -1029,7 +1044,53 @@ function makeInput(field, value = "") {
 function syncOperationTypeStyle(control) {
   const type = String(control.value || "").trim().toLowerCase();
   control.classList.remove("type-p", "type-sc", "type-npt");
+  control.removeAttribute("data-reference-color");
+  control.style.removeProperty("--operation-type-color");
+  const reference = timeTypeValues.find((item) => String(item.value_code || "").trim().toLowerCase() === type);
+  if (reference?.display_color) {
+    control.dataset.referenceColor = reference.display_color;
+    control.style.setProperty("--operation-type-color", reference.display_color);
+  }
   if (["p", "sc", "npt"].includes(type)) control.classList.add(`type-${type}`);
+}
+
+function applyTimeTypeValues(items = []) {
+  const normalized = items
+    .map((item) => ({
+      value_code: String(item.value_code || "").trim().toUpperCase(),
+      value_name: String(item.value_name || item.value_code || "").trim(),
+      display_color: String(item.display_color || "").trim(),
+    }))
+    .filter((item) => item.value_code);
+  if (normalized.length) timeTypeValues = normalized;
+  const codes = timeTypeCodes();
+  ["operationsTable", "completionOperationsTable", "workoverOperationsTable", "moveOperationsTable"].forEach((tableId) => {
+    const field = tableSchemas[tableId].find((item) => item.name === "op_type");
+    if (field) field.options = [...codes];
+  });
+  document.querySelectorAll("select.operation-type-select").forEach((control) => {
+    const previous = String(control.value || "").trim().toUpperCase();
+    control.replaceChildren(...codes.map((code) => {
+      const option = document.createElement("option");
+      const reference = timeTypeValues.find((item) => item.value_code === code);
+      option.value = code;
+      option.textContent = reference?.value_name || code;
+      if (reference?.display_color) option.style.color = reference.display_color;
+      return option;
+    }));
+    control.value = codes.includes(previous) ? previous : codes[0] || "";
+    syncOperationTypeStyle(control);
+  });
+}
+
+async function loadTimeTypeValues() {
+  try {
+    const payload = await adminRequest("/api/reference-data/TIME_TYPE");
+    applyTimeTypeValues(payload.items || []);
+  } catch (error) {
+    console.warn("时效类型附录加载失败，使用内置安全值。", error);
+    applyTimeTypeValues(DEFAULT_TIME_TYPE_VALUES);
+  }
 }
 
 function renderTableRow(tableId, values = []) {
@@ -1683,6 +1744,9 @@ function recordTableMarkup(reportType, records, jobs = [], page = 1, pageSize = 
 }
 
 function jobRecordRowMarkup(reportType, job) {
+  const actions = [];
+  if (job.recordId) actions.push(`<button class="link-button" type="button" data-record-preview="${escapeHtml(job.recordId)}" data-report-type="${reportType}">${ui("preview")}</button>`);
+  if (job.status === "failed") actions.push(`<button class="link-button danger-link" type="button" data-delete-upload-job="${escapeHtml(job.id)}" data-report-type="${reportType}" aria-label="${escapeHtml(`${ui("deleteFailedImport")} ${job.fileName || ""}`)}">${ui("deleteFailedImport")}</button>`);
   return `
     <tr>
       <td>${escapeHtml(job.reportDate || "-")}</td>
@@ -1692,9 +1756,17 @@ function jobRecordRowMarkup(reportType, job) {
       <td>${escapeHtml(formatRecordTime(job.updated_at))}</td>
       <td>${escapeHtml(job.uploader || "本地导入")}</td>
       <td>${jobStatusMarkup(job)}</td>
-      <td>${job.recordId ? `<button class="link-button" type="button" data-record-preview="${escapeHtml(job.recordId)}" data-report-type="${reportType}">${ui("preview")}</button>` : "-"}</td>
+      <td><div class="record-row-actions">${actions.join("") || "-"}</div></td>
     </tr>
   `;
+}
+
+function deleteFailedUploadJob(reportType, jobId) {
+  const index = uploadJobs.findIndex((job) => job.id === jobId && job.reportType === reportType && job.status === "failed");
+  if (index < 0) return;
+  uploadJobs.splice(index, 1);
+  renderRecordDashboard(reportType);
+  showToast(ui("failedImportDeleted"));
 }
 
 function savedRecordRowMarkup(reportType, record) {
@@ -3329,6 +3401,12 @@ function expandLegacyFields(fields = {}) {
   if ((!expanded.nextCasingSize && !expanded.nextCasingDepth) && expanded.nextCasing) {
     [expanded.nextCasingSize, expanded.nextCasingDepth] = splitAt(expanded.nextCasing);
   }
+  if (!expanded.formTestType && expanded.formTestEmw) {
+    expanded.formTestType = String(expanded.formTestEmw).match(/\b(FIT|LOT)\b/i)?.[1]?.toUpperCase() || "";
+  }
+  if ((!expanded.stringWeightUp && !expanded.stringWeightDown) && expanded.stringWeightUpDown) {
+    [expanded.stringWeightUp, expanded.stringWeightDown] = numericValues(expanded.stringWeightUpDown, 2);
+  }
   if ((!expanded.mudTime && !expanded.mudMd) && expanded.mudTimeMd) {
     [expanded.mudTime, expanded.mudMd] = splitSlash(expanded.mudTimeMd, 2);
   }
@@ -3346,8 +3424,12 @@ function expandLegacyFields(fields = {}) {
 
 function normalizedReportFields(fields = {}) {
   const normalized = expandLegacyFields(fields);
+  STRICT_NUMERIC_REPORT_FIELDS.forEach((name) => { normalized[name] = numericDatumValue(normalized[name]); });
+  normalized.formTestType = ["FIT", "LOT"].includes(String(normalized.formTestType || "").toUpperCase()) ? String(normalized.formTestType).toUpperCase() : "";
+  normalized.lastBopPressTest = dateInputValue(normalized.lastBopPressTest);
   normalized.lastCasing = joinAt(normalized.lastCasingSize, normalized.lastCasingDepth);
   normalized.nextCasing = joinAt(normalized.nextCasingSize, normalized.nextCasingDepth);
+  normalized.stringWeightUpDown = joinSlash(normalized.stringWeightUp, normalized.stringWeightDown);
   normalized.mudTimeMd = joinSlash(normalized.mudTime, normalized.mudMd);
   normalized.pvYp = joinSlash(normalized.pv, normalized.yp);
   normalized.gels = joinSlash(normalized.gel10s, normalized.gel10m, normalized.gel30m);
@@ -3355,15 +3437,40 @@ function normalizedReportFields(fields = {}) {
   return normalized;
 }
 
+const STRICT_NUMERIC_REPORT_FIELDS = new Set([
+  "lastCasingSize", "lastCasingDepth", "nextCasingSize", "nextCasingDepth", "formTestEmw",
+  "pumpRate", "pumpPress", "stringWeightUp", "stringWeightDown", "torqueOnBottom",
+  "bitSize", "bhaMdIn", "bhaMdOut", "bhaTotalLength",
+]);
+
+function numericValues(value, count = 1) {
+  const values = [...String(value ?? "").matchAll(/[-+]?\d[\d,]*(?:\.\d+)?/g)].map((match) => match[0].replaceAll(",", ""));
+  while (values.length < count) values.push("");
+  return values.slice(0, count);
+}
+
 function numericDatumValue(value) {
-  const match = String(value ?? "").match(/[-+]?\d[\d,]*(?:\.\d+)?/);
-  return match ? match[0].replaceAll(",", "") : "";
+  return numericValues(value, 1)[0];
+}
+
+function dateInputValue(value) {
+  const text = String(value ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return match ? `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}` : "";
 }
 
 function applyReportFields(fields = {}, targetForm = form) {
   const expanded = expandLegacyFields(fields);
+  targetForm.querySelectorAll("[name]").forEach((control) => {
+    if (control.type === "checkbox" || control.type === "radio") control.checked = false;
+    else control.value = "";
+  });
   Object.entries(expanded).forEach(([name, value]) => {
-    if (targetForm.elements[name]) targetForm.elements[name].value = name === "refDatum" ? numericDatumValue(value) : value ?? "";
+    if (!targetForm.elements[name]) return;
+    if (name === "refDatum" || STRICT_NUMERIC_REPORT_FIELDS.has(name)) targetForm.elements[name].value = numericDatumValue(value);
+    else if (name === "lastBopPressTest") targetForm.elements[name].value = dateInputValue(value);
+    else targetForm.elements[name].value = value ?? "";
   });
 }
 
@@ -3400,6 +3507,11 @@ function resetValidationHints(rootSelector) {
     label.classList.remove("field-has-validation-hint", "field-has-validation-issue");
     label.removeAttribute("title");
   });
+  document.querySelectorAll(`${rootSelector} .validation-issue-host`).forEach((host) => {
+    host.classList.remove("validation-issue-host");
+    host.removeAttribute("data-validation-message");
+    host.removeAttribute("title");
+  });
 }
 
 function applyControlHint(control, text, level = "hint") {
@@ -3411,119 +3523,25 @@ function applyControlHint(control, text, level = "hint") {
   control.title = next;
   control.setAttribute("aria-description", next);
   control.classList.add("has-validation-hint");
-  control.classList.toggle("has-validation-issue", level === "error" || level === "warning");
+  const isIssue = level === "error" || level === "warning";
+  control.classList.toggle("has-validation-issue", isIssue);
   const label = control.closest("label");
   if (label) {
     label.classList.add("field-has-validation-hint");
-    label.classList.toggle("field-has-validation-issue", level === "error" || level === "warning");
+    label.classList.toggle("field-has-validation-issue", isIssue);
     label.title = next;
   }
-}
-
-function applyFormHints(formEl, hints) {
-  Object.entries(hints).forEach(([name, messages]) => {
-    const controls = formEl?.elements?.[name];
-    const text = messages.filter(Boolean).join("\n");
-    if (!controls || !text) return;
-    if (controls.classList) {
-      applyControlHint(controls, text);
-    } else if (typeof controls.length === "number") {
-      Array.from(controls).forEach((control) => applyControlHint(control, text));
-    }
-  });
-}
-
-function applyTableHints(tableId, hints) {
-  document.querySelectorAll(`#${tableId} tbody tr`).forEach((row) => {
-    Object.entries(hints).forEach(([name, messages]) => {
-      const control = row.querySelector(`[name='${name}']`);
-      const text = messages.filter(Boolean).join("\n");
-      if (control && text) applyControlHint(control, text);
-    });
-  });
-}
-
-function requiredHints(names) {
-  return Object.fromEntries(names.map((name) => [name, [message("required", { field: labelFor(name) })]]));
-}
-
-function hintText(texts) {
-  return texts[currentLanguage] || texts.zh;
-}
-
-function applyStaticValidationHints(reportType, required, formEl) {
-  const hints = requiredHints(required);
-  hints.reportDate = [...(hints.reportDate || []), message("futureDate")];
-  if (reportType === "completion" || reportType === "workover") {
-    hints.operationStartDate = [message("operationStartDate")];
-  } else {
-    hints.todayMd = [message("mdOrder")];
-    hints.progress = [message("progressMismatch", { value: hintText({ zh: "当日 MD - 前日 MD", en: "Today's MD - Previous MD", es: "MD de hoy - MD anterior" }) })];
-  }
-  if (reportType === "drilling") {
-    hints.mudDensity = [...(hints.mudDensity || []), message("mudDensity")];
-    hints.sand = [message("sand")];
-    hints.incidentComments = [message("incidentRequired")];
-  }
-  applyFormHints(formEl, hints);
-
-  const operationTable = {
-    drilling: ["operationsTable", "operationType"],
-    completion: ["completionOperationsTable", "completionOperationType"],
-    workover: ["workoverOperationsTable", "workoverOperationType"],
-    move: ["moveOperationsTable", "moveOperationType"],
-  }[reportType];
-  if (operationTable) {
-    const typeHint = reportType === "drilling"
-      ? hintText({ zh: "Type 只能填写 P 或 NPT。", en: "Type must be P or NPT.", es: "Type debe ser P o NPT." })
-      : hintText({ zh: "Type 只能填写 P、SC 或 NPT。", en: "Type must be P, SC, or NPT.", es: "Type debe ser P, SC o NPT." });
-    applyTableHints(operationTable[0], {
-      from: [hintText({ zh: "作业开始时间为必填项。", en: "Operation start time is required.", es: "La hora inicial de operación es obligatoria." })],
-      to: [hintText({ zh: "作业结束时间为必填项。", en: "Operation end time is required.", es: "La hora final de operación es obligatoria." })],
-      hours: [hintText({ zh: "Hrs 必须在 0 到 24 之间；全表工时合计应为 24.00 h。", en: "Hrs must be between 0 and 24; total operation hours should be 24.00 h.", es: "Hrs debe estar entre 0 y 24; el total debe ser 24.00 h." })],
-      op_code: [hintText({ zh: "作业代码为必填项。", en: "Operation code is required.", es: "El código de operación es obligatorio." })],
-      op_type: [typeHint],
-      operation_details: [hintText({ zh: "作业描述为必填项。", en: "Operation details are required.", es: "Los detalles de operación son obligatorios." })],
-    });
-  }
-  if (reportType === "drilling") {
-    applyTableHints("surveyTable", {
-      md: [hintText({ zh: "测斜 MD 不能大于当日 MD。", en: "Survey MD cannot exceed Today's MD.", es: "El MD de survey no puede superar el MD de hoy." })],
-      incl: [hintText({ zh: "Incl 应在 0 到 180 之间。", en: "Incl must be between 0 and 180.", es: "Incl debe estar entre 0 y 180." })],
-      dls: [hintText({ zh: "DLS 不能为负。", en: "DLS cannot be negative.", es: "DLS no puede ser negativo." })],
-    });
-    applyTableHints("bhaTable", {
-      od: [hintText({ zh: "OD 应大于等于 ID，且不能为负。", en: "OD should be greater than or equal to ID and cannot be negative.", es: "OD debe ser mayor o igual que ID y no puede ser negativo." })],
-      id: [hintText({ zh: "ID 不能为负。", en: "ID cannot be negative.", es: "ID no puede ser negativo." })],
-      joints: [hintText({ zh: "Joints 不能为负。", en: "Joints cannot be negative.", es: "Joints no puede ser negativo." })],
-      length: [hintText({ zh: "Length 不能为负。", en: "Length cannot be negative.", es: "Length no puede ser negativo." })],
-    });
-  }
-  if (reportType === "completion") {
-    applyTableHints("perforationIntervalsTable", {
-      base_md: [hintText({ zh: "Base MD 应大于等于 Top MD。", en: "Base MD should be greater than or equal to Top MD.", es: "Base MD debe ser mayor o igual que Top MD." })],
-      length: [hintText({ zh: "Length 不能为负。", en: "Length cannot be negative.", es: "Length no puede ser negativo." })],
-      density: [hintText({ zh: "Density 不能为负。", en: "Density cannot be negative.", es: "Density no puede ser negativo." })],
-      phase: [hintText({ zh: "Phase 不能为负。", en: "Phase cannot be negative.", es: "Phase no puede ser negativo." })],
-      penetration: [hintText({ zh: "Penetration 不能为负。", en: "Penetration cannot be negative.", es: "Penetration no puede ser negativo." })],
-      diameter: [hintText({ zh: "Diameter 不能为负。", en: "Diameter cannot be negative.", es: "Diameter no puede ser negativo." })],
-    });
-  }
-  if (reportType === "workover") {
-    applyTableHints("workoverIntervalsTable", {
-      base_md: [hintText({ zh: "Base MD 应大于等于 Top MD。", en: "Base MD should be greater than or equal to Top MD.", es: "Base MD debe ser mayor o igual que Top MD." })],
-      length: [hintText({ zh: "Length 不能为负。", en: "Length cannot be negative.", es: "Length no puede ser negativo." })],
-      density: [hintText({ zh: "Density 不能为负。", en: "Density cannot be negative.", es: "Density no puede ser negativo." })],
-      phase: [hintText({ zh: "Phase 不能为负。", en: "Phase cannot be negative.", es: "Phase no puede ser negativo." })],
-      penetration: [hintText({ zh: "Penetration 不能为负。", en: "Penetration cannot be negative.", es: "Penetration no puede ser negativo." })],
-      diameter: [hintText({ zh: "Diameter 不能为负。", en: "Diameter cannot be negative.", es: "Diameter no puede ser negativo." })],
-    });
+  const host = label || control.closest("td");
+  if (host && isIssue) {
+    host.classList.add("validation-issue-host");
+    host.dataset.validationMessage = next;
+    host.title = next;
   }
 }
 
 function markIssues(formEl, issues) {
   issues.forEach((issue) => {
-    const className = issue.level === "warning" ? "warning-cell" : "invalid";
+    const className = "invalid";
     if (issue.field && formEl?.elements?.[issue.field]) {
       const controls = formEl.elements[issue.field];
       if (controls.classList) {
@@ -3897,7 +3915,6 @@ function validate() {
   const issues = [];
   const required = ["event", "reportDate", "reportNo", "wellbore", "rig", "todayMd", "progress", "currentOps", "summary24h", "forecast24h", "mudType", "mudDensity"];
   resetValidationHints("#drillingDailyPage");
-  applyStaticValidationHints("drilling", required, form);
 
   required.forEach((name) => {
     if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
@@ -3907,7 +3924,7 @@ function validate() {
   validateMdProgress(issues, data);
 
   const operations = readTable("operationsTable");
-  const opStats = validateOperationsTable(issues, "operationsTable", operations, ["P", "NPT"], "operationType");
+  const opStats = validateOperationsTable(issues, "operationsTable", operations, timeTypeCodes(), "operationType");
   setText("#operationHours", formatHours(opStats.total));
   setText("#drillingNptHours", formatHours(opStats.npt));
   setText("#drillingWellDate", formatWellDate(data));
@@ -3950,7 +3967,6 @@ function validateCompletion() {
   const issues = [];
   const required = ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"];
   resetValidationHints("#completionDailyPage");
-  applyStaticValidationHints("completion", required, completionForm);
 
   required.forEach((name) => {
     if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
@@ -3960,7 +3976,7 @@ function validateCompletion() {
   validateOperationStartDate(issues, data);
 
   const operations = readTable("completionOperationsTable");
-  const opStats = validateOperationsTable(issues, "completionOperationsTable", operations, ["P", "SC", "NPT"], "completionOperationType");
+  const opStats = validateOperationsTable(issues, "completionOperationsTable", operations, timeTypeCodes(), "completionOperationType");
   setText("#completionOperationHours", formatHours(opStats.total));
   setText("#completionNptHours", formatHours(opStats.npt));
   setText("#completionWellDate", formatWellDate(data));
@@ -3978,7 +3994,6 @@ function validateWorkover() {
   const issues = [];
   const required = ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"];
   resetValidationHints("#workoverDailyPage");
-  applyStaticValidationHints("workover", required, workoverForm);
 
   required.forEach((name) => {
     if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
@@ -3988,7 +4003,7 @@ function validateWorkover() {
   validateOperationStartDate(issues, data);
 
   const operations = readTable("workoverOperationsTable");
-  const opStats = validateOperationsTable(issues, "workoverOperationsTable", operations, ["P", "SC", "NPT"], "workoverOperationType");
+  const opStats = validateOperationsTable(issues, "workoverOperationsTable", operations, timeTypeCodes(), "workoverOperationType");
   setText("#workoverOperationHours", formatHours(opStats.total));
   setText("#workoverNptHours", formatHours(opStats.npt));
   setText("#workoverWellDate", formatWellDate(data));
@@ -4006,7 +4021,6 @@ function validateMove() {
   const issues = [];
   const required = ["event", "reportDate", "reportNo", "wellbore", "rig", "currentOps", "summary24h", "forecast24h"];
   resetValidationHints("#moveDailyPage");
-  applyStaticValidationHints("move", required, moveForm);
 
   required.forEach((name) => {
     if (!String(data[name] || "").trim()) pushIssue(issues, { level: "error", text: message("required", { field: labelFor(name) }), field: name });
@@ -4016,7 +4030,7 @@ function validateMove() {
   validateMdProgress(issues, data);
 
   const operations = readTable("moveOperationsTable");
-  const opStats = validateOperationsTable(issues, "moveOperationsTable", operations, ["P", "SC", "NPT"], "moveOperationType");
+  const opStats = validateOperationsTable(issues, "moveOperationsTable", operations, timeTypeCodes(), "moveOperationType");
   setText("#moveOperationHours", formatHours(opStats.total));
   setText("#moveNptHours", formatHours(opStats.npt));
   setText("#moveWellDate", formatWellDate(data));
@@ -4430,6 +4444,11 @@ document.addEventListener("click", (event) => {
   const previewButton = event.target.closest("[data-record-preview]");
   if (previewButton) {
     openRecordDetail(previewButton.dataset.reportType, previewButton.dataset.recordPreview);
+    return;
+  }
+  const deleteUploadJob = event.target.closest("[data-delete-upload-job]");
+  if (deleteUploadJob) {
+    deleteFailedUploadJob(deleteUploadJob.dataset.reportType, deleteUploadJob.dataset.deleteUploadJob);
     return;
   }
   const addWellButton = event.target.closest(".add-well-button");

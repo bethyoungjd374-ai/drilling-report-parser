@@ -5,6 +5,7 @@ from pathlib import Path
 
 from drilling_report_parser.pdf_report_parser import (
     _clean_operation_details,
+    _normalize_op_type,
     _parse_incidents,
     parse_pdf_daily_report,
 )
@@ -27,6 +28,9 @@ def sample_pdf(name_part: str) -> Path:
 
 
 class PdfReportParserTest(unittest.TestCase):
+    def test_operation_type_keeps_source_sc_value(self) -> None:
+        self.assertEqual(_normalize_op_type("SC"), "SC")
+
     def test_operation_details_drop_trailing_incident_heading(self) -> None:
         self.assertEqual(
             _clean_operation_details("NPT A CARGO DE SINOPEC\nIncident Comments:"),
@@ -94,10 +98,18 @@ class PdfReportParserTest(unittest.TestCase):
         self.assertEqual(fields["prevMd"], "10754.00")
         self.assertEqual(fields["progress"], "0.00")
         self.assertEqual(fields["rotHrsToday"], "")
-        self.assertEqual(fields["lastCasingSize"], "13.375in")
-        self.assertEqual(fields["lastCasingDepth"], "7,111ft")
-        self.assertEqual(fields["nextCasingSize"], "9.625in")
-        self.assertEqual(fields["nextCasingDepth"], "10,754ft")
+        self.assertEqual(fields["lastCasingSize"], "13.375")
+        self.assertEqual(fields["lastCasingDepth"], "7111")
+        self.assertEqual(fields["nextCasingSize"], "9.625")
+        self.assertEqual(fields["nextCasingDepth"], "10754")
+        self.assertEqual(fields["formTestType"], "FIT")
+        self.assertEqual(fields["formTestEmw"], "11.50")
+        self.assertEqual(fields["bitNo"], "05")
+        self.assertEqual(fields["bitSerial"], "SPS3739")
+        self.assertEqual(fields["bitWearIodl"], "0-1-CT-S")
+        self.assertEqual(fields["bitWearBgor"], "X-I-NO-TD")
+        self.assertEqual(fields["bhaMdIn"], "9215.00")
+        self.assertEqual(fields["bhaMdOut"], "10754.00")
         self.assertEqual(fields["mudTime"], "21:00")
         self.assertEqual(fields["mudMd"], "10,754.0")
         self.assertEqual(fields["mudDensity"], "10.40")
@@ -131,10 +143,19 @@ class PdfReportParserTest(unittest.TestCase):
         self.assertEqual(fields["prevMd"], "10641.00")
         self.assertEqual(fields["progress"], "191.00")
         self.assertEqual(fields["rotHrsToday"], "4.48")
-        self.assertEqual(fields["lastCasingSize"], "13.375in")
-        self.assertEqual(fields["lastCasingDepth"], "7,610ft")
-        self.assertEqual(fields["nextCasingSize"], "9.625in")
-        self.assertEqual(fields["nextCasingDepth"], "11,720ft")
+        self.assertEqual(fields["lastCasingSize"], "13.375")
+        self.assertEqual(fields["lastCasingDepth"], "7610")
+        self.assertEqual(fields["nextCasingSize"], "9.625")
+        self.assertEqual(fields["nextCasingDepth"], "11720")
+        self.assertEqual(fields["formTestType"], "FIT")
+        self.assertEqual(fields["formTestEmw"], "13.70")
+        self.assertEqual(fields["lastBopPressTest"], "2026-06-06")
+        self.assertEqual(fields["bitNo"], "03")
+        self.assertEqual(fields["bitSerial"], "14456485")
+        self.assertEqual(fields["bitWearIodl"], "")
+        self.assertEqual(fields["bitWearBgor"], "")
+        self.assertEqual(fields["bhaMdIn"], "7610.00")
+        self.assertEqual(fields["bhaMdOut"], "")
         self.assertEqual(fields["mudTime"], "2:00")
         self.assertEqual(fields["mudMd"], "10,832.0")
         self.assertEqual(fields["mudDensity"], "9.80")

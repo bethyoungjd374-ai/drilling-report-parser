@@ -17,6 +17,27 @@ from drilling_report_parser.excel_database import load_report_payload
 from tests.test_pdf_report_parser import sample_pdf
 
 
+def test_operational_parameter_values_are_normalized_without_units() -> None:
+    payload = {"report_fields": {
+        "lastCasingSize": "13.375in", "lastCasingDepth": "7,610ft",
+        "nextCasingSize": "9.625in", "nextCasingDepth": "11,720ft",
+        "formTestEmw": "FIT / 13.70 ppg", "lastBopPressTest": "06/06/2026",
+        "stringWeightUpDown": "325.0 230.0 kip/", "torqueOnBottom": "27,000.0 ft-lbf",
+    }}
+    form_server._normalize_payload_values(payload)
+    fields = payload["report_fields"]
+    assert fields["lastCasingSize"] == "13.375"
+    assert fields["lastCasingDepth"] == "7610"
+    assert fields["nextCasingSize"] == "9.625"
+    assert fields["nextCasingDepth"] == "11720"
+    assert fields["formTestType"] == "FIT"
+    assert fields["formTestEmw"] == "13.7"
+    assert fields["lastBopPressTest"] == "2026-06-06"
+    assert fields["stringWeightUp"] == "325"
+    assert fields["stringWeightDown"] == "230"
+    assert fields["torqueOnBottom"] == "27000"
+
+
 class FormServerImportTest(unittest.TestCase):
     def setUp(self) -> None:
         self.repository_tmp = tempfile.TemporaryDirectory()
@@ -858,6 +879,74 @@ class FormServerImportTest(unittest.TestCase):
                 }, {"project-1"}), [])
             finally:
                 form_server.PROJECT_TEAM_PATH = original_project_team_path
+
+    def test_rig_name_normalization_unifies_report_and_monthly_variants(self) -> None:
+        variants = ["905", "W905", "SP905", "RIG905", "SINOPEC905", "SINOPEC-905", "SINOPEC 905"]
+        self.assertEqual(
+            {form_server._normalize_rig_name(value) for value in variants},
+            {"SINOPEC 905"},
+        )
+
+    def test_project_assignment_prefers_exact_well_over_wildcard_project(self) -> None:
+        config = form_server._normalize_project_team_config({
+            "teams": [{"name": "SINOPEC 905"}],
+            "projects": [
+                {
+                    "id": "exact-project",
+                    "contract_no": "EC-EXACT",
+                    "project_name": "Exact",
+                    "start_date": "2026-01-01",
+                    "end_date": "2026-12-31",
+                    "rigs": [{"rig": "SINOPEC 905", "wells": ["SHSG-160"]}],
+                },
+                {
+                    "id": "wildcard-project",
+                    "contract_no": "EC-WILDCARD",
+                    "project_name": "Wildcard",
+                    "start_date": "2026-01-01",
+                    "end_date": "2026-12-31",
+                    "rigs": [{"rig": "W905", "wells": []}],
+                },
+            ],
+        })
+
+        resolution = form_server._project_assignment_resolution({
+            "rig": "SINOPEC-905",
+            "wellbore": "SHSG-160",
+            "reportDate": "2026-06-11",
+        }, config=config)
+
+        self.assertEqual(resolution["status"], "MATCHED")
+        self.assertEqual(resolution["assignment"]["project_id"], "exact-project")
+        self.assertEqual(len(resolution["matches"]), 1)
+
+    def test_project_assignment_rejects_multiple_wildcard_projects(self) -> None:
+        config = form_server._normalize_project_team_config({
+            "teams": [{"name": "SINOPEC 168"}],
+            "projects": [
+                {
+                    "id": "project-1",
+                    "project_name": "One",
+                    "start_date": "2026-01-01",
+                    "end_date": "2026-12-31",
+                    "rigs": [{"rig": "SINOPEC 168", "wells": []}],
+                },
+                {
+                    "id": "project-2",
+                    "project_name": "Two",
+                    "start_date": "2026-01-01",
+                    "end_date": "2026-12-31",
+                    "rigs": [{"rig": "SP168", "wells": []}],
+                },
+            ],
+        })
+        record = {"rig": "RIG168", "wellbore": "TCHA-006I", "reportDate": "2026-06-10"}
+
+        resolution = form_server._project_assignment_resolution(record, config=config)
+
+        self.assertEqual(resolution["status"], "AMBIGUOUS")
+        self.assertEqual(len(resolution["matches"]), 2)
+        self.assertEqual(form_server._project_assignments_for_record(record, config=config), [])
 
     def test_discovered_well_does_not_mutate_project_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

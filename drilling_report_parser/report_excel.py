@@ -104,10 +104,12 @@ def build_daily_report_workbook(payload: dict[str, Any]) -> Workbook:
 
     row = _section(ws, row + 1, "BIT RECORD / LAST OR CURRENT BHA")
     row = _key_value_grid(ws, row, [
-        ("Bit No", _v(fields, "bitNo")),
+        ("Bit Sequence No", _v(fields, "bitNo")),
         ("Bit Size", _v(fields, "bitSize")),
         ("Manufacturer", _v(fields, "bitManufacturer")),
-        ("Serial No", _v(fields, "bitSerial")),
+        ("Bit Serial No", _v(fields, "bitSerial")),
+        ("Bit Wear I-O-D-L", _v(fields, "bitWearIodl")),
+        ("Bit Wear B-G-O-R", _v(fields, "bitWearBgor")),
         ("BHA No", _v(fields, "bhaNo")),
         ("MD In", _v(fields, "bhaMdIn")),
         ("MD Out", _v(fields, "bhaMdOut")),

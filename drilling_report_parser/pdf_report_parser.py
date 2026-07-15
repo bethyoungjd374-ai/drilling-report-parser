@@ -29,7 +29,7 @@ def parse_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, A
     fields = _parse_report_fields(page1_lines, layout_text, plain_text)
     survey = _parse_survey(page1_lines)
     bha_components = _parse_bha_components(page1_lines)
-    fields.update(_parse_bha_fields(page1_lines, bha_components))
+    fields.update(_parse_bha_fields(page1_lines, bha_components, payload_source))
     fields.update(_parse_mud_fields(page1_lines))
     fields.update(_parse_incidents(layout_pages))
     fields["otherRemarks"] = _parse_other_remarks(layout_text)
@@ -43,6 +43,8 @@ def parse_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, A
             "size": fields.get("bitSize", ""),
             "manufacturer": fields.get("bitManufacturer", ""),
             "serial_no": fields.get("bitSerial", ""),
+            "wear_iodl": fields.get("bitWearIodl", ""),
+            "wear_bgor": fields.get("bitWearBgor", ""),
         }],
         "bha_components": bha_components,
         "operations": _parse_operations_from_pdf(payload_source) or _parse_operations(layout_pages),
@@ -69,6 +71,11 @@ def _num(value: str) -> str:
     return match.group(0).replace(",", "") if match else ""
 
 
+def _nums(value: str, count: int = 2) -> list[str]:
+    values = [match.replace(",", "") for match in re.findall(NUM_RE, value or "")]
+    return (values + [""] * count)[:count]
+
+
 def _float(value: str | None) -> float | None:
     try:
         return float(str(value or "").replace(",", ""))
@@ -93,6 +100,13 @@ def _split_slash(value: str, parts: int) -> list[str]:
 
 def _join_slash(*values: str) -> str:
     return " / ".join(str(value or "").strip() for value in values)
+
+
+def _join_at(size: str, depth: str) -> str:
+    left, right = str(size or "").strip(), str(depth or "").strip()
+    if left and right:
+        return f"{left} @ {right}"
+    return left or right
 
 
 def _split_at(value: str, marker: str) -> tuple[str, str]:
@@ -162,16 +176,27 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     fields["forecast24h"] = _collect_block(lines, "24-Hr Forecast:", ("CASING/WELL CONTROL",))
 
     fields["lastCasing"] = _value_between(_first_line(lines, "Last Casing:"), "Last Casing:", "Str Wt Up/Dn:")
-    fields["lastCasingSize"], fields["lastCasingDepth"] = _split_at(fields["lastCasing"], "@")
+    last_casing_size, last_casing_depth = _split_at(fields["lastCasing"], "@")
+    fields["lastCasingSize"] = _num(last_casing_size)
+    fields["lastCasingDepth"] = _num(last_casing_depth)
+    fields["lastCasing"] = _join_at(fields["lastCasingSize"], fields["lastCasingDepth"])
     fields["nextCasing"] = _value_between(_first_line(lines, "Next Casing:"), "Next Casing:", "Str Wt Rot:")
-    fields["nextCasingSize"], fields["nextCasingDepth"] = _split_at(fields["nextCasing"], "@")
+    next_casing_size, next_casing_depth = _split_at(fields["nextCasing"], "@")
+    fields["nextCasingSize"] = _num(next_casing_size)
+    fields["nextCasingDepth"] = _num(next_casing_depth)
+    fields["nextCasing"] = _join_at(fields["nextCasingSize"], fields["nextCasingDepth"])
     bop_line = _first_line(lines, "Last BOP Press Test")
-    fields["lastBopPressTest"] = _value_between(bop_line, ":", "Torq Off Btm:")
-    fields["formTestEmw"] = _value_between(_first_line(lines, "Form Test"), "/EMW:", "Torq On Btm:")
+    fields["lastBopPressTest"] = _date_to_input(_value_between(bop_line, ":", "Torq Off Btm:"))
+    form_test_raw = _value_between(_first_line(lines, "Form Test"), "/EMW:", "Torq On Btm:")
+    form_test_type = re.search(r"\b(FIT|LOT)\b", form_test_raw, re.I)
+    fields["formTestType"] = form_test_type.group(1).upper() if form_test_type else ""
+    fields["formTestEmw"] = _num(form_test_raw)
     fields["pumpRate"] = _num(_value_between(_first_line(lines, "Pump Rate:"), "Pump Rate:", "Conn:"))
     fields["pumpPress"] = _num(_value_between(_first_line(lines, "Pump Press:"), "Pump Press:", "Trip:"))
-    fields["stringWeightUpDown"] = _value_between(_first_line(lines, "Str Wt Up/Dn:"), "Str Wt Up/Dn:", "Pump Rate:")
-    fields["torqueOnBottom"] = _value_between(_first_line(lines, "Torq On Btm:"), "Torq On Btm:")
+    string_weight_raw = _value_between(_first_line(lines, "Str Wt Up/Dn:"), "Str Wt Up/Dn:", "Pump Rate:")
+    fields["stringWeightUp"], fields["stringWeightDown"] = _nums(string_weight_raw)
+    fields["stringWeightUpDown"] = _join_slash(fields["stringWeightUp"], fields["stringWeightDown"])
+    fields["torqueOnBottom"] = _num(_value_between(_first_line(lines, "Torq On Btm:"), "Torq On Btm:"))
 
     # Plain text is useful for fallback when layout text drops labels in narrow columns.
     if not fields.get("wellbore"):
@@ -250,14 +275,17 @@ def _parse_bha_components(lines: list[str]) -> list[dict[str, str]]:
     return rows
 
 
-def _parse_bha_fields(lines: list[str], components: list[dict[str, str]]) -> dict[str, str]:
+def _parse_bha_fields(
+    lines: list[str], components: list[dict[str, str]], source: str | Path | bytes
+) -> dict[str, str]:
     fields: dict[str, str] = {}
     bha_line = _first_line(lines, "BHA No")
     match = re.search(r"BHA No\s*:?\s*(\d+).*?Bit No:\s*(\d+).*?MD In:\s*([\d,]+\.\d+\s*ft)", bha_line)
     if match:
         fields["bhaNo"], fields["bitNo"], fields["bhaMdIn"] = match.groups()
+        fields["bhaMdIn"] = _num(fields["bhaMdIn"])
     purpose_line = _first_line(lines, "Purpose:")
-    fields["bhaMdOut"] = _value_between(purpose_line, "MD Out:")
+    fields["bhaMdOut"] = _num(_value_between(purpose_line, "MD Out:"))
     fields["bhaTotalLength"] = _num(_value_between(_first_line(lines, "Total Length:"), "Total Length:", "Wt below Jars:"))
     if components:
         fields["bitSize"] = components[0].get("od", "")
@@ -265,10 +293,50 @@ def _parse_bha_fields(lines: list[str], components: list[dict[str, str]]) -> dic
     manufacturer = re.search(r"(PRF-[A-Z0-9 .ÁÉÍÓÚÑ&-]+?)(?:BT|HD|S\d|PS|\d{6,})", bit_record_line)
     if manufacturer:
         fields["bitManufacturer"] = _clean(manufacturer.group(1))
-    serial = re.search(r"\b([A-Z]{1,3}\d{4,}|\d{6,})\b", bit_record_line)
+    serial = re.search(r"(?<!\d)(\d{6,})(?!\d)", bit_record_line)
+    if not serial:
+        serial = re.search(r"\b([A-Z]{1,3}\d{4,})\b", bit_record_line)
+    if not serial:
+        iadc = re.search(r"\b(?:[A-Z]\d{3}|\d{3}[A-Z])\b|[A-Z]\d{3}(?=\d+x)", bit_record_line)
+        serial = re.search(r"([A-Z]{2,4}\d{4,})\s*$", bit_record_line[:iadc.start()].strip()) if iadc else None
     if serial:
         fields["bitSerial"] = serial.group(1)
+    fields.update(_parse_bit_wear_fields(source))
     return fields
+
+
+def _parse_bit_wear_fields(source: str | Path | bytes) -> dict[str, str]:
+    result = {"bitWearIodl": "", "bitWearBgor": ""}
+    try:
+        with _pdfplumber_open(source) as pdf:
+            if not pdf.pages:
+                return result
+            words = pdf.pages[0].extract_words(use_text_flow=False, keep_blank_chars=False) or []
+    except Exception:
+        return result
+    iodl_header = next((word for word in words if word.get("text") == "I-O-D-L"), None)
+    bgor_header = next((word for word in words if word.get("text") == "B-G-O-R"), None)
+    if not iodl_header or not bgor_header:
+        return result
+    row_words = [
+        word for word in words
+        if float(iodl_header["top"]) + 5 <= float(word["top"]) <= float(iodl_header["top"]) + 30
+    ]
+
+    def value_between(left: float, right: float) -> str:
+        values = [
+            str(word.get("text", "")).strip()
+            for word in sorted(row_words, key=lambda item: float(item["x0"]))
+            if left <= float(word["x0"]) < right
+        ]
+        if not values or all(value == "-" for value in values):
+            return ""
+        return "".join(values)
+
+    split_x = (float(iodl_header["x1"]) + float(bgor_header["x0"])) / 2
+    result["bitWearIodl"] = value_between(float(iodl_header["x0"]) - 8, split_x)
+    result["bitWearBgor"] = value_between(split_x, float(bgor_header["x1"]) + 8)
+    return result
 
 
 def _parse_mud_fields(lines: list[str]) -> dict[str, str]:
@@ -517,7 +585,9 @@ def _normalize_op_type(value: str) -> str:
     upper = _clean(value).upper().replace(" ", "")
     if "NPT" in upper:
         return "NPT"
-    if upper in {"P", "TYPEP"}:
+    if upper in {"P", "SC"}:
+        return upper
+    if upper == "TYPEP":
         return "P"
     return ""
 

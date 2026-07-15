@@ -63,7 +63,19 @@ from .storage import (
     upsert_translation_content,
 )
 from .move_pdf_parser import parse_move_pdf_daily_report
+from .master_data_service import (
+    build_legacy_project_team_config,
+    delete_master_entity,
+    list_appendix_values,
+    list_assignments,
+    list_master_entities,
+    save_assignment,
+    save_master_entity,
+    save_project_relationships,
+    validate_assignment,
+)
 from .pdf_report_parser import parse_pdf_daily_report
+from .report_normalization_service import list_quality_issues, resolve_quality_issue
 from .report_schema import REPORT_TABLES, REPORT_TYPE_ORDER, ROW_COLUMNS, TRANSLATION_SCOPE_FIELDS
 from .runtime_files import (
     append_jsonl,
@@ -98,6 +110,13 @@ from .translation.experience_store import (
     update_experience_status,
 )
 from .workover_pdf_parser import parse_workover_pdf_daily_report
+from .time_classification_service import (
+    confirm_classification,
+    list_confirmation_queue,
+    list_rules,
+    reclassify_non_manual,
+    save_rule,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -124,6 +143,7 @@ BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
 CONFIG_WRITE_LOCK = threading.RLock()
 AUDIT_LOG_LOCK = threading.Lock()
+DRP_MASTER_DATA_V2 = os.environ.get("DRP_MASTER_DATA_V2", "1").strip().lower() not in {"0", "false", "off", "no"}
 
 
 def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
@@ -269,6 +289,16 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._source_pdf(parsed.query)
             return
+        reference_match = re.fullmatch(r"/api/reference-data/([^/]+)", parsed.path)
+        if reference_match:
+            if not self._require_permission("view"):
+                return
+            category_code = unquote(reference_match.group(1)).strip().upper()
+            self._v2_json_call(lambda: {
+                "category_code": category_code,
+                "items": list_appendix_values(category_code),
+            })
+            return
         if parsed.path == "/api/admin/session":
             self._admin_session()
             return
@@ -332,6 +362,63 @@ class FormHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/audit-logs":
             self._admin_audit_logs()
             return
+        if parsed.path.startswith("/api/admin/master-data/"):
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return
+            if not self._require_permission("view"):
+                return
+            entity = parsed.path.removeprefix("/api/admin/master-data/").strip("/")
+            query = parse_qs(parsed.query)
+            self._v2_json_call(
+                lambda: {"items": list_master_entities(
+                    entity,
+                    query=str((query.get("q") or [""])[0]),
+                    status=str((query.get("status") or [""])[0]),
+                    limit=int((query.get("limit") or [500])[0]),
+                )}
+            )
+            return
+        if parsed.path == "/api/admin/assignments":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return
+            if not self._require_permission("view"):
+                return
+            query = parse_qs(parsed.query)
+            kind = str((query.get("kind") or ["project-rig"])[0])
+            self._v2_json_call(lambda: {"items": list_assignments(kind, status=str((query.get("status") or [""])[0]))})
+            return
+        if parsed.path == "/api/admin/data-quality/issues":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return
+            if not self._require_permission("view"):
+                return
+            query = parse_qs(parsed.query)
+            self._v2_json_call(lambda: {"items": list_quality_issues(
+                status=str((query.get("status") or ["OPEN"])[0]),
+                issue_type=str((query.get("issue_type") or [""])[0]),
+                limit=int((query.get("limit") or [500])[0]),
+            )})
+            return
+        if parsed.path == "/api/admin/time-classification/rules":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return
+            if not self._require_permission("view"):
+                return
+            self._v2_json_call(lambda: {"items": list_rules()})
+            return
+        if parsed.path == "/api/admin/time-classification/queue":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return
+            if not self._require_permission("view"):
+                return
+            query = parse_qs(parsed.query)
+            self._v2_json_call(lambda: {"items": list_confirmation_queue(limit=int((query.get("limit") or [500])[0]))})
+            return
         self._serve_static()
 
     def do_POST(self) -> None:
@@ -340,6 +427,8 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/admin/logout":
             self._admin_logout()
+            return
+        if self._handle_v2_write_request():
             return
         if self.path == "/api/admin/change-password":
             self._admin_change_password()
@@ -455,6 +544,189 @@ class FormHandler(BaseHTTPRequestHandler):
             self._save_npt_confirmation(user)
             return
         self.send_error(404)
+
+    def do_PATCH(self) -> None:
+        if self._handle_v2_write_request():
+            return
+        self.send_error(404)
+
+    def do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        master_match = re.fullmatch(r"/api/admin/master-data/([^/]+)", parsed.path)
+        if not master_match:
+            self.send_error(404)
+            return
+        if not DRP_MASTER_DATA_V2:
+            self.send_error(404)
+            return
+        user = self._require_admin()
+        if not user:
+            return
+        entity = master_match.group(1)
+        payload = self._read_json_body()
+
+        def delete_master_and_refresh_compatibility() -> dict[str, object]:
+            item = delete_master_entity(entity, payload, actor=str(user.get("username", "admin")))
+            if entity in {"rigs", "drilling-rigs", "workover-rigs", "teams", "projects", "contracts", "aliases", "organizations", "companies"}:
+                _refresh_legacy_project_team_config()
+            return {"item": item}
+
+        self._v2_json_call(
+            delete_master_and_refresh_compatibility,
+            audit_user=user,
+            audit_action="delete_master_data",
+            audit_target=f"{entity}:{payload.get('id', '')}",
+            audit_note=str(payload.get("change_reason", "")),
+        )
+
+    def _handle_v2_write_request(self) -> bool:
+        parsed = urlparse(self.path)
+        path = parsed.path
+        master_match = re.fullmatch(r"/api/admin/master-data/([^/]+)", path)
+        if master_match:
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            entity = master_match.group(1)
+            payload = self._read_json_body()
+            def save_master_and_compatibility() -> dict[str, object]:
+                item = save_master_entity(entity, payload, actor=str(user.get("username", "admin")))
+                if entity in {"rigs", "drilling-rigs", "workover-rigs", "teams", "projects", "contracts", "aliases", "organizations", "companies"}:
+                    _refresh_legacy_project_team_config()
+                return {"item": item}
+            self._v2_json_call(save_master_and_compatibility, audit_user=user, audit_action="save_master_data", audit_target=entity)
+            return True
+        if path == "/api/admin/assignments":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            payload = self._read_json_body()
+            kind = str(payload.pop("kind", "project-rig") or "project-rig")
+            def save_assignment_and_compatibility() -> dict[str, object]:
+                item = save_assignment(kind, payload, actor=str(user.get("username", "admin")))
+                if kind in {"project-team", "project-rig", "project-well"}:
+                    _refresh_legacy_project_team_config()
+                return {"item": item}
+            self._v2_json_call(save_assignment_and_compatibility, audit_user=user, audit_action="save_assignment", audit_target=kind)
+            return True
+        if path == "/api/admin/project-relationships":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            payload = self._read_json_body()
+            def save_relationships_and_compatibility() -> dict[str, object]:
+                result = save_project_relationships(payload, actor=str(user.get("username", "admin")))
+                _refresh_legacy_project_team_config()
+                return {"relationships": result}
+            self._v2_json_call(
+                save_relationships_and_compatibility,
+                audit_user=user,
+                audit_action="save_project_relationships",
+                audit_target=str(payload.get("project_id", "")),
+            )
+            return True
+        if path == "/api/admin/assignments/validate":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            payload = self._read_json_body()
+            kind = str(payload.pop("kind", "project-rig") or "project-rig")
+            self._v2_json_call(lambda: validate_assignment(kind, payload), audit_user=user, audit_action="validate_assignment", audit_target=kind)
+            return True
+        issue_match = re.fullmatch(r"/api/admin/data-quality/issues/(\d+)/resolve", path)
+        if issue_match:
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            payload = self._read_json_body()
+            self._v2_json_call(lambda: {"item": resolve_quality_issue(
+                int(issue_match.group(1)),
+                note=str(payload.get("resolution_note", "")),
+                actor=str(user.get("username", "admin")),
+                expected_version=int(payload.get("version", 0) or 0),
+            )}, audit_user=user, audit_action="resolve_data_quality_issue", audit_target=issue_match.group(1))
+            return True
+        if path == "/api/admin/time-classification/rules":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            self._v2_json_call(lambda: {"item": save_rule(self._read_json_body(), actor=str(user.get("username", "admin")))}, audit_user=user, audit_action="save_time_classification_rule", audit_target="rules")
+            return True
+        if path == "/api/admin/time-classification/confirm":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            payload = self._read_json_body()
+            self._v2_json_call(lambda: {"item": confirm_classification(
+                int(payload.get("activity_id", 0) or 0), payload,
+                actor=str(user.get("username", "admin")),
+            )}, audit_user=user, audit_action="confirm_time_classification", audit_target=str(payload.get("activity_id", "")))
+            return True
+        if path == "/api/admin/time-classification/reclassify":
+            if not DRP_MASTER_DATA_V2:
+                self.send_error(404)
+                return True
+            user = self._require_admin()
+            if not user:
+                return True
+            self._v2_json_call(
+                lambda: {"result": reclassify_non_manual(actor=str(user.get("username", "admin")))},
+                audit_user=user, audit_action="reclassify_time_facts", audit_target="non_manual",
+            )
+            return True
+        return False
+
+    def _v2_json_call(
+        self,
+        operation,
+        *,
+        audit_user: dict[str, object] | None = None,
+        audit_action: str = "",
+        audit_target: str = "",
+        audit_note: str = "",
+    ) -> None:
+        try:
+            payload = operation()
+        except Exception as exc:
+            if audit_user and audit_action:
+                _write_audit(audit_user, audit_action, "master_data_v2", audit_target, False, str(exc))
+            self._v2_error(exc)
+            return
+        if audit_user and audit_action:
+            _write_audit(audit_user, audit_action, "master_data_v2", audit_target, True, audit_note)
+        self._send_json({"ok": True, **payload})
+
+    def _v2_error(self, exc: Exception) -> None:
+        if isinstance(exc, KeyError):
+            status = 404
+        elif isinstance(exc, RuntimeError):
+            status = 409
+        elif isinstance(exc, (TypeError, ValueError)):
+            status = 400
+        else:
+            status = 500
+        self._send_json({"error": str(exc).strip("'") or "请求处理失败。"}, status=status)
 
     def _admin_session(self) -> None:
         user = self._current_user()
@@ -1344,6 +1616,7 @@ class FormHandler(BaseHTTPRequestHandler):
             "database_host": settings.host,
             "database_port": settings.port,
             "mysql": mysql_status(),
+            "features": {"master_data_v2": DRP_MASTER_DATA_V2},
             "source_pdf_count": source_pdf_count,
             "backups": [],
         })
@@ -2662,6 +2935,15 @@ def _save_project_team_config(config: dict[str, object]) -> None:
     _atomic_write_json(PROJECT_TEAM_PATH, _normalize_project_team_config(config))
 
 
+def _refresh_legacy_project_team_config() -> dict[str, object]:
+    """Regenerate the legacy read-only project JSON from MySQL V2 relations."""
+    pending = _load_project_team_config().get("pending_wells", [])
+    config = build_legacy_project_team_config()
+    config["pending_wells"] = pending if isinstance(pending, list) else []
+    _save_project_team_config(config)
+    return config
+
+
 def _load_production_report_remarks() -> dict[str, str]:
     _ensure_parent(PRODUCTION_REPORT_REMARKS_PATH)
     if not PRODUCTION_REPORT_REMARKS_PATH.exists():
@@ -3487,6 +3769,12 @@ def _needs_qwen_no_think_prefill(model: dict[str, object]) -> bool:
 AI_EXTRACTION_TARGET_FIELDS = (
     ("remarks", "备注"),
     ("service_line", "责任方 Service Line"),
+    ("productive_flag_candidate", "生产属性候选（需人工确认）"),
+    ("op_type_candidate", "P/SC/NPT候选（需人工确认）"),
+    ("work_bucket_candidate", "工作量分类候选（需人工确认）"),
+    ("billing_status_candidate", "计费状态候选（需人工确认）"),
+    ("responsibility_candidate", "责任方类别候选（需人工确认）"),
+    ("cause_code_candidate", "原因编码候选（需人工确认）"),
     ("key_progress", "关键进展"),
     ("risk_summary", "风险摘要"),
     ("next_milestone", "下一里程碑"),
@@ -4865,6 +5153,11 @@ def _normalize_rig_name(value: str) -> str:
     text = re.sub(r"\s+", " ", str(value or "")).strip()
     text = re.sub(r"^00\s+(SINOPEC\b)", r"\1", text, flags=re.I)
     text = re.sub(r"\bSINOPEC[-\s]*(\d+)\b", r"SINOPEC \1", text, flags=re.I)
+    compact_match = re.fullmatch(r"(?:RIG|SP|W)[-\s]*(\d+)", text, flags=re.I)
+    if compact_match:
+        return f"SINOPEC {compact_match.group(1)}"
+    if re.fullmatch(r"\d{2,4}", text):
+        return f"SINOPEC {text}"
     return text
 
 
@@ -5270,11 +5563,12 @@ def _validation_warnings(payload: dict[str, object], report_type: str) -> list[s
     return warnings
 
 
-DATE_FIELDS = {"reportDate", "operationStartDate", "date", "entry_date"}
+DATE_FIELDS = {"reportDate", "operationStartDate", "lastBopPressTest", "date", "entry_date"}
 TIME_FIELDS = {"from", "to", "mudTime", "entry_time"}
 NUMERIC_REPORT_FIELDS = {
-    "todayMd", "prevMd", "progress", "rotHrsToday", "lastCasingDepth", "nextCasingDepth",
-    "pumpRate", "pumpPress", "mudMd", "mudDensity", "mudTemperature", "rheologyTemp",
+    "todayMd", "prevMd", "progress", "rotHrsToday", "lastCasingSize", "lastCasingDepth",
+    "nextCasingSize", "nextCasingDepth", "formTestEmw", "pumpRate", "pumpPress",
+    "stringWeightUp", "stringWeightDown", "torqueOnBottom", "mudMd", "mudDensity", "mudTemperature", "rheologyTemp",
     "viscosity", "pv", "yp", "gel10s", "gel10m", "gel30m", "apiWl", "oilPercent",
     "waterPercent", "sand", "ecd", "bitSize", "bhaMdIn", "bhaMdOut", "bhaTotalLength",
     "daysSinceRi", "daysSinceLta", "afeCost", "dailyCost", "cumulativeCost",
@@ -5293,6 +5587,7 @@ REPORT_TYPE_LABELS = {
     "move": "搬迁/推井架",
 }
 UNASSIGNED_PROJECT_ID = "__unassigned__"
+AMBIGUOUS_PROJECT_ID = "__ambiguous__"
 
 
 def _production_summary_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
@@ -5325,6 +5620,7 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
 
     project_mode = _truthy(_param(params, "project_mode")) or bool(_param_values(params, "project"))
     details = _production_report_details(records, operations) if project_mode else _production_summary_details(records, operations)
+    quality = _analytics_quality_fields(records, operations)
 
     return {
         "filters": _filter_options(records, database_path),
@@ -5340,6 +5636,7 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
         "by_type": [{"report_type": key, "label": REPORT_TYPE_LABELS[key], "hours": round(value, 2)} for key, value in by_type.items()],
         "monthly": [{"month": month, **{key: round(value, 2) for key, value in values.items()}} for month, values in sorted(monthly.items())],
         "details": details,
+        **quality,
         "scope_note": "基于已保存到 MySQL 的日报解析数据",
     }
 
@@ -5766,6 +6063,7 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
     by_well = _sum_by(npt_rows, "wellbore")
     by_reason = _sum_by(npt_rows, "reason")
     by_month = _sum_by(npt_rows, "month")
+    quality = _analytics_quality_fields(records, rows["operations"])
 
     return {
         "filters": {**_filter_options(records, database_path), "reasons": sorted({row["reason"] for row in rows["operations"] if row["op_type"] == "NPT"})},
@@ -5805,7 +6103,32 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
             "operation_translation_status": row.get("operation_translation_status", "MISSING"),
             "operation_translation_error": row.get("operation_translation_error", ""),
         } for row in _default_sort_npt_rows(npt_rows)],
-        "scope_note": "基于已保存到 Excel 库的日报解析数据；分类按日报 OP CODE / OP SUB 汇总",
+        **quality,
+        "scope_note": "基于已保存到 MySQL 的日报解析数据；分类按日报 OP CODE / OP SUB 汇总",
+    }
+
+
+def _analytics_quality_fields(
+    records: list[dict[str, object]],
+    operations: list[dict[str, object]],
+) -> dict[str, object]:
+    statuses: dict[str, set[str]] = {"UNASSIGNED": set(), "AMBIGUOUS": set()}
+    for record in records:
+        status = str(record.get("master_match_status", "") or "")
+        record_id = str(record.get("record_id", "") or "")
+        if status in statuses and record_id:
+            statuses[status].add(record_id)
+    unconfirmed = {
+        (str(row.get("record_id", "") or ""), int(row.get("source_row_no", 0) or 0))
+        for row in operations
+        if str(row.get("classification_status", "CONFIRMED") or "CONFIRMED") not in {"CONFIRMED", "AUTO_CONFIRMED"}
+    }
+    return {
+        "unassigned_count": len(statuses["UNASSIGNED"]),
+        "ambiguous_count": len(statuses["AMBIGUOUS"]),
+        "unconfirmed_classification_count": len(unconfirmed),
+        "rule_version": "legacy-v1",
+        "snapshot_id": "",
     }
 
 
@@ -5854,11 +6177,27 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
             continue
         if well_filter and well_filter.lower() not in str(record.get("wellbore", "") or "").lower():
             continue
-        project_matches = _project_assignments_for_record(record, project_filter, project_config)
-        if project_filter and not project_matches:
+        resolution = _project_assignment_resolution(record, config=project_config)
+        match_status = str(resolution.get("status", "UNASSIGNED") or "UNASSIGNED")
+        assignment = resolution.get("assignment")
+        project_matches = [assignment] if isinstance(assignment, dict) else []
+        if project_filter and (
+            match_status != "MATCHED"
+            or not project_matches
+            or str(project_matches[0].get("project_id", "") or "") not in project_filter
+        ):
             continue
         if project_mode and not project_matches:
-            project_matches = [_unassigned_project_assignment()]
+            project_matches = [
+                _ambiguous_project_assignment()
+                if match_status == "AMBIGUOUS"
+                else _unassigned_project_assignment()
+            ]
+        record = {
+            **record,
+            "master_match_status": match_status,
+            "master_match_message": str(resolution.get("message", "") or ""),
+        }
         matched_records = [{**record, **project} for project in project_matches] if project_matches else [record]
         payload = payloads.get(str(record.get("record_id") or ""))
         if payload is None:
@@ -5897,6 +6236,8 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                     "project_id": matched_record.get("project_id", ""),
                     "project_name": matched_record.get("project_name", ""),
                     "project_contract": matched_record.get("project_contract", ""),
+                    "master_match_status": matched_record.get("master_match_status", ""),
+                    "master_match_message": matched_record.get("master_match_message", ""),
                     "validation_status": matched_record.get("validation_status", ""),
                     "event": event,
                     "hours": hours,
@@ -5984,17 +6325,32 @@ def _project_assignments_for_record(
     selected_projects: set[str] | None = None,
     config: dict[str, object] | None = None,
 ) -> list[dict[str, str]]:
+    resolution = _project_assignment_resolution(record, config=config)
+    if resolution["status"] != "MATCHED":
+        return []
+    assignment = resolution.get("assignment")
+    if not isinstance(assignment, dict):
+        return []
+    if selected_projects and str(assignment.get("project_id", "") or "") not in selected_projects:
+        return []
+    return [assignment]
+
+
+def _project_assignment_resolution(
+    record: dict[str, str],
+    *,
+    config: dict[str, object] | None = None,
+) -> dict[str, object]:
     rig = _normalize_rig_name(str(record.get("rig", "") or "").strip())
     wellbore = str(record.get("wellbore", "") or "").strip()
     report_date = str(record.get("reportDate", "") or "").strip()
     if not _is_valid_rig_name(rig):
-        return []
+        return {"status": "UNASSIGNED", "assignment": None, "matches": [], "message": "未识别井队"}
     config = config or _load_project_team_config()
-    matches: list[dict[str, str]] = []
+    exact_matches: list[dict[str, str]] = []
+    wildcard_matches: list[dict[str, str]] = []
     for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
         project_id = str(project.get("id", "") or "").strip()
-        if selected_projects and project_id not in selected_projects:
-            continue
         if str(project.get("status", "active") or "active") != "active":
             continue
         if not _date_in_range(report_date, str(project.get("start_date", "") or ""), str(project.get("end_date", "") or "")):
@@ -6007,19 +6363,45 @@ def _project_assignments_for_record(
             wells = {str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()}
             if wells and wellbore not in wells:
                 continue
-            matches.append({
+            match = {
                 "project_id": project_id,
                 "project_name": str(project.get("project_name", "") or project.get("contract_no", "") or project_id),
                 "project_contract": str(project.get("contract_no", "") or ""),
-            })
+            }
+            (exact_matches if wells else wildcard_matches).append(match)
             break
-    return matches
+    candidates = exact_matches if exact_matches else wildcard_matches
+    unique_matches = {
+        str(match.get("project_id", "") or ""): match
+        for match in candidates
+        if str(match.get("project_id", "") or "")
+    }
+    matches = list(unique_matches.values())
+    if len(matches) == 1:
+        return {"status": "MATCHED", "assignment": matches[0], "matches": matches, "message": ""}
+    if len(matches) > 1:
+        labels = [str(match.get("project_name", "") or match.get("project_id", "")) for match in matches]
+        return {
+            "status": "AMBIGUOUS",
+            "assignment": None,
+            "matches": matches,
+            "message": f"同时匹配多个项目：{', '.join(labels)}",
+        }
+    return {"status": "UNASSIGNED", "assignment": None, "matches": [], "message": "未匹配到有效项目关系"}
 
 
 def _unassigned_project_assignment() -> dict[str, str]:
     return {
         "project_id": UNASSIGNED_PROJECT_ID,
         "project_name": "未归属项目",
+        "project_contract": "",
+    }
+
+
+def _ambiguous_project_assignment() -> dict[str, str]:
+    return {
+        "project_id": AMBIGUOUS_PROJECT_ID,
+        "project_name": "项目归属冲突",
         "project_contract": "",
     }
 
@@ -6188,6 +6570,7 @@ def _normalize_payload_values(payload: dict[str, object]) -> list[str]:
     warnings: list[str] = []
     fields = payload.get("report_fields", {})
     if isinstance(fields, dict):
+        _expand_drilling_parameter_values(fields)
         for key, value in list(fields.items()):
             if key in DATE_FIELDS:
                 fields[key], warning = _normalize_date_value(value, key)
@@ -6199,6 +6582,7 @@ def _normalize_payload_values(payload: dict[str, object]) -> list[str]:
                 warning = ""
             if warning:
                 warnings.append(warning)
+        _sync_drilling_parameter_compatibility_fields(fields)
 
     for section, rows in payload.items():
         if section in {"metadata", "report_fields"} or not isinstance(rows, list):
@@ -6219,6 +6603,55 @@ def _normalize_payload_values(payload: dict[str, object]) -> list[str]:
                 if warning:
                     warnings.append(warning)
     return warnings
+
+
+def _parameter_numbers(value: object, count: int = 2) -> list[str]:
+    values = [match.replace(",", "") for match in re.findall(r"[-+]?\d[\d,]*(?:\.\d+)?", str(value or ""))]
+    return (values + [""] * count)[:count]
+
+
+def _expand_drilling_parameter_values(fields: dict[str, object]) -> None:
+    if not any(key in fields for key in (
+        "lastCasing", "lastCasingSize", "lastCasingDepth", "nextCasing", "nextCasingSize",
+        "nextCasingDepth", "formTestType", "formTestEmw", "lastBopPressTest", "pumpRate",
+        "pumpPress", "stringWeightUp", "stringWeightDown", "stringWeightUpDown", "torqueOnBottom",
+    )):
+        return
+    for legacy, first, second, marker in (
+        ("lastCasing", "lastCasingSize", "lastCasingDepth", "@"),
+        ("nextCasing", "nextCasingSize", "nextCasingDepth", "@"),
+    ):
+        if fields.get(first) or fields.get(second) or not fields.get(legacy):
+            continue
+        parts = str(fields.get(legacy) or "").split(marker, 1)
+        fields[first] = parts[0].strip()
+        fields[second] = parts[1].strip() if len(parts) > 1 else ""
+    form_test = str(fields.get("formTestEmw") or "")
+    if not fields.get("formTestType"):
+        match = re.search(r"\b(FIT|LOT)\b", form_test, re.I)
+        fields["formTestType"] = match.group(1).upper() if match else ""
+    if not fields.get("stringWeightUp") and not fields.get("stringWeightDown") and fields.get("stringWeightUpDown"):
+        fields["stringWeightUp"], fields["stringWeightDown"] = _parameter_numbers(fields.get("stringWeightUpDown"))
+
+
+def _sync_drilling_parameter_compatibility_fields(fields: dict[str, object]) -> None:
+    parameter_keys = {
+        "lastCasing", "lastCasingSize", "lastCasingDepth", "nextCasing", "nextCasingSize",
+        "nextCasingDepth", "formTestType", "formTestEmw", "lastBopPressTest", "pumpRate",
+        "pumpPress", "stringWeightUp", "stringWeightDown", "stringWeightUpDown", "torqueOnBottom",
+    }
+    if not any(key in fields for key in parameter_keys):
+        return
+
+    def joined(left: object, right: object, separator: str) -> str:
+        first, second = str(left or "").strip(), str(right or "").strip()
+        if first and second:
+            return f"{first}{separator}{second}"
+        return first or second
+
+    fields["lastCasing"] = joined(fields.get("lastCasingSize"), fields.get("lastCasingDepth"), " @ ")
+    fields["nextCasing"] = joined(fields.get("nextCasingSize"), fields.get("nextCasingDepth"), " @ ")
+    fields["stringWeightUpDown"] = joined(fields.get("stringWeightUp"), fields.get("stringWeightDown"), " / ")
 
 
 def _normalize_date_value(value: object, label: str) -> tuple[str, str]:
