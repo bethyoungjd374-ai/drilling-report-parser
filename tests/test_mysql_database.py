@@ -109,29 +109,26 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
 
         self.assertEqual(cursor.statements[0], "SHOW COLUMNS FROM dpr_report_record")
         alter_statements = cursor.statements[1:]
-        self.assertEqual(len(alter_statements), 17)
-        self.assertIn("ADD COLUMN source_language", alter_statements[0])
-        self.assertIn("ADD COLUMN translation_status", alter_statements[1])
-        self.assertIn("ADD COLUMN translation_progress", alter_statements[2])
-        self.assertIn("ADD COLUMN translation_error", alter_statements[3])
-        self.assertIn("ADD COLUMN translation_version", alter_statements[4])
-        self.assertIn("ADD COLUMN translation_updated_at", alter_statements[5])
-        self.assertIn("ADD COLUMN extraction_status", alter_statements[6])
-        self.assertIn("ADD COLUMN extraction_progress", alter_statements[7])
-        self.assertIn("ADD COLUMN extraction_error", alter_statements[8])
-        self.assertIn("ADD COLUMN extraction_version", alter_statements[9])
-        self.assertIn("ADD COLUMN extraction_updated_at", alter_statements[10])
-        self.assertIn("ADD COLUMN rig_id", alter_statements[11])
-        self.assertIn("ADD COLUMN well_id", alter_statements[12])
-        self.assertIn("ADD COLUMN project_id", alter_statements[13])
-        self.assertIn("ADD COLUMN job_id", alter_statements[14])
-        self.assertIn("ADD COLUMN master_match_status", alter_statements[15])
-        self.assertIn("ADD COLUMN master_match_message", alter_statements[16])
+        expected_columns = [
+            "source_page_start", "source_page_end", "source_report_index", "source_report_count",
+            "batch_inherited_fields", "source_language", "translation_status", "translation_progress",
+            "translation_error", "translation_version", "translation_updated_at", "extraction_status",
+            "extraction_progress", "extraction_error", "extraction_version", "extraction_updated_at",
+            "rig_id", "well_id", "project_id", "job_id", "master_match_status", "master_match_message",
+        ]
+        self.assertEqual(len(alter_statements), len(expected_columns))
+        for statement, column in zip(alter_statements, expected_columns):
+            self.assertIn(f"ADD COLUMN {column}", statement)
 
     def test_keeps_existing_translation_columns(self) -> None:
         cursor = FakeCursor([
             "record_id",
             "status",
+            "source_page_start",
+            "source_page_end",
+            "source_report_index",
+            "source_report_count",
+            "batch_inherited_fields",
             "source_language",
             "translation_status",
             "translation_progress",

@@ -37,6 +37,11 @@ BASE_COLUMNS = [
     "report_type",
     "source_file",
     "parser",
+    "source_page_start",
+    "source_page_end",
+    "source_report_index",
+    "source_report_count",
+    "batch_inherited_fields",
     "reportDate",
     "reportNo",
     "wellbore",
@@ -127,6 +132,13 @@ def save_report_payload(
             "report_type": report_type,
             "source_file": source_file,
             "parser": metadata.get("parser", ""),
+            "source_page_start": metadata.get("source_page_start", ""),
+            "source_page_end": metadata.get("source_page_end", ""),
+            "source_report_index": metadata.get("source_report_index", ""),
+            "source_report_count": metadata.get("source_report_count", ""),
+            "batch_inherited_fields": ",".join(
+                str(value) for value in metadata.get("batch_inherited_fields", []) if value
+            ),
             "reportDate": fields.get("reportDate", ""),
             "reportNo": fields.get("reportNo", ""),
             "wellbore": fields.get("wellbore", ""),
@@ -179,6 +191,15 @@ def load_report_payload(database_path: str | Path, record_id: str) -> dict[str, 
             "report_type": report_type,
             "source_file": record.get("source_file", ""),
             "parser": record.get("parser", ""),
+            "source_page_start": record.get("source_page_start", ""),
+            "source_page_end": record.get("source_page_end", ""),
+            "source_report_index": record.get("source_report_index", ""),
+            "source_report_count": record.get("source_report_count", ""),
+            "batch_inherited_fields": [
+                value
+                for value in str(record.get("batch_inherited_fields", "") or "").split(",")
+                if value
+            ],
             "source_language": record.get("source_language", ""),
             "translation_status": record.get("translation_status", ""),
             "translation_progress": record.get("translation_progress", ""),

@@ -20,7 +20,7 @@ from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import parse_qs, quote, unquote, urlparse
 import urllib.error
 import urllib.request
@@ -76,6 +76,14 @@ from .master_data_service import (
     validate_assignment,
 )
 from .pdf_report_parser import parse_pdf_daily_report
+from .pdf_batch import PdfReportSegment, split_pdf_daily_reports
+from .report_type_detection import (
+    REPORT_TYPE_LABELS as PDF_REPORT_TYPE_LABELS,
+    extract_pdf_report_events,
+    normalize_report_event,
+    report_types_from_event,
+    storage_report_type_for_event_type,
+)
 from .report_normalization_service import list_quality_issues, resolve_quality_issue
 from .report_schema import REPORT_TABLES, REPORT_TYPE_ORDER, ROW_COLUMNS, TRANSLATION_SCOPE_FIELDS
 from .runtime_files import (
@@ -1685,60 +1693,95 @@ class FormHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _import_pdf(self) -> None:
-        try:
-            upload = self._read_pdf_upload()
-            pdf_bytes = upload.data
-            payload = parse_pdf_daily_report(pdf_bytes)
-            payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "drilling", from_upload=True)
-            self._store_source_pdf(payload, pdf_bytes)
-            self._send_json(payload)
-        except ValueError as exc:
-            self._send_json({"error": str(exc)}, status=400)
-        except Exception as exc:  # pragma: no cover - keeps the local app useful.
-            self._send_json({"error": str(exc)}, status=500)
+        self._import_report_pdf("drilling", parse_pdf_daily_report)
 
     def _import_completion_pdf(self) -> None:
-        try:
-            upload = self._read_pdf_upload()
-            pdf_bytes = upload.data
-            payload = parse_completion_pdf_daily_report(pdf_bytes)
-            payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "completion", from_upload=True)
-            self._store_source_pdf(payload, pdf_bytes)
-            self._send_json(payload)
-        except ValueError as exc:
-            self._send_json({"error": str(exc)}, status=400)
-        except Exception as exc:  # pragma: no cover - keeps the local app useful.
-            self._send_json({"error": str(exc)}, status=500)
+        self._import_report_pdf("completion", parse_completion_pdf_daily_report)
 
     def _import_workover_pdf(self) -> None:
+        self._import_report_pdf("workover", parse_workover_pdf_daily_report)
+
+    def _import_move_pdf(self) -> None:
+        # Rig-move PDFs share the drilling schema and are displayed as move
+        # days by their Event value in the drilling calendar.
+        self._import_report_pdf("drilling", parse_move_pdf_daily_report)
+
+    def _import_report_pdf(
+        self,
+        report_type: str,
+        parser: Callable[[bytes], dict[str, Any]],
+    ) -> None:
         try:
             upload = self._read_pdf_upload()
             pdf_bytes = upload.data
-            payload = parse_workover_pdf_daily_report(pdf_bytes)
-            payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "workover", from_upload=True)
-            self._store_source_pdf(payload, pdf_bytes)
-            self._send_json(payload)
+            segments = split_pdf_daily_reports(pdf_bytes, parser)
+            payloads = self._parse_import_segments(upload, segments, parser)
+            _inherit_consistent_batch_rigs(payloads)
+            self._validate_import_payloads(report_type, payloads, segments)
+            for payload, segment in zip(payloads, segments):
+                self._store_payload(payload, report_type, from_upload=True)
+                self._store_source_pdf(payload, segment.data)
+            self._send_json(_pdf_import_response(payloads, upload.filename, len(segments)))
         except ValueError as exc:
             self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - keeps the local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
-    def _import_move_pdf(self) -> None:
-        try:
-            upload = self._read_pdf_upload()
-            pdf_bytes = upload.data
-            payload = parse_move_pdf_daily_report(pdf_bytes)
-            payload.setdefault("metadata", {})["source_file"] = Path(upload.filename).name
-            self._store_payload(payload, "move", from_upload=True)
-            self._store_source_pdf(payload, pdf_bytes)
-            self._send_json(payload)
-        except ValueError as exc:
-            self._send_json({"error": str(exc)}, status=400)
-        except Exception as exc:  # pragma: no cover - keeps the local app useful.
-            self._send_json({"error": str(exc)}, status=500)
+    def _parse_import_segments(
+        self,
+        upload: UploadedFile,
+        segments: list[PdfReportSegment],
+        parser: Callable[[bytes], dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        source_file = Path(upload.filename).name
+        report_count = len(segments)
+        payloads: list[dict[str, Any]] = []
+        for report_index, segment in enumerate(segments, 1):
+            payload = parser(segment.data)
+            metadata = payload.setdefault("metadata", {})
+            if not isinstance(metadata, dict):
+                metadata = {}
+                payload["metadata"] = metadata
+            metadata.update({
+                "source_file": source_file,
+                "source_page_start": segment.start_page,
+                "source_page_end": segment.end_page,
+                "source_report_index": report_index,
+                "source_report_count": report_count,
+            })
+            payloads.append(payload)
+        return payloads
+
+    def _validate_import_payloads(
+        self,
+        expected_report_type: str,
+        payloads: list[dict[str, Any]],
+        segments: list[PdfReportSegment],
+    ) -> None:
+        for report_index, (payload, segment) in enumerate(zip(payloads, segments), 1):
+            _validate_pdf_report_type(
+                expected_report_type,
+                payload,
+                segment,
+                report_index=report_index,
+                report_count=len(payloads),
+            )
+            identity_errors = _report_identity_errors(payload)
+            if not identity_errors:
+                continue
+            metadata = payload.get("metadata", {})
+            source_file = str(metadata.get("source_file", "") or "") if isinstance(metadata, dict) else ""
+            source_label = f"（{source_file}）" if source_file else ""
+            page_label = (
+                f"第{segment.start_page}页"
+                if segment.start_page == segment.end_page
+                else f"第{segment.start_page}-{segment.end_page}页"
+            )
+            report_label = f"合并 PDF 第{report_index}份日报，{page_label}：" if len(payloads) > 1 else ""
+            raise ValueError(
+                f"日报身份识别失败{source_label}：{report_label}缺少{'、'.join(identity_errors)}。"
+                "请确认日报类型或文件内容后重新导入。"
+            )
 
     def _save_report(self) -> None:
         try:
@@ -5458,6 +5501,128 @@ def _report_identity_errors(payload: dict[str, object]) -> list[str]:
         return ["日报日期", "井号", "井队"]
     labels = (("reportDate", "日报日期"), ("wellbore", "井号"), ("rig", "井队"))
     return [label for field, label in labels if not str(fields.get(field, "") or "").strip()]
+
+
+def _validate_pdf_report_type(
+    expected_report_type: str,
+    payload: dict[str, Any],
+    segment: PdfReportSegment,
+    *,
+    report_index: int,
+    report_count: int,
+) -> None:
+    fields = payload.get("report_fields", {})
+    parsed_event = str(fields.get("event", "") or "").strip() if isinstance(fields, dict) else ""
+    source_events = extract_pdf_report_events(segment.data)
+    event_values = list(dict.fromkeys(
+        value for value in (*source_events, parsed_event) if normalize_report_event(value)
+    ))
+    detected_event_types = {
+        report_type
+        for value in event_values
+        for report_type in report_types_from_event(value)
+    }
+
+    metadata = payload.get("metadata", {})
+    source_file = str(metadata.get("source_file", "") or "") if isinstance(metadata, dict) else ""
+    source_label = f"（{source_file}）" if source_file else ""
+    page_label = (
+        f"第{segment.start_page}页"
+        if segment.start_page == segment.end_page
+        else f"第{segment.start_page}-{segment.end_page}页"
+    )
+    report_label = f"合并 PDF 第{report_index}份日报，{page_label}，" if report_count > 1 else f"{page_label}，"
+    expected_label = PDF_REPORT_TYPE_LABELS.get(expected_report_type, expected_report_type)
+    event_label = " / ".join(event_values)
+
+    if not event_values:
+        raise ValueError(
+            f"日报类型校验失败{source_label}：{report_label}基本信息中缺少 Event 字段，"
+            f"不能作为{expected_label}解析入库。"
+        )
+    if not detected_event_types:
+        raise ValueError(
+            f"日报类型校验失败{source_label}：{report_label}无法根据 Event“{event_label}”识别日报类型，"
+            f"不能作为{expected_label}解析入库。"
+        )
+    if len(detected_event_types) != 1:
+        detected_labels = "、".join(
+            PDF_REPORT_TYPE_LABELS.get(value, value) for value in sorted(detected_event_types)
+        )
+        raise ValueError(
+            f"日报类型校验失败{source_label}：{report_label}Event 内容存在类型冲突“{event_label}”"
+            f"（同时匹配{detected_labels}），已拒绝入库。"
+        )
+
+    detected_event_type = next(iter(detected_event_types))
+    detected_storage_type = storage_report_type_for_event_type(detected_event_type)
+    if detected_storage_type != expected_report_type:
+        detected_label = PDF_REPORT_TYPE_LABELS.get(detected_event_type, detected_event_type)
+        storage_label = PDF_REPORT_TYPE_LABELS.get(detected_storage_type, detected_storage_type)
+        raise ValueError(
+            f"日报类型不匹配{source_label}：{report_label}Event“{event_label}”识别为{detected_label}，"
+            f"该事件应归入{storage_label}，当前上传入口是{expected_label}。"
+            f"请改用{storage_label}入口重新上传；本次未入库。"
+        )
+
+    if isinstance(metadata, dict):
+        metadata["detected_event_type"] = detected_event_type
+        metadata["detected_report_type"] = detected_storage_type
+        metadata["report_type_validated"] = True
+
+
+def _pdf_import_response(
+    payloads: list[dict[str, Any]],
+    source_file: str,
+    report_count: int,
+) -> dict[str, Any]:
+    if not payloads:
+        raise ValueError("PDF 中未识别到日报。")
+    if report_count == 1:
+        return payloads[0]
+
+    # Keep the first report at the top level for compatibility with clients
+    # that predate multi-report imports.  Updated clients consume `reports`.
+    response = dict(payloads[0])
+    first_metadata = payloads[0].get("metadata", {})
+    metadata = dict(first_metadata) if isinstance(first_metadata, dict) else {}
+    metadata.update({
+        "source_file": Path(source_file).name,
+        "multi_report": True,
+        "imported_count": len(payloads),
+    })
+    response["metadata"] = metadata
+    response["reports"] = payloads
+    return response
+
+
+def _inherit_consistent_batch_rigs(payloads: list[dict[str, Any]]) -> None:
+    """Fill a missing rig only when the same well has one unanimous batch rig."""
+
+    rigs_by_well: dict[str, dict[str, str]] = {}
+    for payload in payloads:
+        fields = payload.get("report_fields", {})
+        if not isinstance(fields, dict):
+            continue
+        wellbore = " ".join(str(fields.get("wellbore", "") or "").upper().split())
+        rig = " ".join(str(fields.get("rig", "") or "").split())
+        if not wellbore or not rig:
+            continue
+        rig_key = re.sub(r"[^A-Z0-9]+", "", rig.upper())
+        rigs_by_well.setdefault(wellbore, {})[rig_key] = rig
+
+    for payload in payloads:
+        fields = payload.get("report_fields", {})
+        if not isinstance(fields, dict) or str(fields.get("rig", "") or "").strip():
+            continue
+        wellbore = " ".join(str(fields.get("wellbore", "") or "").upper().split())
+        candidates = rigs_by_well.get(wellbore, {})
+        if len(candidates) != 1:
+            continue
+        fields["rig"] = next(iter(candidates.values()))
+        metadata = payload.setdefault("metadata", {})
+        if isinstance(metadata, dict):
+            metadata["batch_inherited_fields"] = ["rig"]
 
 
 def _validation_warnings(

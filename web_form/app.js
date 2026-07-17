@@ -1671,9 +1671,15 @@ function calendarOperationBar(values) {
 }
 
 function recordStage(record = {}) {
-  const eventText = String(record.event || "").toLowerCase();
-  if (String(record.report_type || "") === "drilling" && eventText.includes("rig move")) return "move";
-  if (String(record.report_type || "") === "drilling" && eventText.includes("drilling")) return "drilling";
+  if (String(record.report_type || "") !== "drilling") return "";
+  const eventText = String(record.event || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (/\brig (move|moving|mobilization)\b/.test(eventText) || /\bmovilizacion\b/.test(eventText)) return "move";
+  if (/\bdrilling\b/.test(eventText)) return "drilling";
   return "";
 }
 
@@ -3982,19 +3988,33 @@ async function uploadReportFile(reportType, job, file) {
     renderRecordDashboard(reportType);
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "PDF import failed");
-    payload.metadata = { ...(payload.metadata || {}), source_file: payload.metadata?.source_file || file.name };
+    const importedPayloads = Array.isArray(payload.reports) && payload.reports.length ? payload.reports : [payload];
+    importedPayloads.forEach((item) => {
+      item.metadata = { ...(item.metadata || {}), source_file: item.metadata?.source_file || file.name };
+    });
+    const recordIds = importedPayloads.map((item) => item.metadata?.record_id || "").filter(Boolean);
+    const wellbores = [...new Set(importedPayloads.map((item) => item.report_fields?.wellbore || "").filter(Boolean))];
+    const reportDates = importedPayloads.map((item) => item.report_fields?.reportDate || "").filter(Boolean).sort();
     job.status = "done";
     job.progress = 100;
-    job.recordId = payload.metadata?.record_id || "";
-    job.wellbore = payload.report_fields?.wellbore || "";
-    job.reportDate = payload.report_fields?.reportDate || "";
+    job.recordId = recordIds[0] || "";
+    job.recordIds = recordIds;
+    job.wellbore = wellbores.join(", ");
+    job.reportDate = reportDates.length > 1 ? `${reportDates[0]} ~ ${reportDates[reportDates.length - 1]}` : (reportDates[0] || "");
+    job.importedCount = importedPayloads.length;
     job.updated_at = new Date().toISOString();
-    rememberRecord(reportType, payload);
-    await refreshRecords(reportType);
+    const storedReportTypes = new Set();
+    importedPayloads.forEach((item) => {
+      const storedReportType = recordState[item.metadata?.report_type] ? item.metadata.report_type : reportType;
+      storedReportTypes.add(storedReportType);
+      rememberRecord(storedReportType, item);
+    });
+    await Promise.all([...storedReportTypes].map((storedReportType) => refreshRecords(storedReportType)));
+    if (!storedReportTypes.has(reportType)) await refreshRecords(reportType);
     const index = uploadJobs.findIndex((item) => item.id === job.id);
     if (index >= 0) uploadJobs.splice(index, 1);
     renderRecordDashboard(reportType);
-    showToast(ui("pdfImported"));
+    showToast(importedPayloads.length > 1 ? `${ui("pdfImported")} ${importedPayloads.length}` : ui("pdfImported"));
   } catch (error) {
     console.error(error);
     job.status = "failed";

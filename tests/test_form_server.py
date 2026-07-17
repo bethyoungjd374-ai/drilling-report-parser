@@ -8,9 +8,12 @@ import tempfile
 import threading
 import unittest
 from datetime import datetime, timezone
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock, patch
+
+from pypdf import PdfReader, PdfWriter
 
 from drilling_report_parser import excel_database, form_server
 from drilling_report_parser.excel_database import load_report_payload
@@ -107,6 +110,233 @@ class FormServerImportTest(unittest.TestCase):
         self.assertEqual(form_server._report_identity_errors({"report_fields": {
             "reportDate": "2026-05-22", "wellbore": "PCNC-039", "rig": "SINOPEC 248",
         }}), [])
+
+    def test_all_pdf_categories_use_shared_multi_report_import(self) -> None:
+        handler = object.__new__(form_server.FormHandler)
+        handler._import_report_pdf = Mock()
+
+        handler._import_pdf()
+        handler._import_completion_pdf()
+        handler._import_workover_pdf()
+        handler._import_move_pdf()
+
+        self.assertEqual(
+            [(call.args[0], call.args[1]) for call in handler._import_report_pdf.call_args_list],
+            [
+                ("drilling", form_server.parse_pdf_daily_report),
+                ("completion", form_server.parse_completion_pdf_daily_report),
+                ("workover", form_server.parse_workover_pdf_daily_report),
+                ("drilling", form_server.parse_move_pdf_daily_report),
+            ],
+        )
+
+    def test_multi_report_pdf_import_stores_every_segment_and_returns_reports(self) -> None:
+        writer = PdfWriter()
+        for width in (101, 150, 201, 250):
+            writer.add_blank_page(width=width, height=300)
+        output = BytesIO()
+        writer.write(output)
+
+        def parser(source: bytes) -> dict[str, Any]:
+            pages = PdfReader(BytesIO(source)).pages
+            width = round(float(pages[0].mediabox.width))
+            identities = {
+                101: ("2026-06-01", "WELL-A", "1"),
+                201: ("2026-06-02", "WELL-A", "2"),
+            }
+            identity = identities.get(width)
+            fields = {}
+            if identity:
+                fields = {
+                    "event": "DEV COMPLETION",
+                    "reportDate": identity[0],
+                    "wellbore": identity[1],
+                    "reportNo": identity[2],
+                    "rig": "SINOPEC 191",
+                }
+            return {"metadata": {}, "report_fields": fields, "operations": []}
+
+        handler = object.__new__(form_server.FormHandler)
+        handler._read_pdf_upload = Mock(return_value=form_server.UploadedFile(
+            filename="combined-completion.pdf",
+            data=output.getvalue(),
+        ))
+        handler._store_payload = Mock()
+        handler._store_source_pdf = Mock()
+        handler._send_json = Mock()
+
+        handler._import_report_pdf("completion", parser)
+
+        self.assertEqual(handler._store_payload.call_count, 2)
+        self.assertEqual(handler._store_source_pdf.call_count, 2)
+        first_payload = handler._store_payload.call_args_list[0].args[0]
+        second_payload = handler._store_payload.call_args_list[1].args[0]
+        self.assertEqual(first_payload["metadata"]["source_page_start"], 1)
+        self.assertEqual(first_payload["metadata"]["source_page_end"], 2)
+        self.assertEqual(second_payload["metadata"]["source_page_start"], 3)
+        self.assertEqual(second_payload["metadata"]["source_page_end"], 4)
+        response = handler._send_json.call_args.args[0]
+        self.assertTrue(response["metadata"]["multi_report"])
+        self.assertEqual(response["metadata"]["imported_count"], 2)
+        self.assertEqual(len(response["reports"]), 2)
+
+    def test_pdf_import_rejects_event_type_mismatch_before_storing(self) -> None:
+        writer = PdfWriter()
+        writer.add_blank_page(width=101, height=300)
+        output = BytesIO()
+        writer.write(output)
+
+        payload = {
+            "metadata": {},
+            "report_fields": {
+                "event": "WORKOVER",
+                "reportDate": "2026-07-15",
+                "wellbore": "ACAM-148",
+                "reportNo": "22",
+                "rig": "SINOPEC 976",
+            },
+            "operations": [],
+        }
+        handler = object.__new__(form_server.FormHandler)
+        handler._read_pdf_upload = Mock(return_value=form_server.UploadedFile(
+            filename="workover-in-completion.pdf",
+            data=output.getvalue(),
+        ))
+        handler._store_payload = Mock()
+        handler._store_source_pdf = Mock()
+        handler._send_json = Mock()
+
+        handler._import_report_pdf("completion", Mock(return_value=payload))
+
+        handler._store_payload.assert_not_called()
+        handler._store_source_pdf.assert_not_called()
+        error_payload = handler._send_json.call_args.args[0]
+        self.assertIn("识别为修井日报", error_payload["error"])
+        self.assertIn("当前上传入口是完井日报", error_payload["error"])
+        self.assertEqual(handler._send_json.call_args.kwargs["status"], 400)
+
+    def test_rig_move_event_is_accepted_and_stored_as_drilling(self) -> None:
+        writer = PdfWriter()
+        writer.add_blank_page(width=101, height=300)
+        output = BytesIO()
+        writer.write(output)
+
+        payload = {
+            "metadata": {},
+            "report_fields": {
+                "event": "MAJOR RIG MOVE",
+                "reportDate": "2026-06-10",
+                "wellbore": "TCHA-006I",
+                "reportNo": "5",
+                "rig": "SINOPEC 168",
+            },
+            "operations": [],
+        }
+        handler = object.__new__(form_server.FormHandler)
+        handler._read_pdf_upload = Mock(return_value=form_server.UploadedFile(
+            filename="rig-move.pdf",
+            data=output.getvalue(),
+        ))
+        handler._store_payload = Mock()
+        handler._store_source_pdf = Mock()
+        handler._send_json = Mock()
+
+        handler._import_report_pdf("drilling", Mock(return_value=payload))
+
+        handler._store_payload.assert_called_once()
+        self.assertEqual(handler._store_payload.call_args.args[1], "drilling")
+        stored_payload = handler._store_payload.call_args.args[0]
+        self.assertEqual(stored_payload["metadata"]["detected_event_type"], "move")
+        self.assertEqual(stored_payload["metadata"]["detected_report_type"], "drilling")
+
+    def test_multi_report_type_mismatch_rejects_the_whole_batch(self) -> None:
+        writer = PdfWriter()
+        writer.add_blank_page(width=101, height=300)
+        writer.add_blank_page(width=201, height=300)
+        output = BytesIO()
+        writer.write(output)
+
+        def parser(source: bytes) -> dict[str, Any]:
+            width = round(float(PdfReader(BytesIO(source)).pages[0].mediabox.width))
+            is_first = width == 101
+            return {
+                "metadata": {},
+                "report_fields": {
+                    "event": "DEV COMPLETION" if is_first else "WORKOVER",
+                    "reportDate": "2026-07-14" if is_first else "2026-07-15",
+                    "wellbore": "WELL-A",
+                    "reportNo": "21" if is_first else "22",
+                    "rig": "SINOPEC 976",
+                },
+                "operations": [],
+            }
+
+        handler = object.__new__(form_server.FormHandler)
+        handler._read_pdf_upload = Mock(return_value=form_server.UploadedFile(
+            filename="mixed-types.pdf",
+            data=output.getvalue(),
+        ))
+        handler._store_payload = Mock()
+        handler._store_source_pdf = Mock()
+        handler._send_json = Mock()
+
+        handler._import_report_pdf("completion", parser)
+
+        handler._store_payload.assert_not_called()
+        handler._store_source_pdf.assert_not_called()
+        error_payload = handler._send_json.call_args.args[0]
+        self.assertIn("合并 PDF 第2份日报", error_payload["error"])
+        self.assertIn("识别为修井日报", error_payload["error"])
+
+    def test_batch_rig_is_inherited_only_when_same_well_is_unanimous(self) -> None:
+        payloads = [
+            {"metadata": {}, "report_fields": {"wellbore": "WELL-A", "rig": ""}},
+            {"metadata": {}, "report_fields": {"wellbore": "WELL-A", "rig": "SINOPEC 191"}},
+            {"metadata": {}, "report_fields": {"wellbore": "WELL-A", "rig": "SINOPEC-191"}},
+            {"metadata": {}, "report_fields": {"wellbore": "WELL-B", "rig": ""}},
+            {"metadata": {}, "report_fields": {"wellbore": "WELL-B", "rig": "SINOPEC 127"}},
+            {"metadata": {}, "report_fields": {"wellbore": "WELL-B", "rig": "SINOPEC 129"}},
+        ]
+
+        form_server._inherit_consistent_batch_rigs(payloads)
+
+        self.assertEqual(payloads[0]["report_fields"]["rig"], "SINOPEC-191")
+        self.assertEqual(payloads[0]["metadata"]["batch_inherited_fields"], ["rig"])
+        self.assertEqual(payloads[3]["report_fields"]["rig"], "")
+        self.assertNotIn("batch_inherited_fields", payloads[3]["metadata"])
+
+    def test_batch_source_metadata_is_persisted(self) -> None:
+        payload = {
+            "metadata": {
+                "source_file": "combined.pdf",
+                "source_page_start": 3,
+                "source_page_end": 4,
+                "source_report_index": 2,
+                "source_report_count": 5,
+                "batch_inherited_fields": ["rig"],
+            },
+            "report_fields": {
+                "event": "DEV COMPLETION",
+                "reportDate": "2026-06-02",
+                "reportNo": "2",
+                "wellbore": "WELL-A",
+                "rig": "SINOPEC 191",
+            },
+            "operations": [],
+        }
+        handler = object.__new__(form_server.FormHandler)
+
+        handler._store_payload(payload, "completion", from_upload=True)
+
+        stored = form_server.load_report_payload(
+            form_server.DATABASE_PATH,
+            "completion:WELL-A:2026-06-02:2",
+        )
+        self.assertEqual(stored["metadata"]["source_page_start"], "3")
+        self.assertEqual(stored["metadata"]["source_page_end"], "4")
+        self.assertEqual(stored["metadata"]["source_report_index"], "2")
+        self.assertEqual(stored["metadata"]["source_report_count"], "5")
+        self.assertEqual(stored["metadata"]["batch_inherited_fields"], ["rig"])
 
     def test_uploaded_report_is_auto_translated_and_reupload_is_queued_again(self) -> None:
         payload = {

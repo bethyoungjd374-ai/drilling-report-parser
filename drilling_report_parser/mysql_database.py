@@ -65,6 +65,11 @@ BASE_RECORD_COLUMNS = [
     "report_type",
     "source_file",
     "parser",
+    "source_page_start",
+    "source_page_end",
+    "source_report_index",
+    "source_report_count",
+    "batch_inherited_fields",
     "reportDate",
     "reportNo",
     "wellbore",
@@ -452,6 +457,11 @@ def _ensure_report_record_columns(cursor: Any) -> None:
     cursor.execute("SHOW COLUMNS FROM dpr_report_record")
     columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
     migrations = (
+        ("source_page_start", "INT UNSIGNED NULL AFTER parser"),
+        ("source_page_end", "INT UNSIGNED NULL AFTER source_page_start"),
+        ("source_report_index", "INT UNSIGNED NULL AFTER source_page_end"),
+        ("source_report_count", "INT UNSIGNED NULL AFTER source_report_index"),
+        ("batch_inherited_fields", "VARCHAR(255) NOT NULL DEFAULT '' AFTER source_report_count"),
         ("source_language", "VARCHAR(16) NOT NULL DEFAULT '' AFTER status"),
         ("translation_status", "VARCHAR(64) NOT NULL DEFAULT '' AFTER source_language"),
         ("translation_progress", "VARCHAR(16) NOT NULL DEFAULT '' AFTER translation_status"),
@@ -1176,6 +1186,15 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
                     "report_type": report_type,
                     "source_file": record.get("source_file", ""),
                     "parser": record.get("parser", ""),
+                    "source_page_start": record.get("source_page_start", ""),
+                    "source_page_end": record.get("source_page_end", ""),
+                    "source_report_index": record.get("source_report_index", ""),
+                    "source_report_count": record.get("source_report_count", ""),
+                    "batch_inherited_fields": [
+                        value
+                        for value in str(record.get("batch_inherited_fields", "") or "").split(",")
+                        if value
+                    ],
                     "source_language": record.get("source_language", ""),
                     "translation_status": record.get("translation_status", ""),
                     "translation_progress": record.get("translation_progress", ""),
@@ -2347,6 +2366,11 @@ def _upsert_record(cursor: Any, record: dict[str, str]) -> None:
         "report_type",
         "source_file",
         "parser",
+        "source_page_start",
+        "source_page_end",
+        "source_report_index",
+        "source_report_count",
+        "batch_inherited_fields",
         "report_date",
         "report_no",
         "wellbore",
@@ -2407,6 +2431,13 @@ def _record_from_payload(
         "report_type": report_type,
         "source_file": source_file,
         "parser": metadata.get("parser", ""),
+        "source_page_start": metadata.get("source_page_start", ""),
+        "source_page_end": metadata.get("source_page_end", ""),
+        "source_report_index": metadata.get("source_report_index", ""),
+        "source_report_count": metadata.get("source_report_count", ""),
+        "batch_inherited_fields": ",".join(
+            str(value) for value in metadata.get("batch_inherited_fields", []) if value
+        ),
         "reportDate": fields.get("reportDate", ""),
         "reportNo": fields.get("reportNo", ""),
         "wellbore": fields.get("wellbore", ""),
@@ -2443,6 +2474,11 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
         "report_type": _text(row.get("report_type")),
         "source_file": _text(row.get("source_file")),
         "parser": _text(row.get("parser")),
+        "source_page_start": _text(row.get("source_page_start")),
+        "source_page_end": _text(row.get("source_page_end")),
+        "source_report_index": _text(row.get("source_report_index")),
+        "source_report_count": _text(row.get("source_report_count")),
+        "batch_inherited_fields": _text(row.get("batch_inherited_fields")),
         "reportDate": _text(row.get("report_date")),
         "reportNo": _text(row.get("report_no")),
         "wellbore": _text(row.get("wellbore")),
@@ -2482,12 +2518,19 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def _payload_metadata(row: dict[str, Any]) -> dict[str, str]:
+def _payload_metadata(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "record_id": _text(row.get("record_id")),
         "report_type": _text(row.get("report_type")),
         "source_file": _text(row.get("source_file")),
         "parser": _text(row.get("parser")),
+        "source_page_start": _text(row.get("source_page_start")),
+        "source_page_end": _text(row.get("source_page_end")),
+        "source_report_index": _text(row.get("source_report_index")),
+        "source_report_count": _text(row.get("source_report_count")),
+        "batch_inherited_fields": [
+            value for value in _text(row.get("batch_inherited_fields")).split(",") if value
+        ],
         "rig_id": _text(row.get("rig_id")),
         "well_id": _text(row.get("well_id")),
         "project_id": _text(row.get("project_id")),
