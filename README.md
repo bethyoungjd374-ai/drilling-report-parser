@@ -11,7 +11,7 @@
 - `bit_parameters`：钻头运行参数
 - `mud_products`：泥浆材料消耗
 - `bha_components`：BHA 组件
-- `daily_costs`：日成本
+- `fluid_losses`：钻井液注入量、返出量等漏失情况
 - `bulks`：散装料/柴油等库存
 - `raw_cells`：原始非空单元格审计记录
 - `parse_warnings`：未识别字段或空表提醒
@@ -330,12 +330,12 @@ http://127.0.0.1:8081/web_form/
 
 任选一种方式：
 
-- 在页面导入或保存一份日报，然后打开 phpMyAdmin 查看 `report_records` 表。
+- 在页面导入或保存一份日报，然后在数据库工具中查看 `dpr_report_record` 表。
 - 在 phpMyAdmin 执行：
 
 ```sql
 SELECT record_id, report_type, report_date, wellbore, rig
-FROM report_records
+FROM dpr_report_record
 ORDER BY mysql_updated_at DESC
 LIMIT 10;
 ```

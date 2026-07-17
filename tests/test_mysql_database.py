@@ -3,7 +3,16 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from drilling_report_parser.mysql_database import INIT_SQL_PATH, _ensure_report_record_columns, _npt_row_revision, _operation_hour_summary, _translation_source_hash, _upsert_record
+from drilling_report_parser.mysql_database import (
+    DPR_TABLE_ALIASES,
+    INIT_SQL_PATH,
+    _ensure_report_record_columns,
+    _migrate_dpr_table_names,
+    _npt_row_revision,
+    _operation_hour_summary,
+    _translation_source_hash,
+    _upsert_record,
+)
 from drilling_report_parser.text_structure import normalize_multiline
 from drilling_report_parser.translation import source_hash
 
@@ -21,11 +30,39 @@ class FakeCursor:
 
 
 class MySQLDatabaseMigrationTest(unittest.TestCase):
+    def test_legacy_daily_report_tables_are_renamed_in_one_statement(self) -> None:
+        class RenameCursor:
+            def __init__(self) -> None:
+                self.statements: list[str] = []
+
+            def execute(self, statement: str, _args: object = None) -> None:
+                self.statements.append(statement)
+
+            def fetchall(self) -> list[dict[str, str]]:
+                return [{"TABLE_NAME": "report_records"}, {"TABLE_NAME": "fact_activity"}]
+
+        cursor = RenameCursor()
+        _migrate_dpr_table_names(cursor)
+
+        rename_statement = cursor.statements[-1]
+        self.assertTrue(rename_statement.startswith("RENAME TABLE "))
+        self.assertIn("`report_records` TO `dpr_report_record`", rename_statement)
+        self.assertIn("`fact_activity` TO `dpr_operation`", rename_statement)
+
+    def test_schema_has_no_common_catch_all_tables(self) -> None:
+        schema = Path(INIT_SQL_PATH).read_text(encoding="utf-8")
+
+        self.assertNotIn("CREATE TABLE IF NOT EXISTS dpr_common_", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS dpr_drilling_bulk_inventory", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS dpr_completion_perforation_interval", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS dpr_workover_perforation_interval", schema)
+        self.assertIn("dpr_report", DPR_TABLE_ALIASES)
+
     def test_schema_contains_translation_memory_and_revision_tables(self) -> None:
         schema = Path(INIT_SQL_PATH).read_text(encoding="utf-8")
 
         self.assertIn("CREATE TABLE IF NOT EXISTS translation_memory", schema)
-        self.assertIn("CREATE TABLE IF NOT EXISTS translation_revisions", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS translation_revision", schema)
 
     def test_manual_memory_hash_matches_translation_pipeline_hash(self) -> None:
         text = "DRILL AHEAD.\r\nCIRCULATE CLEAN."
@@ -70,7 +107,7 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
 
         _ensure_report_record_columns(cursor)
 
-        self.assertEqual(cursor.statements[0], "SHOW COLUMNS FROM report_records")
+        self.assertEqual(cursor.statements[0], "SHOW COLUMNS FROM dpr_report_record")
         alter_statements = cursor.statements[1:]
         self.assertEqual(len(alter_statements), 17)
         self.assertIn("ADD COLUMN source_language", alter_statements[0])
@@ -85,7 +122,7 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
         self.assertIn("ADD COLUMN extraction_version", alter_statements[9])
         self.assertIn("ADD COLUMN extraction_updated_at", alter_statements[10])
         self.assertIn("ADD COLUMN rig_id", alter_statements[11])
-        self.assertIn("ADD COLUMN wellbore_id", alter_statements[12])
+        self.assertIn("ADD COLUMN well_id", alter_statements[12])
         self.assertIn("ADD COLUMN project_id", alter_statements[13])
         self.assertIn("ADD COLUMN job_id", alter_statements[14])
         self.assertIn("ADD COLUMN master_match_status", alter_statements[15])
@@ -107,7 +144,7 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
             "extraction_version",
             "extraction_updated_at",
             "rig_id",
-            "wellbore_id",
+            "well_id",
             "project_id",
             "job_id",
             "master_match_status",
@@ -116,7 +153,7 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
 
         _ensure_report_record_columns(cursor)
 
-        self.assertEqual(cursor.statements, ["SHOW COLUMNS FROM report_records"])
+        self.assertEqual(cursor.statements, ["SHOW COLUMNS FROM dpr_report_record"])
 
 
 if __name__ == "__main__":

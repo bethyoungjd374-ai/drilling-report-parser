@@ -22,10 +22,17 @@ from drilling_report_parser.report_normalization_service import synchronize_save
 
 DEFAULT_PROJECT_CONFIG = ROOT / "outputs" / "project_team_config.json"
 ALIAS_REVIEW_PAIRS = (
-    ("wellbore", "PCN-041", "PCNA-041"),
-    ("wellbore", "SHSG-160", "SHSH-160"),
+    ("well", "PCN-041", "PCNA-041"),
+    ("well", "SHSG-160", "SHSH-160"),
     ("block", "WAYRA", "YURALPA"),
     ("block", "SHUSHUFINDI", "SSFD"),
+)
+
+# These aliases are backed by the cited monthly source workbooks, not by fuzzy
+# string similarity.  JVNC-024 appears in the daily PDF while the same
+# SINOPEC220 / PUCUNA job is JVN-024 in both appendix 4 and appendix 6.
+CONFIRMED_SOURCE_ALIASES = (
+    ("well", "JVNC-024", "JVN-024", "2026-06-monthly-table4-table6"),
 )
 
 
@@ -86,7 +93,6 @@ def migrate(
         "rig_models": 0,
         "rigs": 0,
         "wells": 0,
-        "wellbores": 0,
         "contracts": 0,
         "projects": 0,
         "assignments": 0,
@@ -136,7 +142,7 @@ def migrate(
                 actor,
             ))
             for raw_well in rig_item.get("wells", []) if isinstance(rig_item.get("wells"), list) else []:
-                wellbore_id, created_well, created_wellbore = _ensure_wellbore(
+                well_id, created_well = _ensure_well(
                     cursor,
                     raw_well,
                     batch_id,
@@ -144,20 +150,19 @@ def migrate(
                     actor,
                 )
                 counters["wells"] += int(created_well)
-                counters["wellbores"] += int(created_wellbore)
                 counters["assignments"] += int(_ensure_assignment(
                     cursor,
                     "rel_project_well_scope",
                     {
                         "project_id": project_id,
-                        "wellbore_id": wellbore_id,
+                        "well_id": well_id,
                         "job_type": "",
                         "valid_from": f"{valid_from} 00:00:00",
                         "valid_to": f"{valid_to} 00:00:00" if valid_to else None,
                     },
-                    ("project_id", "wellbore_id", "job_type", "valid_from"),
+                    ("project_id", "well_id", "job_type", "valid_from"),
                     batch_id,
-                    f"config:project:{project_id}:well:{wellbore_id}:{valid_from}",
+                    f"config:project:{project_id}:well:{well_id}:{valid_from}",
                     actor,
                 ))
 
@@ -214,7 +219,7 @@ def migrate(
                 rig_type=item["discipline"],
             )
             counters["rigs"] += int(created)
-            _, created_well, created_wellbore = _ensure_wellbore(
+            _, created_well = _ensure_well(
                 cursor,
                 item["wellbore"],
                 batch_id,
@@ -224,9 +229,14 @@ def migrate(
                 well_type=item.get("well_type", ""),
             )
             counters["wells"] += int(created_well)
-            counters["wellbores"] += int(created_wellbore)
 
-    cursor.execute("SELECT DISTINCT rig, wellbore FROM report_records")
+    counters["aliases"] += _ensure_confirmed_source_aliases(
+        cursor,
+        batch_id=batch_id,
+        actor=actor,
+    )
+
+    cursor.execute("SELECT DISTINCT rig, wellbore FROM dpr_report_record")
     for row in cursor.fetchall():
         raw_rig = str(row.get("rig", "") or "")
         raw_well = str(row.get("wellbore", "") or "")
@@ -234,17 +244,15 @@ def migrate(
             _, created = _ensure_rig(cursor, raw_rig, batch_id, f"mysql:rig:{raw_rig}", actor)
             counters["rigs"] += int(created)
         if raw_well:
-            _, created_well, created_wellbore = _ensure_wellbore(
-                cursor, raw_well, batch_id, f"mysql:wellbore:{raw_well}", actor
-            )
-            counters["wells"] += int(created_well)
-            counters["wellbores"] += int(created_wellbore)
+            well_id = _existing_well_id(cursor, raw_well)
+            if well_id:
+                _ensure_alias(cursor, "well", raw_well, well_id, batch_id, f"mysql:well:{raw_well}", actor)
 
     for entity_type, left, right in ALIAS_REVIEW_PAIRS:
         issue_key = f"migration:alias-review:{entity_type}:{left}:{right}"
         cursor.execute(
             """
-            INSERT INTO data_quality_issue
+            INSERT INTO dq_issue
               (issue_key, issue_type, severity, entity_type, entity_id, details_json,
                status, created_by, updated_by)
             VALUES (%s,'ALIAS_REVIEW','warning',%s,'',%s,'OPEN',%s,%s)
@@ -258,20 +266,23 @@ def migrate(
     cursor.execute(
         """
         SELECT r.record_id, r.report_type, f.fields_json
-        FROM report_records r
-        JOIN report_fields f ON f.record_id=r.record_id
+        FROM dpr_report_record r
+        JOIN dpr_report_field f ON f.record_id=r.record_id
         ORDER BY r.report_date, r.record_id
         """
     )
-    report_rows = cursor.fetchall()
-    for report in report_rows:
+    dpr_report_row = cursor.fetchall()
+    for report in dpr_report_row:
         record_id = str(report["record_id"])
         fields = _json_value(report.get("fields_json"), {})
         cursor.execute(
-            "SELECT row_json FROM report_rows WHERE record_id=%s AND module_name='operations' ORDER BY row_no",
+            "SELECT module_name,row_json FROM dpr_report_row WHERE record_id=%s ORDER BY module_name,row_no",
             (record_id,),
         )
-        operations = [_json_value(row.get("row_json"), {}) for row in cursor.fetchall()]
+        payload: dict[str, Any] = {"report_fields": fields}
+        for row in cursor.fetchall():
+            payload.setdefault(str(row.get("module_name", "") or ""), []).append(_json_value(row.get("row_json"), {}))
+        operations = payload.get("operations", [])
         old_refs = _report_refs(cursor, record_id)
         result = synchronize_saved_report(
             cursor,
@@ -279,6 +290,7 @@ def migrate(
             report_type=str(report["report_type"]),
             fields=fields,
             operations=operations,
+            payload=payload,
             actor=actor,
         )
         _record_entry(
@@ -319,14 +331,14 @@ def rollback_batch(cursor: Any, batch_code: str, *, actor: str) -> dict[str, Any
             if entity_type == "report_backfill" and old_value:
                 cursor.execute(
                     """
-                    UPDATE report_records
-                    SET rig_id=%s, wellbore_id=%s, project_id=%s, job_id=%s,
+                    UPDATE dpr_report_record
+                    SET rig_id=%s, well_id=%s, project_id=%s, job_id=%s,
                         master_match_status=%s, master_match_message=%s
                     WHERE record_id=%s
                     """,
                     (
                         old_value.get("rig_id"),
-                        old_value.get("wellbore_id"),
+                        old_value.get("well_id"),
                         old_value.get("project_id"),
                         old_value.get("job_id"),
                         old_value.get("master_match_status", ""),
@@ -334,7 +346,7 @@ def rollback_batch(cursor: Any, batch_code: str, *, actor: str) -> dict[str, Any
                         entry.get("entity_id"),
                     ),
                 )
-                cursor.execute("DELETE FROM fact_daily_report WHERE record_id=%s", (entry.get("entity_id"),))
+                cursor.execute("DELETE FROM dpr_report WHERE record_id=%s", (entry.get("entity_id"),))
                 restored += 1
             elif new_value.get("created") and new_value.get("table") and new_value.get("id"):
                 table = str(new_value["table"])
@@ -424,7 +436,7 @@ def _ensure_rig(
     return rig_id, created
 
 
-def _ensure_wellbore(
+def _ensure_well(
     cursor: Any,
     raw_code: object,
     batch_id: int,
@@ -433,37 +445,88 @@ def _ensure_wellbore(
     *,
     block_id: int | None = None,
     well_type: str = "",
-) -> tuple[int, bool, bool]:
-    code = normalize_alias("wellbore", raw_code)
+) -> tuple[int, bool]:
+    code = normalize_alias("well", raw_code)
+    existing_well_id = _existing_well_id(cursor, raw_code)
+    if existing_well_id:
+        cursor.execute(
+            "UPDATE md_well SET block_id=COALESCE(block_id,%s), "
+            "well_type_code=IF(well_type_code='',%s,well_type_code), updated_by=%s "
+            "WHERE id=%s",
+            (block_id, well_type or "DEVELOPMENT", actor, existing_well_id),
+        )
+        _ensure_alias(cursor, "well", raw_code, existing_well_id, batch_id, locator, actor)
+        return existing_well_id, False
     well_id, created_well = _ensure_simple_master(
         cursor,
         "md_well",
         "well_code",
         code,
-        {"well_name": code, "block_id": block_id},
+        {"well_name": code, "block_id": block_id, "well_type_code": well_type or "DEVELOPMENT"},
         batch_id,
         f"{locator}:well",
         "well",
         actor,
     )
-    wellbore_id, created_wellbore = _ensure_simple_master(
-        cursor,
-        "md_wellbore",
-        "wellbore_code",
-        code,
-        {
-            "wellbore_name": code,
-            "well_id": well_id,
-            "block_id": block_id,
-            "well_type": well_type,
-        },
-        batch_id,
-        locator,
-        "wellbore",
-        actor,
+    _ensure_alias(cursor, "well", raw_code, well_id, batch_id, locator, actor)
+    return well_id, created_well
+
+
+def _existing_well_id(cursor: Any, raw_code: object) -> int | None:
+    code = normalize_alias("well", raw_code)
+    if not code:
+        return None
+    cursor.execute(
+        "SELECT entity_id FROM md_alias "
+        "WHERE entity_type='well' AND normalized_alias=%s AND status='active' "
+        "AND confirmation_status='confirmed' "
+        "ORDER BY source_system='manual' DESC, id LIMIT 1",
+        (code,),
     )
-    _ensure_alias(cursor, "wellbore", raw_code, wellbore_id, batch_id, locator, actor)
-    return wellbore_id, created_well, created_wellbore
+    alias_row = cursor.fetchone()
+    if alias_row:
+        return int(alias_row["entity_id"])
+    cursor.execute("SELECT id FROM md_well WHERE well_code=%s AND status='active' LIMIT 1", (code,))
+    well_row = cursor.fetchone()
+    return int(well_row["id"]) if well_row else None
+
+
+def _ensure_confirmed_source_aliases(cursor: Any, *, batch_id: int, actor: str) -> int:
+    applied = 0
+    for entity_type, alias_value, canonical_code, source_system in CONFIRMED_SOURCE_ALIASES:
+        if entity_type != "well":
+            continue
+        cursor.execute("SELECT id FROM md_well WHERE well_code=%s AND status='active' LIMIT 1", (canonical_code,))
+        row = cursor.fetchone()
+        if not row:
+            continue
+        entity_id = int(row["id"])
+        normalized_alias = normalize_alias(entity_type, alias_value)
+        cursor.execute(
+            "UPDATE md_alias SET entity_id=%s, confirmation_status='confirmed', status='active', "
+            "change_reason='月报表4/表6与日报交叉确认', updated_by=%s, version=version+1 "
+            "WHERE entity_type=%s AND normalized_alias=%s AND source_system<>'manual' AND entity_id<>%s",
+            (entity_id, actor, entity_type, normalized_alias, entity_id),
+        )
+        cursor.execute(
+            "INSERT INTO md_alias "
+            "(entity_type,source_system,alias_value,normalized_alias,entity_id,confirmation_status,status,change_reason,created_by,updated_by) "
+            "VALUES (%s,%s,%s,%s,%s,'confirmed','active','月报表4/表6与日报交叉确认',%s,%s) "
+            "ON DUPLICATE KEY UPDATE entity_id=VALUES(entity_id),alias_value=VALUES(alias_value),"
+            "confirmation_status='confirmed',status='active',change_reason=VALUES(change_reason),updated_by=VALUES(updated_by)",
+            (entity_type, source_system, alias_value, normalized_alias, entity_id, actor, actor),
+        )
+        _record_entry(
+            cursor,
+            batch_id,
+            f"source-alias:{source_system}:{entity_type}:{alias_value}",
+            "alias",
+            f"{entity_type}:{alias_value}",
+            {},
+            {"entity_id": entity_id, "canonical_code": canonical_code, "source_system": source_system},
+        )
+        applied += 1
+    return applied
 
 
 def _ensure_simple_master(
@@ -651,8 +714,8 @@ def _record_entry(
 
 def _report_refs(cursor: Any, record_id: str) -> dict[str, Any]:
     cursor.execute(
-        "SELECT rig_id, wellbore_id, project_id, job_id, master_match_status, master_match_message "
-        "FROM report_records WHERE record_id=%s",
+        "SELECT rig_id, well_id, project_id, job_id, master_match_status, master_match_message "
+        "FROM dpr_report_record WHERE record_id=%s",
         (record_id,),
     )
     return dict(cursor.fetchone() or {})
@@ -690,7 +753,6 @@ def _rollback_tables() -> set[str]:
         "md_alias",
         "md_project",
         "md_contract",
-        "md_wellbore",
         "md_well",
         "md_rig",
         "md_rig_model",

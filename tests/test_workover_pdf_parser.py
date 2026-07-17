@@ -31,6 +31,7 @@ class WorkoverPdfParserTest(unittest.TestCase):
         self.assertEqual(payload["operations"][5]["op_code"], "WELLHEAD")
         self.assertTrue(all(row["op_type"] in {"P", "SC", "NPT"} for row in payload["operations"]))
         self.assertEqual(payload["bulks"][0]["qty_used"], "180.00")
+        self.assertNotIn("daily_costs", payload)
         interval = payload["perforation_intervals"][0]
         self.assertEqual(interval["formation"], "ARENA U INFERIOR")
         self.assertEqual(interval["date"], "2023-06-21")
@@ -55,6 +56,7 @@ class WorkoverPdfParserTest(unittest.TestCase):
         self.assertEqual(payload["operations"][5]["op_code"], "COMPLETION OPS")
         self.assertEqual(payload["operations"][-1]["op_code"], "SLICK LINE")
         self.assertEqual(payload["bulks"][0]["qty_end"], "1670.00")
+        self.assertNotIn("daily_costs", payload)
         interval = payload["perforation_intervals"][0]
         self.assertEqual(interval["formation"], "ARENA T INFERIOR")
         self.assertEqual(interval["date"], "2017-08-24")

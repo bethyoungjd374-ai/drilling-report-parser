@@ -48,7 +48,7 @@ def parse_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, A
         }],
         "bha_components": bha_components,
         "operations": _parse_operations_from_pdf(payload_source) or _parse_operations(layout_pages),
-        "daily_costs": _parse_daily_costs(layout_text),
+        "fluid_losses": _parse_fluid_losses(layout_text),
         "bulks": _parse_bulks(layout_pages),
     }
 
@@ -143,7 +143,10 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
         fields["reportDate"] = _date_to_input(event_match.group(3))
 
     reason_line = _first_line(lines, "Prim. Reason:")
-    reason_match = re.search(r"Prim\. Reason:\s*(.*?)\s+ECU\s+Report No:\s*(\S+)", reason_line)
+    reason_match = re.search(
+        r"Prim\. Reason:\s*(.*?)\s+ECU(?:ADOR)?\s+Report No:\s*(\S+)",
+        reason_line,
+    )
     if reason_match:
         fields["primaryReason"] = _clean(reason_match.group(1))
         fields["reportNo"] = _clean(reason_match.group(2))
@@ -187,6 +190,7 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     fields["nextCasing"] = _join_at(fields["nextCasingSize"], fields["nextCasingDepth"])
     bop_line = _first_line(lines, "Last BOP Press Test")
     fields["lastBopPressTest"] = _date_to_input(_value_between(bop_line, ":", "Torq Off Btm:"))
+    fields["torqueOffBottom"] = _num(_value_between(bop_line, "Torq Off Btm:"))
     form_test_raw = _value_between(_first_line(lines, "Form Test"), "/EMW:", "Torq On Btm:")
     form_test_type = re.search(r"\b(FIT|LOT)\b", form_test_raw, re.I)
     fields["formTestType"] = form_test_type.group(1).upper() if form_test_type else ""
@@ -249,6 +253,7 @@ def _parse_survey(lines: list[str]) -> list[dict[str, str]]:
             "tvd": data["tvd"].replace(",", ""),
             "vse": data["vse"].replace(",", ""),
             "ns": data["ns"].replace(",", ""),
+            "ew": data["vs"].replace(",", ""),
             "dls": data["dls"],
             "build": data["build"],
         })
@@ -714,9 +719,25 @@ def _parse_bulks(layout_pages: list[str]) -> list[dict[str, str]]:
     return rows
 
 
-def _parse_daily_costs(layout_text: str) -> list[dict[str, str]]:
-    # The provided samples contain the table header but no cost rows. Keep an
-    # explicit zero row so the UI preview remains clear after import.
-    if "DAILY COSTS" in layout_text:
-        return [{"cost_description": "No daily cost item recorded", "vendor": "N/A", "amount": "0"}]
-    return []
+def _parse_fluid_losses(layout_text: str) -> list[dict[str, str]]:
+    """Parse the FLUID LOSSES summary without mixing it with DAILY COSTS."""
+    if "FLUID LOSSES" not in layout_text.upper():
+        return []
+    injected_match = re.search(
+        rf"Injected\s+Volume\s*:\s*({NUM_RE})\s*\(?\s*bbl\s*\)?",
+        layout_text,
+        flags=re.I,
+    )
+    returned_match = re.search(
+        rf"Returned\s+Volume\s*:\s*({NUM_RE})\s*\(?\s*bbl\s*\)?",
+        layout_text,
+        flags=re.I,
+    )
+    injected = _num(injected_match.group(1)) if injected_match else ""
+    returned = _num(returned_match.group(1)) if returned_match else ""
+    if not injected and not returned:
+        return []
+    return [{
+        "injected_volume_bbl": injected,
+        "returned_volume_bbl": returned,
+    }]

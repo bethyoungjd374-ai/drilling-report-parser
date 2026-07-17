@@ -3789,30 +3789,31 @@ body:has(#nptStatsPage.active) .workspace {
 
 .npt-detail-table th:nth-child(3),
 .npt-detail-table td:nth-child(3) {
-  width: 148px;
+  width: auto;
 }
 
 .npt-detail-table th:nth-child(4),
 .npt-detail-table td:nth-child(4) {
-  width: auto;
+  width: 92px;
+  text-align: center;
 }
 
 .npt-detail-table th:nth-child(5),
 .npt-detail-table td:nth-child(5) {
-  width: 112px;
+  width: 104px;
   text-align: center;
 }
 
 .record-table.npt-detail-table th:nth-child(6),
 .record-table.npt-detail-table td:nth-child(6) {
-  width: 96px;
+  width: 68px;
   min-width: 0;
   text-align: center;
 }
 
 .record-table.npt-detail-table th:nth-child(7),
 .record-table.npt-detail-table td:nth-child(7) {
-  width: 68px;
+  width: 112px;
   min-width: 0;
   text-align: center;
   white-space: nowrap;
@@ -3833,6 +3834,72 @@ body:has(#nptStatsPage.active) .workspace {
   width: 72px;
   min-width: 72px;
   padding: 0 8px;
+}
+
+.npt-review-state {
+  display: block;
+  margin-top: 5px;
+  color: #6b7f9f;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.npt-detail-table .npt-classification-editor-row,
+.npt-detail-table .npt-classification-editor-row td {
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  text-align: left;
+}
+
+.npt-classification-editor {
+  margin: 0 8px 10px;
+  padding: 14px;
+  border: 1px solid #bdd6f6;
+  border-radius: 8px;
+  background: #f5f9ff;
+}
+
+.npt-classification-editor-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  color: var(--navy);
+}
+
+.npt-classification-editor-heading span {
+  color: #61789a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.npt-classification-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.npt-classification-fields label {
+  display: grid;
+  gap: 5px;
+  color: #38577f;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.npt-classification-fields select,
+.npt-classification-fields input {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .npt-classification-fields {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .npt-description-cell {

@@ -307,6 +307,18 @@ def list_translation_queue_records() -> list[dict[str, str]]:
     return rows
 
 
+def load_activity_classifications(
+    database_path: str | Path,
+    record_ids: list[str],
+) -> dict[tuple[str, int], dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.load_activity_classifications(record_ids)
+    _clear_mysql_failure()
+    return rows
+
+
 def list_npt_confirmation_wells(
     database_path: str | Path,
     *,

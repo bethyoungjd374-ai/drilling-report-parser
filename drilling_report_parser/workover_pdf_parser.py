@@ -10,7 +10,6 @@ from .completion_pdf_parser import (
     _collect_block,
     _first_line,
     _parse_bulks,
-    _parse_daily_costs,
     _parse_mud_products,
     _parse_operations_from_pdf,
     _ref_datum_number,
@@ -40,7 +39,6 @@ def parse_workover_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> di
         "report_fields": fields,
         "operations": _parse_operations(payload_source),
         "bulks": _parse_bulks(layout_pages),
-        "daily_costs": _parse_daily_costs(layout_text),
         "mud_products": _parse_mud_products(layout_text),
         "perforation_intervals": _parse_perforation_intervals(layout_pages),
     }

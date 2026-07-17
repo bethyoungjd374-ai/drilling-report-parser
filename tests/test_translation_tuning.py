@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from io import BytesIO
+from unittest.mock import patch
 
 from openpyxl import Workbook
 
@@ -14,6 +15,7 @@ from drilling_report_parser.form_server import (
     _normalize_translation_terms_config,
     _parse_standard_translation_terms,
     _translation_record_needs_processing,
+    _translation_queue_snapshot,
     _current_translation_revision,
     _translation_terms_workbook_bytes,
 )
@@ -252,6 +254,25 @@ class TranslationTuningConfigTest(unittest.TestCase):
         self.assertFalse(_translation_record_needs_processing({"translation_status": "QUEUED"}, current_version))
         self.assertFalse(_translation_record_needs_processing({"translation_status": "IN_PROGRESS"}, current_version))
         self.assertFalse(_translation_record_needs_processing({"translation_status": "NOT_REQUIRED"}, current_version))
+
+    @patch("drilling_report_parser.form_server._current_translation_revision", return_value="prompt-v2")
+    @patch("drilling_report_parser.form_server.list_translation_queue_records")
+    def test_translation_queue_separates_failed_records_from_pending(self, list_records, _revision) -> None:
+        list_records.return_value = [
+            {"record_id": "pending", "translation_status": "PENDING"},
+            {"record_id": "failed", "translation_status": "FAILED", "translation_error": "模型请求失败"},
+            {"record_id": "error-only", "translation_status": "STOPPED", "translation_error": "解析失败"},
+            {"record_id": "completed", "translation_status": "COMPLETED", "translation_version": "prompt-v2"},
+        ]
+
+        queue = _translation_queue_snapshot()
+        by_id = {item["record_id"]: item for item in queue["records"]}
+
+        self.assertEqual(queue["pending_count"], 1)
+        self.assertEqual(queue["failed_count"], 2)
+        self.assertEqual(by_id["failed"]["status"], "FAILED")
+        self.assertEqual(by_id["error-only"]["status"], "FAILED")
+        self.assertEqual(by_id["failed"]["reason"], "模型请求失败")
 
 
 if __name__ == "__main__":

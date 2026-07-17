@@ -33,6 +33,7 @@ class CompletionPdfParserTest(unittest.TestCase):
         self.assertFalse(any("PERFORAT" in row["hours"] for row in payload["operations"]))
         self.assertEqual(payload["bulks"][0]["bulk"], "DIESEL - RIG")
         self.assertEqual(payload["bulks"][0]["qty_used"], "1677.00")
+        self.assertNotIn("daily_costs", payload)
 
     def test_parse_lobc_completion_sample(self) -> None:
         pdf = SAMPLE_DIR / "06112026-LOBC-010-SIN-127-PEC-008-V1R1-REPORTE DIARIO DE COMPLETACIÓN.pdf"
@@ -51,6 +52,7 @@ class CompletionPdfParserTest(unittest.TestCase):
         self.assertTrue(all(row["op_type"] in {"P", "SC", "NPT"} for row in payload["operations"]))
         self.assertEqual(len(payload["bulks"]), 1)
         self.assertEqual(len(payload["perforation_intervals"]), 1)
+        self.assertNotIn("daily_costs", payload)
         interval = payload["perforation_intervals"][0]
         self.assertEqual(interval["formation"], "ARENISCA T")
         self.assertEqual(interval["top_md"], "10991.00")

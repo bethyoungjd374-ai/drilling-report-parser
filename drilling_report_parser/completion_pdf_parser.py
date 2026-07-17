@@ -34,7 +34,6 @@ def parse_completion_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> 
         "report_fields": fields,
         "operations": _parse_operations_from_pdf(payload_source),
         "bulks": _parse_bulks(layout_pages),
-        "daily_costs": _parse_daily_costs(layout_text),
         "mud_products": _parse_mud_products(layout_text),
         "perforation_intervals": _parse_perforation_intervals(layout_pages),
     }
@@ -350,12 +349,6 @@ def _parse_bulks(layout_pages: list[str]) -> list[dict[str, str]]:
                 "qty_end": end.replace(",", ""),
             })
     return rows
-
-
-def _parse_daily_costs(layout_text: str) -> list[dict[str, str]]:
-    if "COSTOS DIARIOS" in layout_text:
-        return [{"cost_description": "No daily cost item recorded", "vendor": "N/A", "amount": "0"}]
-    return []
 
 
 def _parse_mud_products(layout_text: str) -> list[dict[str, str]]:

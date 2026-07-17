@@ -4,10 +4,10 @@ CREATE DATABASE IF NOT EXISTS drilling_report_db
 
 USE drilling_report_db;
 
-CREATE TABLE IF NOT EXISTS report_records (
+CREATE TABLE IF NOT EXISTS dpr_report_record (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  record_id VARCHAR(191) NOT NULL,
-  report_type VARCHAR(32) NOT NULL,
+  record_id VARCHAR(191) NOT NULL COMMENT '稳定日报业务ID',
+  report_type VARCHAR(32) NOT NULL COMMENT '日报类型：drilling/completion/workover/move',
   source_file VARCHAR(512) NOT NULL DEFAULT '',
   parser VARCHAR(128) NOT NULL DEFAULT '',
   report_date VARCHAR(32) NOT NULL DEFAULT '',
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS report_records (
   wellbore VARCHAR(128) NOT NULL DEFAULT '',
   rig VARCHAR(128) NOT NULL DEFAULT '',
   rig_id BIGINT UNSIGNED NULL,
-  wellbore_id BIGINT UNSIGNED NULL,
+  well_id BIGINT UNSIGNED NULL,
   project_id BIGINT UNSIGNED NULL,
   job_id BIGINT UNSIGNED NULL,
   master_match_status VARCHAR(32) NOT NULL DEFAULT '',
@@ -47,35 +47,36 @@ CREATE TABLE IF NOT EXISTS report_records (
   UNIQUE KEY uq_report_records_record_id (record_id),
   KEY idx_report_records_type_date (report_type, report_date),
   KEY idx_report_records_well_date (wellbore, report_date),
+  KEY idx_report_records_type_well_date (report_type, well_id, report_date),
   KEY idx_report_records_rig (rig),
-  KEY idx_report_records_master_refs (project_id, rig_id, wellbore_id, job_id),
+  KEY idx_report_records_master_refs (project_id, rig_id, well_id, job_id),
   KEY idx_report_records_match_status (master_match_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日报原始审计主表；保存来源、业务标识、处理状态及主数据引用';
 
-CREATE TABLE IF NOT EXISTS report_fields (
+CREATE TABLE IF NOT EXISTS dpr_report_field (
   record_id VARCHAR(191) NOT NULL,
-  fields_json JSON NOT NULL,
+  fields_json JSON NOT NULL COMMENT '日报全部单值字段原始解析JSON',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (record_id),
   CONSTRAINT fk_report_fields_record
-    FOREIGN KEY (record_id) REFERENCES report_records(record_id)
+    FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id)
     ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日报单值字段原始审计表；fields_json永久保留解析结果';
 
-CREATE TABLE IF NOT EXISTS report_rows (
+CREATE TABLE IF NOT EXISTS dpr_report_row (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   record_id VARCHAR(191) NOT NULL,
-  module_name VARCHAR(64) NOT NULL,
-  row_no INT NOT NULL,
-  row_json JSON NOT NULL,
+  module_name VARCHAR(64) NOT NULL COMMENT '明细模块标准代码',
+  row_no INT NOT NULL COMMENT '来源模块内行号，从1开始',
+  row_json JSON NOT NULL COMMENT '日报明细行原始解析JSON',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_report_rows_record_module_row (record_id, module_name, row_no),
   KEY idx_report_rows_module (module_name),
   CONSTRAINT fk_report_rows_record
-    FOREIGN KEY (record_id) REFERENCES report_records(record_id)
+    FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id)
     ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日报重复明细原始审计表；按module_name和row_no保存来源行';
 
 CREATE TABLE IF NOT EXISTS translation_content (
   record_id VARCHAR(191) NOT NULL,
@@ -99,7 +100,7 @@ CREATE TABLE IF NOT EXISTS translation_content (
   KEY idx_translation_content_status (translation_status),
   KEY idx_translation_memory_lookup (target_language, prompt_version, translation_status, source_hash),
   CONSTRAINT fk_translation_content_record
-    FOREIGN KEY (record_id) REFERENCES report_records(record_id)
+    FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -126,7 +127,7 @@ CREATE TABLE IF NOT EXISTS translation_memory (
   KEY idx_translation_memory_updated (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS translation_revisions (
+CREATE TABLE IF NOT EXISTS translation_revision (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   record_id VARCHAR(191) NOT NULL,
   entity_id VARCHAR(255) NOT NULL,
@@ -143,11 +144,11 @@ CREATE TABLE IF NOT EXISTS translation_revisions (
   PRIMARY KEY (id),
   KEY idx_translation_revisions_record (record_id, target_language, created_at),
   CONSTRAINT fk_translation_revisions_record
-    FOREIGN KEY (record_id) REFERENCES report_records(record_id)
+    FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS ai_extraction_results (
+CREATE TABLE IF NOT EXISTS ai_extraction_result (
   record_id VARCHAR(191) NOT NULL,
   rule_id VARCHAR(80) NOT NULL,
   source_section VARCHAR(64) NOT NULL,
@@ -167,7 +168,7 @@ CREATE TABLE IF NOT EXISTS ai_extraction_results (
   mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (record_id, rule_id, source_section, source_row_no, target_field),
   KEY idx_ai_extraction_status (extraction_status),
-  CONSTRAINT fk_ai_extraction_record FOREIGN KEY (record_id) REFERENCES report_records(record_id) ON DELETE CASCADE
+  CONSTRAINT fk_ai_extraction_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS md_geo_region (
@@ -390,6 +391,10 @@ CREATE TABLE IF NOT EXISTS md_well (
   well_type_code VARCHAR(64) NOT NULL DEFAULT 'DEVELOPMENT',
   surface_latitude DECIMAL(10,7) NULL,
   surface_longitude DECIMAL(10,7) NULL,
+  well_profile_code VARCHAR(64) NOT NULL DEFAULT 'VERTICAL',
+  trajectory_status_code VARCHAR(64) NOT NULL DEFAULT 'PLANNED',
+  kickoff_md_m DECIMAL(12,2) NULL,
+  planned_td_md_m DECIMAL(12,2) NULL,
   lifecycle_status_code VARCHAR(64) NOT NULL DEFAULT 'ACTIVE',
   status VARCHAR(32) NOT NULL DEFAULT 'active',
   change_reason VARCHAR(512) NOT NULL DEFAULT '',
@@ -405,36 +410,11 @@ CREATE TABLE IF NOT EXISTS md_well (
   KEY idx_md_well_operator (operator_company_id),
   CONSTRAINT fk_md_well_block FOREIGN KEY (block_id) REFERENCES md_block(id),
   CONSTRAINT fk_md_well_field FOREIGN KEY (field_id) REFERENCES md_field(id),
-  CONSTRAINT fk_md_well_operator FOREIGN KEY (operator_company_id) REFERENCES md_organization(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS md_wellbore (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  wellbore_code VARCHAR(128) NOT NULL,
-  wellbore_name VARCHAR(255) NOT NULL DEFAULT '',
-  well_id BIGINT UNSIGNED NOT NULL,
-  parent_wellbore_id BIGINT UNSIGNED NULL,
-  block_id BIGINT UNSIGNED NULL,
-  well_type VARCHAR(64) NOT NULL DEFAULT '',
-  wellbore_profile_code VARCHAR(64) NOT NULL DEFAULT 'VERTICAL',
-  trajectory_status_code VARCHAR(64) NOT NULL DEFAULT 'PLANNED',
-  kickoff_md_m DECIMAL(12,2) NULL,
-  planned_td_md_m DECIMAL(12,2) NULL,
-  status VARCHAR(32) NOT NULL DEFAULT 'active',
-  change_reason VARCHAR(512) NOT NULL DEFAULT '',
-  version INT UNSIGNED NOT NULL DEFAULT 1,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by VARCHAR(128) NOT NULL DEFAULT '',
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  updated_by VARCHAR(128) NOT NULL DEFAULT '',
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_md_wellbore_code (wellbore_code),
-  KEY idx_md_wellbore_well (well_id),
-  KEY idx_md_wellbore_parent (parent_wellbore_id),
-  KEY idx_md_wellbore_block (block_id),
-  CONSTRAINT fk_md_wellbore_well FOREIGN KEY (well_id) REFERENCES md_well(id),
-  CONSTRAINT fk_md_wellbore_parent FOREIGN KEY (parent_wellbore_id) REFERENCES md_wellbore(id),
-  CONSTRAINT fk_md_wellbore_block FOREIGN KEY (block_id) REFERENCES md_block(id)
+  CONSTRAINT fk_md_well_operator FOREIGN KEY (operator_company_id) REFERENCES md_organization(id),
+  CONSTRAINT ck_md_well_coordinates CHECK (
+    (surface_latitude IS NULL OR (surface_latitude >= -90 AND surface_latitude <= 90)) AND
+    (surface_longitude IS NULL OR (surface_longitude >= -180 AND surface_longitude <= 180))
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS md_contract (
@@ -518,7 +498,8 @@ CREATE TABLE IF NOT EXISTS rel_project_team_assignment (
   UNIQUE KEY uq_project_team_assignment_start (project_id, team_id, valid_from),
   KEY idx_project_team_assignment_lookup (team_id, valid_from, valid_to, status),
   CONSTRAINT fk_project_team_assignment_project FOREIGN KEY (project_id) REFERENCES md_project(id),
-  CONSTRAINT fk_project_team_assignment_team FOREIGN KEY (team_id) REFERENCES md_team(id)
+  CONSTRAINT fk_project_team_assignment_team FOREIGN KEY (team_id) REFERENCES md_team(id),
+  CONSTRAINT ck_rel_project_team_period CHECK (valid_to IS NULL OR valid_to > valid_from)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS rel_project_rig_assignment (
@@ -541,13 +522,14 @@ CREATE TABLE IF NOT EXISTS rel_project_rig_assignment (
   UNIQUE KEY uq_project_rig_assignment_start (project_id, rig_id, valid_from),
   KEY idx_project_rig_assignment_lookup (rig_id, valid_from, valid_to, status),
   CONSTRAINT fk_project_rig_assignment_project FOREIGN KEY (project_id) REFERENCES md_project(id),
-  CONSTRAINT fk_project_rig_assignment_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id)
+  CONSTRAINT fk_project_rig_assignment_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id),
+  CONSTRAINT ck_rel_project_rig_period CHECK (valid_to IS NULL OR valid_to > valid_from)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS rel_project_well_scope (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   project_id BIGINT UNSIGNED NOT NULL,
-  wellbore_id BIGINT UNSIGNED NOT NULL,
+  well_id BIGINT UNSIGNED NOT NULL,
   job_type VARCHAR(32) NOT NULL DEFAULT '',
   scope_note VARCHAR(512) NOT NULL DEFAULT '',
   valid_from DATETIME NOT NULL,
@@ -560,17 +542,17 @@ CREATE TABLE IF NOT EXISTS rel_project_well_scope (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   updated_by VARCHAR(128) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
-  UNIQUE KEY uq_project_well_scope_start (project_id, wellbore_id, job_type, valid_from),
-  KEY idx_project_well_scope_lookup (wellbore_id, job_type, valid_from, valid_to, status),
+  UNIQUE KEY uq_project_well_scope_start (project_id, well_id, job_type, valid_from),
+  KEY idx_project_well_scope_lookup (well_id, job_type, valid_from, valid_to, status),
   CONSTRAINT fk_project_well_scope_project FOREIGN KEY (project_id) REFERENCES md_project(id),
-  CONSTRAINT fk_project_well_scope_wellbore FOREIGN KEY (wellbore_id) REFERENCES md_wellbore(id)
+  CONSTRAINT fk_project_well_scope_well FOREIGN KEY (well_id) REFERENCES md_well(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS biz_job (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   job_code VARCHAR(191) NOT NULL,
   project_id BIGINT UNSIGNED NULL,
-  wellbore_id BIGINT UNSIGNED NOT NULL,
+  well_id BIGINT UNSIGNED NOT NULL,
   job_type VARCHAR(32) NOT NULL,
   sequence_no INT UNSIGNED NOT NULL DEFAULT 1,
   planned_start DATETIME NULL,
@@ -585,10 +567,10 @@ CREATE TABLE IF NOT EXISTS biz_job (
   updated_by VARCHAR(128) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   UNIQUE KEY uq_biz_job_code (job_code),
-  UNIQUE KEY uq_biz_job_sequence (project_id, wellbore_id, job_type, sequence_no),
-  KEY idx_biz_job_wellbore (wellbore_id, job_type, status),
+  UNIQUE KEY uq_biz_job_sequence (project_id, well_id, job_type, sequence_no),
+  KEY idx_biz_job_well (well_id, job_type, status),
   CONSTRAINT fk_biz_job_project FOREIGN KEY (project_id) REFERENCES md_project(id),
-  CONSTRAINT fk_biz_job_wellbore FOREIGN KEY (wellbore_id) REFERENCES md_wellbore(id)
+  CONSTRAINT fk_biz_job_well FOREIGN KEY (well_id) REFERENCES md_well(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS rel_job_rig_assignment (
@@ -608,18 +590,20 @@ CREATE TABLE IF NOT EXISTS rel_job_rig_assignment (
   UNIQUE KEY uq_job_rig_assignment_start (job_id, rig_id, valid_from),
   KEY idx_job_rig_assignment_lookup (rig_id, valid_from, valid_to, status),
   CONSTRAINT fk_job_rig_assignment_job FOREIGN KEY (job_id) REFERENCES biz_job(id),
-  CONSTRAINT fk_job_rig_assignment_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id)
+  CONSTRAINT fk_job_rig_assignment_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id),
+  CONSTRAINT ck_rel_job_rig_period CHECK (valid_to IS NULL OR valid_to > valid_from)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS fact_daily_report (
+CREATE TABLE IF NOT EXISTS dpr_report (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   record_id VARCHAR(191) NOT NULL,
   report_date DATE NULL,
+  report_no INT UNSIGNED NULL COMMENT '日报序号；原始文本保留在dpr_report_record.report_no',
   report_type VARCHAR(32) NOT NULL,
   project_id BIGINT UNSIGNED NULL,
   job_id BIGINT UNSIGNED NULL,
   rig_id BIGINT UNSIGNED NULL,
-  wellbore_id BIGINT UNSIGNED NULL,
+  well_id BIGINT UNSIGNED NULL,
   match_status VARCHAR(32) NOT NULL DEFAULT 'UNASSIGNED',
   match_message TEXT NULL,
   normalization_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
@@ -633,21 +617,22 @@ CREATE TABLE IF NOT EXISTS fact_daily_report (
   UNIQUE KEY uq_fact_daily_report_record (record_id),
   KEY idx_fact_daily_report_date (report_date, report_type),
   KEY idx_fact_daily_report_match (match_status, normalization_status),
-  KEY idx_fact_daily_report_refs (project_id, job_id, rig_id, wellbore_id),
-  CONSTRAINT fk_fact_daily_report_record FOREIGN KEY (record_id) REFERENCES report_records(record_id) ON DELETE CASCADE,
+  KEY idx_fact_daily_report_refs (project_id, job_id, rig_id, well_id),
+  CONSTRAINT fk_fact_daily_report_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE,
   CONSTRAINT fk_fact_daily_report_project FOREIGN KEY (project_id) REFERENCES md_project(id),
   CONSTRAINT fk_fact_daily_report_job FOREIGN KEY (job_id) REFERENCES biz_job(id),
   CONSTRAINT fk_fact_daily_report_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id),
-  CONSTRAINT fk_fact_daily_report_wellbore FOREIGN KEY (wellbore_id) REFERENCES md_wellbore(id)
+  CONSTRAINT fk_fact_daily_report_well FOREIGN KEY (well_id) REFERENCES md_well(id),
+  CONSTRAINT ck_fact_daily_report_type CHECK (report_type IN ('drilling','completion','workover','move'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS fact_activity (
+CREATE TABLE IF NOT EXISTS dpr_operation (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   daily_report_id BIGINT UNSIGNED NOT NULL,
   source_row_no INT NOT NULL,
   started_at DATETIME NULL,
   ended_at DATETIME NULL,
-  hours DECIMAL(10,3) NOT NULL DEFAULT 0,
+  hours DECIMAL(6,3) NULL COMMENT '来源作业时长，单位h；解析失败保留NULL',
   op_code VARCHAR(64) NOT NULL DEFAULT '',
   op_sub VARCHAR(128) NOT NULL DEFAULT '',
   source_op_type VARCHAR(16) NOT NULL DEFAULT '',
@@ -661,10 +646,12 @@ CREATE TABLE IF NOT EXISTS fact_activity (
   PRIMARY KEY (id),
   UNIQUE KEY uq_fact_activity_row (daily_report_id, source_row_no),
   KEY idx_fact_activity_code (op_code, op_sub),
-  CONSTRAINT fk_fact_activity_report FOREIGN KEY (daily_report_id) REFERENCES fact_daily_report(id) ON DELETE CASCADE
+  CONSTRAINT fk_fact_activity_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_fact_activity_hours CHECK (hours IS NULL OR (hours >= 0 AND hours <= 24)),
+  CONSTRAINT ck_fact_activity_timeline CHECK (started_at IS NULL OR ended_at IS NULL OR ended_at > started_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS time_classification_rule (
+CREATE TABLE IF NOT EXISTS dpr_operation_classification_rule (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   rule_code VARCHAR(80) NOT NULL,
   rule_name VARCHAR(255) NOT NULL,
@@ -686,9 +673,10 @@ CREATE TABLE IF NOT EXISTS time_classification_rule (
   KEY idx_time_classification_rule_priority (status, priority)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS fact_time_classification (
+CREATE TABLE IF NOT EXISTS dpr_operation_classification (
   activity_id BIGINT UNSIGNED NOT NULL,
   productive_flag VARCHAR(32) NOT NULL DEFAULT '',
+  productivity_type_code VARCHAR(32) NOT NULL DEFAULT '' COMMENT '生产属性类别代码；替代名称易误解的productive_flag',
   confirmed_op_type VARCHAR(16) NOT NULL DEFAULT '',
   work_bucket VARCHAR(64) NOT NULL DEFAULT '',
   billing_status VARCHAR(32) NOT NULL DEFAULT '',
@@ -709,11 +697,12 @@ CREATE TABLE IF NOT EXISTS fact_time_classification (
   updated_by VARCHAR(128) NOT NULL DEFAULT '',
   PRIMARY KEY (activity_id),
   KEY idx_fact_time_classification_queue (confirmation_status, rule_version),
-  CONSTRAINT fk_fact_time_classification_activity FOREIGN KEY (activity_id) REFERENCES fact_activity(id) ON DELETE CASCADE,
-  CONSTRAINT fk_fact_time_classification_rule FOREIGN KEY (rule_id) REFERENCES time_classification_rule(id)
+  CONSTRAINT fk_fact_time_classification_activity FOREIGN KEY (activity_id) REFERENCES dpr_operation(id) ON DELETE CASCADE,
+  CONSTRAINT fk_fact_time_classification_rule FOREIGN KEY (rule_id) REFERENCES dpr_operation_classification_rule(id),
+  CONSTRAINT ck_fact_time_classification_confidence CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS time_classification_revision (
+CREATE TABLE IF NOT EXISTS dpr_operation_classification_revision (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   activity_id BIGINT UNSIGNED NOT NULL,
   previous_json JSON NULL,
@@ -724,14 +713,17 @@ CREATE TABLE IF NOT EXISTS time_classification_revision (
   created_by VARCHAR(128) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   KEY idx_time_classification_revision_activity (activity_id, created_at),
-  CONSTRAINT fk_time_classification_revision_activity FOREIGN KEY (activity_id) REFERENCES fact_activity(id) ON DELETE CASCADE
+  CONSTRAINT fk_time_classification_revision_activity FOREIGN KEY (activity_id) REFERENCES dpr_operation(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS fact_job_event (
+CREATE TABLE IF NOT EXISTS biz_job_event (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   job_id BIGINT UNSIGNED NOT NULL,
   event_type VARCHAR(64) NOT NULL,
-  occurred_at DATETIME NOT NULL,
+  event_date DATE NULL COMMENT '事件日期',
+  event_time TIME NULL COMMENT '事件时间；来源未提供时为NULL',
+  time_precision_code VARCHAR(16) NOT NULL DEFAULT 'DATE' COMMENT '时间精度：DATE或DATETIME',
+  occurred_at DATETIME NULL COMMENT '仅来源明确到具体时间时填写',
   source_record_id VARCHAR(191) NULL,
   source_type VARCHAR(32) NOT NULL DEFAULT 'report',
   confirmation_status VARCHAR(32) NOT NULL DEFAULT 'AUTO',
@@ -742,13 +734,13 @@ CREATE TABLE IF NOT EXISTS fact_job_event (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   updated_by VARCHAR(128) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
-  UNIQUE KEY uq_fact_job_event_source (job_id, event_type, occurred_at, source_record_id),
+  UNIQUE KEY uq_fact_job_event_source_date (job_id, event_type, event_date, source_record_id),
   KEY idx_fact_job_event_lookup (job_id, event_type, occurred_at),
   CONSTRAINT fk_fact_job_event_job FOREIGN KEY (job_id) REFERENCES biz_job(id),
-  CONSTRAINT fk_fact_job_event_record FOREIGN KEY (source_record_id) REFERENCES report_records(record_id) ON DELETE SET NULL
+  CONSTRAINT fk_fact_job_event_record FOREIGN KEY (source_record_id) REFERENCES dpr_report_record(record_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS fact_depth_progress (
+CREATE TABLE IF NOT EXISTS biz_job_depth_progress (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   job_id BIGINT UNSIGNED NOT NULL,
   record_id VARCHAR(191) NOT NULL,
@@ -765,15 +757,18 @@ CREATE TABLE IF NOT EXISTS fact_depth_progress (
   UNIQUE KEY uq_fact_depth_progress_record (job_id, record_id, progress_date),
   KEY idx_fact_depth_progress_date (job_id, progress_date),
   CONSTRAINT fk_fact_depth_progress_job FOREIGN KEY (job_id) REFERENCES biz_job(id),
-  CONSTRAINT fk_fact_depth_progress_record FOREIGN KEY (record_id) REFERENCES report_records(record_id) ON DELETE CASCADE
+  CONSTRAINT fk_fact_depth_progress_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS fact_incident (
+CREATE TABLE IF NOT EXISTS hsse_incident (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   job_id BIGINT UNSIGNED NULL,
   record_id VARCHAR(191) NOT NULL,
   incident_type VARCHAR(64) NOT NULL,
-  occurred_at DATETIME NULL,
+  incident_date DATE NULL COMMENT '事故日期',
+  incident_time TIME NULL COMMENT '事故时间；来源未提供时为NULL',
+  time_precision_code VARCHAR(16) NOT NULL DEFAULT 'DATE' COMMENT '时间精度：DATE或DATETIME',
+  occurred_at DATETIME NULL COMMENT '仅来源明确到具体时间时填写',
   description TEXT NULL,
   responsibility VARCHAR(32) NOT NULL DEFAULT '',
   confirmation_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
@@ -786,10 +781,436 @@ CREATE TABLE IF NOT EXISTS fact_incident (
   KEY idx_fact_incident_record (record_id, incident_type),
   KEY idx_fact_incident_job (job_id, occurred_at),
   CONSTRAINT fk_fact_incident_job FOREIGN KEY (job_id) REFERENCES biz_job(id),
-  CONSTRAINT fk_fact_incident_record FOREIGN KEY (record_id) REFERENCES report_records(record_id) ON DELETE CASCADE
+  CONSTRAINT fk_fact_incident_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS data_quality_issue (
+CREATE TABLE IF NOT EXISTS dpr_report_summary (
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  event_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '日报事件名称',
+  primary_reason VARCHAR(255) NOT NULL DEFAULT '' COMMENT '主要作业原因',
+  afe_number VARCHAR(128) NOT NULL DEFAULT '' COMMENT 'AFE编号',
+  reference_datum_ft DECIMAL(14,3) NULL COMMENT '参考基准，单位ft',
+  current_operation TEXT NULL COMMENT '当前作业描述',
+  summary_24h TEXT NULL COMMENT '过去24小时作业总结',
+  forecast_24h TEXT NULL COMMENT '未来24小时作业计划',
+  other_remarks TEXT NULL COMMENT '其他备注',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
+  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (daily_report_id),
+  CONSTRAINT fk_fact_report_summary_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日报公共摘要标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_drilling_report (
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  measured_depth_ft DECIMAL(14,3) NULL COMMENT '当日测量井深，单位ft',
+  previous_measured_depth_ft DECIMAL(14,3) NULL COMMENT '前日测量井深，单位ft',
+  daily_progress_ft DECIMAL(14,3) NULL COMMENT '当日进尺，单位ft',
+  rotary_hours DECIMAL(10,3) NULL COMMENT '当日旋转时长，单位h',
+  previous_casing_description VARCHAR(255) NOT NULL DEFAULT '' COMMENT '上一层套管描述',
+  previous_casing_size_in DECIMAL(10,3) NULL COMMENT '上一层套管尺寸，单位in',
+  previous_casing_depth_ft DECIMAL(14,3) NULL COMMENT '上一层套管深度，单位ft',
+  next_casing_description VARCHAR(255) NOT NULL DEFAULT '' COMMENT '下一层套管描述',
+  next_casing_size_in DECIMAL(10,3) NULL COMMENT '下一层套管尺寸，单位in',
+  next_casing_depth_ft DECIMAL(14,3) NULL COMMENT '下一层套管深度，单位ft',
+  formation_test_type VARCHAR(32) NOT NULL DEFAULT '' COMMENT '地层测试类型，例如FIT或LOT',
+  formation_test_emw_ppg DECIMAL(10,3) NULL COMMENT '地层测试等效泥浆密度，单位ppg',
+  last_bop_test_date DATE NULL COMMENT '最近一次BOP试压日期',
+  pump_rate_gpm DECIMAL(12,3) NULL COMMENT '泵排量，单位gpm',
+  pump_pressure_psi DECIMAL(12,3) NULL COMMENT '泵压，单位psi',
+  string_weight_up_kip DECIMAL(12,3) NULL COMMENT '钻柱上提重量，单位kip',
+  string_weight_down_kip DECIMAL(12,3) NULL COMMENT '钻柱下放重量，单位kip',
+  torque_off_bottom_ft_lbf DECIMAL(16,3) NULL COMMENT '离底扭矩，单位ft-lbf',
+  torque_on_bottom_ft_lbf DECIMAL(16,3) NULL COMMENT '井底扭矩，单位ft-lbf',
+  bit_sequence_no VARCHAR(64) NOT NULL DEFAULT '' COMMENT '钻头序号',
+  bit_size_in DECIMAL(10,3) NULL COMMENT '钻头尺寸，单位in',
+  bit_manufacturer VARCHAR(255) NOT NULL DEFAULT '' COMMENT '钻头制造商',
+  bit_serial_no VARCHAR(128) NOT NULL DEFAULT '' COMMENT '钻头序列号',
+  bit_wear_iodl VARCHAR(128) NOT NULL DEFAULT '' COMMENT '钻头磨损I-O-D-L',
+  bit_wear_bgor VARCHAR(128) NOT NULL DEFAULT '' COMMENT '钻头磨损B-G-O-R',
+  bha_no VARCHAR(64) NOT NULL DEFAULT '' COMMENT 'BHA编号',
+  bha_md_in_ft DECIMAL(14,3) NULL COMMENT 'BHA入井测量井深，单位ft',
+  bha_md_out_ft DECIMAL(14,3) NULL COMMENT 'BHA出井测量井深，单位ft',
+  bha_total_length_ft DECIMAL(14,3) NULL COMMENT 'BHA总长度，单位ft',
+  safety_incident_flag VARCHAR(16) NOT NULL DEFAULT '' COMMENT '安全事故标志',
+  environmental_incident_flag VARCHAR(16) NOT NULL DEFAULT '' COMMENT '环境事故标志',
+  days_since_recordable_incident INT NULL COMMENT '距上次可记录事故天数',
+  days_since_lost_time_accident INT NULL COMMENT '距上次损失工时事故天数',
+  incident_comments TEXT NULL COMMENT '事故说明',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
+  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (daily_report_id),
+  CONSTRAINT fk_fact_drilling_parameter_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钻井日报施工参数标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_drilling_fluid_property (
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  mud_engineer VARCHAR(255) NOT NULL DEFAULT '' COMMENT '泥浆工程师',
+  sample_source VARCHAR(255) NOT NULL DEFAULT '' COMMENT '泥浆取样位置',
+  mud_type VARCHAR(128) NOT NULL DEFAULT '' COMMENT '泥浆体系',
+  sample_time TIME NULL COMMENT '泥浆取样时间',
+  sample_depth_ft DECIMAL(14,3) NULL COMMENT '泥浆取样深度，单位ft',
+  density_ppg DECIMAL(10,3) NULL COMMENT '泥浆密度，单位ppg',
+  mud_temperature_f DECIMAL(10,3) NULL COMMENT '泥浆温度，单位华氏度',
+  rheology_temperature_f DECIMAL(10,3) NULL COMMENT '流变测试温度，单位华氏度',
+  funnel_viscosity_sec_per_qt DECIMAL(10,3) NULL COMMENT '漏斗黏度，单位sec/qt',
+  plastic_viscosity_cp DECIMAL(10,3) NULL COMMENT '塑性黏度，单位cP',
+  yield_point_lb_per_100ft2 DECIMAL(10,3) NULL COMMENT '动切力，单位lb/100ft2',
+  gel_10s_lb_per_100ft2 DECIMAL(10,3) NULL COMMENT '10秒静切力，单位lb/100ft2',
+  gel_10m_lb_per_100ft2 DECIMAL(10,3) NULL COMMENT '10分钟静切力，单位lb/100ft2',
+  gel_30m_lb_per_100ft2 DECIMAL(10,3) NULL COMMENT '30分钟静切力，单位lb/100ft2',
+  api_fluid_loss_ml_30min DECIMAL(10,3) NULL COMMENT 'API失水，单位ml/30min',
+  oil_percent DECIMAL(7,3) NULL COMMENT '含油量百分比',
+  water_percent DECIMAL(7,3) NULL COMMENT '含水量百分比',
+  sand_percent DECIMAL(7,3) NULL COMMENT '含砂量百分比',
+  equivalent_circulating_density_ppg DECIMAL(10,3) NULL COMMENT '当量循环密度，单位ppg',
+  comments TEXT NULL COMMENT '泥浆备注',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
+  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (daily_report_id),
+  CONSTRAINT fk_fact_drilling_fluid_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钻井液性能标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_completion_report (
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  description TEXT NULL COMMENT '完井作业说明',
+  operation_start_date DATE NULL COMMENT '完井作业开始日期',
+  afe_cost_usd DECIMAL(18,2) NULL COMMENT 'AFE成本，单位USD',
+  daily_cost_usd DECIMAL(18,2) NULL COMMENT '当日成本，单位USD',
+  cumulative_cost_usd DECIMAL(18,2) NULL COMMENT '累计成本，单位USD',
+  supervisor_1 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '监督人员1',
+  supervisor_2 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '监督人员2',
+  engineer VARCHAR(255) NOT NULL DEFAULT '' COMMENT '工程师',
+  pam_engineer VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'PAM工程师',
+  geologist VARCHAR(255) NOT NULL DEFAULT '' COMMENT '地质师',
+  total_personnel INT NULL COMMENT '现场总人数',
+  safety_comments TEXT NULL COMMENT '安全备注',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
+  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (daily_report_id),
+  CONSTRAINT fk_fact_completion_parameter_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='完井日报扩展参数标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_workover_report (
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  workover_no VARCHAR(128) NOT NULL DEFAULT '' COMMENT '修井作业编号',
+  description TEXT NULL COMMENT '修井作业说明',
+  operation_start_date DATE NULL COMMENT '修井作业开始日期',
+  afe_cost_usd DECIMAL(18,2) NULL COMMENT 'AFE成本，单位USD',
+  daily_cost_usd DECIMAL(18,2) NULL COMMENT '当日成本，单位USD',
+  cumulative_cost_usd DECIMAL(18,2) NULL COMMENT '累计成本，单位USD',
+  supervisor_1 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '监督人员1',
+  supervisor_2 VARCHAR(255) NOT NULL DEFAULT '' COMMENT '监督人员2',
+  engineer VARCHAR(255) NOT NULL DEFAULT '' COMMENT '工程师',
+  pam_engineer VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'PAM工程师',
+  geologist VARCHAR(255) NOT NULL DEFAULT '' COMMENT '地质师',
+  total_personnel INT NULL COMMENT '现场总人数',
+  safety_comments TEXT NULL COMMENT '安全备注',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
+  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (daily_report_id),
+  CONSTRAINT fk_fact_workover_parameter_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='修井日报扩展参数标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_move_report (
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  ground_elevation_ft DECIMAL(14,3) NULL COMMENT '地面海拔，单位ft',
+  afe_design_depth_ft DECIMAL(14,3) NULL COMMENT 'AFE设计井深，单位ft',
+  afe_design_days DECIMAL(10,3) NULL COMMENT 'AFE设计周期，单位d',
+  rig_move_progress_pct DECIMAL(5,2) NULL COMMENT '搬迁进度，单位%',
+  rig_up_progress_pct DECIMAL(5,2) NULL COMMENT '安装进度，单位%',
+  loads_moved_today INT UNSIGNED NULL COMMENT '当日搬运载荷数量',
+  loads_moved_total INT UNSIGNED NULL COMMENT '累计已搬运载荷数量',
+  loads_planned_total INT UNSIGNED NULL COMMENT '计划搬运载荷总数',
+  wellbore_prefix VARCHAR(64) NOT NULL DEFAULT '' COMMENT '井号前缀',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
+  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (daily_report_id),
+  CONSTRAINT fk_fact_move_parameter_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_fact_move_progress CHECK (rig_move_progress_pct IS NULL OR (rig_move_progress_pct >= 0 AND rig_move_progress_pct <= 100)),
+  CONSTRAINT ck_fact_rig_up_progress CHECK (rig_up_progress_pct IS NULL OR (rig_up_progress_pct >= 0 AND rig_up_progress_pct <= 100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='搬迁日报扩展参数标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_drilling_directional_survey (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '测斜事实ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  measured_depth_ft DECIMAL(14,3) NULL COMMENT '测量井深，单位ft',
+  inclination_deg DECIMAL(10,4) NULL COMMENT '井斜角，单位deg',
+  azimuth_deg DECIMAL(10,4) NULL COMMENT '方位角，单位deg',
+  true_vertical_depth_ft DECIMAL(14,3) NULL COMMENT '垂直井深，单位ft',
+  vertical_section_ft DECIMAL(14,3) NULL COMMENT '垂直剖面位移，单位ft',
+  north_south_ft DECIMAL(14,3) NULL COMMENT '南北位移，单位ft',
+  east_west_ft DECIMAL(14,3) NULL COMMENT '东西位移，单位ft',
+  dogleg_severity_deg_per_100ft DECIMAL(10,4) NULL COMMENT '狗腿度，单位deg/100ft',
+  build_rate_deg_per_100ft DECIMAL(10,4) NULL COMMENT '造斜率，单位deg/100ft',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_fact_directional_survey_row (daily_report_id, source_row_no),
+  KEY idx_fact_directional_survey_depth (daily_report_id, measured_depth_ft),
+  CONSTRAINT fk_fact_directional_survey_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_fact_directional_survey_values CHECK (
+    (inclination_deg IS NULL OR (inclination_deg >= 0 AND inclination_deg <= 180)) AND
+    (azimuth_deg IS NULL OR (azimuth_deg >= 0 AND azimuth_deg < 360)) AND
+    (dogleg_severity_deg_per_100ft IS NULL OR dogleg_severity_deg_per_100ft >= 0)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定向井测斜明细标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_drilling_bha_component (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'BHA组件事实ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  component_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '组件名称',
+  outside_diameter_in DECIMAL(10,3) NULL COMMENT '外径，单位in',
+  inside_diameter_in DECIMAL(10,3) NULL COMMENT '内径，单位in',
+  joint_count INT NULL COMMENT '根数',
+  component_length_ft DECIMAL(14,3) NULL COMMENT '组件长度，单位ft',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_fact_bha_component_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_fact_bha_component_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_fact_bha_component_values CHECK (
+    (outside_diameter_in IS NULL OR outside_diameter_in >= 0) AND
+    (inside_diameter_in IS NULL OR inside_diameter_in >= 0) AND
+    (joint_count IS NULL OR joint_count >= 0) AND
+    (component_length_ft IS NULL OR component_length_ft >= 0) AND
+    (outside_diameter_in IS NULL OR inside_diameter_in IS NULL OR outside_diameter_in >= inside_diameter_in)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='BHA组件明细标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_drilling_bulk_inventory (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '材料库存事实ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  material_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '材料名称',
+  opening_quantity DECIMAL(18,3) NULL COMMENT '期初数量',
+  received_quantity DECIMAL(18,3) NULL COMMENT '当日接收数量；来源未提供时为NULL',
+  used_quantity DECIMAL(18,3) NULL COMMENT '当日使用数量',
+  closing_quantity DECIMAL(18,3) NULL COMMENT '期末数量',
+  quantity_unit_code VARCHAR(32) NOT NULL DEFAULT 'SOURCE_UNSPECIFIED' COMMENT '数量单位代码；来源未标明时为SOURCE_UNSPECIFIED',
+  quantity_balance_status VARCHAR(32) NOT NULL DEFAULT 'NOT_CHECKABLE' COMMENT '数量勾稽状态；缺少接收量或单位时不可校验',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_drilling_bulk_inventory_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_drilling_bulk_inventory_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_drilling_bulk_inventory_nonnegative CHECK (
+    (opening_quantity IS NULL OR opening_quantity >= 0) AND
+    (received_quantity IS NULL OR received_quantity >= 0) AND
+    (used_quantity IS NULL OR used_quantity >= 0) AND
+    (closing_quantity IS NULL OR closing_quantity >= 0)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钻井日报散装料库存与消耗';
+
+CREATE TABLE IF NOT EXISTS dpr_completion_bulk_inventory (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '完井散装料库存ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  material_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '材料名称',
+  opening_quantity DECIMAL(18,3) NULL COMMENT '期初数量',
+  received_quantity DECIMAL(18,3) NULL COMMENT '当日接收数量；来源未提供时为NULL',
+  used_quantity DECIMAL(18,3) NULL COMMENT '当日使用数量',
+  closing_quantity DECIMAL(18,3) NULL COMMENT '期末数量',
+  quantity_unit_code VARCHAR(32) NOT NULL DEFAULT 'SOURCE_UNSPECIFIED' COMMENT '数量单位代码',
+  quantity_balance_status VARCHAR(32) NOT NULL DEFAULT 'NOT_CHECKABLE' COMMENT '数量勾稽状态',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_completion_bulk_inventory_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_completion_bulk_inventory_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_completion_bulk_inventory_nonnegative CHECK (
+    (opening_quantity IS NULL OR opening_quantity >= 0) AND
+    (received_quantity IS NULL OR received_quantity >= 0) AND
+    (used_quantity IS NULL OR used_quantity >= 0) AND
+    (closing_quantity IS NULL OR closing_quantity >= 0)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='完井日报散装料库存与消耗';
+
+CREATE TABLE IF NOT EXISTS dpr_workover_bulk_inventory (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '修井散装料库存ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  material_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '材料名称',
+  opening_quantity DECIMAL(18,3) NULL COMMENT '期初数量',
+  received_quantity DECIMAL(18,3) NULL COMMENT '当日接收数量；来源未提供时为NULL',
+  used_quantity DECIMAL(18,3) NULL COMMENT '当日使用数量',
+  closing_quantity DECIMAL(18,3) NULL COMMENT '期末数量',
+  quantity_unit_code VARCHAR(32) NOT NULL DEFAULT 'SOURCE_UNSPECIFIED' COMMENT '数量单位代码',
+  quantity_balance_status VARCHAR(32) NOT NULL DEFAULT 'NOT_CHECKABLE' COMMENT '数量勾稽状态',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_workover_bulk_inventory_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_workover_bulk_inventory_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_workover_bulk_inventory_nonnegative CHECK (
+    (opening_quantity IS NULL OR opening_quantity >= 0) AND
+    (received_quantity IS NULL OR received_quantity >= 0) AND
+    (used_quantity IS NULL OR used_quantity >= 0) AND
+    (closing_quantity IS NULL OR closing_quantity >= 0)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='修井日报散装料库存与消耗';
+
+CREATE TABLE IF NOT EXISTS dpr_drilling_fluid_loss (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '钻井液漏失事实ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  injected_volume_bbl DECIMAL(14,3) NULL COMMENT '注入体积，单位bbl',
+  returned_volume_bbl DECIMAL(14,3) NULL COMMENT '返出体积，单位bbl',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_fact_fluid_loss_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_fact_fluid_loss_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_fact_fluid_loss_injected_nonnegative CHECK (injected_volume_bbl IS NULL OR injected_volume_bbl >= 0),
+  CONSTRAINT ck_fact_fluid_loss_returned_nonnegative CHECK (returned_volume_bbl IS NULL OR returned_volume_bbl >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钻井日报漏失情况标准事实';
+
+CREATE TABLE IF NOT EXISTS dpr_completion_mud_product (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '泥浆产品事实ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  product_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '泥浆产品名称',
+  quantity_unit VARCHAR(32) NOT NULL DEFAULT '' COMMENT '数量单位',
+  received_quantity DECIMAL(18,3) NULL COMMENT '接收数量',
+  used_quantity DECIMAL(18,3) NULL COMMENT '使用数量',
+  returned_quantity DECIMAL(18,3) NULL COMMENT '退回数量',
+  ending_quantity DECIMAL(18,3) NULL COMMENT '期末数量',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_completion_mud_product_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_completion_mud_product_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='完井日报泥浆产品收发存';
+
+CREATE TABLE IF NOT EXISTS dpr_workover_mud_product (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '修井泥浆产品ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  product_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '泥浆产品名称',
+  quantity_unit VARCHAR(32) NOT NULL DEFAULT '' COMMENT '数量单位',
+  received_quantity DECIMAL(18,3) NULL COMMENT '接收数量',
+  used_quantity DECIMAL(18,3) NULL COMMENT '使用数量',
+  returned_quantity DECIMAL(18,3) NULL COMMENT '退回数量',
+  ending_quantity DECIMAL(18,3) NULL COMMENT '期末数量',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_workover_mud_product_row (daily_report_id, source_row_no),
+  CONSTRAINT fk_workover_mud_product_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='修井日报泥浆产品收发存';
+
+CREATE TABLE IF NOT EXISTS dpr_completion_perforation_interval (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '射孔井段事实ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  formation_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '地层名称',
+  top_measured_depth_ft DECIMAL(14,3) NULL COMMENT '射孔顶界测量井深，单位ft',
+  base_measured_depth_ft DECIMAL(14,3) NULL COMMENT '射孔底界测量井深，单位ft',
+  interval_length_ft DECIMAL(14,3) NULL COMMENT '射孔井段长度，单位ft',
+  shot_density_per_ft DECIMAL(10,3) NULL COMMENT '孔密，单位shot/ft',
+  charge_description VARCHAR(255) NOT NULL DEFAULT '' COMMENT '射孔弹说明',
+  phase_angle_deg DECIMAL(10,3) NULL COMMENT '相位角，单位deg',
+  penetration_in DECIMAL(10,3) NULL COMMENT '穿深，单位in',
+  hole_diameter_in DECIMAL(10,3) NULL COMMENT '孔径，单位in',
+  perforation_date DATE NULL COMMENT '射孔日期',
+  interval_status VARCHAR(64) NOT NULL DEFAULT '' COMMENT '井段状态',
+  comments TEXT NULL COMMENT '备注',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_completion_perforation_interval_row (daily_report_id, source_row_no),
+  KEY idx_completion_perforation_interval_depth (daily_report_id, top_measured_depth_ft, base_measured_depth_ft),
+  CONSTRAINT fk_completion_perforation_interval_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_completion_perforation_interval_values CHECK (
+    (top_measured_depth_ft IS NULL OR base_measured_depth_ft IS NULL OR base_measured_depth_ft >= top_measured_depth_ft) AND
+    (interval_length_ft IS NULL OR interval_length_ft >= 0)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='完井日报射孔井段';
+
+CREATE TABLE IF NOT EXISTS dpr_workover_perforation_interval (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '修井射孔井段ID',
+  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报ID',
+  source_row_no INT NOT NULL COMMENT '来源明细行号',
+  formation_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '地层名称',
+  top_measured_depth_ft DECIMAL(14,3) NULL COMMENT '射孔顶界测量井深，单位ft',
+  base_measured_depth_ft DECIMAL(14,3) NULL COMMENT '射孔底界测量井深，单位ft',
+  interval_length_ft DECIMAL(14,3) NULL COMMENT '射孔井段长度，单位ft',
+  shot_density_per_ft DECIMAL(10,3) NULL COMMENT '孔密，单位shot/ft',
+  charge_description VARCHAR(255) NOT NULL DEFAULT '' COMMENT '射孔弹说明',
+  phase_angle_deg DECIMAL(10,3) NULL COMMENT '相位角，单位deg',
+  penetration_in DECIMAL(10,3) NULL COMMENT '穿深，单位in',
+  hole_diameter_in DECIMAL(10,3) NULL COMMENT '孔径，单位in',
+  perforation_date DATE NULL COMMENT '射孔日期',
+  interval_status VARCHAR(64) NOT NULL DEFAULT '' COMMENT '井段状态',
+  comments TEXT NULL COMMENT '备注',
+  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源行内容哈希',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_workover_perforation_interval_row (daily_report_id, source_row_no),
+  KEY idx_workover_perforation_interval_depth (daily_report_id, top_measured_depth_ft, base_measured_depth_ft),
+  CONSTRAINT fk_workover_perforation_interval_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
+  CONSTRAINT ck_workover_perforation_interval_values CHECK (
+    (top_measured_depth_ft IS NULL OR base_measured_depth_ft IS NULL OR base_measured_depth_ft >= top_measured_depth_ft) AND
+    (interval_length_ft IS NULL OR interval_length_ft >= 0)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='修井日报射孔井段';
+
+CREATE TABLE IF NOT EXISTS dq_issue (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   issue_key VARCHAR(255) NOT NULL,
   issue_type VARCHAR(64) NOT NULL,
@@ -811,7 +1232,7 @@ CREATE TABLE IF NOT EXISTS data_quality_issue (
   UNIQUE KEY uq_data_quality_issue_key (issue_key),
   KEY idx_data_quality_issue_queue (status, issue_type, severity),
   KEY idx_data_quality_issue_record (record_id),
-  CONSTRAINT fk_data_quality_issue_record FOREIGN KEY (record_id) REFERENCES report_records(record_id) ON DELETE CASCADE
+  CONSTRAINT fk_data_quality_issue_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS monthly_report_snapshot (
@@ -903,10 +1324,11 @@ SELECT
   fdr.rig_id,
   rig.rig_name,
   model.model_name AS rig_model,
-  fdr.wellbore_id,
-  wellbore.wellbore_name,
+  fdr.well_id,
+  well.well_name,
   activity.id AS activity_id,
   activity.source_row_no,
+  activity.source_op_type,
   activity.hours,
   classification.productive_flag,
   classification.confirmed_op_type,
@@ -916,18 +1338,36 @@ SELECT
   classification.cause_code,
   classification.service_line,
   classification.confirmation_status
-FROM fact_daily_report fdr
-JOIN fact_activity activity ON activity.daily_report_id = fdr.id
-LEFT JOIN fact_time_classification classification ON classification.activity_id = activity.id
+FROM dpr_report fdr
+JOIN dpr_operation activity ON activity.daily_report_id = fdr.id
+LEFT JOIN dpr_operation_classification classification ON classification.activity_id = activity.id
 LEFT JOIN md_project project ON project.id = fdr.project_id
 LEFT JOIN md_rig rig ON rig.id = fdr.rig_id
 LEFT JOIN md_rig_model model ON model.id = rig.rig_model_id
-LEFT JOIN md_wellbore wellbore ON wellbore.id = fdr.wellbore_id
+LEFT JOIN md_well well ON well.id = fdr.well_id
 WHERE fdr.normalization_status = 'NORMALIZED' AND fdr.match_status = 'MATCHED';
+
+CREATE OR REPLACE VIEW vw_report_record_typed AS
+SELECT
+  record_id,
+  report_type,
+  report_date AS source_report_date_text,
+  STR_TO_DATE(NULLIF(report_date, ''), '%Y-%m-%d') AS report_date,
+  report_no AS source_report_no_text,
+  CASE WHEN report_no REGEXP '^[0-9]+$' THEN CAST(report_no AS UNSIGNED) END AS report_no,
+  CASE WHEN translation_progress REGEXP '^[0-9]+$' THEN CAST(translation_progress AS UNSIGNED) END AS translation_progress_pct,
+  CASE WHEN extraction_progress REGEXP '^[0-9]+$' THEN CAST(extraction_progress AS UNSIGNED) END AS extraction_progress_pct,
+  CASE WHEN LOWER(locked) IN ('1','true','yes','y','on') THEN TRUE ELSE FALSE END AS locked_flag,
+  CASE WHEN translation_updated_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(translation_updated_at AS DATETIME) END AS translation_updated_at,
+  CASE WHEN extraction_updated_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(extraction_updated_at AS DATETIME) END AS extraction_updated_at,
+  CASE WHEN confirmed_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(confirmed_at AS DATETIME) END AS confirmed_at,
+  CASE WHEN created_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(created_at AS DATETIME) END AS created_at,
+  CASE WHEN updated_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(updated_at AS DATETIME) END AS updated_at
+FROM dpr_report_record;
 
 CREATE OR REPLACE VIEW vw_monthly_rig_workload AS
 SELECT
-  DATE_FORMAT(report_date, '%Y-%m-01') AS month_start,
+  CAST(DATE_FORMAT(report_date, '%Y-%m-01') AS DATE) AS month_start,
   project_id,
   project_name,
   rig_id,
@@ -937,7 +1377,8 @@ SELECT
   ROUND(SUM(hours), 3) AS hours,
   COUNT(DISTINCT record_id) AS report_count
 FROM vw_rig_production_timeline
-GROUP BY DATE_FORMAT(report_date, '%Y-%m-01'), project_id, project_name, rig_id, rig_name, rig_model, work_bucket;
+WHERE source_op_type = 'P' OR confirmation_status = 'CONFIRMED'
+GROUP BY CAST(DATE_FORMAT(report_date, '%Y-%m-01') AS DATE), project_id, project_name, rig_id, rig_name, rig_model, work_bucket;
 
 CREATE OR REPLACE VIEW vw_drilling_basic_metrics AS
 SELECT
@@ -946,8 +1387,8 @@ SELECT
   job.job_type,
   job.project_id,
   project.project_name,
-  job.wellbore_id,
-  wellbore.wellbore_name,
+  job.well_id,
+  well.well_name,
   MIN(report.rig_id) AS rig_id,
   MIN(rig.rig_name) AS rig_name,
   COALESCE(job.planned_depth_ft, 0) AS planned_depth,
@@ -960,13 +1401,13 @@ SELECT
   GROUP_CONCAT(DISTINCT report.record_id ORDER BY report.record_id) AS source_ids
 FROM biz_job job
 JOIN md_project project ON project.id = job.project_id
-JOIN md_wellbore wellbore ON wellbore.id = job.wellbore_id
-JOIN fact_daily_report report ON report.job_id = job.id AND report.match_status = 'MATCHED'
+JOIN md_well well ON well.id = job.well_id
+JOIN dpr_report report ON report.job_id = job.id AND report.match_status = 'MATCHED'
 LEFT JOIN md_rig rig ON rig.id = report.rig_id
-LEFT JOIN fact_depth_progress depth ON depth.job_id = job.id AND depth.record_id = report.record_id
+LEFT JOIN biz_job_depth_progress depth ON depth.job_id = job.id AND depth.record_id = report.record_id
 WHERE job.job_type = 'drilling'
 GROUP BY job.id, job.job_code, job.job_type, job.project_id, project.project_name,
-         job.wellbore_id, wellbore.wellbore_name, job.planned_depth_ft;
+         job.well_id, well.well_name, job.planned_depth_ft;
 
 CREATE OR REPLACE VIEW vw_job_efficiency AS
 SELECT
@@ -975,33 +1416,46 @@ SELECT
   job.job_type,
   job.project_id,
   project.project_name,
-  job.wellbore_id,
-  wellbore.wellbore_name,
+  job.well_id,
+  well.well_name,
   MIN(report.rig_id) AS rig_id,
   MIN(rig.rig_name) AS rig_name,
   MIN(report.report_date) AS period_start,
   MAX(report.report_date) AS period_end,
-  ROUND(SUM(CASE WHEN classification.productive_flag = 'PRODUCTION' THEN activity.hours ELSE 0 END), 3) AS productive_hours,
+  ROUND(SUM(CASE WHEN classification.productive_flag = 'PRODUCTION'
+                  AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END), 3) AS productive_hours,
   ROUND(SUM(CASE WHEN classification.productive_flag <> 'PRODUCTION'
-                  AND classification.confirmed_op_type <> 'SC' THEN activity.hours ELSE 0 END), 3) AS included_nonproductive_hours,
-  ROUND(SUM(CASE WHEN classification.confirmed_op_type = 'SC' THEN activity.hours ELSE 0 END), 3) AS excluded_hours,
+                  AND classification.confirmed_op_type <> 'SC'
+                  AND classification.confirmation_status = 'CONFIRMED' THEN activity.hours ELSE 0 END), 3) AS included_nonproductive_hours,
+  ROUND(SUM(CASE WHEN classification.confirmed_op_type = 'SC'
+                  AND classification.confirmation_status = 'CONFIRMED' THEN activity.hours ELSE 0 END), 3) AS excluded_hours,
+  ROUND(SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
+                  AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN activity.hours ELSE 0 END), 3) AS pending_review_hours,
   ROUND(SUM(activity.hours), 3) AS total_hours,
-  CASE WHEN SUM(CASE WHEN classification.confirmed_op_type <> 'SC' THEN activity.hours ELSE 0 END) = 0 THEN 0
-       ELSE ROUND(SUM(CASE WHEN classification.productive_flag = 'PRODUCTION' THEN activity.hours ELSE 0 END)
-                  / SUM(CASE WHEN classification.confirmed_op_type <> 'SC' THEN activity.hours ELSE 0 END), 6) END AS efficiency,
+  CASE WHEN SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
+                       AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN 1 ELSE 0 END) > 0 THEN NULL
+       WHEN SUM(CASE WHEN classification.confirmed_op_type <> 'SC'
+                      AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END) = 0 THEN 0
+       ELSE ROUND(SUM(CASE WHEN classification.productive_flag = 'PRODUCTION'
+                            AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END)
+                  / SUM(CASE WHEN classification.confirmed_op_type <> 'SC'
+                              AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END), 6) END AS efficiency,
   SUM(CASE WHEN classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN 1 ELSE 0 END) AS confirmed_rows,
-  SUM(CASE WHEN classification.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED')
-            OR classification.confirmation_status IS NULL THEN 1 ELSE 0 END) AS pending_rows,
+  SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
+            AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN 1 ELSE 0 END) AS pending_rows,
+  CASE WHEN SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
+                      AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN 1 ELSE 0 END) = 0
+       THEN 'OFFICIAL' ELSE 'PENDING_NPT_CONFIRMATION' END AS official_status,
   GROUP_CONCAT(DISTINCT report.record_id ORDER BY report.record_id) AS source_ids
 FROM biz_job job
 JOIN md_project project ON project.id = job.project_id
-JOIN md_wellbore wellbore ON wellbore.id = job.wellbore_id
-JOIN fact_daily_report report ON report.job_id = job.id AND report.match_status = 'MATCHED'
+JOIN md_well well ON well.id = job.well_id
+JOIN dpr_report report ON report.job_id = job.id AND report.match_status = 'MATCHED'
 LEFT JOIN md_rig rig ON rig.id = report.rig_id
-JOIN fact_activity activity ON activity.daily_report_id = report.id
-LEFT JOIN fact_time_classification classification ON classification.activity_id = activity.id
+JOIN dpr_operation activity ON activity.daily_report_id = report.id
+LEFT JOIN dpr_operation_classification classification ON classification.activity_id = activity.id
 GROUP BY job.id, job.job_code, job.job_type, job.project_id, project.project_name,
-         job.wellbore_id, wellbore.wellbore_name;
+         job.well_id, well.well_name;
 
 CREATE OR REPLACE VIEW vw_workover_basic_metrics AS
 SELECT
@@ -1010,8 +1464,8 @@ SELECT
   job_type,
   project_id,
   project_name,
-  wellbore_id,
-  wellbore_name,
+  well_id,
+  well_name,
   rig_id,
   rig_name,
   period_start AS start_date,

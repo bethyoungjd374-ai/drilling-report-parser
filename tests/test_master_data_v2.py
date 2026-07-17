@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+from drilling_report_parser.field_registry import (
+    parse_afe_depth_days,
+    parse_numeric_field,
+    parse_string_weight_pair,
+)
 from drilling_report_parser.master_data_service import (
     _relationship_period_overlaps,
     _relationship_scope_overlaps,
@@ -11,6 +17,17 @@ from drilling_report_parser.master_data_service import (
 )
 from drilling_report_parser.time_classification_service import classify_activity, save_rule
 from drilling_report_parser.form_server import _normalize_ai_extraction_rule
+from drilling_report_parser.report_normalization_service import (
+    _activity_datetimes,
+    _boundary_report_dates,
+    _has_business_value,
+    _move_load_counts,
+    _nullable_float,
+    _nullable_report_no,
+    _percentage_from_text,
+    _sync_incident,
+    synchronize_structured_report_facts,
+)
 
 
 def test_rig_aliases_share_one_canonical_name() -> None:
@@ -21,6 +38,170 @@ def test_rig_aliases_share_one_canonical_name() -> None:
 def test_suspected_well_typos_are_not_automatically_merged() -> None:
     assert normalize_alias("wellbore", "PCN-041") != normalize_alias("wellbore", "PCNA-041")
     assert normalize_alias("wellbore", "SHSG-160") != normalize_alias("wellbore", "SHSH-160")
+
+
+def test_report_hour_boundaries_use_only_first_and_last_dates() -> None:
+    rows = [
+        {"record_id": "middle", "report_date": "2026-06-02"},
+        {"record_id": "last", "report_date": "2026-06-03"},
+        {"record_id": "first", "report_date": "2026-06-01"},
+        {"record_id": "duplicate-middle", "report_date": "2026-06-02"},
+    ]
+    assert _boundary_report_dates(rows) == ("2026-06-01", "2026-06-03")
+
+
+def test_single_report_date_is_both_hour_boundaries() -> None:
+    assert _boundary_report_dates([{"report_date": "2026-06-11"}]) == ("2026-06-11", "2026-06-11")
+
+
+def test_typed_numeric_facts_reject_values_containing_units() -> None:
+    assert _nullable_float("13.375") == 13.375
+    assert _nullable_float("13.375in") is None
+
+
+def test_report_number_requires_an_integer_source_value() -> None:
+    assert _nullable_report_no("17") == 17
+    assert _nullable_report_no("17.5") is None
+    assert _nullable_report_no("") is None
+
+
+def test_field_registry_accepts_only_known_units_and_labels() -> None:
+    assert parse_numeric_field("refDatum", "ORIGINAL KB @1,045.17ft") == 1045.17
+    assert parse_numeric_field("lastCasingSize", "13.375in") == 13.375
+    assert parse_numeric_field("formTestEmw", "FIT / 13.70 ppg") == 13.7
+    assert parse_numeric_field("torqueOffBottom", "15,000.0 ft-lbf") == 15000.0
+    assert parse_numeric_field("torqueOnBottom", "15,000.0 ft-lbf") == 15000.0
+    assert parse_numeric_field("lastCasingSize", "13.375 bananas") is None
+
+
+def test_combined_weight_and_afe_values_are_split_without_inventing_depth() -> None:
+    assert parse_string_weight_pair("295.0 180.0 kip/") == (295.0, 180.0)
+    assert parse_afe_depth_days("/ 28.0 days") == (None, 28.0)
+    assert parse_afe_depth_days("12000 ft / 28 days") == (12000.0, 28.0)
+
+
+def test_activity_timeline_rolls_cross_midnight_end_to_next_day() -> None:
+    started_at, ended_at = _activity_datetimes("2026-06-10", "22:30", "03:00", 4.5)
+    assert started_at == datetime(2026, 6, 10, 22, 30)
+    assert ended_at == datetime(2026, 6, 11, 3, 0)
+
+
+def test_move_metrics_are_extracted_from_explicit_summary_text() -> None:
+    summary = "RECIBE Y UBICA 19 CARGAS. RIG MOVE: 69%. RIG UP: 28%. CARGAS TOTALES ENVIADAS: 99/144"
+    assert _percentage_from_text(summary, "RIG MOVE") == 69.0
+    assert _percentage_from_text(summary, "RIG UP") == 28.0
+    assert _move_load_counts(summary) == (19, 99, 144)
+
+
+def test_negative_incident_statement_does_not_create_incident_fact() -> None:
+    cursor = MagicMock()
+    _sync_incident(
+        cursor,
+        job_id=5,
+        record_id="drilling:test",
+        report_date="2026-06-10",
+        fields={"safetyIncident": "N", "environmentIncident": "N", "incidentComments": "SIN INCIDENTES"},
+        actor="test",
+    )
+    statements = [call.args[0] for call in cursor.execute.call_args_list]
+    assert any("DELETE FROM hsse_incident" in statement for statement in statements)
+    assert not any("INSERT INTO hsse_incident" in statement for statement in statements)
+
+
+def test_structured_report_facts_write_report_type_and_child_tables() -> None:
+    class RecordingCursor:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def execute(self, statement, args=None):
+            self.calls.append((" ".join(statement.split()), args))
+
+    cursor = RecordingCursor()
+    synchronize_structured_report_facts(
+        cursor,
+        daily_report_id=11,
+        report_type="drilling",
+        fields={
+            "event": "DEV DRILLING", "todayMd": "10832", "bitNo": "03",
+            "bitSerial": "14456485", "mudDensity": "9.8", "torqueOffBottom": "15000",
+        },
+        payload={
+            "survey_data": [{"md": "10718", "incl": "43.16", "ew": "2703.3"}],
+            "bha_components": [{"component": "PDC Bit", "od": "12.25", "joints": "1"}],
+            "fluid_losses": [{"injected_volume_bbl": "12.5", "returned_volume_bbl": "3.25"}],
+            "operations": [],
+        },
+        actor="test",
+    )
+    statements = [statement for statement, _args in cursor.calls]
+    assert any("INSERT INTO dpr_report_summary" in statement for statement in statements)
+    assert any("INSERT INTO dpr_drilling_report" in statement for statement in statements)
+    assert any("torque_off_bottom_ft_lbf" in statement for statement in statements)
+    assert any("bit_sequence_no" in statement and "bit_serial_no" in statement for statement in statements)
+    assert any("INSERT INTO dpr_drilling_fluid_property" in statement for statement in statements)
+    assert any("INSERT INTO dpr_drilling_directional_survey" in statement for statement in statements)
+    assert any("east_west_ft" in statement for statement in statements)
+    assert any("INSERT INTO dpr_drilling_bha_component" in statement for statement in statements)
+    assert any("INSERT INTO dpr_drilling_fluid_loss" in statement for statement in statements)
+
+
+def test_completion_and_workover_extensions_use_canonical_tables() -> None:
+    class RecordingCursor:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def execute(self, statement, args=None):
+            self.calls.append((" ".join(statement.split()), args))
+
+    for report_type, expected_table in (
+        ("completion", "dpr_completion_report"),
+        ("workover", "dpr_workover_report"),
+    ):
+        cursor = RecordingCursor()
+        synchronize_structured_report_facts(
+            cursor,
+            daily_report_id=21,
+            report_type=report_type,
+            fields={"description": "Explicit report extension"},
+            payload={},
+            actor="test",
+        )
+        statements = [statement for statement, _args in cursor.calls]
+        assert any(f"INSERT INTO {expected_table}" in statement for statement in statements)
+        assert not any("INSERT INTO fact_" in statement for statement in statements)
+
+
+def test_empty_typed_extensions_are_deleted_instead_of_inserted() -> None:
+    class RecordingCursor:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def execute(self, statement, args=None):
+            self.calls.append((" ".join(statement.split()), args))
+
+    cursor = RecordingCursor()
+    synchronize_structured_report_facts(
+        cursor,
+        daily_report_id=12,
+        report_type="drilling",
+        fields={},
+        payload={"survey_data": [{}], "bha_components": [{}]},
+        actor="test",
+    )
+    statements = [statement for statement, _args in cursor.calls]
+    assert "DELETE FROM dpr_report_summary WHERE daily_report_id=%s" in statements
+    assert "DELETE FROM dpr_drilling_report WHERE daily_report_id=%s" in statements
+    assert "DELETE FROM dpr_drilling_fluid_property WHERE daily_report_id=%s" in statements
+    assert not any("INSERT INTO dpr_report_summary" in statement for statement in statements)
+    assert not any("INSERT INTO dpr_drilling_report" in statement for statement in statements)
+    assert not any("INSERT INTO dpr_drilling_fluid_property" in statement for statement in statements)
+    assert not any("INSERT INTO dpr_drilling_directional_survey" in statement for statement in statements)
+    assert not any("INSERT INTO dpr_drilling_bha_component" in statement for statement in statements)
+
+
+def test_zero_is_a_meaningful_typed_fact_value() -> None:
+    assert _has_business_value([None, "", "  "]) is False
+    assert _has_business_value([None, 0, ""]) is True
 
 
 def test_time_type_reference_values_are_loaded_in_appendix_order() -> None:
@@ -69,12 +250,12 @@ def test_referenced_master_data_is_not_deleted() -> None:
     connection, cursor = _mock_master_delete_connection({"id": 92, "version": 1, "well_code": "W-1", "well_name": "W-1"})
     with patch("drilling_report_parser.master_data_service._db_connection", return_value=connection), patch(
         "drilling_report_parser.master_data_service._collect_master_references",
-        return_value=[{"table": "md_wellbore", "label": "井筒", "count": 2}],
+        return_value=[{"table": "report_records", "label": "原始日报", "count": 2}],
     ):
         try:
             delete_master_entity("wells", {"id": 92, "version": 1, "change_reason": "测试删除"}, actor="admin")
         except RuntimeError as exc:
-            assert "井筒 2 条" in str(exc)
+            assert "原始日报 2 条" in str(exc)
         else:  # pragma: no cover
             raise AssertionError("referenced master data should not be deleted")
     assert not any("DELETE FROM md_well " in call.args[0] for call in cursor.execute.call_args_list)
@@ -100,8 +281,8 @@ def test_project_team_scope_conflicts_across_projects_for_same_team() -> None:
 
 
 def test_project_well_scope_all_jobs_conflicts_with_specific_job() -> None:
-    assert _relationship_scope_overlaps("project-well", {"wellbore_id": 7, "job_type": ""}, {"wellbore_id": 7, "job_type": "workover"}) is True
-    assert _relationship_scope_overlaps("project-well", {"wellbore_id": 7, "job_type": "drilling"}, {"wellbore_id": 7, "job_type": "workover"}) is False
+    assert _relationship_scope_overlaps("project-well", {"well_id": 7, "job_type": ""}, {"well_id": 7, "job_type": "workover"}) is True
+    assert _relationship_scope_overlaps("project-well", {"well_id": 7, "job_type": "drilling"}, {"well_id": 7, "job_type": "workover"}) is False
 
 
 def test_time_rule_requires_a_match_condition_before_database_write() -> None:
@@ -162,8 +343,8 @@ def test_explicit_source_time_type_is_not_overwritten_by_rule() -> None:
     })
     assert result["confirmed_op_type"] == "SC"
     assert result["productive_flag"] == "NON_PRODUCTION"
-    assert result["work_bucket"] == "MAINTENANCE"
-    assert result["confirmation_status"] == "AUTO_CONFIRMED"
+    assert result["work_bucket"] == ""
+    assert result["confirmation_status"] == "PENDING"
 
 
 def test_rule_only_time_type_stays_pending_when_source_type_is_missing() -> None:

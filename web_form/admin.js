@@ -28,7 +28,7 @@ const adminState = {
   aiModelTestResult: null,
   projectTeams: { teams: [], projects: [], pending_wells: [] },
   governance: {
-    regions: [], companies: [], fields: [], blocks: [], teams: [], drillingRigs: [], workoverRigs: [], rigs: [], wells: [], wellbores: [],
+    regions: [], companies: [], fields: [], blocks: [], teams: [], drillingRigs: [], workoverRigs: [], rigs: [], wells: [],
     contracts: [], projects: [], aliases: [], appendixCategories: [], appendixValues: [],
     assignments: [], wellAssignments: [], issues: [], classifications: [], rules: [], snapshot: null,
     masterEntity: "regions", masterView: "entities", appendixCategoryId: "", standardizationView: "pending"
@@ -106,7 +106,7 @@ async function loadAdminSession() {
 async function loadAdminData() {
   try {
     const [users, config, aiModels, aiExtraction, aiExtractionQueue, projectTeams, translationTerms, translationTuning, translationExperience, translationQueue, dataStatus, records, logs,
-      masterRegions, masterCompanies, masterFields, masterBlocks, masterTeams, masterDrillingRigs, masterWorkoverRigs, masterWells, masterWellbores,
+      masterRegions, masterCompanies, masterFields, masterBlocks, masterTeams, masterDrillingRigs, masterWorkoverRigs, masterWells,
       masterContracts, masterProjects, masterAliases, appendixCategories, appendixValues,
       assignments, wellAssignments, qualityIssues, classifications, classificationRules] = await Promise.all([
       adminRequest("/api/admin/users"),
@@ -130,7 +130,6 @@ async function loadAdminData() {
       optionalAdminRequest("/api/admin/master-data/drilling-rigs?limit=500"),
       optionalAdminRequest("/api/admin/master-data/workover-rigs?limit=500"),
       optionalAdminRequest("/api/admin/master-data/wells?limit=1000"),
-      optionalAdminRequest("/api/admin/master-data/wellbores?limit=500"),
       optionalAdminRequest("/api/admin/master-data/contracts?limit=500"),
       optionalAdminRequest("/api/admin/master-data/projects?limit=500"),
       optionalAdminRequest("/api/admin/master-data/aliases?limit=1000"),
@@ -162,7 +161,7 @@ async function loadAdminData() {
       ...adminState.governance,
       regions: masterRegions.items || [], companies: masterCompanies.items || [], organizations: masterCompanies.items || [], fields: masterFields.items || [],
       blocks: masterBlocks.items || [], teams: masterTeams.items || [], drillingRigs: masterDrillingRigs.items || [], workoverRigs: masterWorkoverRigs.items || [],
-      rigs: [...(masterDrillingRigs.items || []), ...(masterWorkoverRigs.items || [])], wells: masterWells.items || [], wellbores: masterWellbores.items || [],
+      rigs: [...(masterDrillingRigs.items || []), ...(masterWorkoverRigs.items || [])], wells: masterWells.items || [],
       contracts: masterContracts.items || [], projects: masterProjects.items || [], aliases: masterAliases.items || [],
       appendixCategories: appendixCategories.items || [], appendixValues: appendixValues.items || [],
       assignments: assignments.items || [], wellAssignments: wellAssignments.items || [], issues: qualityIssues.items || [],
@@ -306,7 +305,7 @@ function updateExtractionQueueSnapshot(queue = {}) {
 }
 
 function refreshAiQueueStatusCounts(kind, records = []) {
-  const counts = { all: records.length, pending: 0, processing: 0, completed: 0 };
+  const counts = { all: records.length, pending: 0, processing: 0, failed: 0, completed: 0 };
   records.forEach((row) => {
     const group = aiQueueStatusGroup(row.status, row);
     if (counts[group] !== undefined) counts[group] += 1;
@@ -457,14 +456,9 @@ const MASTER_ENTITY_DEFINITIONS = {
   wells: { label: "井", state: "wells", code: "well_code", name: "well_name", fields: [
     ["well_code", "井编码", "text"], ["well_name", "井名称", "text"], ["field_id", "所属油田", "fields"], ["block_id", "所属区块", "blocks"],
     ["operator_company_id", "作业者", "companies"], ["well_type_code", "井用途", "appendix:WELL_TYPE"],
-    ["surface_latitude", "井口纬度", "number"], ["surface_longitude", "井口经度", "number"],
+    ["surface_latitude", "井口纬度", "number"], ["surface_longitude", "井口经度", "number"], ["well_profile_code", "井轨迹类型", "appendix:WELL_PROFILE"],
+    ["trajectory_status_code", "轨迹状态", "appendix:TRAJECTORY_STATUS"], ["kickoff_md_m", "造斜点MD(m)", "number"], ["planned_td_md_m", "设计井深MD(m)", "number"],
     ["lifecycle_status_code", "生命周期", "appendix:WELL_STATUS"]
-  ] },
-  wellbores: { label: "井筒", state: "wellbores", code: "wellbore_code", name: "wellbore_name", fields: [
-    ["wellbore_code", "井筒编码", "text"], ["wellbore_name", "井筒名称", "text"], ["well_id", "所属井", "wells"],
-    ["parent_wellbore_id", "父井筒", "wellbores"], ["wellbore_profile_code", "井筒轨迹类型", "appendix:WELLBORE_PROFILE"],
-    ["trajectory_status_code", "轨迹状态", "appendix:TRAJECTORY_STATUS"], ["kickoff_md_m", "造斜点MD(m)", "number"],
-    ["planned_td_md_m", "设计井深MD(m)", "number"]
   ] },
   "appendix-categories": { hidden: true, label: "附录类别", state: "appendixCategories", code: "category_code", name: "category_name", fields: [
     ["category_code", "类别编码", "text"], ["category_name", "类别名称", "text"], ["parent_id", "上级类别", "appendix-categories"],
@@ -697,7 +691,7 @@ function qualityIssueDetails(item = {}) {
 function qualityIssueTypeLabel(type = "") {
   return ({
     ALIAS_REVIEW: "名称待识别",
-    CLASSIFICATION_PENDING: "分类信息待补充",
+    CLASSIFICATION_PENDING: "来源时效异常",
     HOURS_NOT_24: "日报工时不平",
     UNASSIGNED: "项目归属缺失",
     AMBIGUOUS: "项目归属冲突",
@@ -709,8 +703,11 @@ function qualityIssueTypeLabel(type = "") {
 function qualityIssueGuidance(item = {}) {
   const type = String(item.issue_type || "").toUpperCase();
   const details = qualityIssueDetails(item);
-  if (type === "CLASSIFICATION_PENDING") return `${Number(details.pending_count || 0)} 条作业活动需要补充工作量分类，或原日报类型尚未提取；已提取的 P / SC / NPT 原值不需要重复确认。`;
-  if (type === "HOURS_NOT_24") return `日报作业合计 ${Number(details.total_hours || 0).toFixed(2)} 小时，与 24 小时相差 ${Math.abs(Number(details.difference || 0)).toFixed(2)} 小时。`;
+  if (type === "CLASSIFICATION_PENDING") return `${Number(details.pending_count || 0)} 条作业活动的原日报类型缺失或存在规则冲突；正常 P / SC / NPT 不在此队列重复确认。`;
+  if (type === "HOURS_NOT_24") {
+    const role = details.boundary_role === "FIRST_AND_LAST" ? "首日且末日" : details.boundary_role === "FIRST" ? "首日" : "末日";
+    return `该日报是同类型、同井的${role}，作业合计 ${Number(details.total_hours || 0).toFixed(2)} 小时，与 24 小时相差 ${Math.abs(Number(details.difference || 0)).toFixed(2)} 小时。`;
+  }
   if (type === "ALIAS_REVIEW") {
     const candidates = [details.left, details.right].filter(Boolean);
     if (candidates.length > 1) return `“${candidates.join("”与“")}”可能是同一实体，需要人工判断是否建立名称映射。`;
@@ -729,13 +726,13 @@ function qualityIssueSubject(item = {}) {
 }
 
 function standardEntityTypeLabel(type = "") {
-  return ({ block: "区块", rig: "队伍", well: "井", wellbore: "井筒", project: "项目" })[String(type).toLowerCase()] || type || "实体";
+  return ({ block: "区块", rig: "队伍", well: "井", project: "项目" })[String(type).toLowerCase()] || type || "实体";
 }
 
 function qualityIssueAction(item = {}) {
   const type = String(item.issue_type || "").toUpperCase();
   if (type === "ALIAS_REVIEW" || type === "MASTER_NOT_FOUND") return { route: "aliases", label: "维护名称映射" };
-  if (type === "CLASSIFICATION_PENDING") return { route: "classification", label: "补充分类信息" };
+  if (type === "CLASSIFICATION_PENDING") return { route: "classification", label: "核对来源类型" };
   if (type === "UNASSIGNED" || type === "AMBIGUOUS") return { route: "projects", label: "调整项目归属" };
   if (type === "HOURS_NOT_24" || type === "NORMALIZATION_FAILED") return { route: "daily-report", label: "检查原始日报" };
   return { route: "results", label: "查看标准化结果" };
@@ -753,16 +750,16 @@ function standardizationResultRows(data = {}) {
   return records.slice(0, 200).map((record) => {
     const status = String(record.master_match_status || "").toUpperCase();
     const rig = standardEntityLabel(data.rigs || [], record.rig_id, "rig_name", "rig_code");
-    const wellbore = standardEntityLabel(data.wellbores || [], record.wellbore_id, "wellbore_name", "wellbore_code");
+    const well = standardEntityLabel(data.wells || [], record.well_id, "well_name", "well_code");
     const project = standardEntityLabel(data.projects || [], record.project_id, "project_name", "project_code");
     const statusLabel = ({ MATCHED: "已建立唯一归属", UNASSIGNED: "待确定归属", AMBIGUOUS: "归属存在冲突", NORMALIZATION_FAILED: "标准化失败" })[status] || (status || "待处理");
     return `<tr>
       <td>${escapeHtml(record.report_date || record.reportDate || "-")}</td>
       <td><strong>${escapeHtml(record.rig || "-")}</strong><small>${escapeHtml(record.wellbore || "-")}</small></td>
-      <td><strong>${escapeHtml(rig)}</strong><small>${escapeHtml(wellbore)}</small></td>
+      <td><strong>${escapeHtml(rig)}</strong><small>${escapeHtml(well)}</small></td>
       <td><strong>${escapeHtml(project)}</strong><small>${record.job_id ? `作业实例 #${escapeHtml(record.job_id)}` : "尚未建立作业实例"}</small></td>
       <td><span class="status-pill ${status === "MATCHED" ? "uploaded" : "failed"}">${escapeHtml(statusLabel)}</span>
-        <details class="standardization-id-details"><summary>追溯ID</summary><small>设备 ${escapeHtml(record.rig_id || "-")} · 井筒 ${escapeHtml(record.wellbore_id || "-")} · 项目 ${escapeHtml(record.project_id || "-")} · 作业 ${escapeHtml(record.job_id || "-")}</small></details>
+        <details class="standardization-id-details"><summary>追溯ID</summary><small>设备 ${escapeHtml(record.rig_id || "-")} · 井 ${escapeHtml(record.well_id || "-")} · 项目 ${escapeHtml(record.project_id || "-")} · 作业 ${escapeHtml(record.job_id || "-")}</small></details>
       </td>
     </tr>`;
   }).join("");
@@ -790,7 +787,7 @@ function standardizationPendingMarkup(data, issues, classifications) {
     <section class="panel"><div class="panel-heading"><div><h2>待处理问题</h2><span class="panel-note">先按“建议去向”修正来源、主数据或关系，再关闭问题；关闭问题不会自动修改业务数据</span></div><span class="standardization-count-badge">${issues.length} 条</span></div>
       <div class="table-wrap"><table class="record-table admin-table standardization-issue-table"><thead><tr><th>问题类型</th><th>涉及对象</th><th>为什么不能直接统计</th><th>正确处理方式</th><th>操作</th></tr></thead><tbody>${issueRows || `<tr><td colspan="5">当前没有待处理的数据质量问题</td></tr>`}</tbody></table></div>
     </section>
-    <section class="panel standardization-classification-panel"><div class="panel-heading"><div><h2>工作量分类补充</h2><span class="panel-note">P、SC、NPT直接采用原日报明确值；这里只补充工作量、计费、责任和原因等统计维度</span></div><span class="standardization-count-badge">${classifications.length} 条</span></div>
+    <section class="panel standardization-classification-panel"><div class="panel-heading"><div><h2>来源时效异常</h2><span class="panel-note">这里只处理原日报类型缺失或规则冲突；正常SC/NPT的复核、责任方和有/无人待工统一在NPT确认办理</span></div><div class="admin-actions"><span class="standardization-count-badge">${classifications.length} 条</span><button class="button secondary small" type="button" data-standardization-route="npt-confirmation">前往NPT确认</button></div></div>
       <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期</th><th>日报</th><th>作业编码</th><th>时长</th><th>原日报类型</th><th>工作量分类</th><th>处理</th></tr></thead><tbody>${classificationRows || `<tr><td colspan="7">当前没有需要补充的分类信息</td></tr>`}</tbody></table></div>
     </section>`;
 }
@@ -803,7 +800,7 @@ function workBucketLabel(value = "") {
 }
 
 function standardizationRulesMarkup(data) {
-  return `<section class="standardization-rules-intro"><strong>规则的作用</strong><span>别名把来源名称识别为标准实体；分类规则只补充工作量、计费、责任、原因和服务线。原日报明确的 P、SC、NPT 始终优先，规则不能覆盖。</span></section>
+  return `<section class="standardization-rules-intro"><strong>规则的作用</strong><span>别名把来源名称识别为标准实体；分类规则只为原日报类型缺失或异常提供候选。P按原值直接生效，SC/NPT的复核、责任和待工归类只能在NPT确认中人工确定。</span></section>
     ${aliasGovernancePanelMarkup(data)}
     ${timeRulePanelMarkup(data)}`;
 }
@@ -811,7 +808,7 @@ function standardizationRulesMarkup(data) {
 function standardizationResultsMarkup(data) {
   const rows = standardizationResultRows(data);
   return `<section class="panel"><div class="panel-heading"><div><h2>标准化结果</h2><span class="panel-note">这里用于核对加工结果，不在此修改主数据或项目关系；“已建立唯一归属”的日报才能进入项目统计</span></div><button class="button secondary small" type="button" data-standardization-route="pending">查看待处理问题</button></div>
-    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期</th><th>原始日报值</th><th>识别后的队伍 / 井筒</th><th>项目 / 作业实例</th><th>统计状态</th></tr></thead><tbody>${rows || `<tr><td colspan="5">当前没有日报记录</td></tr>`}</tbody></table></div>
+    <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期</th><th>原始日报值</th><th>识别后的队伍 / 井</th><th>项目 / 作业实例</th><th>统计状态</th></tr></thead><tbody>${rows || `<tr><td colspan="5">当前没有日报记录</td></tr>`}</tbody></table></div>
   </section>`;
 }
 
@@ -828,20 +825,20 @@ function renderAdminDataGovernance() {
     <section class="panel standardization-hero">
       <div class="standardization-hero-copy"><span class="standardization-kicker">DATA OPERATIONS</span><h2>数据标准化工作台</h2><p>把日报中的原始井号、队伍名称和作业描述，加工成可唯一归属、可分类、可追溯的统计事实。本模块负责发现问题和组织处理，不替代主数据、项目关系或原始日报维护。</p></div>
       <div class="standardization-scope">
-        <div><strong>在这里处理</strong><span>名称识别、异常队列、原类型核对、工作量分类补充</span></div>
-        <div><strong>到关联模块维护</strong><span>标准实体、项目关系、原始日报内容</span></div>
+        <div><strong>在这里处理</strong><span>名称识别、归属异常、原日报类型缺失和规则冲突</span></div>
+        <div><strong>到关联模块维护</strong><span>标准实体、项目关系、原始日报；SC/NPT到NPT确认</span></div>
       </div>
     </section>
     <section class="standardization-flow" aria-label="日报标准化处理流程">
       <article><span>1</span><div><strong>原始日报</strong><small>保留 PDF 解析原值</small></div><a href="/web_form/">查看日报</a></article>
       <article><span>2</span><div><strong>名称识别</strong><small>依赖主数据与别名</small></div><button type="button" data-admin-tab="governance">主数据管理</button></article>
-      <article><span>3</span><div><strong>唯一归属</strong><small>项目、队伍、井筒有效期</small></div><button type="button" data-admin-tab="projects">项目与队伍</button></article>
-      <article><span>4</span><div><strong>分类补充</strong><small>原日报类型直接采用</small></div><button type="button" data-standardization-route="classification">补充队列</button></article>
+      <article><span>3</span><div><strong>唯一归属</strong><small>项目、队伍、井有效期</small></div><button type="button" data-admin-tab="projects">项目与队伍</button></article>
+      <article><span>4</span><div><strong>时效生效</strong><small>P直接生效；SC/NPT人工确认</small></div><button type="button" data-standardization-route="npt-confirmation">NPT确认</button></article>
       <article><span>5</span><div><strong>标准事实</strong><small>供统计和报表使用</small></div><button type="button" data-standardization-route="results">核对结果</button></article>
     </section>
     <section class="admin-kpi-grid standardization-kpis">
       ${adminKpi("待处理问题", issues.length, "修正后才能正式统计", "logs")}
-      ${adminKpi("待补充分类", classifications.length, "原类型不重复确认", "overview")}
+      ${adminKpi("来源时效异常", classifications.length, "不含正常SC/NPT待确认", "overview")}
       ${adminKpi("唯一归属日报", matchedCount, `共 ${records.length} 份日报`, "database")}
       ${adminKpi("识别与分类规则", (data.aliases || []).filter((item) => item.status === "active").length + (data.rules || []).filter((item) => item.status === "active").length, "启用规则与别名", "settings")}
     </section>
@@ -859,7 +856,7 @@ function aliasGovernancePanelMarkup(data) {
     <div class="admin-config-grid"><label>原始名称<input name="masterAliasValue" placeholder="例如 W905" /></label>
     <label>标准实体<select name="masterAliasTarget">
       <optgroup label="井队">${(data.rigs || []).map((item) => `<option value="rig:${escapeHtml(item.id)}">${escapeHtml(item.rig_name || item.rig_code)}</option>`).join("")}</optgroup>
-      <optgroup label="井筒">${(data.wellbores || []).map((item) => `<option value="wellbore:${escapeHtml(item.id)}">${escapeHtml(item.wellbore_name || item.wellbore_code)}</option>`).join("")}</optgroup>
+      <optgroup label="井">${(data.wells || []).map((item) => `<option value="well:${escapeHtml(item.id)}">${escapeHtml(item.well_name || item.well_code)}</option>`).join("")}</optgroup>
       <optgroup label="区块">${(data.blocks || []).map((item) => `<option value="block:${escapeHtml(item.id)}">${escapeHtml(item.block_name || item.block_code)}</option>`).join("")}</optgroup>
       <optgroup label="项目">${(data.projects || []).map((item) => `<option value="project:${escapeHtml(item.id)}">${escapeHtml(item.project_name || item.project_code)}</option>`).join("")}</optgroup>
     </select></label><label>状态<select name="masterAliasStatus"><option value="active">启用</option><option value="inactive">停用</option></select></label><label>确认原因<input name="masterAliasReason" placeholder="必填" /></label></div>
@@ -880,6 +877,10 @@ function followStandardizationRoute(route = "") {
   if (route === "projects") return switchAdminTab("projects");
   if (route === "daily-report") {
     window.location.href = "/web_form/";
+    return;
+  }
+  if (route === "npt-confirmation") {
+    window.location.href = "/web_form/?page=rig-npt-ranking";
     return;
   }
   return switchStandardizationView(route === "results" ? "results" : "pending");
@@ -992,7 +993,7 @@ async function saveProjectWellAssignment() {
       kind: "project-well", id: Number(host?.querySelector('[name="wellAssignmentIdV2"]')?.value || 0) || undefined,
       version: Number(host?.querySelector('[name="wellAssignmentVersionV2"]')?.value || 0) || undefined,
       project_id: Number(host?.querySelector('[name="wellScopeProjectId"]')?.value || 0),
-      wellbore_id: Number(host?.querySelector('[name="wellScopeWellboreId"]')?.value || 0),
+      well_id: Number(host?.querySelector('[name="wellScopeWellId"]')?.value || 0),
       job_type: host?.querySelector('[name="wellScopeJobType"]')?.value || "",
       valid_from: host?.querySelector('[name="wellScopeValidFrom"]')?.value || "",
       valid_to: host?.querySelector('[name="wellScopeValidTo"]')?.value || "",
@@ -1011,7 +1012,7 @@ function editProjectWellAssignment(id) {
   host.querySelector('[name="wellAssignmentIdV2"]').value = item.id;
   host.querySelector('[name="wellAssignmentVersionV2"]').value = item.version;
   host.querySelector('[name="wellScopeProjectId"]').value = item.project_id;
-  host.querySelector('[name="wellScopeWellboreId"]').value = item.wellbore_id;
+  host.querySelector('[name="wellScopeWellId"]').value = item.well_id;
   host.querySelector('[name="wellScopeJobType"]').value = item.job_type || "";
   host.querySelector('[name="wellScopeValidFrom"]').value = String(item.valid_from || "").slice(0, 10);
   host.querySelector('[name="wellScopeValidTo"]').value = String(item.valid_to || "").slice(0, 10);
@@ -1361,10 +1362,11 @@ function aiExtractionTab(value, label, runningCount = null) {
 
 function aiQueueStatusGroup(status = "", row = {}) {
   const value = String(status || "PENDING").toUpperCase();
+  if (value === "FAILED") return "failed";
   if (["QUEUED", "IN_PROGRESS"].includes(value)) return "processing";
-  if (row.needs_translation) return "pending";
+  if (row.needs_translation || row.needs_extraction) return "pending";
   if (value === "COMPLETED") return "completed";
-  if (["PENDING", "STOPPED", "FAILED", "STALE", ""].includes(value)) return "pending";
+  if (["PENDING", "STOPPED", "STALE", ""].includes(value)) return "pending";
   return "other";
 }
 
@@ -1374,16 +1376,16 @@ function filterAiQueueRecords(records = [], tab = "all") {
 
 function preferredExtractionQueueStatusTab(records = [], currentTab = "pending") {
   if (filterAiQueueRecords(records, currentTab).length) return currentTab;
-  return ["pending", "processing", "completed"].find((tab) => filterAiQueueRecords(records, tab).length) || currentTab;
+  return ["pending", "processing", "failed", "completed"].find((tab) => filterAiQueueRecords(records, tab).length) || currentTab;
 }
 
 function aiQueueStatusTabsMarkup(kind, records = [], activeTab = "pending") {
-  const counts = { all: records.length, pending: 0, processing: 0, completed: 0 };
+  const counts = { all: records.length, pending: 0, processing: 0, failed: 0, completed: 0 };
   records.forEach((row) => {
     const group = aiQueueStatusGroup(row.status, row);
     if (counts[group] !== undefined) counts[group] += 1;
   });
-  const labels = { all: "全部", pending: "未处理", processing: "进行中", completed: "已完成" };
+  const labels = { all: "全部", pending: "未处理", processing: "进行中", failed: "失败", completed: "已完成" };
   return `<nav class="queue-status-tabs" aria-label="任务状态筛选">${Object.entries(labels).map(([value, label]) => `<button type="button" class="${activeTab === value ? "active" : ""}" data-ai-queue-status-tab="${kind}" data-ai-queue-status-value="${value}">${label}<span data-ai-queue-status-count="${kind}:${value}">${counts[value]}</span></button>`).join("")}</nav>`;
 }
 
@@ -1420,8 +1422,9 @@ function extractionQueueActionsMarkup(queue = {}) {
   const tab = adminState.aiExtractionQueueStatusTab || "pending";
   if (tab === "processing") return `<button class="button secondary small" type="button" data-admin-stop-extractions ${Number(queue.processing_count || 0) ? "" : "disabled"}>停止进行中任务</button>`;
   if (tab === "completed") return `<button class="button small" type="button" data-admin-queue-extractions="overwrite">重新提炼选中</button>`;
+  if (tab === "failed") return `<button class="button small" type="button" data-admin-queue-extractions="continue">重新提炼选中</button>`;
   if (tab === "pending") return `<button class="button small" type="button" data-admin-queue-extractions="continue">开始提炼选中</button>`;
-  return `<span class="panel-note">请选择“未处理”“进行中”或“已完成”后执行批量操作</span>`;
+  return `<span class="panel-note">请选择具体任务状态后执行批量操作</span>`;
 }
 
 function extractionJobStatusMarkup(row = {}) {
@@ -1548,7 +1551,7 @@ function renderAdminProjectRelationships(host) {
   const contractById = new Map(contracts.map((item) => [String(item.id), item]));
   const projectById = new Map(projects.map((item) => [String(item.id), item]));
   const teamById = new Map(teams.map((item) => [String(item.id), item]));
-  const wellboreById = new Map((data.wellbores || []).map((item) => [String(item.id), item]));
+  const wellById = new Map((data.wells || []).map((item) => [String(item.id), item]));
   const activeTeams = assignments.filter((item) => item.status === "active");
   const activeWells = wellAssignments.filter((item) => item.status === "active");
   const conflictTeamIds = projectTeamConflictIds(activeTeams);
@@ -1569,7 +1572,7 @@ function renderAdminProjectRelationships(host) {
       <td>${escapeHtml(projectNames.join("、") || "未派遣")}</td><td>${periods.map(escapeHtml).join("<br>") || "-"}</td>
       <td><span class="status-pill ${conflictTeamIds.has(String(team.id)) ? "failed" : "uploaded"}">${conflictTeamIds.has(String(team.id)) ? "有效期冲突" : "正常"}</span></td><td>${escapeHtml(team.status || "-")}</td></tr>`;
   }).join("");
-  const wellRows = activeWells.map((item) => `<tr><td><strong>${escapeHtml(wellboreById.get(String(item.wellbore_id))?.wellbore_name || item.wellbore_id)}</strong></td>
+  const wellRows = activeWells.map((item) => `<tr><td><strong>${escapeHtml(wellById.get(String(item.well_id))?.well_name || item.well_id)}</strong></td>
     <td>${escapeHtml(projectById.get(String(item.project_id))?.project_name || item.project_id)}</td><td>${escapeHtml(item.job_type || "全部作业")}</td>
     <td>${escapeHtml(String(item.valid_from || "").slice(0, 10))} 至 ${escapeHtml(item.valid_to ? String(item.valid_to).slice(0, 10) : "长期")}</td></tr>`).join("");
   host.innerHTML = `
@@ -1580,14 +1583,14 @@ function renderAdminProjectRelationships(host) {
       ${adminKpi("关系冲突", conflictTeamIds.size, `${activeWells.length} 个有效井范围`, "logs")}
     </section>
     <section class="panel">
-      <div class="panel-heading"><div><h2>项目关系维护</h2><span class="panel-note">按项目集中维护队伍派遣和井范围；队伍、井和井筒属性请到“主数据管理”修改</span></div></div>
+      <div class="panel-heading"><div><h2>项目关系维护</h2><span class="panel-note">按项目集中维护队伍派遣和井范围；队伍和井属性请到“主数据管理”修改</span></div></div>
       <div class="table-wrap"><table class="record-table admin-table project-table"><thead><tr><th>项目</th><th>合同号</th><th>项目周期</th><th>状态</th><th>队伍 / 井</th><th>操作</th></tr></thead><tbody>${projectRows || `<tr><td colspan="6">暂无项目主数据</td></tr>`}</tbody></table></div>
     </section>
     <section class="panel"><div class="panel-heading"><h2>队伍派遣总览</h2><span class="panel-note">一个队伍在同一有效时段只能归属一个项目；采用 [开始, 结束) 有效期</span></div>
       <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>队伍</th><th>归属项目</th><th>有效期</th><th>关系状态</th><th>主数据状态</th></tr></thead><tbody>${teamRows || `<tr><td colspan="5">暂无队伍主数据</td></tr>`}</tbody></table></div>
     </section>
     <section class="panel"><div class="panel-heading"><h2>项目井范围总览</h2><span class="panel-note">井级范围优先于仅按井队匹配</span></div>
-      <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>井筒</th><th>归属项目</th><th>作业类型</th><th>有效期</th></tr></thead><tbody>${wellRows || `<tr><td colspan="4">暂无项目井范围</td></tr>`}</tbody></table></div>
+      <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>井</th><th>归属项目</th><th>作业类型</th><th>有效期</th></tr></thead><tbody>${wellRows || `<tr><td colspan="4">暂无项目井范围</td></tr>`}</tbody></table></div>
     </section>`;
 }
 
@@ -1802,6 +1805,7 @@ function translationQueueActionsMarkup(queue = {}) {
   const tab = adminState.translationQueueStatusTab || "pending";
   if (tab === "processing") return `<button class="button secondary small" type="button" data-admin-stop-translations ${Number(queue.processing_count || 0) ? "" : "disabled"}>停止进行中任务</button>`;
   if (tab === "completed") return `<button class="button small" type="button" data-admin-queue-selected="overwrite">重新翻译选中</button>`;
+  if (tab === "failed") return `<button class="button small" type="button" data-admin-queue-selected="continue">重新翻译选中</button>`;
   if (tab === "pending") return `<button class="button small" type="button" data-admin-queue-selected="continue">开始翻译选中</button>`;
   return `<button class="button secondary small" type="button" data-admin-reset-translations>清空全部译文</button>`;
 }
@@ -2228,7 +2232,7 @@ function v2ProjectRigRow(item = {}) {
 function v2ProjectWellRow(item = {}) {
   return `<div class="admin-project-rig-row" data-v2-project-well-row>
     <input type="hidden" name="v2WellRelationId" value="${escapeHtml(item.id || "")}" /><input type="hidden" name="v2WellRelationVersion" value="${escapeHtml(item.version || "")}" />
-    <label>井筒<select name="v2WellRelationWellboreId"><option value="">选择井筒</option>${v2RelationshipOptions(adminState.governance.wellbores, item.wellbore_id, "id", ["wellbore_name", "wellbore_code"])}</select></label>
+    <label>井<select name="v2WellRelationWellId"><option value="">选择井</option>${v2RelationshipOptions(adminState.governance.wells, item.well_id, "id", ["well_name", "well_code"])}</select></label>
     <label>作业类型<select name="v2WellRelationJobType"><option value="" ${!item.job_type ? "selected" : ""}>全部作业</option><option value="drilling" ${item.job_type === "drilling" ? "selected" : ""}>钻井</option><option value="completion" ${item.job_type === "completion" ? "selected" : ""}>完井</option><option value="workover" ${item.job_type === "workover" ? "selected" : ""}>修井</option><option value="move" ${item.job_type === "move" ? "selected" : ""}>搬迁</option></select></label>
     <label>开始日期<input name="v2WellRelationStart" type="date" value="${escapeHtml(String(item.valid_from || "").slice(0, 10))}" /></label>
     <label>结束日期（不含）<input name="v2WellRelationEnd" type="date" value="${escapeHtml(String(item.valid_to || "").slice(0, 10))}" /></label>
@@ -2251,7 +2255,7 @@ function openProjectRelationshipModal(id) {
     <section class="admin-modal-subsection"><div class="panel-heading compact-heading"><div><h3>队伍派遣</h3><span class="panel-note">维护项目与队伍的有效期关系，采用 [开始, 结束)</span></div><button class="button secondary small" type="button" data-v2-add-project-rig>添加队伍</button></div>
       <div class="admin-project-rig-list" data-v2-project-rig-list>${rigRows.map(v2ProjectRigRow).join("") || v2ProjectRigRow({ valid_from: project.valid_from, valid_to: project.valid_to })}</div>
     </section>
-    <section class="admin-modal-subsection"><div class="panel-heading compact-heading"><div><h3>项目井范围</h3><span class="panel-note">同一井筒可按作业类型分别配置</span></div><button class="button secondary small" type="button" data-v2-add-project-well>添加井筒</button></div>
+    <section class="admin-modal-subsection"><div class="panel-heading compact-heading"><div><h3>项目井范围</h3><span class="panel-note">同一口井可按作业类型分别配置</span></div><button class="button secondary small" type="button" data-v2-add-project-well>添加井</button></div>
       <div class="admin-project-rig-list" data-v2-project-well-list>${wellRows.map(v2ProjectWellRow).join("") || v2ProjectWellRow({ valid_from: project.valid_from, valid_to: project.valid_to })}</div>
     </section>
     <div class="admin-modal-form compact"><label class="wide">变更原因<input name="v2RelationshipReason" placeholder="必填；将写入每条关系的审计记录" /></label></div>`,
@@ -3333,7 +3337,7 @@ async function dismissTranslationExperience(id) {
 }
 
 function switchAiQueueStatusTab(kind, value) {
-  if (!['all', 'pending', 'processing', 'completed'].includes(value)) return;
+  if (!['all', 'pending', 'processing', 'failed', 'completed'].includes(value)) return;
   if (kind === "extraction") {
     adminState.aiExtractionQueueStatusTab = value;
     adminState.aiExtractionQueuePage = 1;
@@ -3429,15 +3433,15 @@ async function saveV2ProjectRelationships() {
   const wellScopes = [...modal.querySelectorAll("[data-v2-project-well-row]")].map((row) => ({
     id: Number(row.querySelector('[name="v2WellRelationId"]')?.value || 0) || undefined,
     version: Number(row.querySelector('[name="v2WellRelationVersion"]')?.value || 0) || undefined,
-    wellbore_id: Number(row.querySelector('[name="v2WellRelationWellboreId"]')?.value || 0),
+    well_id: Number(row.querySelector('[name="v2WellRelationWellId"]')?.value || 0),
     job_type: row.querySelector('[name="v2WellRelationJobType"]')?.value || "",
     scope_note: row.querySelector('[name="v2WellRelationNote"]')?.value.trim() || "",
     valid_from: row.querySelector('[name="v2WellRelationStart"]')?.value || "",
     valid_to: row.querySelector('[name="v2WellRelationEnd"]')?.value || "",
     status: row.querySelector('[name="v2WellRelationStatus"]')?.value || "active",
-  })).filter((item) => item.id || item.wellbore_id);
+  })).filter((item) => item.id || item.well_id);
   const invalidTeam = teamAssignments.find((item) => item.status === "active" && (!item.team_id || !item.valid_from));
-  const invalidWell = wellScopes.find((item) => item.status === "active" && (!item.wellbore_id || !item.valid_from));
+  const invalidWell = wellScopes.find((item) => item.status === "active" && (!item.well_id || !item.valid_from));
   if (invalidTeam || invalidWell) return showToast("启用的关系必须选择实体并填写开始日期");
   try {
     await adminRequest("/api/admin/project-relationships", { method: "POST", body: JSON.stringify({

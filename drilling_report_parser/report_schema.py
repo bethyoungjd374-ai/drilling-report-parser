@@ -25,7 +25,7 @@ DRILLING_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
     "todayMd", "prevMd", "progress", "rotHrsToday", "lastCasing", "lastCasingSize",
     "lastCasingDepth", "nextCasing", "nextCasingSize", "nextCasingDepth", "formTestType", "formTestEmw",
     "lastBopPressTest", "pumpRate", "pumpPress", "stringWeightUp", "stringWeightDown",
-    "stringWeightUpDown", "torqueOnBottom",
+    "stringWeightUpDown", "torqueOffBottom", "torqueOnBottom",
     "mudEngineer", "sampleFrom", "mudType", "mudTime", "mudMd", "mudDensity",
     "mudTemperature", "rheologyTemp", "viscosity", "pv", "yp", "gel10s", "gel10m",
     "gel30m", "apiWl", "oilPercent", "waterPercent", "sand", "ecd", "mudComments",
@@ -59,7 +59,7 @@ REPORT_TABLES = {
             "survey_data": "drilling_survey",
             "bha_components": "drilling_bha",
             "operations": "drilling_operations",
-            "daily_costs": "drilling_costs",
+            "fluid_losses": "drilling_fluid_losses",
             "bulks": "drilling_bulks",
         },
     },
@@ -69,7 +69,6 @@ REPORT_TABLES = {
         "multi": {
             "operations": "completion_operations",
             "bulks": "completion_bulks",
-            "daily_costs": "completion_costs",
             "mud_products": "completion_mud_products",
             "perforation_intervals": "completion_intervals",
         },
@@ -80,7 +79,6 @@ REPORT_TABLES = {
         "multi": {
             "operations": "workover_operations",
             "bulks": "workover_bulks",
-            "daily_costs": "workover_costs",
             "mud_products": "workover_mud_products",
             "perforation_intervals": "workover_intervals",
         },
@@ -98,8 +96,8 @@ REPORT_TABLES = {
 ROW_COLUMNS = {
     "operations": ["from", "to", "hours", "op_code", "op_sub", "op_type", "operation_details", "system_op_type", "confirmed_op_type"],
     "bulks": ["bulk", "qty_start", "qty_used", "qty_end"],
-    "daily_costs": ["cost_description", "vendor", "amount"],
-    "survey_data": ["md", "incl", "azi", "tvd", "vse", "ns", "dls", "build"],
+    "fluid_losses": ["injected_volume_bbl", "returned_volume_bbl"],
+    "survey_data": ["md", "incl", "azi", "tvd", "vse", "ns", "ew", "dls", "build"],
     "bha_components": ["component", "od", "id", "joints", "length"],
     "perforation_intervals": [
         "formation", "top_md", "base_md", "length", "density", "charges", "phase",
@@ -119,7 +117,6 @@ TRANSLATION_SCOPE_FIELDS = {
         ],
         "operations": ["op_sub", "operation_details"],
         "bha_components": ["component"],
-        "daily_costs": ["cost_description", "vendor"],
         "bulks": ["bulk"],
     },
     "completion": {
@@ -129,7 +126,6 @@ TRANSLATION_SCOPE_FIELDS = {
             "geologist", "safetyComments", "otherRemarks",
         ],
         "operations": ["op_sub", "operation_details"],
-        "daily_costs": ["cost_description", "vendor"],
         "bulks": ["bulk"],
         "mud_products": ["product"],
         "perforation_intervals": ["formation", "charges", "status", "comments"],
@@ -141,7 +137,6 @@ TRANSLATION_SCOPE_FIELDS = {
             "geologist", "safetyComments", "otherRemarks",
         ],
         "operations": ["op_sub", "operation_details"],
-        "daily_costs": ["cost_description", "vendor"],
         "bulks": ["bulk"],
         "mud_products": ["product"],
         "perforation_intervals": ["formation", "charges", "status", "comments"],

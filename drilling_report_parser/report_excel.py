@@ -72,6 +72,7 @@ def build_daily_report_workbook(payload: dict[str, Any]) -> Workbook:
         ("Pump Rate (gpm)", _v(fields, "pumpRate")),
         ("Pump Press (psi)", _v(fields, "pumpPress")),
         ("String Wt Up/Dn", _v(fields, "stringWeightUpDown")),
+        ("Torque Off Btm", _v(fields, "torqueOffBottom")),
         ("Torque On Btm", _v(fields, "torqueOnBottom")),
     ])
 
@@ -129,8 +130,8 @@ def build_daily_report_workbook(payload: dict[str, Any]) -> Workbook:
         warning_keys={"op_type"},
     )
 
-    row = _section(ws, row + 1, "DAILY COSTS / BULKS")
-    row = _table(ws, row, ["Cost Description", "Vendor", "Amount"], payload.get("daily_costs", []), ["cost_description", "vendor", "amount"])
+    row = _section(ws, row + 1, "FLUID LOSSES / BULKS")
+    row = _table(ws, row, ["Injected Volume (bbl)", "Returned Volume (bbl)"], payload.get("fluid_losses", []), ["injected_volume_bbl", "returned_volume_bbl"])
     row = _table(ws, row + 1, ["Bulk", "Qty Start", "Qty Used", "Qty End"], payload.get("bulks", []), ["bulk", "qty_start", "qty_used", "qty_end"])
 
     row = _section(ws, row + 1, "INCIDENTS AND REMARKS")
@@ -214,9 +215,8 @@ def build_completion_report_workbook(payload: dict[str, Any]) -> Workbook:
         warning_valid_values={"op_type": {"P", "SC", "NPT"}},
     )
 
-    row = _section(ws, row + 1, "BULKS / DAILY COSTS")
+    row = _section(ws, row + 1, "BULKS")
     row = _table(ws, row, ["Bulk", "Qty Start", "Qty Used", "Qty End"], payload.get("bulks", []), ["bulk", "qty_start", "qty_used", "qty_end"])
-    row = _table(ws, row + 1, ["Cost Description", "Vendor", "Amount"], payload.get("daily_costs", []), ["cost_description", "vendor", "amount"])
 
     row = _section(ws, row + 1, "PERFORATED INTERVALS")
     row = _table(
@@ -305,9 +305,8 @@ def build_workover_report_workbook(payload: dict[str, Any]) -> Workbook:
         warning_valid_values={"op_type": {"P", "SC", "NPT"}},
     )
 
-    row = _section(ws, row + 1, "BULKS / DAILY COSTS")
+    row = _section(ws, row + 1, "BULKS")
     row = _table(ws, row, ["Bulk", "Qty Start", "Qty Used", "Qty End"], payload.get("bulks", []), ["bulk", "qty_start", "qty_used", "qty_end"])
-    row = _table(ws, row + 1, ["Cost Description", "Vendor", "Amount"], payload.get("daily_costs", []), ["cost_description", "vendor", "amount"])
 
     row = _section(ws, row + 1, "PERFORATED INTERVALS")
     row = _table(

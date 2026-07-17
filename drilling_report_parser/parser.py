@@ -262,17 +262,6 @@ TABLE_SPECS: tuple[TableSpec, ...] = (
         continuation_columns=("component",),
     ),
     TableSpec(
-        name="daily_costs",
-        sheet_name="daily_costs",
-        headers=(
-            ("cost_description", ("cost description",)),
-            ("vendor", ("vendor",)),
-            ("amount", ("amount",)),
-        ),
-        min_header_hits=3,
-        stop_markers=("fluid losses", "bulks", "operations"),
-    ),
-    TableSpec(
         name="bulks",
         sheet_name="bulks",
         headers=(

@@ -29,12 +29,15 @@ def confirmation_group_status(item: dict[str, Any]) -> str:
         for value in item.get("statuses", [])
         if str(value or "").strip()
     }
+    review_statuses = {value for value in statuses if value in {"pending", "draft", "confirmed"}}
+    if review_statuses and review_statuses == {"confirmed"}:
+        return "confirmed"
+    if "draft" in review_statuses or ("confirmed" in review_statuses and "pending" in review_statuses):
+        return "draft"
     record_count = len(item.get("record_ids", []) or [])
     locked_count = int(item.get("locked_count", 0) or 0)
-    if record_count and locked_count >= record_count:
+    if not review_statuses and record_count and locked_count >= record_count:
         return "confirmed"
-    if "draft" in statuses or "confirmed" in statuses:
-        return "draft"
     return "pending"
 
 

@@ -40,7 +40,7 @@ DEFAULT_TRANSLATION_INSTRUCTION = (
 DEFAULT_BUSINESS_PROMPT_TEMPLATES = (
     ("drilling", "结合钻进、循环、起下钻、BHA、井深及钻井参数的作业时序，使用中国钻井日报常用表达。"),
     ("completion", "结合完井管柱、射孔、压裂、测试和井口作业语义，使用中国完井日报常用表达。"),
-    ("workover", "结合修井管柱、打捞、冲洗、试压和井筒处置语义，使用中国修井日报常用表达。"),
+    ("workover", "结合修井管柱、打捞、冲洗、试压和井内处置语义，使用中国修井日报常用表达。"),
     ("move", "结合钻机搬迁、运输、吊装、组装和场地作业时序，使用中国钻机搬迁日报常用表达。"),
 )
 DEFAULT_OLLAMA_CHUNK_CHARS = 6000

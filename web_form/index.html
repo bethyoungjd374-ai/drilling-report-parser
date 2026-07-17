@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" type="image/svg+xml" href="./assets/drilling-completion-logo.svg" />
-    <link rel="stylesheet" href="./styles.css?v=failed-import-delete-v1" />
+    <link rel="stylesheet" href="./styles.css?v=npt-confirm-workflow-v3" />
   </head>
   <body>
     <div class="app-shell">
@@ -164,6 +164,7 @@
                 <label>Pump Press (psi)<input name="pumpPress" type="number" min="0" step="0.01" /></label>
                 <label>String Weight Up (kip)<input name="stringWeightUp" type="number" min="0" step="0.1" inputmode="decimal" /></label>
                 <label>String Weight Down (kip)<input name="stringWeightDown" type="number" min="0" step="0.1" inputmode="decimal" /></label>
+                <label>Torque Off Bottom (ft-lbf)<input name="torqueOffBottom" type="number" min="0" step="0.1" inputmode="decimal" /></label>
                 <label>Torque On Bottom (ft-lbf)<input name="torqueOnBottom" type="number" min="0" step="0.1" inputmode="decimal" /></label>
               </div>
             </section>
@@ -176,7 +177,7 @@
                 <table id="surveyTable" data-table="survey_data">
                   <thead>
                     <tr>
-                      <th data-i18n="thMd">MD</th><th data-i18n="thIncl">Incl</th><th data-i18n="thAzi">Azi</th><th data-i18n="thTvd">TVD</th><th data-i18n="thVse">VSE</th><th data-i18n="thNs">N/-S</th><th data-i18n="thDls">DLS</th><th data-i18n="thBuild">Build</th>
+                      <th data-i18n="thMd">MD</th><th data-i18n="thIncl">Incl</th><th data-i18n="thAzi">Azi</th><th data-i18n="thTvd">TVD</th><th data-i18n="thVse">VSE</th><th data-i18n="thNs">N/-S</th><th data-i18n="thEw">E/-W</th><th data-i18n="thDls">DLS</th><th data-i18n="thBuild">Build</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -257,13 +258,13 @@
               </div>
             </section>
 
-            <section class="panel table-panel" id="costs">
+            <section class="panel table-panel" id="fluid-loss-inventory">
               <div class="panel-heading">
-                <h2 data-i18n="sectionCosts">成本与库存</h2>
+                <h2 data-i18n="sectionFluidLossInventory">漏失情况与库存</h2>
               </div>
               <div class="table-wrap half">
-                <table id="costTable" data-table="daily_costs">
-                  <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th></tr></thead>
+                <table id="fluidLossTable" data-table="fluid_losses">
+                  <thead><tr><th data-i18n="thInjectedVolumeBbl">Injected Volume (bbl)</th><th data-i18n="thReturnedVolumeBbl">Returned Volume (bbl)</th></tr></thead>
                   <tbody></tbody>
                 </table>
                 <table id="bulkTable" data-table="bulks">
@@ -416,17 +417,13 @@
                 </div>
               </section>
 
-              <section class="panel table-panel" id="completion-costs">
+              <section class="panel table-panel" id="completion-inventory">
                 <div class="panel-heading">
-                  <h2 data-i18n="sectionCosts">成本与库存</h2>
+                  <h2 data-i18n="sectionInventory">库存</h2>
                 </div>
-                <div class="table-wrap half">
+                <div class="table-wrap">
                   <table id="completionBulkTable" data-table="completion_bulks">
                     <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th></tr></thead>
-                    <tbody></tbody>
-                  </table>
-                  <table id="completionCostTable" data-table="completion_daily_costs">
-                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -574,17 +571,13 @@
                 </div>
               </section>
 
-              <section class="panel table-panel" id="workover-costs">
+              <section class="panel table-panel" id="workover-inventory">
                 <div class="panel-heading">
-                  <h2 data-i18n="sectionCosts">成本与库存</h2>
+                  <h2 data-i18n="sectionInventory">库存</h2>
                 </div>
-                <div class="table-wrap half">
+                <div class="table-wrap">
                   <table id="workoverBulkTable" data-table="workover_bulks">
                     <thead><tr><th data-i18n="thBulk">Bulk</th><th data-i18n="thQtyStart">Qty Start</th><th data-i18n="thQtyUsed">Qty Used</th><th data-i18n="thQtyEnd">Qty End</th></tr></thead>
-                    <tbody></tbody>
-                  </table>
-                  <table id="workoverCostTable" data-table="workover_daily_costs">
-                    <thead><tr><th data-i18n="thCostDescription">Cost Description</th><th data-i18n="thVendor">Vendor</th><th data-i18n="thAmount">Amount</th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -819,7 +812,7 @@
             <div class="production-report-layout">
               <aside class="panel production-report-side" data-npt-report-side></aside>
               <section class="panel analytics-table-panel production-report-main npt-detail-panel">
-                <div class="panel-heading"><h2 data-i18n="nptDetailTitle">NPT统计明细</h2><span class="panel-note" data-i18n="nptRowHint">点击行可追溯日报</span></div>
+                <div class="panel-heading"><h2 data-i18n="nptDetailTitle">NPT统计明细</h2><span class="panel-note" data-npt-official-note>仅显示已提交确认的NPT；点击行可追溯日报</span></div>
                 <div class="production-report-inline-filter" data-npt-report-filters></div>
                 <div class="table-wrap" data-table-host="npt"></div>
               </section>
@@ -884,10 +877,10 @@
             <section class="panel npt-meta-grid npt-detail-meta-card" data-npt-detail-meta></section>
             <section class="panel npt-detail-card">
               <div class="panel-heading">
-                <h2>时效明细列表</h2>
+                <h2>来源时效复核与责任划分</h2>
                 <div class="npt-detail-tools">
                   <label><input type="checkbox" data-npt-only-sc-npt checked />仅SC和NPT</label>
-                  <span class="panel-note">可将系统识别状态修正为 P、SC 或 NPT</span>
+                  <span class="panel-note">P按日报原值直接生效；SC/NPT需逐条复核并进一步划定责任与工作量归类</span>
                 </div>
               </div>
               <div class="table-wrap">
@@ -896,18 +889,18 @@
                     <tr>
                       <th>日期</th>
                       <th>时间段</th>
-                      <th>识别责任方</th>
                       <th>工况描述</th>
-                      <th>系统识别状态</th>
-                      <th>确认状态</th>
+                      <th>原日报类型</th>
+                      <th>复核结果</th>
                       <th>时长(h)</th>
+                      <th>人工划定</th>
                     </tr>
                   </thead>
                   <tbody data-npt-detail-rows></tbody>
                 </table>
               </div>
               <label class="npt-note-field">备注说明<textarea name="nptConfirmNote" maxlength="200" placeholder="请输入备注内容（选填）" data-i18n-placeholder="nptNotePlaceholder"></textarea><small><span data-npt-note-count>0</span>/200</small></label>
-              <div class="calendar-hint">提交确认后，该井将被锁定，日报数据将无法重新上传或修改，请确认无误后再提交。</div>
+              <div class="calendar-hint">保存仅保留草稿，不进入正式时效；提交后，全部SC/NPT复核结果才进入该井正式统计并锁定。</div>
               <div class="npt-confirm-actions">
                 <button class="button secondary" type="button" data-npt-save>保存</button>
                 <button class="button" type="button" data-npt-submit>提交确认</button>
@@ -968,6 +961,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=failed-import-delete-v1"></script>
+    <script src="./app.js?v=npt-confirm-workflow-v3"></script>
   </body>
 </html>

@@ -1,0 +1,1624 @@
+{
+  "batch": "daily_batch_20260716",
+  "created_at": "2026-07-16T23:40:24",
+  "source_root": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料",
+  "backup": "outputs/backups/drilling_report_db_before_daily_batch_20260716.sql",
+  "source_pdf_count": 70,
+  "daily_report_count": 102,
+  "recognized_count": 87,
+  "excluded_count": 15,
+  "skipped_existing_count": 1,
+  "upload_candidate_count": 86,
+  "uploaded_count": 86,
+  "failed_count": 0,
+  "uploaded_by_type": {
+    "drilling": 30,
+    "workover": 31,
+    "completion": 25
+  },
+  "excluded_by_type": {
+    "drilling": 3,
+    "workover": 2,
+    "completion": 10
+  },
+  "excluded": [
+    {
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04112026-LOBC-009-SIN-127-PEC-001-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "parsed_identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-11",
+        "reportNo": "1",
+        "rig": ""
+      },
+      "operation_count": 7,
+      "reasons": [
+        "缺少钻机"
+      ]
+    },
+    {
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04122026-LOBC-009-SIN-127-PEC-002-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "parsed_identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-12",
+        "reportNo": "2",
+        "rig": ""
+      },
+      "operation_count": 16,
+      "reasons": [
+        "缺少钻机"
+      ]
+    },
+    {
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04232026-LOBC-009-SIN-127-PEC-013-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "parsed_identity": {
+        "wellbore": "",
+        "reportDate": "",
+        "reportNo": "",
+        "rig": ""
+      },
+      "operation_count": 3,
+      "reasons": [
+        "缺少日期",
+        "缺少井号",
+        "缺少钻机"
+      ]
+    },
+    {
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/3. 05312026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "parsed_identity": {
+        "wellbore": "",
+        "reportDate": "",
+        "reportNo": "",
+        "rig": ""
+      },
+      "operation_count": 0,
+      "reasons": [
+        "缺少日期",
+        "缺少井号",
+        "缺少钻机",
+        "未识别作业明细"
+      ]
+    },
+    {
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/5. 06022026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "parsed_identity": {
+        "wellbore": "",
+        "reportDate": "",
+        "reportNo": "",
+        "rig": ""
+      },
+      "operation_count": 0,
+      "reasons": [
+        "缺少日期",
+        "缺少井号",
+        "缺少钻机",
+        "未识别作业明细"
+      ]
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__01__pages-1-2.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-23",
+        "reportNo": "1",
+        "rig": ""
+      },
+      "operation_count": 7,
+      "reasons": [
+        "缺少钻机",
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "1-2"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__02__pages-3-3.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-25",
+        "reportNo": "2",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 4,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "3-3"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__03__pages-4-4.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-26",
+        "reportNo": "3",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 1,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "4-4"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__04__pages-5-6.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-27",
+        "reportNo": "4",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 5,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "5-6"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__05__pages-7-8.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-28",
+        "reportNo": "5",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 8,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "7-8"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__06__pages-9-10.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-29",
+        "reportNo": "6",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 7,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "9-10"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__07__pages-11-12.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-06-30",
+        "reportNo": "7",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 13,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "11-12"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__08__pages-13-13.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-07-01",
+        "reportNo": "8",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 3,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "13-13"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__09__pages-14-14.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-07-02",
+        "reportNo": "9",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 4,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "14-14"
+    },
+    {
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - GCLH-023__10__pages-15-16.pdf",
+      "parsed_identity": {
+        "wellbore": "03GCLH-023",
+        "reportDate": "2026-07-03",
+        "reportNo": "10",
+        "rig": "SINOPEC 183"
+      },
+      "operation_count": 12,
+      "reasons": [
+        "井号误识别为 03GCLH-023，应为 GCLH-023"
+      ],
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - GCLH-023.pdf",
+      "source_pages": "15-16"
+    }
+  ],
+  "skipped_existing": [
+    {
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/4. 10062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "parsed_identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-10",
+        "reportNo": "4",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 11,
+      "record_id": "workover:ACAH-270H:2026-06-10:4",
+      "reason": "系统已存在且源 PDF 完全一致",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-10:4.pdf"
+    }
+  ],
+  "uploaded": [
+    {
+      "record_id": "drilling:PCND-034:2025-08-30:1",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/08302025-PCND-034-SNP-191-PEC-001-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-08-30",
+        "reportNo": "1",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 13,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-08-30:1.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-08-31:2",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/08312025-PCND-034-SNP-191-PEC-002-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-08-31",
+        "reportNo": "2",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 18,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-08-31:2.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-01:3",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09012025-PCND-034-SNP-191-PEC-003-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-01",
+        "reportNo": "3",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 6,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-01:3.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-02:4",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09022025-PCND-034-SNP-191-PEC-004-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-02",
+        "reportNo": "4",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 3,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-02:4.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-03:5",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09032025-PCND-034-SIN-191-PEC-005-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-03",
+        "reportNo": "5",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 1,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-03:5.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-05:7",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09052025-PCND-034-SNP-191-PEC-007-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-05",
+        "reportNo": "7",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 11,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-05:7.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-06:8",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09062025-PCND-034-SNP-191-PEC-008-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-06",
+        "reportNo": "8",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 14,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-06:8.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-07:9",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09072025-PCND-034-SNP-191-PEC-009-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-07",
+        "reportNo": "9",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 11,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-07:9.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-09-08:10",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/09082025-PCND-034-SNP-191-PEC-010-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-09-08",
+        "reportNo": "10",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 3,
+      "validation_status": "warning",
+      "validation_warnings": "mudType missing; mudDensity missing; operation hours total 5.50",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-09-08:10.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-10-15:25",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/10152025-PCND-034-SNP-191-PEC-025-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-10-15",
+        "reportNo": "25",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 10,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-10-15:25.pdf"
+    },
+    {
+      "record_id": "drilling:PCND-034:2025-10-17:27",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/191 PCND-034 PERF/10172025-PCND-034-SNP-191-PEC-027-V1R1-REPORTE DIARIO DE PERFORACION.pdf",
+      "identity": {
+        "wellbore": "PCND-034",
+        "reportDate": "2025-10-17",
+        "reportNo": "27",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 14,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:PCND-034:2025-10-17:27.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-13:3",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04132026-LOBC-009-SIN-127-PEC-003-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-13",
+        "reportNo": "3",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 11,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-13:3.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-14:4",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04142026-LOBC-009-SIN-127-PEC-004-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-14",
+        "reportNo": "4",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 11,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-14:4.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-15:5",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04152026-LOBC-009-SIN-127-PEC-005-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-15",
+        "reportNo": "5",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 3,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-15:5.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-16:6",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04162026-LOBC-009-SIN-127-PEC-006-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-16",
+        "reportNo": "6",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 4,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-16:6.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-17:7",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04172026-LOBC-009-SIN-127-PEC-007-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-17",
+        "reportNo": "7",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 15,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-17:7.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-18:8",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04182026-LOBC-009-SIN-127-PEC-008-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-18",
+        "reportNo": "8",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 7,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-18:8.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-19:9",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04192026-LOBC-009-SIN-127-PEC-009-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-19",
+        "reportNo": "9",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 15,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-19:9.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-20:10",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04202026-LOBC-009-SIN-127-PEC-010-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-20",
+        "reportNo": "10",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 11,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-20:10.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-21:11",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04212026-LOBC-009-SIN-127-PEC-011-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-21",
+        "reportNo": "11",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 3,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-21:11.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-22:12",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04222026-LOBC-009-SIN-127-PEC-012-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-22",
+        "reportNo": "12",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 7,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-22:12.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-24:14",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04242026-LOBC-009-SIN-127-PEC-014-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-24",
+        "reportNo": "14",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 14,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-24:14.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-25:15",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04252026-LOBC-009-SIN-127-PEC-015-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-25",
+        "reportNo": "15",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 14,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-25:15.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-26:16",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04262026-LOBC-009-SIN-127-PEC-016-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-26",
+        "reportNo": "16",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 14,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-26:16.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-27:17",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04272026-LOBC-009-SIN-127-PEC-017-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-27",
+        "reportNo": "17",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 12,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-27:17.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-28:18",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04282026-LOBC-009-SIN-127-PEC-018-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-28",
+        "reportNo": "18",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 1,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-28:18.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-29:19",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04292026-LOBC-009-SIN-127-PEC-019-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-29",
+        "reportNo": "19",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 4,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-29:19.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-04-30:20",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/04302026-LOBC-009-SIN-127-PEC-020-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-04-30",
+        "reportNo": "20",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 15,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-04-30:20.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-05-01:21",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/05012026-LOBC-009-SIN-127-PEC-021-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-05-01",
+        "reportNo": "21",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 7,
+      "validation_status": "ok",
+      "validation_warnings": "",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-05-01:21.pdf"
+    },
+    {
+      "record_id": "drilling:LOBC-009:2026-05-02:22",
+      "type": "drilling",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin/05022026-LOBC-009-SIN-127-PEC-022-V1R1-REPORTE DIARIO DE PERFORACIÓN.pdf",
+      "identity": {
+        "wellbore": "LOBC-009",
+        "reportDate": "2026-05-02",
+        "reportNo": "22",
+        "rig": "SINOPEC 127"
+      },
+      "operation_count": 8,
+      "validation_status": "warning",
+      "validation_warnings": "operation hours total 17.00",
+      "stored_source_pdf": "outputs/source_pdfs/drilling:LOBC-009:2026-05-02:22.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-05-29:1",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/1. 05292026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-05-29",
+        "reportNo": "1",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 1,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 10.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-05-29:1.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-06-07:10",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/10. 06072026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-06-07",
+        "reportNo": "10",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 10,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 16.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-06-07:10.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-05-30:2",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/2. 05302026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-05-30",
+        "reportNo": "2",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-05-30:2.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-06-01:4",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/4. 06012026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-06-01",
+        "reportNo": "4",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 8,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 17.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-06-01:4.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-06-03:6",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/6. 06032026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-06-03",
+        "reportNo": "6",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 8,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-06-03:6.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-06-04:7",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/7. 06042026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-06-04",
+        "reportNo": "7",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-06-04:7.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-06-05:8",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/8. 06052026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-06-05",
+        "reportNo": "8",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 2,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-06-05:8.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-273H:2026-06-06:9",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/13. ACAH-273H/9. 06062026_RDO_ACAH-273H_WO#02 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-273H",
+        "reportDate": "2026-06-06",
+        "reportNo": "9",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 10,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-273H:2026-06-06:9.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-07:1",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/1. 07062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-07",
+        "reportNo": "1",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 1,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 8.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-07:1.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-16:10",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/10. 16062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-16",
+        "reportNo": "10",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-16:10.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-17:11",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/11. 17072026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-17",
+        "reportNo": "11",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 11,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 20.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-17:11.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-08:2",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/2. 08062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-08",
+        "reportNo": "2",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 3,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-08:2.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-09:3",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/3. 09062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-09",
+        "reportNo": "3",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-09:3.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-11:5",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/5. 11062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-11",
+        "reportNo": "5",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 11,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-11:5.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-12:6",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/6. 12062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-12",
+        "reportNo": "6",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-12:6.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-13:7",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/7. 13062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-13",
+        "reportNo": "7",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-13:7.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-14:8",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/8. 14062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-14",
+        "reportNo": "8",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 2,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-14:8.pdf"
+    },
+    {
+      "record_id": "workover:ACAH-270H:2026-06-15:9",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/14. ACAH-270H/9. 15062026_RDO_ACAH-270H_WO#03 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "ACAH-270H",
+        "reportDate": "2026-06-15",
+        "reportNo": "9",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 7,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:ACAH-270H:2026-06-15:9.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043H:2026-06-25:1",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/1. 25062026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043H",
+        "reportDate": "2026-06-25",
+        "reportNo": "1",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 1,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 3.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043H:2026-06-25:1.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-04:10",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/10. 04072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-04",
+        "reportNo": "10",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-04:10.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-05:11",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/11. 05072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-05",
+        "reportNo": "11",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 4,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-05:11.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-06:12",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/12. 06072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-06",
+        "reportNo": "12",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 5,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-06:12.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-07:13",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/13. 07072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-07",
+        "reportNo": "13",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 12,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected; operation hours total 22.00",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-07:13.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043H:2026-06-26:2",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/2. 26062026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043H",
+        "reportDate": "2026-06-26",
+        "reportNo": "2",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 4,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043H:2026-06-26:2.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-06-27:3",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/3. 27062026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-06-27",
+        "reportNo": "3",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-06-27:3.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-06-28:4",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/4. 28062026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-06-28",
+        "reportNo": "4",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 12,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-06-28:4.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-06-29:5",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/5. 29062026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-06-29",
+        "reportNo": "5",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 12,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-06-29:5.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-06-30:6",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/6. 30062026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-06-30",
+        "reportNo": "6",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 12,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-06-30:6.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-01:7",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/7. 01072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-01",
+        "reportNo": "7",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 6,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-01:7.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-02:8",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/8. 02072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-02",
+        "reportNo": "8",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-02:8.pdf"
+    },
+    {
+      "record_id": "workover:YLBD-043HS1:2026-07-03:9",
+      "type": "workover",
+      "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/修井/16. YLBD-043HS1/9. 03072026_RDO_YLBD-043HST1_WO#01 SINOPEC-933.pdf",
+      "identity": {
+        "wellbore": "YLBD-043HS1",
+        "reportDate": "2026-07-03",
+        "reportNo": "9",
+        "rig": "SINOPEC 933"
+      },
+      "operation_count": 11,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/workover:YLBD-043HS1:2026-07-03:9.pdf"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-17:1",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__01__pages-1-1.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-17",
+        "reportNo": "1",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 5,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; operation hours total 18.00",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-17:1.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "1-1"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-18:2",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__02__pages-2-2.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-18",
+        "reportNo": "2",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 7,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-18:2.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "2-2"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-19:3",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__03__pages-3-4.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-19",
+        "reportNo": "3",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 11,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-19:3.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "3-4"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-20:4",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__04__pages-5-5.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-20",
+        "reportNo": "4",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 7,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-20:4.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "5-5"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-21:5",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__05__pages-6-7.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-21",
+        "reportNo": "5",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 10,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-21:5.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "6-7"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-22:6",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__06__pages-8-8.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-22",
+        "reportNo": "6",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 6,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-22:6.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "8-8"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-23:7",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__07__pages-9-10.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-23",
+        "reportNo": "7",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 8,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-23:7.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "9-10"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-24:8",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__08__pages-11-12.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-24",
+        "reportNo": "8",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 8,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; perforation_intervals row 1 date date invalid; perforation_intervals row 2 date date invalid",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-24:8.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "11-12"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-25:9",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__09__pages-13-14.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-25",
+        "reportNo": "9",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 10,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; perforation_intervals row 1 date date invalid; perforation_intervals row 2 date date invalid",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-25:9.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "13-14"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-26:10",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__10__pages-15-15.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-26",
+        "reportNo": "10",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 3,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; perforation_intervals row 1 date date invalid; perforation_intervals row 2 date date invalid",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-26:10.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "15-15"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-27:11",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__11__pages-16-16.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-27",
+        "reportNo": "11",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 3,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; perforation_intervals row 1 date date invalid; perforation_intervals row 2 date date invalid",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-27:11.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "16-16"
+    },
+    {
+      "record_id": "completion:SCHAO-611:2026-06-28:12",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHAO-611__12__pages-17-18.pdf",
+      "identity": {
+        "wellbore": "SCHAO-611",
+        "reportDate": "2026-06-28",
+        "reportNo": "12",
+        "rig": "SINOPEC 129"
+      },
+      "operation_count": 13,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; perforation_intervals row 1 date date invalid; perforation_intervals row 2 date date invalid",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHAO-611:2026-06-28:12.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHAO-611.pdf",
+      "source_pages": "17-18"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-16:1",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__01__pages-1-1.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-16",
+        "reportNo": "1",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; operation hours total 12.00",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-16:1.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "1-1"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-17:2",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__02__pages-2-3.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-17",
+        "reportNo": "2",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 7,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-17:2.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "2-3"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-18:3",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__03__pages-4-5.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-18",
+        "reportNo": "3",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 10,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-18:3.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "4-5"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-19:4",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__04__pages-6-6.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-19",
+        "reportNo": "4",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 1,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected; operation hours total 5.00",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-19:4.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "6-6"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-20:5",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__05__pages-7-7.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-20",
+        "reportNo": "5",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 8,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-20:5.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "7-7"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-21:6",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__06__pages-8-8.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-21",
+        "reportNo": "6",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 9,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-21:6.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "8-8"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-22:7",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__07__pages-9-10.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-22",
+        "reportNo": "7",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 6,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-22:7.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "9-10"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-23:8",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__08__pages-11-12.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-23",
+        "reportNo": "8",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 7,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-23:8.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "11-12"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-24:9",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__09__pages-13-13.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-24",
+        "reportNo": "9",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 7,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-24:9.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "13-13"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-25:10",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__10__pages-14-14.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-25",
+        "reportNo": "10",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 4,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-25:10.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "14-14"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-26:11",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__11__pages-15-15.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-26",
+        "reportNo": "11",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 4,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-26:11.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "15-15"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-27:12",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__12__pages-16-16.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-27",
+        "reportNo": "12",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 4,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-27:12.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "16-16"
+    },
+    {
+      "record_id": "completion:SCHR-407:2026-06-28:13",
+      "type": "completion",
+      "source_file": "tmp/pdfs/import_batch/completion/REPORTES COMPLETOS CPI - SCHR-407__13__pages-17-18.pdf",
+      "identity": {
+        "wellbore": "SCHR-407",
+        "reportDate": "2026-06-28",
+        "reportNo": "13",
+        "rig": "SINOPEC 191"
+      },
+      "operation_count": 12,
+      "validation_status": "warning",
+      "validation_warnings": "dailyCost number corrected; afeCost number corrected; cumulativeCost number corrected",
+      "stored_source_pdf": "outputs/source_pdfs/completion:SCHR-407:2026-06-28:13.pdf",
+      "source_package": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井/REPORTES COMPLETOS CPI - SCHR-407.pdf",
+      "source_pages": "17-18"
+    }
+  ],
+  "failed": []
+}

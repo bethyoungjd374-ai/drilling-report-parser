@@ -67,14 +67,7 @@ MASTER_ENTITIES: dict[str, dict[str, object]] = {
         "code": "well_code",
         "name": "well_name",
         "alias_types": ("well",),
-        "fields": ("well_code", "well_name", "field_id", "block_id", "operator_company_id", "well_type_code", "surface_latitude", "surface_longitude", "lifecycle_status_code", "status", "change_reason"),
-    },
-    "wellbores": {
-        "table": "md_wellbore",
-        "code": "wellbore_code",
-        "name": "wellbore_name",
-        "alias_types": ("wellbore",),
-        "fields": ("wellbore_code", "wellbore_name", "well_id", "parent_wellbore_id", "wellbore_profile_code", "trajectory_status_code", "kickoff_md_m", "planned_td_md_m", "status", "change_reason"),
+        "fields": ("well_code", "well_name", "field_id", "block_id", "operator_company_id", "well_type_code", "surface_latitude", "surface_longitude", "well_profile_code", "trajectory_status_code", "kickoff_md_m", "planned_td_md_m", "lifecycle_status_code", "status", "change_reason"),
     },
     "contracts": {
         "table": "md_contract",
@@ -120,9 +113,9 @@ ASSIGNMENT_ENTITIES: dict[str, dict[str, object]] = {
     },
     "project-well": {
         "table": "rel_project_well_scope",
-        "fields": ("project_id", "wellbore_id", "job_type", "scope_note", "valid_from", "valid_to", "status", "change_reason"),
-        "overlap": ("wellbore_id", "job_type"),
-        "required": ("project_id", "wellbore_id"),
+        "fields": ("project_id", "well_id", "job_type", "scope_note", "valid_from", "valid_to", "status", "change_reason"),
+        "overlap": ("well_id", "job_type"),
+        "required": ("project_id", "well_id"),
     },
     "job-rig": {
         "table": "rel_job_rig_assignment",
@@ -141,7 +134,6 @@ REFERENCE_TABLE_LABELS = {
     "md_team": "队伍",
     "md_rig": "历史设备",
     "md_well": "井",
-    "md_wellbore": "井筒",
     "md_appendix_category": "附录类别",
     "md_appendix_value": "附录值",
     "md_contract": "合同",
@@ -151,14 +143,14 @@ REFERENCE_TABLE_LABELS = {
     "rel_project_well_scope": "项目井范围",
     "biz_job": "作业实例",
     "rel_job_rig_assignment": "作业设备关系",
-    "fact_daily_report": "标准日报",
-    "report_records": "原始日报",
+    "dpr_report": "标准日报",
+    "dpr_report_record": "原始日报",
     "monthly_report_snapshot": "月报快照",
     "md_alias": "别名",
 }
 
 LOGICAL_MASTER_REFERENCES = {
-    "wellbores": (("report_records", "wellbore_id"),),
+    "wells": (("dpr_report_record", "well_id"),),
 }
 
 APPENDIX_CODE_REFERENCES = {
@@ -173,8 +165,8 @@ APPENDIX_CODE_REFERENCES = {
     "EQUIPMENT_STATUS": (("md_rig", "equipment_status_code"),),
     "WELL_TYPE": (("md_well", "well_type_code"),),
     "WELL_STATUS": (("md_well", "lifecycle_status_code"),),
-    "WELLBORE_PROFILE": (("md_wellbore", "wellbore_profile_code"),),
-    "TRAJECTORY_STATUS": (("md_wellbore", "trajectory_status_code"),),
+    "WELL_PROFILE": (("md_well", "well_profile_code"),),
+    "TRAJECTORY_STATUS": (("md_well", "trajectory_status_code"),),
 }
 
 
@@ -575,7 +567,7 @@ def _relationship_scope_overlaps(kind: str, left: dict[str, Any], right: dict[st
         return int(left.get("rig_id") or 0) == int(right.get("rig_id") or 0)
     if kind == "project-team":
         return int(left.get("team_id") or 0) == int(right.get("team_id") or 0)
-    if int(left.get("wellbore_id") or 0) != int(right.get("wellbore_id") or 0):
+    if int(left.get("well_id") or 0) != int(right.get("well_id") or 0):
         return False
     left_type = str(left.get("job_type", "") or "")
     right_type = str(right.get("job_type", "") or "")
@@ -634,13 +626,13 @@ def build_legacy_project_team_config() -> dict[str, Any]:
             rig_assignments = cursor.fetchall()
             cursor.execute("SELECT * FROM rel_project_well_scope WHERE status='active' ORDER BY valid_from, id")
             well_scopes = cursor.fetchall()
-            cursor.execute("SELECT id, wellbore_code FROM md_wellbore")
-            wellbores = cursor.fetchall()
+            cursor.execute("SELECT id, well_code FROM md_well")
+            wells = cursor.fetchall()
     aliases_by_rig: dict[int, list[str]] = {}
     for row in alias_rows:
         aliases_by_rig.setdefault(int(row["entity_id"]), []).append(str(row["alias_value"]))
     rig_by_team_id = {int(row["team_id"]): row for row in rigs if row.get("team_id")}
-    wellbore_by_id = {int(row["id"]): str(row["wellbore_code"]) for row in wellbores}
+    well_by_id = {int(row["id"]): str(row["well_code"]) for row in wells}
     scopes_by_project: dict[int, list[dict[str, Any]]] = {}
     for row in well_scopes:
         scopes_by_project.setdefault(int(row["project_id"]), []).append(row)
@@ -660,9 +652,9 @@ def build_legacy_project_team_config() -> dict[str, Any]:
     for project in projects:
         project_id = int(project["id"])
         wells = sorted({
-            wellbore_by_id.get(int(scope["wellbore_id"]), "")
+            well_by_id.get(int(scope["well_id"]), "")
             for scope in scopes_by_project.get(project_id, [])
-            if wellbore_by_id.get(int(scope["wellbore_id"]), "")
+            if well_by_id.get(int(scope["well_id"]), "")
         })
         project_rigs = []
         for assignment in assignments_by_project.get(project_id, []):
@@ -704,8 +696,8 @@ def resolve_master_id(cursor: Any, entity_type: str, raw_value: object) -> int |
         return int(row["entity_id"])
     if entity_type == "rig":
         cursor.execute("SELECT id FROM md_rig WHERE status='active' AND (rig_code=%s OR rig_name=%s) LIMIT 1", (normalized, normalized))
-    elif entity_type == "wellbore":
-        cursor.execute("SELECT id FROM md_wellbore WHERE status='active' AND wellbore_code=%s LIMIT 1", (normalized,))
+    elif entity_type == "well":
+        cursor.execute("SELECT id FROM md_well WHERE status='active' AND (well_code=%s OR well_name=%s) LIMIT 1", (normalized, normalized))
     else:
         return None
     row = cursor.fetchone()
@@ -718,7 +710,7 @@ def resolve_project_assignment(
     report_date: str,
     report_type: str,
     rig_id: int | None,
-    wellbore_id: int | None,
+    well_id: int | None,
     explicit_job_id: int | None = None,
 ) -> dict[str, Any]:
     at_value = f"{report_date} 12:00:00"
@@ -730,15 +722,15 @@ def resolve_project_assignment(
         job = cursor.fetchone()
         if job:
             return {"status": "MATCHED", "project_id": job.get("project_id"), "job_id": int(job["id"]), "matches": []}
-    if not rig_id or not wellbore_id or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", report_date or ""):
-        return {"status": "UNASSIGNED", "project_id": None, "job_id": None, "matches": [], "message": "缺少井队、井筒或有效日期"}
+    if not rig_id or not well_id or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", report_date or ""):
+        return {"status": "UNASSIGNED", "project_id": None, "job_id": None, "matches": [], "message": "缺少井队、井或有效日期"}
 
     cursor.execute(
         """
         SELECT DISTINCT p.id, p.project_code, p.project_name
         FROM md_project p
         JOIN rel_project_well_scope ws
-          ON ws.project_id=p.id AND ws.wellbore_id=%s AND ws.status='active'
+          ON ws.project_id=p.id AND ws.well_id=%s AND ws.status='active'
          AND ws.valid_from<=%s AND (ws.valid_to IS NULL OR ws.valid_to>%s)
          AND (ws.job_type='' OR ws.job_type=%s)
         JOIN md_rig source_rig ON source_rig.id=%s
@@ -748,7 +740,7 @@ def resolve_project_assignment(
         WHERE p.status='active'
         ORDER BY p.id
         """,
-        (wellbore_id, at_value, at_value, report_type, rig_id, at_value, at_value),
+        (well_id, at_value, at_value, report_type, rig_id, at_value, at_value),
     )
     exact = cursor.fetchall()
     candidates = exact
@@ -783,7 +775,7 @@ def resolve_project_assignment(
         candidates = cursor.fetchall()
     if len(candidates) == 1:
         project_id = int(candidates[0]["id"])
-        job_id = _active_or_create_job(cursor, project_id, wellbore_id, report_type, report_date)
+        job_id = _active_or_create_job(cursor, project_id, well_id, report_type, report_date)
         return {"status": "MATCHED", "project_id": project_id, "job_id": job_id, "matches": [_json_row(candidates[0])], "message": ""}
     if len(candidates) > 1:
         return {
@@ -796,31 +788,31 @@ def resolve_project_assignment(
     return {"status": "UNASSIGNED", "project_id": None, "job_id": None, "matches": [], "message": "未匹配到有效项目关系"}
 
 
-def _active_or_create_job(cursor: Any, project_id: int, wellbore_id: int, job_type: str, report_date: str) -> int:
+def _active_or_create_job(cursor: Any, project_id: int, well_id: int, job_type: str, report_date: str) -> int:
     cursor.execute(
-        "SELECT id FROM biz_job WHERE project_id=%s AND wellbore_id=%s AND job_type=%s "
+        "SELECT id FROM biz_job WHERE project_id=%s AND well_id=%s AND job_type=%s "
         "AND status IN ('planned','active') ORDER BY sequence_no DESC LIMIT 1",
-        (project_id, wellbore_id, job_type),
+        (project_id, well_id, job_type),
     )
     row = cursor.fetchone()
     if row:
         return int(row["id"])
     cursor.execute(
         "SELECT COALESCE(MAX(sequence_no),0)+1 AS sequence_no FROM biz_job "
-        "WHERE project_id=%s AND wellbore_id=%s AND job_type=%s",
-        (project_id, wellbore_id, job_type),
+        "WHERE project_id=%s AND well_id=%s AND job_type=%s",
+        (project_id, well_id, job_type),
     )
     sequence_no = int((cursor.fetchone() or {}).get("sequence_no", 1) or 1)
     cursor.execute("SELECT project_code FROM md_project WHERE id=%s", (project_id,))
     project_code = str((cursor.fetchone() or {}).get("project_code", project_id))
-    cursor.execute("SELECT wellbore_code FROM md_wellbore WHERE id=%s", (wellbore_id,))
-    wellbore_code = str((cursor.fetchone() or {}).get("wellbore_code", wellbore_id))
-    job_code = f"{project_code}:{wellbore_code}:{job_type}:{sequence_no}"
+    cursor.execute("SELECT well_code FROM md_well WHERE id=%s", (well_id,))
+    well_code = str((cursor.fetchone() or {}).get("well_code", well_id))
+    job_code = f"{project_code}:{well_code}:{job_type}:{sequence_no}"
     cursor.execute(
         "INSERT INTO biz_job "
-        "(job_code, project_id, wellbore_id, job_type, sequence_no, planned_start, status, created_by, updated_by) "
+        "(job_code, project_id, well_id, job_type, sequence_no, planned_start, status, created_by, updated_by) "
         "VALUES (%s,%s,%s,%s,%s,%s,'active','system','system')",
-        (job_code, project_id, wellbore_id, job_type, sequence_no, f"{report_date} 00:00:00"),
+        (job_code, project_id, well_id, job_type, sequence_no, f"{report_date} 00:00:00"),
     )
     return int(cursor.lastrowid)
 

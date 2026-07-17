@@ -26,6 +26,40 @@ INIT_SQL_PATH = ROOT / "db" / "init.sql"
 _DATABASE_INITIALIZED = False
 _DATABASE_INIT_LOCK = threading.Lock()
 
+# Canonical entities use their business meaning, not a catch-all ``common``
+# namespace.  Each tuple contains historical aliases accepted for an in-place,
+# data-preserving migration before the canonical CREATE TABLE statements run.
+DPR_TABLE_ALIASES = {
+    "dpr_report_record": ("report_records", "dpr_common_raw_report"),
+    "dpr_report_field": ("report_fields", "dpr_common_raw_field"),
+    "dpr_report_row": ("report_rows", "dpr_common_raw_row"),
+    "translation_content": ("dpr_common_translation_content",),
+    "translation_memory": ("dpr_common_translation_memory",),
+    "translation_revision": ("translation_revisions", "dpr_common_translation_revision"),
+    "ai_extraction_result": ("ai_extraction_results", "dpr_common_ai_extraction_result"),
+    "dpr_report": ("fact_daily_report", "dpr_common_fact_report"),
+    "dpr_operation": ("fact_activity", "dpr_common_fact_activity"),
+    "dpr_operation_classification_rule": ("time_classification_rule", "dpr_common_time_classification_rule"),
+    "dpr_operation_classification": ("fact_time_classification", "dpr_common_fact_time_classification"),
+    "dpr_operation_classification_revision": ("time_classification_revision", "dpr_common_time_classification_revision"),
+    "biz_job_event": ("fact_job_event", "dpr_common_fact_job_event"),
+    "biz_job_depth_progress": ("fact_depth_progress", "dpr_common_fact_depth_progress"),
+    "hsse_incident": ("fact_incident", "dpr_common_fact_incident"),
+    "dpr_report_summary": ("fact_report_summary", "dpr_common_fact_report_summary"),
+    "dq_issue": ("data_quality_issue", "dpr_common_quality_issue"),
+    "dpr_drilling_report": ("fact_drilling_parameter", "dpr_drilling_fact_parameter"),
+    "dpr_drilling_fluid_property": ("fact_drilling_fluid_property", "dpr_drilling_fact_fluid_property"),
+    "dpr_drilling_directional_survey": ("fact_directional_survey", "dpr_drilling_fact_directional_survey"),
+    "dpr_drilling_bha_component": ("fact_bha_component", "dpr_drilling_fact_bha_component"),
+    "dpr_drilling_fluid_loss": ("fact_fluid_loss", "dpr_drilling_fact_fluid_loss"),
+    "dpr_completion_report": ("fact_completion_parameter", "dpr_completion_fact_parameter"),
+    "dpr_workover_report": ("fact_workover_parameter", "dpr_workover_fact_parameter"),
+    "dpr_move_report": ("fact_move_parameter", "dpr_move_fact_parameter"),
+    "dpr_bulk_inventory_legacy": ("fact_material_inventory", "dpr_common_fact_material_inventory"),
+    "dpr_mud_product_legacy": ("fact_mud_product_usage", "dpr_common_fact_mud_product_usage"),
+    "dpr_perforation_interval_legacy": ("fact_perforation_interval", "dpr_common_fact_perforation_interval"),
+}
+
 BASE_RECORD_COLUMNS = [
     "record_id",
     "report_type",
@@ -72,18 +106,326 @@ def initialize_database() -> None:
             return
         with _connect() as connection:
             with connection.cursor() as cursor:
+                _migrate_dpr_table_names(cursor)
+                view_statements: list[str] = []
                 for statement in statements:
                     if _server_scope_statement(statement):
                         continue
+                    if statement.lstrip().upper().startswith("CREATE OR REPLACE VIEW"):
+                        view_statements.append(statement)
+                        continue
                     cursor.execute(statement)
+                _migrate_report_type_children(cursor)
                 _ensure_report_record_columns(cursor)
                 _ensure_project_relationship_columns(cursor)
                 _ensure_master_data_v3_columns(cursor)
+                _migrate_remove_wellbore_master(cursor)
                 _migrate_master_data_v3(cursor)
+                _migrate_replace_daily_cost_with_fluid_loss(cursor)
+                _ensure_database_quality_v2(cursor)
                 _ensure_report_record_indexes(cursor)
                 _ensure_translation_content_indexes(cursor)
+                _ensure_database_comments(cursor)
+                for statement in view_statements:
+                    cursor.execute(statement)
             connection.commit()
         _DATABASE_INITIALIZED = True
+
+
+def _migrate_dpr_table_names(cursor: Any) -> None:
+    """Rename legacy daily-report tables in place before creating the new schema."""
+    cursor.execute(
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema=DATABASE() AND table_type='BASE TABLE'"
+    )
+    existing = {str(row.get("table_name") or row.get("TABLE_NAME") or "") for row in cursor.fetchall()}
+    rename_pairs: list[tuple[str, str]] = []
+    for canonical_name, aliases in DPR_TABLE_ALIASES.items():
+        existing_aliases = [alias for alias in aliases if alias in existing]
+        if canonical_name in existing and existing_aliases:
+            raise RuntimeError(
+                f"Daily-report table migration conflict: {canonical_name} and {existing_aliases} both exist."
+            )
+        if len(existing_aliases) > 1:
+            raise RuntimeError(
+                f"Daily-report table migration conflict: aliases {existing_aliases} both exist for {canonical_name}."
+            )
+        if existing_aliases:
+            rename_pairs.append((existing_aliases[0], canonical_name))
+    if not rename_pairs:
+        return
+    rename_sql = ", ".join(f"`{old}` TO `{new}`" for old, new in rename_pairs)
+    cursor.execute(f"RENAME TABLE {rename_sql}")
+
+
+def _migrate_report_type_children(cursor: Any) -> None:
+    """Split formerly polymorphic detail rows into report-type-owned tables."""
+    audit_columns = [
+        "daily_report_id", "source_row_no", "source_hash",
+        "created_at", "created_by", "updated_at", "updated_by",
+    ]
+    split_specs = (
+        (
+            "dpr_bulk_inventory_legacy",
+            {
+                "drilling": "dpr_drilling_bulk_inventory",
+                "completion": "dpr_completion_bulk_inventory",
+                "workover": "dpr_workover_bulk_inventory",
+            },
+            [
+                "material_name", "opening_quantity", "received_quantity", "used_quantity",
+                "closing_quantity", "quantity_unit_code", "quantity_balance_status",
+            ],
+        ),
+        (
+            "dpr_mud_product_legacy",
+            {"completion": "dpr_completion_mud_product", "workover": "dpr_workover_mud_product"},
+            [
+                "product_name", "quantity_unit", "received_quantity", "used_quantity",
+                "returned_quantity", "ending_quantity",
+            ],
+        ),
+        (
+            "dpr_perforation_interval_legacy",
+            {
+                "completion": "dpr_completion_perforation_interval",
+                "workover": "dpr_workover_perforation_interval",
+            },
+            [
+                "formation_name", "top_measured_depth_ft", "base_measured_depth_ft",
+                "interval_length_ft", "shot_density_per_ft", "charge_description",
+                "phase_angle_deg", "penetration_in", "hole_diameter_in", "perforation_date",
+                "interval_status", "comments",
+            ],
+        ),
+    )
+    for legacy_table, targets, business_columns in split_specs:
+        if not _table_exists(cursor, legacy_table):
+            continue
+        if legacy_table == "dpr_bulk_inventory_legacy":
+            legacy_additions = (
+                ("received_quantity", "DECIMAL(18,3) NULL AFTER opening_quantity"),
+                ("quantity_unit_code", "VARCHAR(32) NOT NULL DEFAULT 'SOURCE_UNSPECIFIED' AFTER closing_quantity"),
+                ("quantity_balance_status", "VARCHAR(32) NOT NULL DEFAULT 'NOT_CHECKABLE' AFTER quantity_unit_code"),
+            )
+            for column, definition in legacy_additions:
+                if not _column_exists(cursor, legacy_table, column):
+                    cursor.execute(f"ALTER TABLE {legacy_table} ADD COLUMN {column} {definition}")
+        columns = ["daily_report_id", "source_row_no", *business_columns, *audit_columns[2:]]
+        column_sql = ",".join(columns)
+        update_sql = ",".join(
+            f"{column}=VALUES({column})"
+            for column in columns
+            if column not in {"daily_report_id", "source_row_no", "created_at", "created_by"}
+        )
+        for report_type, target_table in targets.items():
+            cursor.execute(
+                f"INSERT INTO {target_table} ({column_sql}) "
+                f"SELECT {','.join(f'legacy.`{column}`' for column in columns)} "
+                f"FROM {legacy_table} legacy JOIN dpr_report report ON report.id=legacy.daily_report_id "
+                f"WHERE report.report_type=%s ON DUPLICATE KEY UPDATE {update_sql}",
+                (report_type,),
+            )
+        cursor.execute(
+            f"SELECT COUNT(*) AS count_value FROM {legacy_table} legacy "
+            "LEFT JOIN dpr_report report ON report.id=legacy.daily_report_id "
+            f"WHERE report.id IS NULL OR report.report_type NOT IN ({','.join(['%s'] * len(targets))})",
+            tuple(targets),
+        )
+        unmapped = int((cursor.fetchone() or {}).get("count_value", 0) or 0)
+        if unmapped:
+            raise RuntimeError(f"Cannot split {legacy_table}: {unmapped} rows have no valid report type.")
+        cursor.execute(f"DROP TABLE {legacy_table}")
+
+
+def _migrate_replace_daily_cost_with_fluid_loss(cursor: Any) -> None:
+    """Remove the unused cost-detail module and its fabricated placeholder rows."""
+    cursor.execute("DELETE FROM dpr_report_row WHERE module_name='daily_costs'")
+    cursor.execute("DROP TABLE IF EXISTS fact_daily_cost")
+
+
+def _ensure_database_quality_v2(cursor: Any) -> None:
+    """Apply the strong-type and integrity corrections from the schema audit."""
+    additions = {
+        "dpr_report": (
+            ("report_no", "INT UNSIGNED NULL COMMENT '日报序号；原始文本保留在dpr_report_record.report_no' AFTER report_date"),
+        ),
+        "dpr_operation_classification": (
+            ("productivity_type_code", "VARCHAR(32) NOT NULL DEFAULT '' COMMENT '生产属性类别代码' AFTER productive_flag"),
+        ),
+        "biz_job_event": (
+            ("event_date", "DATE NULL COMMENT '事件日期' AFTER event_type"),
+            ("event_time", "TIME NULL COMMENT '事件时间；来源未提供时为NULL' AFTER event_date"),
+            ("time_precision_code", "VARCHAR(16) NOT NULL DEFAULT 'DATE' COMMENT '时间精度：DATE或DATETIME' AFTER event_time"),
+        ),
+        "hsse_incident": (
+            ("incident_date", "DATE NULL COMMENT '事故日期' AFTER incident_type"),
+            ("incident_time", "TIME NULL COMMENT '事故时间；来源未提供时为NULL' AFTER incident_date"),
+            ("time_precision_code", "VARCHAR(16) NOT NULL DEFAULT 'DATE' COMMENT '时间精度：DATE或DATETIME' AFTER incident_time"),
+        ),
+        "dpr_move_report": (
+            ("rig_move_progress_pct", "DECIMAL(5,2) NULL COMMENT '搬迁进度，单位%' AFTER afe_design_days"),
+            ("rig_up_progress_pct", "DECIMAL(5,2) NULL COMMENT '安装进度，单位%' AFTER rig_move_progress_pct"),
+            ("loads_moved_today", "INT UNSIGNED NULL COMMENT '当日搬运载荷数量' AFTER rig_up_progress_pct"),
+            ("loads_moved_total", "INT UNSIGNED NULL COMMENT '累计已搬运载荷数量' AFTER loads_moved_today"),
+            ("loads_planned_total", "INT UNSIGNED NULL COMMENT '计划搬运载荷总数' AFTER loads_moved_total"),
+        ),
+        "dpr_drilling_report": (
+            ("torque_off_bottom_ft_lbf", "DECIMAL(16,3) NULL COMMENT '离底扭矩，单位ft-lbf' AFTER string_weight_down_kip"),
+        ),
+        "dpr_drilling_directional_survey": (
+            ("east_west_ft", "DECIMAL(14,3) NULL COMMENT '东西位移，单位ft' AFTER north_south_ft"),
+        ),
+    }
+    for table, columns in additions.items():
+        cursor.execute(f"SHOW COLUMNS FROM {table}")
+        existing = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
+        for column, definition in columns:
+            if column not in existing:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    move_columns = {"measured_depth_ft", "previous_measured_depth_ft", "daily_progress_ft", "rotary_hours"}
+    for column in move_columns:
+        if not _column_exists(cursor, "dpr_move_report", column):
+            continue
+        cursor.execute(f"SELECT COUNT(*) AS count_value FROM dpr_move_report WHERE {column} IS NOT NULL")
+        if int((cursor.fetchone() or {}).get("count_value", 0) or 0) == 0:
+            cursor.execute(f"ALTER TABLE dpr_move_report DROP COLUMN {column}")
+
+    cursor.execute("ALTER TABLE dpr_operation MODIFY COLUMN hours DECIMAL(6,3) NULL COMMENT '来源作业时长，单位h；解析失败保留NULL'")
+    cursor.execute("ALTER TABLE biz_job_event MODIFY COLUMN occurred_at DATETIME NULL COMMENT '仅来源明确到具体时间时填写'")
+
+    cursor.execute(
+        "UPDATE dpr_report d JOIN dpr_report_record r ON r.record_id=d.record_id "
+        "SET d.report_no=CASE WHEN r.report_no REGEXP '^[0-9]+$' THEN CAST(r.report_no AS UNSIGNED) ELSE NULL END"
+    )
+    cursor.execute(
+        "UPDATE dpr_operation SET ended_at=DATE_ADD(ended_at,INTERVAL 1 DAY) "
+        "WHERE started_at IS NOT NULL AND ended_at IS NOT NULL AND ended_at<=started_at AND COALESCE(hours,0)>0"
+    )
+    cursor.execute(
+        "UPDATE dpr_operation_classification SET productivity_type_code=productive_flag "
+        "WHERE productivity_type_code='' AND productive_flag<>''"
+    )
+    cursor.execute(
+        "UPDATE biz_job_event SET event_date=COALESCE(event_date,DATE(occurred_at)),"
+        "event_time=CASE WHEN occurred_at IS NOT NULL AND TIME(occurred_at)<>'00:00:00' THEN TIME(occurred_at) ELSE event_time END,"
+        "time_precision_code=CASE WHEN occurred_at IS NOT NULL AND TIME(occurred_at)<>'00:00:00' THEN 'DATETIME' ELSE 'DATE' END"
+    )
+    cursor.execute("UPDATE biz_job_event SET occurred_at=NULL WHERE time_precision_code='DATE'")
+    cursor.execute(
+        "UPDATE hsse_incident SET incident_date=COALESCE(incident_date,DATE(occurred_at)),"
+        "incident_time=CASE WHEN occurred_at IS NOT NULL AND TIME(occurred_at)<>'00:00:00' THEN TIME(occurred_at) ELSE incident_time END,"
+        "time_precision_code=CASE WHEN occurred_at IS NOT NULL AND TIME(occurred_at)<>'00:00:00' THEN 'DATETIME' ELSE 'DATE' END"
+    )
+    cursor.execute("UPDATE hsse_incident SET occurred_at=NULL WHERE time_precision_code='DATE'")
+    cursor.execute(
+        "DELETE incident FROM hsse_incident incident JOIN dpr_report_field fields ON fields.record_id=incident.record_id "
+        "WHERE (incident.incident_type='SAFETY' AND LOWER(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(fields.fields_json,'$.safetyIncident')),'')) "
+        "NOT IN ('y','yes','true','1','是','有','si','sí')) OR "
+        "(incident.incident_type='ENVIRONMENT' AND LOWER(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(fields.fields_json,'$.environmentIncident')),'')) "
+        "NOT IN ('y','yes','true','1','是','有','si','sí'))"
+    )
+    for table in (
+        "dpr_drilling_bulk_inventory",
+        "dpr_completion_bulk_inventory",
+        "dpr_workover_bulk_inventory",
+    ):
+        cursor.execute(
+            f"UPDATE {table} SET quantity_unit_code=COALESCE(NULLIF(quantity_unit_code,''),'SOURCE_UNSPECIFIED'),"
+            "quantity_balance_status=CASE WHEN received_quantity IS NULL OR quantity_unit_code IN ('','SOURCE_UNSPECIFIED') "
+            "THEN 'NOT_CHECKABLE' WHEN ABS(opening_quantity+received_quantity-used_quantity-closing_quantity)<=0.001 "
+            "THEN 'BALANCED' ELSE 'UNBALANCED' END"
+        )
+
+    _add_index_if_missing(
+        cursor, "biz_job_event", "uq_fact_job_event_source_date",
+        "job_id,event_type,event_date,source_record_id", unique=True,
+    )
+    checks = {
+        "ck_md_well_coordinates": ("md_well", "(surface_latitude IS NULL OR (surface_latitude>=-90 AND surface_latitude<=90)) AND (surface_longitude IS NULL OR (surface_longitude>=-180 AND surface_longitude<=180))"),
+        "ck_rel_project_team_period": ("rel_project_team_assignment", "valid_to IS NULL OR valid_to>valid_from"),
+        "ck_rel_project_rig_period": ("rel_project_rig_assignment", "valid_to IS NULL OR valid_to>valid_from"),
+        "ck_rel_job_rig_period": ("rel_job_rig_assignment", "valid_to IS NULL OR valid_to>valid_from"),
+        "ck_fact_daily_report_type": ("dpr_report", "report_type IN ('drilling','completion','workover','move')"),
+        "ck_fact_activity_hours": ("dpr_operation", "hours IS NULL OR (hours>=0 AND hours<=24)"),
+        "ck_fact_activity_timeline": ("dpr_operation", "started_at IS NULL OR ended_at IS NULL OR ended_at>started_at"),
+        "ck_fact_time_classification_confidence": ("dpr_operation_classification", "confidence IS NULL OR (confidence>=0 AND confidence<=1)"),
+        "ck_fact_directional_survey_values": ("dpr_drilling_directional_survey", "(inclination_deg IS NULL OR (inclination_deg>=0 AND inclination_deg<=180)) AND (azimuth_deg IS NULL OR (azimuth_deg>=0 AND azimuth_deg<360)) AND (dogleg_severity_deg_per_100ft IS NULL OR dogleg_severity_deg_per_100ft>=0)"),
+        "ck_fact_bha_component_values": ("dpr_drilling_bha_component", "(outside_diameter_in IS NULL OR outside_diameter_in>=0) AND (inside_diameter_in IS NULL OR inside_diameter_in>=0) AND (joint_count IS NULL OR joint_count>=0) AND (component_length_ft IS NULL OR component_length_ft>=0) AND (outside_diameter_in IS NULL OR inside_diameter_in IS NULL OR outside_diameter_in>=inside_diameter_in)"),
+        "ck_completion_perforation_interval_values": ("dpr_completion_perforation_interval", "(top_measured_depth_ft IS NULL OR base_measured_depth_ft IS NULL OR base_measured_depth_ft>=top_measured_depth_ft) AND (interval_length_ft IS NULL OR interval_length_ft>=0)"),
+        "ck_workover_perforation_interval_values": ("dpr_workover_perforation_interval", "(top_measured_depth_ft IS NULL OR base_measured_depth_ft IS NULL OR base_measured_depth_ft>=top_measured_depth_ft) AND (interval_length_ft IS NULL OR interval_length_ft>=0)"),
+        "ck_fact_move_progress": ("dpr_move_report", "rig_move_progress_pct IS NULL OR (rig_move_progress_pct>=0 AND rig_move_progress_pct<=100)"),
+        "ck_fact_rig_up_progress": ("dpr_move_report", "rig_up_progress_pct IS NULL OR (rig_up_progress_pct>=0 AND rig_up_progress_pct<=100)"),
+        "ck_drilling_bulk_inventory_nonnegative": (
+            "dpr_drilling_bulk_inventory",
+            "(opening_quantity IS NULL OR opening_quantity>=0) AND (received_quantity IS NULL OR received_quantity>=0) "
+            "AND (used_quantity IS NULL OR used_quantity>=0) AND (closing_quantity IS NULL OR closing_quantity>=0)",
+        ),
+        "ck_completion_bulk_inventory_nonnegative": (
+            "dpr_completion_bulk_inventory",
+            "(opening_quantity IS NULL OR opening_quantity>=0) AND (received_quantity IS NULL OR received_quantity>=0) "
+            "AND (used_quantity IS NULL OR used_quantity>=0) AND (closing_quantity IS NULL OR closing_quantity>=0)",
+        ),
+        "ck_workover_bulk_inventory_nonnegative": (
+            "dpr_workover_bulk_inventory",
+            "(opening_quantity IS NULL OR opening_quantity>=0) AND (received_quantity IS NULL OR received_quantity>=0) "
+            "AND (used_quantity IS NULL OR used_quantity>=0) AND (closing_quantity IS NULL OR closing_quantity>=0)",
+        ),
+    }
+    for constraint, (table, expression) in checks.items():
+        _add_check_constraint_if_missing(cursor, table, constraint, expression)
+
+    cursor.execute(
+        "UPDATE dq_issue SET status='RESOLVED',resolution_note='有效期关系自动复检',"
+        "resolved_at=NOW(),resolved_by='system',updated_by='system',version=version+1 "
+        "WHERE issue_type='RELATIONSHIP_OVERLAP' AND status='OPEN'"
+    )
+    overlap_specs = (
+        ("rel_project_team_assignment", "team_id", "project_id", "project_team_assignment", ""),
+        (
+            "rel_job_rig_assignment",
+            "rig_id",
+            "job_id",
+            "job_rig_assignment",
+            "AND NOT EXISTS (SELECT 1 FROM biz_job job_a JOIN biz_job job_b ON job_b.id=b.job_id "
+            "WHERE job_a.id=a.job_id AND job_a.project_id<=>job_b.project_id "
+            "AND job_a.well_id=job_b.well_id)",
+        ),
+    )
+    for table, entity_column, owner_column, entity_type, extra_predicate in overlap_specs:
+        cursor.execute(
+            f"""
+            INSERT INTO dq_issue
+              (issue_key,issue_type,severity,entity_type,entity_id,details_json,status,created_by,updated_by)
+            SELECT CONCAT('RELATIONSHIP_OVERLAP:{table}:',a.id,':',b.id),'RELATIONSHIP_OVERLAP','error',
+                   %s,CAST(a.{entity_column} AS CHAR),
+                   JSON_OBJECT('table','{table}','first_id',a.id,'second_id',b.id,
+                               'first_owner_id',a.{owner_column},'second_owner_id',b.{owner_column},
+                               'valid_from',a.valid_from,'valid_to',a.valid_to,
+                               'overlap_valid_from',b.valid_from,'overlap_valid_to',b.valid_to),
+                   'OPEN','system','system'
+            FROM {table} a JOIN {table} b
+              ON a.id<b.id AND a.{entity_column}=b.{entity_column}
+             AND a.status='active' AND b.status='active'
+             AND a.valid_from<COALESCE(b.valid_to,'9999-12-31 23:59:59')
+             AND b.valid_from<COALESCE(a.valid_to,'9999-12-31 23:59:59')
+             {extra_predicate}
+            ON DUPLICATE KEY UPDATE details_json=VALUES(details_json),status='OPEN',
+              resolution_note='',resolved_at=NULL,resolved_by='',updated_by='system',
+              dq_issue.version=dq_issue.version+1
+            """,
+            (entity_type,),
+        )
+
+    for table, constraint, column, target in (
+        ("md_block", "fk_md_block_field", "field_id", "md_field"),
+        ("md_block", "fk_md_block_region", "region_id", "md_geo_region"),
+        ("md_block", "fk_md_block_operator", "operator_company_id", "md_organization"),
+        ("md_well", "fk_md_well_field", "field_id", "md_field"),
+        ("md_well", "fk_md_well_operator", "operator_company_id", "md_organization"),
+    ):
+        _add_foreign_key_if_missing(cursor, table, constraint, column, target, "id")
 
 
 @contextmanager
@@ -107,7 +449,7 @@ def background_job_lock(kind: str, record_id: str):
 
 
 def _ensure_report_record_columns(cursor: Any) -> None:
-    cursor.execute("SHOW COLUMNS FROM report_records")
+    cursor.execute("SHOW COLUMNS FROM dpr_report_record")
     columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
     migrations = (
         ("source_language", "VARCHAR(16) NOT NULL DEFAULT '' AFTER status"),
@@ -122,8 +464,8 @@ def _ensure_report_record_columns(cursor: Any) -> None:
         ("extraction_version", "VARCHAR(64) NOT NULL DEFAULT '' AFTER extraction_error"),
         ("extraction_updated_at", "VARCHAR(64) NOT NULL DEFAULT '' AFTER extraction_version"),
         ("rig_id", "BIGINT UNSIGNED NULL AFTER rig"),
-        ("wellbore_id", "BIGINT UNSIGNED NULL AFTER rig_id"),
-        ("project_id", "BIGINT UNSIGNED NULL AFTER wellbore_id"),
+        ("well_id", "BIGINT UNSIGNED NULL AFTER rig_id"),
+        ("project_id", "BIGINT UNSIGNED NULL AFTER well_id"),
         ("job_id", "BIGINT UNSIGNED NULL AFTER project_id"),
         ("master_match_status", "VARCHAR(32) NOT NULL DEFAULT '' AFTER job_id"),
         ("master_match_message", "TEXT NULL AFTER master_match_status"),
@@ -131,7 +473,7 @@ def _ensure_report_record_columns(cursor: Any) -> None:
     for column, definition in migrations:
         if column in columns:
             continue
-        cursor.execute(f"ALTER TABLE report_records ADD COLUMN {column} {definition}")
+        cursor.execute(f"ALTER TABLE dpr_report_record ADD COLUMN {column} {definition}")
         columns.add(column)
 
 
@@ -182,13 +524,11 @@ def _ensure_master_data_v3_columns(cursor: Any) -> None:
             ("well_type_code", "VARCHAR(64) NOT NULL DEFAULT 'DEVELOPMENT' AFTER operator_company_id"),
             ("surface_latitude", "DECIMAL(10,7) NULL AFTER well_type_code"),
             ("surface_longitude", "DECIMAL(10,7) NULL AFTER surface_latitude"),
-            ("lifecycle_status_code", "VARCHAR(64) NOT NULL DEFAULT 'ACTIVE' AFTER surface_longitude"),
-        ),
-        "md_wellbore": (
-            ("wellbore_profile_code", "VARCHAR(64) NOT NULL DEFAULT 'VERTICAL' AFTER well_type"),
-            ("trajectory_status_code", "VARCHAR(64) NOT NULL DEFAULT 'PLANNED' AFTER wellbore_profile_code"),
+            ("well_profile_code", "VARCHAR(64) NOT NULL DEFAULT 'VERTICAL' AFTER surface_longitude"),
+            ("trajectory_status_code", "VARCHAR(64) NOT NULL DEFAULT 'PLANNED' AFTER well_profile_code"),
             ("kickoff_md_m", "DECIMAL(12,2) NULL AFTER trajectory_status_code"),
             ("planned_td_md_m", "DECIMAL(12,2) NULL AFTER kickoff_md_m"),
+            ("lifecycle_status_code", "VARCHAR(64) NOT NULL DEFAULT 'ACTIVE' AFTER planned_td_md_m"),
         ),
         "md_appendix_value": (
             ("display_color", "VARCHAR(16) NOT NULL DEFAULT '' AFTER sort_order"),
@@ -200,6 +540,164 @@ def _ensure_master_data_v3_columns(cursor: Any) -> None:
         for column, definition in definitions:
             if column not in columns:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def _migrate_remove_wellbore_master(cursor: Any) -> None:
+    """Collapse the legacy one-to-one wellbore master into md_well and remove it."""
+    cursor.execute(
+        "UPDATE dq_issue SET status='RESOLVED',resolution_note='井筒实体已合并为井，旧复核项失效',"
+        "resolved_at=NOW(),resolved_by='migration',updated_by='migration',version=version+1 "
+        "WHERE issue_type='ALIAS_REVIEW' AND entity_type='wellbore' AND status='OPEN'"
+    )
+    if not _table_exists(cursor, "md_wellbore"):
+        return
+    for view in ("vw_workover_basic_metrics", "vw_job_efficiency", "vw_drilling_basic_metrics", "vw_monthly_rig_workload", "vw_rig_production_timeline"):
+        cursor.execute(f"DROP VIEW IF EXISTS {view}")
+
+    cursor.execute(
+        "UPDATE md_well well JOIN md_wellbore wellbore ON wellbore.well_id=well.id SET "
+        "well.well_profile_code=COALESCE(NULLIF(wellbore.wellbore_profile_code,''),well.well_profile_code),"
+        "well.trajectory_status_code=COALESCE(NULLIF(wellbore.trajectory_status_code,''),well.trajectory_status_code),"
+        "well.kickoff_md_m=COALESCE(well.kickoff_md_m,wellbore.kickoff_md_m),"
+        "well.planned_td_md_m=COALESCE(well.planned_td_md_m,wellbore.planned_td_md_m),"
+        "well.updated_by='wellbore-removal-migration',well.version=well.version+1"
+    )
+    migrations = {
+        "dpr_report_record": "BIGINT UNSIGNED NULL AFTER rig_id",
+        "rel_project_well_scope": "BIGINT UNSIGNED NULL AFTER project_id",
+        "biz_job": "BIGINT UNSIGNED NULL AFTER project_id",
+        "dpr_report": "BIGINT UNSIGNED NULL AFTER rig_id",
+    }
+    for table, definition in migrations.items():
+        if not _column_exists(cursor, table, "well_id"):
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN well_id {definition}")
+        if _column_exists(cursor, table, "wellbore_id"):
+            cursor.execute(
+                f"UPDATE {table} target JOIN md_wellbore source ON source.id=target.wellbore_id "
+                "SET target.well_id=source.well_id WHERE target.wellbore_id IS NOT NULL"
+            )
+
+    cursor.execute(
+        "UPDATE md_alias alias_row JOIN md_wellbore source ON source.id=alias_row.entity_id "
+        "SET alias_row.entity_type='well',alias_row.entity_id=source.well_id,"
+        "alias_row.change_reason='井筒主数据移除，别名迁移至井',alias_row.updated_by='migration',"
+        "alias_row.version=alias_row.version+1 WHERE alias_row.entity_type='wellbore'"
+    )
+    cursor.execute(
+        "UPDATE dq_issue SET issue_type='MASTER_WELL_UNRESOLVED',"
+        "details_json=JSON_SET(COALESCE(details_json,JSON_OBJECT()),'$.message','井未匹配主数据'),"
+        "updated_by='migration',version=version+1 WHERE issue_type='MASTER_WELLBORE_UNRESOLVED'"
+    )
+    cursor.execute(
+        "UPDATE md_appendix_category SET category_code='WELL_PROFILE',category_name='井轨迹类型',"
+        "description='井轨迹轮廓',change_reason='井筒主数据移除后迁移至井',updated_by='migration',version=version+1 "
+        "WHERE category_code='WELLBORE_PROFILE'"
+    )
+
+    legacy_indexes = {
+        "dpr_report_record": ("idx_report_records_type_wellbore_date", "idx_report_records_master_refs"),
+        "rel_project_well_scope": ("uq_project_well_scope_start", "idx_project_well_scope_lookup"),
+        "biz_job": ("uq_biz_job_sequence", "idx_biz_job_wellbore"),
+        "dpr_report": ("idx_fact_daily_report_refs",),
+    }
+    _add_index_if_missing(cursor, "rel_project_well_scope", "idx_project_well_scope_project", "project_id")
+    _add_index_if_missing(cursor, "biz_job", "idx_biz_job_project", "project_id")
+    _add_index_if_missing(cursor, "dpr_report", "idx_fact_daily_report_project", "project_id")
+    _add_index_if_missing(cursor, "dpr_report", "idx_fact_daily_report_job", "job_id")
+    _add_index_if_missing(cursor, "dpr_report", "idx_fact_daily_report_rig", "rig_id")
+    for table in migrations:
+        if not _column_exists(cursor, table, "wellbore_id"):
+            continue
+        _drop_foreign_keys_for_column(cursor, table, "wellbore_id")
+        for index in legacy_indexes.get(table, ()):
+            _drop_index_if_exists(cursor, table, index)
+        cursor.execute(f"ALTER TABLE {table} DROP COLUMN wellbore_id")
+
+    cursor.execute("ALTER TABLE rel_project_well_scope MODIFY COLUMN well_id BIGINT UNSIGNED NOT NULL")
+    cursor.execute("ALTER TABLE biz_job MODIFY COLUMN well_id BIGINT UNSIGNED NOT NULL")
+    _add_index_if_missing(cursor, "dpr_report_record", "idx_report_records_type_well_date", "report_type, well_id, report_date")
+    _add_index_if_missing(cursor, "dpr_report_record", "idx_report_records_master_refs", "project_id, rig_id, well_id, job_id")
+    _add_index_if_missing(cursor, "rel_project_well_scope", "uq_project_well_scope_start", "project_id, well_id, job_type, valid_from", unique=True)
+    _add_index_if_missing(cursor, "rel_project_well_scope", "idx_project_well_scope_lookup", "well_id, job_type, valid_from, valid_to, status")
+    _add_index_if_missing(cursor, "biz_job", "uq_biz_job_sequence", "project_id, well_id, job_type, sequence_no", unique=True)
+    _add_index_if_missing(cursor, "biz_job", "idx_biz_job_well", "well_id, job_type, status")
+    _add_index_if_missing(cursor, "dpr_report", "idx_fact_daily_report_refs", "project_id, job_id, rig_id, well_id")
+    _add_foreign_key_if_missing(cursor, "rel_project_well_scope", "fk_project_well_scope_well", "well_id", "md_well", "id")
+    _add_foreign_key_if_missing(cursor, "biz_job", "fk_biz_job_well", "well_id", "md_well", "id")
+    _add_foreign_key_if_missing(cursor, "dpr_report", "fk_fact_daily_report_well", "well_id", "md_well", "id")
+    cursor.execute("DROP TABLE md_wellbore")
+
+
+def _table_exists(cursor: Any, table: str) -> bool:
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s",
+        (table,),
+    )
+    return int((cursor.fetchone() or {}).get("count_value", 0) or 0) > 0
+
+
+def _column_exists(cursor: Any, table: str, column: str) -> bool:
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.COLUMNS "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND COLUMN_NAME=%s",
+        (table, column),
+    )
+    return int((cursor.fetchone() or {}).get("count_value", 0) or 0) > 0
+
+
+def _drop_foreign_keys_for_column(cursor: Any, table: str, column: str) -> None:
+    cursor.execute(
+        "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND COLUMN_NAME=%s AND REFERENCED_TABLE_NAME IS NOT NULL",
+        (table, column),
+    )
+    for row in cursor.fetchall() or []:
+        cursor.execute(f"ALTER TABLE {table} DROP FOREIGN KEY {row['CONSTRAINT_NAME']}")
+
+
+def _drop_index_if_exists(cursor: Any, table: str, index: str) -> None:
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.STATISTICS "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND INDEX_NAME=%s",
+        (table, index),
+    )
+    if int((cursor.fetchone() or {}).get("count_value", 0) or 0):
+        cursor.execute(f"ALTER TABLE {table} DROP INDEX {index}")
+
+
+def _add_index_if_missing(cursor: Any, table: str, index: str, columns: str, *, unique: bool = False) -> None:
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.STATISTICS "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND INDEX_NAME=%s",
+        (table, index),
+    )
+    if not int((cursor.fetchone() or {}).get("count_value", 0) or 0):
+        cursor.execute(f"ALTER TABLE {table} ADD {'UNIQUE ' if unique else ''}INDEX {index} ({columns})")
+
+
+def _add_foreign_key_if_missing(
+    cursor: Any, table: str, constraint: str, column: str, referenced_table: str, referenced_column: str
+) -> None:
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.TABLE_CONSTRAINTS "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND CONSTRAINT_NAME=%s",
+        (table, constraint),
+    )
+    if not int((cursor.fetchone() or {}).get("count_value", 0) or 0):
+        cursor.execute(
+            f"ALTER TABLE {table} ADD CONSTRAINT {constraint} FOREIGN KEY ({column}) "
+            f"REFERENCES {referenced_table}({referenced_column})"
+        )
+
+
+def _add_check_constraint_if_missing(cursor: Any, table: str, constraint: str, expression: str) -> None:
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.TABLE_CONSTRAINTS "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND CONSTRAINT_NAME=%s AND CONSTRAINT_TYPE='CHECK'",
+        (table, constraint),
+    )
+    if not int((cursor.fetchone() or {}).get("count_value", 0) or 0):
+        cursor.execute(f"ALTER TABLE {table} ADD CONSTRAINT {constraint} CHECK ({expression})")
 
 
 def _migrate_master_data_v3(cursor: Any) -> None:
@@ -215,9 +713,13 @@ def _migrate_master_data_v3(cursor: Any) -> None:
         ("RIG_TYPE", "钻机型号", "钻机和修井机规格型号"),
         ("WELL_TYPE", "井用途", "井的业务用途"),
         ("WELL_STATUS", "井生命周期", "井生命周期状态"),
-        ("WELLBORE_PROFILE", "井筒轨迹类型", "井筒轨迹轮廓"),
-        ("TRAJECTORY_STATUS", "轨迹状态", "井筒轨迹计划与执行状态"),
+        ("WELL_PROFILE", "井轨迹类型", "井轨迹轮廓"),
+        ("TRAJECTORY_STATUS", "轨迹状态", "井轨迹计划与执行状态"),
         ("TIME_TYPE", "时效类型", "日报作业时效分类及显示颜色"),
+        ("WORK_BUCKET", "工作量归类", "时效确认后的作业、搬迁、待工及维修归类"),
+        ("RESPONSIBILITY", "责任方", "SC/NPT时段责任归属"),
+        ("BILLING_STATUS", "计费状态", "时效时段计费状态"),
+        ("CAUSE_CODE", "原因编码", "SC/NPT原因分类"),
     )
     cursor.executemany(
         "INSERT INTO md_appendix_category (category_code,category_name,description,status,change_reason,created_by,updated_by) "
@@ -237,8 +739,12 @@ def _migrate_master_data_v3(cursor: Any) -> None:
         "RIG_TYPE": (("ZJ70D", "ZJ70D钻机"), ("ZJ30", "ZJ30钻机"), ("XJ650", "XJ650修井机"), ("650HP", "650HP修井机")),
         "WELL_TYPE": (("EXPLORATION", "探井"), ("APPRAISAL", "评价井"), ("DEVELOPMENT", "开发井"), ("INJECTION", "注入井"), ("OBSERVATION", "观察井")),
         "WELL_STATUS": (("PLANNED", "计划"), ("DRILLING", "钻进中"), ("COMPLETED", "已完井"), ("SUSPENDED", "暂停"), ("ABANDONED", "废弃"), ("ACTIVE", "有效")),
-        "WELLBORE_PROFILE": (("VERTICAL", "直井"), ("DIRECTIONAL", "定向井"), ("HORIZONTAL", "水平井"), ("SIDETRACK", "侧钻井筒")),
+        "WELL_PROFILE": (("VERTICAL", "直井"), ("DIRECTIONAL", "定向井"), ("HORIZONTAL", "水平井"), ("SIDETRACK", "侧钻井")),
         "TRAJECTORY_STATUS": (("PLANNED", "计划"), ("ACTUAL", "实钻"), ("REVISED", "修订")),
+        "WORK_BUCKET": (("OPERATION", "作业"), ("MOVE", "搬迁"), ("STANDBY_STAFFED", "有人待工"), ("STANDBY_UNSTAFFED", "无人待工"), ("FORCE_MAJEURE", "不可抗力"), ("MAINTENANCE", "维修")),
+        "RESPONSIBILITY": (("OURS", "我方"), ("CLIENT", "甲方"), ("THIRD_PARTY", "第三方"), ("FORCE_MAJEURE", "不可抗力")),
+        "BILLING_STATUS": (("FULL_RATE", "全日费"), ("PARTIAL_RATE", "部分日费"), ("ZERO_RATE", "零日费")),
+        "CAUSE_CODE": (("EQUIPMENT", "设备"), ("TOOL", "工具"), ("PERSONNEL", "人员"), ("MATERIAL", "物资"), ("COMMUNITY", "社区"), ("WEATHER", "天气"), ("INCIDENT", "事故"), ("OTHER", "其他")),
     }
     for category_code, rows in values.items():
         cursor.execute("SELECT id FROM md_appendix_category WHERE category_code=%s", (category_code,))
@@ -285,7 +791,7 @@ def _migrate_master_data_v3(cursor: Any) -> None:
     )
     cursor.execute(
         "UPDATE md_block block JOIN md_field field ON field.field_code=block.block_code "
-        "SET block.field_id=COALESCE(block.field_id,field.id),block.region_id=COALESCE(block.region_id,%s)",
+        "SET block.field_id=field.id,block.region_id=COALESCE(block.region_id,%s)",
         (ecuador_id,),
     )
     cursor.execute(
@@ -311,28 +817,42 @@ def _migrate_master_data_v3(cursor: Any) -> None:
         "ON DUPLICATE KEY UPDATE valid_to=VALUES(valid_to),status=VALUES(status),assignment_note=VALUES(assignment_note)"
     )
     cursor.execute(
-        "UPDATE md_well well LEFT JOIN md_block block ON block.id=well.block_id "
-        "SET well.field_id=COALESCE(well.field_id,block.field_id),well.operator_company_id=COALESCE(well.operator_company_id,block.operator_company_id)"
+        "UPDATE md_well well JOIN md_block block ON UPPER(block.block_code)='SACHA' "
+        "SET well.block_id=block.id WHERE well.block_id IS NULL AND UPPER(well.well_code) LIKE 'SCHA%'"
     )
     cursor.execute(
-        "UPDATE md_wellbore SET wellbore_profile_code=CASE "
-        "WHEN well_type LIKE '%水平%' THEN 'HORIZONTAL' WHEN well_type LIKE '%定向%' THEN 'DIRECTIONAL' "
-        "WHEN parent_wellbore_id IS NOT NULL THEN 'SIDETRACK' ELSE wellbore_profile_code END"
+        "UPDATE md_well well LEFT JOIN md_block block ON block.id=well.block_id "
+        "SET well.field_id=block.field_id,well.operator_company_id=COALESCE(well.operator_company_id,block.operator_company_id)"
+    )
+    cursor.execute(
+        "DELETE field FROM md_field field "
+        "LEFT JOIN md_block block ON block.field_id=field.id LEFT JOIN md_well well ON well.field_id=field.id "
+        "WHERE field.field_code='EG01' AND block.id IS NULL AND well.id IS NULL"
+    )
+    cursor.execute(
+        "UPDATE md_well SET well_profile_code=CASE "
+        "WHEN well_name LIKE '%水平%' THEN 'HORIZONTAL' WHEN well_name LIKE '%定向%' THEN 'DIRECTIONAL' "
+        "ELSE well_profile_code END"
     )
 
 
 def _ensure_report_record_indexes(cursor: Any) -> None:
-    cursor.execute("SHOW INDEX FROM report_records")
+    cursor.execute("SHOW INDEX FROM dpr_report_record")
     indexes = {str(row.get("Key_name", "") or "") for row in cursor.fetchall()}
     if "idx_report_records_master_refs" not in indexes:
         cursor.execute(
             "CREATE INDEX idx_report_records_master_refs "
-            "ON report_records (project_id, rig_id, wellbore_id, job_id)"
+            "ON dpr_report_record (project_id, rig_id, well_id, job_id)"
         )
     if "idx_report_records_match_status" not in indexes:
         cursor.execute(
             "CREATE INDEX idx_report_records_match_status "
-            "ON report_records (master_match_status)"
+            "ON dpr_report_record (master_match_status)"
+        )
+    if "idx_report_records_type_well_date" not in indexes:
+        cursor.execute(
+            "CREATE INDEX idx_report_records_type_well_date "
+            "ON dpr_report_record (report_type, well_id, report_date)"
         )
 
 
@@ -344,6 +864,161 @@ def _ensure_translation_content_indexes(cursor: Any) -> None:
             "CREATE INDEX idx_translation_memory_lookup "
             "ON translation_content (target_language, prompt_version, translation_status, source_hash)"
         )
+
+
+def _ensure_database_comments(cursor: Any) -> None:
+    """Keep the legacy audit layer clearly documented without breaking its public names."""
+    table_comments = {
+        "dpr_report_record": "日报原始审计主表；保存来源、业务标识、处理状态及主数据引用",
+        "dpr_report_field": "日报单值字段原始审计表；fields_json永久保留解析结果",
+        "dpr_report_row": "日报重复明细原始审计表；按module_name和row_no保存来源行",
+        "dpr_report": "标准日报事实主表；一份成功保存的日报对应一条记录",
+        "dpr_operation": "日报作业时段标准事实",
+        "dpr_operation_classification": "作业时段时效确认与责任分类标准事实",
+        "biz_job_event": "作业实例关键事件标准事实",
+        "biz_job_depth_progress": "作业实例井深与进尺标准事实",
+        "hsse_incident": "日报事故与复杂情况标准事实",
+        "dq_issue": "数据质量问题及处理状态",
+    }
+    for table, comment in table_comments.items():
+        cursor.execute(
+            "SELECT TABLE_COMMENT FROM information_schema.TABLES "
+            "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s",
+            (table,),
+        )
+        current = str((cursor.fetchone() or {}).get("TABLE_COMMENT", "") or "")
+        if current != comment:
+            cursor.execute(f"ALTER TABLE {table} COMMENT='{comment}'")
+
+    cursor.execute(
+        "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() "
+        "AND TABLE_TYPE='BASE TABLE' AND COALESCE(TABLE_COMMENT,'')=''"
+    )
+    for row in cursor.fetchall():
+        table = str(row.get("TABLE_NAME", "") or "")
+        comment = _generic_table_comment(table).replace("'", "''")
+        cursor.execute(f"ALTER TABLE `{table}` COMMENT='{comment}'")
+
+    column_comments = {
+        ("dpr_report_record", "record_id"): ("VARCHAR(191) NOT NULL", "稳定日报业务ID"),
+        ("dpr_report_record", "report_type"): ("VARCHAR(32) NOT NULL", "日报类型：drilling/completion/workover/move"),
+        ("dpr_report_field", "fields_json"): ("JSON NOT NULL", "日报全部单值字段原始解析JSON"),
+        ("dpr_report_row", "module_name"): ("VARCHAR(64) NOT NULL", "明细模块标准代码"),
+        ("dpr_report_row", "row_no"): ("INT NOT NULL", "来源模块内行号，从1开始"),
+        ("dpr_report_row", "row_json"): ("JSON NOT NULL", "日报明细行原始解析JSON"),
+        ("dpr_report", "record_id"): ("VARCHAR(191) NOT NULL", "关联原始日报稳定业务ID"),
+        ("dpr_report", "report_type"): ("VARCHAR(32) NOT NULL", "日报类型标准代码"),
+    }
+    for (table, column), (definition, comment) in column_comments.items():
+        cursor.execute(f"SHOW FULL COLUMNS FROM {table} LIKE %s", (column,))
+        current = str((cursor.fetchone() or {}).get("Comment", "") or "")
+        if current != comment:
+            cursor.execute(f"ALTER TABLE {table} MODIFY COLUMN {column} {definition} COMMENT '{comment}'")
+
+    cursor.execute(
+        "SELECT c.TABLE_NAME,c.COLUMN_NAME,c.COLUMN_TYPE,c.IS_NULLABLE,c.COLUMN_DEFAULT,c.EXTRA,c.DATA_TYPE "
+        "FROM information_schema.COLUMNS c JOIN information_schema.TABLES t "
+        "ON t.TABLE_SCHEMA=c.TABLE_SCHEMA AND t.TABLE_NAME=c.TABLE_NAME "
+        "WHERE c.TABLE_SCHEMA=DATABASE() AND t.TABLE_TYPE='BASE TABLE' AND COALESCE(c.COLUMN_COMMENT,'')='' "
+        "ORDER BY c.TABLE_NAME,c.ORDINAL_POSITION"
+    )
+    for row in cursor.fetchall():
+        table = str(row.get("TABLE_NAME", "") or "")
+        column = str(row.get("COLUMN_NAME", "") or "")
+        definition = _column_definition_for_comment(row)
+        comment = _generic_column_comment(column).replace("'", "''")
+        cursor.execute(
+            f"ALTER TABLE `{table}` MODIFY COLUMN `{column}` {definition} COMMENT '{comment}'"
+        )
+
+
+def _generic_table_comment(table: str) -> str:
+    if table.startswith("md_"):
+        return f"主数据表：{table}"
+    if table.startswith("rel_"):
+        return f"有效期关系表：{table}"
+    if table.startswith("biz_"):
+        return f"业务实例表：{table}"
+    if table.startswith("fact_"):
+        return f"标准事实表：{table}"
+    if table.startswith("report_"):
+        return f"原始日报审计表：{table}"
+    if table.startswith("translation_"):
+        return f"翻译业务表：{table}"
+    return f"系统业务表：{table}"
+
+
+def _generic_column_comment(column: str) -> str:
+    exact = {
+        "id": "稳定数值主键",
+        "record_id": "稳定日报业务ID",
+        "daily_report_id": "标准日报事实ID",
+        "source_row_no": "来源明细行号，从1开始",
+        "source_hash": "来源内容SHA-256哈希",
+        "created_at": "创建时间",
+        "created_by": "创建人",
+        "updated_at": "更新时间",
+        "updated_by": "更新人",
+        "version": "乐观锁版本号",
+        "change_reason": "本次变更原因",
+        "status": "业务状态",
+    }
+    if column in exact:
+        return exact[column]
+    units = {
+        "_ft_lbf": "，单位ft-lbf",
+        "_deg_per_100ft": "，单位deg/100ft",
+        "_lb_per_100ft2": "，单位lb/100ft²",
+        "_sec_per_qt": "，单位sec/qt",
+        "_bbl": "，单位bbl",
+        "_psi": "，单位psi",
+        "_ppg": "，单位ppg",
+        "_gpm": "，单位gpm",
+        "_kip": "，单位kip",
+        "_usd": "，单位USD",
+        "_pct": "，单位%",
+        "_deg": "，单位deg",
+        "_ft": "，单位ft",
+        "_in": "，单位in",
+        "_m": "，单位m",
+    }
+    suffix = next((label for key, label in units.items() if column.endswith(key)), "")
+    if column.endswith("_id"):
+        return f"关联实体稳定ID：{column}"
+    if column.endswith("_code"):
+        return f"标准编码：{column}"
+    if column.endswith("_name"):
+        return f"业务名称：{column}"
+    if column.endswith("_status"):
+        return f"业务状态：{column}"
+    if column.endswith("_flag"):
+        return f"业务标志：{column}"
+    if column.endswith("_date"):
+        return f"业务日期：{column}"
+    if column.endswith("_at"):
+        return f"业务日期时间：{column}"
+    if column.endswith("_json"):
+        return f"结构化JSON数据：{column}"
+    return f"业务字段：{column}{suffix}"
+
+
+def _column_definition_for_comment(row: dict[str, Any]) -> str:
+    column_type = str(row.get("COLUMN_TYPE", "") or "")
+    data_type = str(row.get("DATA_TYPE", "") or "").lower()
+    definition = f"{column_type} {'NULL' if row.get('IS_NULLABLE') == 'YES' else 'NOT NULL'}"
+    default = row.get("COLUMN_DEFAULT")
+    if default is not None:
+        default_text = str(default)
+        if default_text.upper().startswith("CURRENT_TIMESTAMP"):
+            definition += f" DEFAULT {default_text}"
+        elif data_type in {"bigint", "int", "decimal", "tinyint", "smallint", "mediumint", "float", "double"}:
+            definition += f" DEFAULT {default_text}"
+        else:
+            definition += f" DEFAULT '{default_text.replace(chr(39), chr(39) * 2)}'"
+    extra = str(row.get("EXTRA", "") or "").replace("DEFAULT_GENERATED", "").strip()
+    if extra:
+        definition += f" {extra}"
+    return definition
 
 
 def save_report_payload(
@@ -367,7 +1042,7 @@ def save_report_payload(
     with _connect() as connection:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT locked, created_at FROM report_records WHERE record_id=%s FOR UPDATE",
+                "SELECT locked, created_at, report_type, well_id, wellbore FROM dpr_report_record WHERE record_id=%s FOR UPDATE",
                 (record_id,),
             )
             existing = cursor.fetchone() or {}
@@ -379,26 +1054,28 @@ def save_report_payload(
             _upsert_record(cursor, record)
             cursor.execute(
                 """
-                INSERT INTO report_fields (record_id, fields_json)
+                INSERT INTO dpr_report_field (record_id, fields_json)
                 VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE fields_json=VALUES(fields_json)
                 """,
                 (record_id, _json_dumps(fields)),
             )
-            cursor.execute("DELETE FROM report_rows WHERE record_id=%s", (record_id,))
+            cursor.execute("DELETE FROM dpr_report_row WHERE record_id=%s", (record_id,))
             for module_name in REPORT_TABLES[report_type]["multi"]:
                 for row_no, row in enumerate(payload.get(module_name, []) or [], start=1):
                     if not isinstance(row, dict):
                         continue
                     cursor.execute(
                         """
-                        INSERT INTO report_rows (record_id, module_name, row_no, row_json)
+                        INSERT INTO dpr_report_row (record_id, module_name, row_no, row_json)
                         VALUES (%s, %s, %s, %s)
                         """,
                         (record_id, module_name, row_no, _json_dumps(row)),
                     )
+            actor = str(metadata.get("updated_by", "") or metadata.get("confirmed_by", "") or "system")
+            cursor.execute("SAVEPOINT normalize_report")
             try:
-                from .report_normalization_service import synchronize_saved_report
+                from .report_normalization_service import refresh_boundary_hour_issues, synchronize_saved_report
 
                 normalization = synchronize_saved_report(
                     cursor,
@@ -409,9 +1086,31 @@ def save_report_payload(
                         row for row in (payload.get("operations", []) or [])
                         if isinstance(row, dict)
                     ],
-                    actor=str(metadata.get("updated_by", "") or metadata.get("confirmed_by", "") or "system"),
+                    payload=payload,
+                    actor=actor,
                 )
+                old_group = (
+                    str(existing.get("report_type", "") or "").strip().lower(),
+                    _positive_int(existing.get("well_id")),
+                    str(existing.get("wellbore", "") or "").strip(),
+                )
+                new_group = (
+                    report_type,
+                    _positive_int(normalization.get("well_id")),
+                    str(fields.get("wellbore", "") or "").strip(),
+                )
+                if existing and old_group != new_group:
+                    refresh_boundary_hour_issues(
+                        cursor,
+                        report_type=old_group[0],
+                        well_id=old_group[1],
+                        wellbore=old_group[2],
+                        actor=actor,
+                    )
+                cursor.execute("RELEASE SAVEPOINT normalize_report")
             except Exception as exc:
+                cursor.execute("ROLLBACK TO SAVEPOINT normalize_report")
+                cursor.execute("RELEASE SAVEPOINT normalize_report")
                 normalization = {
                     "record_id": record_id,
                     "normalization_status": "NORMALIZATION_FAILED",
@@ -419,11 +1118,35 @@ def save_report_payload(
                 }
                 cursor.execute(
                     """
-                    UPDATE report_records
+                    UPDATE dpr_report_record
                     SET master_match_status='NORMALIZATION_FAILED', master_match_message=%s
                     WHERE record_id=%s
                     """,
                     (str(exc)[:2000], record_id),
+                )
+                cursor.execute(
+                    "UPDATE dpr_report SET normalization_status='NORMALIZATION_FAILED',match_message=%s,"
+                    "updated_by=%s,version=version+1 WHERE record_id=%s",
+                    (str(exc)[:2000], actor, record_id),
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO dq_issue
+                      (issue_key,issue_type,severity,entity_type,entity_id,record_id,
+                       details_json,status,created_by,updated_by)
+                    VALUES (%s,'NORMALIZATION_FAILED','error','report',%s,%s,%s,'OPEN',%s,%s)
+                    ON DUPLICATE KEY UPDATE details_json=VALUES(details_json),status='OPEN',
+                      resolution_note='',resolved_at=NULL,resolved_by='',updated_by=VALUES(updated_by),
+                      version=version+1
+                    """,
+                    (
+                        f"{record_id}:NORMALIZATION_FAILED",
+                        record_id,
+                        record_id,
+                        _json_dumps({"message": str(exc)[:2000], "report_type": report_type}),
+                        actor,
+                        actor,
+                    ),
                 )
             if invalidate_translations:
                 cursor.execute("DELETE FROM translation_content WHERE record_id=%s", (record_id,))
@@ -440,12 +1163,12 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
     del database_path
     with _connect() as connection:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM report_records WHERE record_id=%s", (record_id,))
+            cursor.execute("SELECT * FROM dpr_report_record WHERE record_id=%s", (record_id,))
             record = cursor.fetchone()
             if not record:
                 raise KeyError(record_id)
             report_type = _normalize_report_type(str(record.get("report_type", "") or ""))
-            cursor.execute("SELECT fields_json FROM report_fields WHERE record_id=%s", (record_id,))
+            cursor.execute("SELECT fields_json FROM dpr_report_field WHERE record_id=%s", (record_id,))
             fields_row = cursor.fetchone() or {}
             payload: dict[str, Any] = {
                 "metadata": {
@@ -473,7 +1196,7 @@ def load_report_payload(database_path: str | Path | None, record_id: str) -> dic
                 "report_fields": _json_loads(fields_row.get("fields_json"), {}),
             }
             cursor.execute(
-                "SELECT module_name, row_json FROM report_rows WHERE record_id=%s ORDER BY module_name, row_no",
+                "SELECT module_name, row_json FROM dpr_report_row WHERE record_id=%s ORDER BY module_name, row_no",
                 (record_id,),
             )
             rows = cursor.fetchall()
@@ -505,8 +1228,8 @@ def load_report_payloads(
             cursor.execute(
                 f"""
                 SELECT r.*, f.fields_json
-                FROM report_records r
-                LEFT JOIN report_fields f ON f.record_id=r.record_id
+                FROM dpr_report_record r
+                LEFT JOIN dpr_report_field f ON f.record_id=r.record_id
                 WHERE r.record_id IN ({placeholders})
                 """,
                 clean_ids,
@@ -515,7 +1238,7 @@ def load_report_payloads(
             cursor.execute(
                 f"""
                 SELECT record_id, module_name, row_no, row_json
-                FROM report_rows
+                FROM dpr_report_row
                 WHERE record_id IN ({placeholders})
                 ORDER BY record_id, module_name, row_no
                 """,
@@ -560,8 +1283,23 @@ def delete_report_payload(database_path: str | Path | None, record_id: str) -> b
     del database_path
     with _connect() as connection:
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM report_records WHERE record_id=%s", (record_id,))
+            cursor.execute(
+                "SELECT report_type, well_id, wellbore FROM dpr_report_record WHERE record_id=%s FOR UPDATE",
+                (record_id,),
+            )
+            existing = cursor.fetchone() or {}
+            cursor.execute("DELETE FROM dpr_report_record WHERE record_id=%s", (record_id,))
             deleted = cursor.rowcount > 0
+            if deleted:
+                from .report_normalization_service import refresh_boundary_hour_issues
+
+                refresh_boundary_hour_issues(
+                    cursor,
+                    report_type=str(existing.get("report_type", "") or ""),
+                    well_id=_positive_int(existing.get("well_id")),
+                    wellbore=str(existing.get("wellbore", "") or ""),
+                    actor="system",
+                )
         connection.commit()
     return deleted
 
@@ -882,7 +1620,7 @@ def revise_translation_content(
                 (revised, now, record_id, entity_id, field_code, target_language),
             )
             cursor.execute(
-                """INSERT INTO translation_revisions (
+                """INSERT INTO translation_revision (
                      record_id, entity_id, field_code, target_language, source_text,
                      previous_text, revised_text, revision_type, editor, note, created_at
                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'manual', %s, %s, %s)""",
@@ -953,7 +1691,7 @@ def reset_translation_state(database_path: str | Path | None, record_id: str = "
                 deleted_rows = cursor.rowcount
                 cursor.execute(
                     """
-                    UPDATE report_records
+                    UPDATE dpr_report_record
                     SET translation_status='PENDING', translation_progress='0',
                         translation_error='', translation_version='', translation_updated_at=%s
                     WHERE record_id=%s
@@ -965,7 +1703,7 @@ def reset_translation_state(database_path: str | Path | None, record_id: str = "
                 deleted_rows = cursor.rowcount
                 cursor.execute(
                     """
-                    UPDATE report_records
+                    UPDATE dpr_report_record
                     SET translation_status='PENDING', translation_progress='0',
                         translation_error='', translation_version='', translation_updated_at=%s
                     """,
@@ -994,7 +1732,7 @@ def update_record_translation_status(
             if version:
                 cursor.execute(
                     """
-                    UPDATE report_records
+                    UPDATE dpr_report_record
                     SET translation_status=%s, translation_progress=%s, translation_error=%s,
                         translation_version=%s, translation_updated_at=%s
                     WHERE record_id=%s
@@ -1004,7 +1742,7 @@ def update_record_translation_status(
             else:
                 cursor.execute(
                     """
-                    UPDATE report_records
+                    UPDATE dpr_report_record
                     SET translation_status=%s, translation_progress=%s, translation_error=%s, translation_updated_at=%s
                     WHERE record_id=%s
                     """,
@@ -1021,7 +1759,7 @@ def update_record_extraction_status(database_path: str | Path | None, record_id:
     with _connect() as connection:
         with connection.cursor() as cursor:
             cursor.execute(
-                """UPDATE report_records SET extraction_status=%s, extraction_progress=%s,
+                """UPDATE dpr_report_record SET extraction_status=%s, extraction_progress=%s,
                    extraction_error=%s, extraction_version=IF(%s='', extraction_version, %s), extraction_updated_at=%s
                    WHERE record_id=%s""",
                 (_text(status), _text(progress), _text(error)[:500], _text(version), _text(version), _now(), record_id),
@@ -1036,7 +1774,7 @@ def save_extraction_results(database_path: str | Path | None, rows: list[dict[st
         with connection.cursor() as cursor:
             for row in rows:
                 cursor.execute(
-                    """INSERT INTO ai_extraction_results
+                    """INSERT INTO ai_extraction_result
                     (record_id, rule_id, source_section, source_row_no, source_field, target_field,
                      source_hash, result_text, extraction_status, error_message, model_config_id,
                      rule_version, attempt_count, started_at, completed_at, updated_at)
@@ -1056,7 +1794,7 @@ def save_extraction_results(database_path: str | Path | None, rows: list[dict[st
 def load_extraction_results(database_path: str | Path | None, record_id: str = "") -> list[dict[str, Any]]:
     del database_path
     initialize_database()
-    sql = "SELECT * FROM ai_extraction_results"
+    sql = "SELECT * FROM ai_extraction_result"
     args: tuple[object, ...] = ()
     if record_id:
         sql += " WHERE record_id=%s"
@@ -1076,7 +1814,7 @@ def clear_extraction_results(database_path: str | Path | None, record_ids: list[
     placeholders = ",".join(["%s"] * len(record_ids))
     with _connect() as connection:
         with connection.cursor() as cursor:
-            cursor.execute(f"DELETE FROM ai_extraction_results WHERE record_id IN ({placeholders})", record_ids)
+            cursor.execute(f"DELETE FROM ai_extraction_result WHERE record_id IN ({placeholders})", record_ids)
         connection.commit()
 
 
@@ -1110,8 +1848,8 @@ def list_records(
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     sql = f"""
         SELECT r.*, f.fields_json
-        FROM report_records r
-        LEFT JOIN report_fields f ON f.record_id = r.record_id
+        FROM dpr_report_record r
+        LEFT JOIN dpr_report_field f ON f.record_id = r.record_id
         {where_sql}
         ORDER BY r.report_date DESC, r.updated_at DESC
     """
@@ -1124,7 +1862,7 @@ def list_records(
             if record_ids:
                 placeholders = ",".join(["%s"] * len(record_ids))
                 cursor.execute(
-                    f"SELECT record_id, row_json FROM report_rows WHERE module_name='operations' AND record_id IN ({placeholders})",
+                    f"SELECT record_id, row_json FROM dpr_report_row WHERE module_name='operations' AND record_id IN ({placeholders})",
                     record_ids,
                 )
                 operation_rows = cursor.fetchall()
@@ -1150,7 +1888,7 @@ def list_ai_job_status(kind: str) -> list[dict[str, str]]:
                        {prefix}_progress AS progress,
                        {prefix}_error AS error,
                        {prefix}_updated_at AS updated_at
-                FROM report_records
+                FROM dpr_report_record
                 ORDER BY report_date DESC, updated_at DESC
                 """
             )
@@ -1166,12 +1904,41 @@ def list_translation_queue_records() -> list[dict[str, str]]:
                 SELECT record_id, report_type, report_date AS reportDate, report_no AS reportNo,
                        wellbore, rig, translation_status, translation_progress,
                        translation_error, translation_version, translation_updated_at
-                FROM report_records
+                FROM dpr_report_record
                 ORDER BY report_date DESC, updated_at DESC
                 """
             )
             rows = cursor.fetchall()
     return [{key: _text(value) for key, value in row.items()} for row in rows]
+
+
+def load_activity_classifications(record_ids: list[str]) -> dict[tuple[str, int], dict[str, Any]]:
+    clean_ids = sorted({str(value or "").strip() for value in record_ids if str(value or "").strip()})
+    if not clean_ids:
+        return {}
+    placeholders = ",".join(["%s"] * len(clean_ids))
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT d.record_id,a.source_row_no,a.source_op_type,c.productive_flag,
+                       c.confirmed_op_type,c.work_bucket,c.billing_status,c.responsibility,
+                       c.cause_code,c.service_line,c.confirmation_status,c.rule_version,
+                       c.confirmed_at,c.confirmed_by,c.version
+                FROM dpr_report d
+                JOIN dpr_operation a ON a.daily_report_id=d.id
+                LEFT JOIN dpr_operation_classification c ON c.activity_id=a.id
+                WHERE d.record_id IN ({placeholders})
+                """,
+                clean_ids,
+            )
+            rows = cursor.fetchall()
+    return {
+        (_text(row.get("record_id")), int(row.get("source_row_no", 0) or 0)): {
+            key: _text(value) for key, value in row.items()
+        }
+        for row in rows
+    }
 
 
 def list_npt_confirmation_wells(
@@ -1212,13 +1979,16 @@ def list_npt_confirmation_wells(
             item["start_date"] = min(str(item["start_date"] or date_value), date_value)
             item["end_date"] = max(str(item["end_date"] or date_value), date_value)
         item["record_ids"].append(str(record.get("record_id", "") or ""))
-        item["statuses"].append(str(record.get("confirmation_status", "") or "pending"))
+        if str(record.get("confirmation_status", "") or "").strip().lower() == "draft":
+            item["statuses"].append("draft")
         if _truthy(record.get("locked")):
             item["locked_count"] += 1
         for row in operations:
             op_type = _system_type(row)
             hours = _safe_float(row.get("hours"))
             item["row_count"] += 1
+            if op_type in {"SC", "NPT"}:
+                item["statuses"].append(str(row.get("_review_status", "") or "PENDING"))
             if op_type == "SC":
                 item["sc_hours"] += hours
             elif op_type == "NPT":
@@ -1265,7 +2035,14 @@ def load_npt_confirmation_detail(
     for record in sorted(relevant_records, key=lambda item: str(item.get("reportDate", "") or "")):
         for row in record.get("operations", []):
             system_type = _system_type(row)
-            confirmed_type = str(row.get("confirmed_op_type", "") or row.get("op_type", "") or system_type).strip().upper()
+            fact = row.get("_fact_classification", {}) if isinstance(row.get("_fact_classification"), dict) else {}
+            draft = row.get("draft_classification", {}) if isinstance(row.get("draft_classification"), dict) else {}
+            confirmed_type = str(
+                draft.get("confirmed_op_type", "")
+                or fact.get("confirmed_op_type", "")
+                or row.get("confirmed_op_type", "")
+                or system_type
+            ).strip().upper()
             rows.append({
                 "record_id": record.get("record_id", ""),
                 "report_type": record.get("report_type", ""),
@@ -1279,6 +2056,12 @@ def load_npt_confirmation_detail(
                 "operation_details": row.get("operation_details", ""),
                 "system_op_type": system_type,
                 "confirmed_op_type": str(row.get("draft_op_type", "") or confirmed_type).strip().upper(),
+                "review_status": str(fact.get("confirmation_status", "") or ("AUTO_CONFIRMED" if system_type == "P" else "PENDING")),
+                "work_bucket": str(draft.get("work_bucket", "") or fact.get("work_bucket", "") or row.get("work_bucket", "") or ""),
+                "billing_status": str(draft.get("billing_status", "") or fact.get("billing_status", "") or row.get("billing_status", "") or ""),
+                "responsibility": str(draft.get("responsibility", "") or fact.get("responsibility", "") or row.get("responsibility", "") or ""),
+                "cause_code": str(draft.get("cause_code", "") or fact.get("cause_code", "") or row.get("cause_code", "") or ""),
+                "service_line": str(draft.get("service_line", "") or fact.get("service_line", "") or row.get("service_line", "") or ""),
                 "row_revision": _npt_row_revision(row),
             })
     dates = [str(record.get("reportDate", "") or "") for record in relevant_records if record.get("reportDate")]
@@ -1289,7 +2072,15 @@ def load_npt_confirmation_detail(
         "end_date": max(dates) if dates else "",
         "status": _confirmation_group_status({
             "record_ids": [record.get("record_id", "") for record in relevant_records],
-            "statuses": [str(record.get("confirmation_status", "") or "pending") for record in relevant_records],
+            "statuses": [
+                *["draft" for record in relevant_records if str(record.get("confirmation_status", "") or "").lower() == "draft"],
+                *[
+                    str(row.get("_review_status", "") or "PENDING")
+                    for record in relevant_records
+                    for row in record.get("operations", [])
+                    if _system_type(row) in {"SC", "NPT"}
+                ],
+            ],
             "locked_count": sum(1 for record in relevant_records if _truthy(record.get("locked"))),
         }),
         "record_count": len(relevant_records),
@@ -1313,8 +2104,11 @@ def save_npt_confirmation(
     detail = load_npt_confirmation_detail(None, wellbore, rig=rig)
     if detail["meta"].get("locked"):
         raise PermissionError(f"Well is locked after NPT confirmation: {wellbore}")
-    allowed_record_ids = {str(row.get("record_id", "") or "") for row in detail["operations"]}
-    updates: dict[tuple[str, int], str] = {}
+    candidate_rows = [row for row in detail["operations"] if str(row.get("system_op_type", "") or "").upper() in {"SC", "NPT"}]
+    allowed_record_ids = {str(row.get("record_id", "") or "") for row in candidate_rows}
+    candidate_keys = {(str(row.get("record_id", "") or ""), int(str(row.get("row_no", "") or "0"))) for row in candidate_rows}
+    reference_codes = _npt_reference_code_sets()
+    updates: dict[tuple[str, int], dict[str, str]] = {}
     revisions: dict[tuple[str, int], str] = {}
     for row in operations:
         record_id = str(row.get("record_id", "") or "")
@@ -1325,11 +2119,37 @@ def save_npt_confirmation(
         except ValueError:
             row_no = 0
         confirmed_type = str(row.get("confirmed_op_type", "") or "").strip().upper()
-        if confirmed_type in {"P", "SC", "NPT"} and row_no > 0:
-            updates[(record_id, row_no)] = confirmed_type
+        key = (record_id, row_no)
+        if confirmed_type in {"P", "SC", "NPT"} and row_no > 0 and key in candidate_keys:
+            classification = {
+                "confirmed_op_type": confirmed_type,
+                "productive_flag": "PRODUCTION" if confirmed_type == "P" else "NON_PRODUCTION",
+                "work_bucket": str(row.get("work_bucket", "") or "").strip(),
+                "billing_status": str(row.get("billing_status", "") or "").strip(),
+                "responsibility": str(row.get("responsibility", "") or "").strip(),
+                "cause_code": str(row.get("cause_code", "") or "").strip(),
+                "service_line": str(row.get("service_line", "") or "").strip(),
+            }
+            if confirmed_type == "P":
+                classification.update({
+                    "work_bucket": "OPERATION", "billing_status": "FULL_RATE",
+                    "responsibility": "", "cause_code": "",
+                })
+            elif submit:
+                if classification["work_bucket"] not in reference_codes["WORK_BUCKET"]:
+                    raise ValueError(f"第 {row_no} 行必须选择工作量归类（含有/无人待工）。")
+                if classification["responsibility"] not in reference_codes["RESPONSIBILITY"]:
+                    raise ValueError(f"第 {row_no} 行必须选择责任方。")
+                if classification["billing_status"] and classification["billing_status"] not in reference_codes["BILLING_STATUS"]:
+                    raise ValueError(f"第 {row_no} 行计费状态不是当前启用的附录值。")
+                if classification["cause_code"] and classification["cause_code"] not in reference_codes["CAUSE_CODE"]:
+                    raise ValueError(f"第 {row_no} 行原因编码不是当前启用的附录值。")
+            updates[key] = classification
             revisions[(record_id, row_no)] = str(row.get("row_revision", "") or "")
     if not updates:
         raise ValueError("No valid NPT confirmation rows.")
+    if submit and set(updates) != candidate_keys:
+        raise ValueError("提交前必须完成该井全部 SC/NPT 时段的复核。")
     touched_ids: set[str] = set()
     now = _now()
     with _connect() as connection:
@@ -1337,7 +2157,7 @@ def save_npt_confirmation(
             record_ids = sorted(allowed_record_ids)
             placeholders = ",".join(["%s"] * len(record_ids))
             cursor.execute(
-                f"SELECT record_id, locked FROM report_records WHERE record_id IN ({placeholders}) FOR UPDATE",
+                f"SELECT record_id, locked FROM dpr_report_record WHERE record_id IN ({placeholders}) FOR UPDATE",
                 record_ids,
             )
             locked_records = [
@@ -1347,11 +2167,11 @@ def save_npt_confirmation(
             ]
             if locked_records:
                 raise PermissionError(f"Report is locked after NPT confirmation: {locked_records[0]}")
-            for (record_id, row_no), confirmed_type in updates.items():
+            for (record_id, row_no), classification in updates.items():
                 cursor.execute(
                     """
                     SELECT row_json
-                    FROM report_rows
+                    FROM dpr_report_row
                     WHERE record_id=%s AND module_name='operations' AND row_no=%s
                     """,
                     (record_id, row_no),
@@ -1366,14 +2186,16 @@ def save_npt_confirmation(
                 current_type = str(row_json.get("op_type", "") or "").strip().upper()
                 row_json.setdefault("system_op_type", current_type)
                 if submit:
-                    row_json["confirmed_op_type"] = confirmed_type
-                    row_json["op_type"] = confirmed_type
+                    row_json.update({key: value for key, value in classification.items() if key != "productive_flag"})
+                    row_json["confirmed_classification"] = classification
                     row_json.pop("draft_op_type", None)
+                    row_json.pop("draft_classification", None)
                 else:
-                    row_json["draft_op_type"] = confirmed_type
+                    row_json["draft_op_type"] = classification["confirmed_op_type"]
+                    row_json["draft_classification"] = classification
                 cursor.execute(
                     """
-                    UPDATE report_rows
+                    UPDATE dpr_report_row
                     SET row_json=%s
                     WHERE record_id=%s AND module_name='operations' AND row_no=%s
                     """,
@@ -1384,16 +2206,18 @@ def save_npt_confirmation(
                         cursor,
                         record_id=record_id,
                         row_no=row_no,
-                        confirmed_type=confirmed_type,
+                        classification=classification,
                         actor=_text(confirmed_by) or "system",
                         note=_text(note),
                     )
+                else:
+                    _mark_npt_fact_draft(cursor, record_id=record_id, row_no=row_no, actor=_text(confirmed_by) or "system")
                 touched_ids.add(record_id)
             for record_id in allowed_record_ids:
                 if submit:
                     cursor.execute(
                         """
-                        UPDATE report_records
+                        UPDATE dpr_report_record
                         SET confirmation_status='confirmed', confirmation_note=%s, updated_at=%s,
                             locked='yes', confirmed_at=%s, confirmed_by=%s
                         WHERE record_id=%s
@@ -1403,7 +2227,7 @@ def save_npt_confirmation(
                 else:
                     cursor.execute(
                         """
-                        UPDATE report_records
+                        UPDATE dpr_report_record
                         SET confirmation_status='draft', confirmation_note=%s, updated_at=%s
                         WHERE record_id=%s
                         """,
@@ -1418,36 +2242,70 @@ def _sync_npt_type_fact(
     *,
     record_id: str,
     row_no: int,
-    confirmed_type: str,
+    classification: dict[str, str],
     actor: str,
     note: str,
 ) -> None:
     cursor.execute(
-        "SELECT c.*,a.id activity_id FROM fact_daily_report d "
-        "JOIN fact_activity a ON a.daily_report_id=d.id AND a.source_row_no=%s "
-        "LEFT JOIN fact_time_classification c ON c.activity_id=a.id WHERE d.record_id=%s",
+        "SELECT c.*,a.id activity_id FROM dpr_report d "
+        "JOIN dpr_operation a ON a.daily_report_id=d.id AND a.source_row_no=%s "
+        "LEFT JOIN dpr_operation_classification c ON c.activity_id=a.id WHERE d.record_id=%s",
         (row_no, record_id),
     )
     previous = cursor.fetchone()
     if not previous or not previous.get("activity_id"):
         return
     activity_id = int(previous["activity_id"])
-    revised = {
-        "confirmed_op_type": confirmed_type,
-        "productive_flag": "PRODUCTION" if confirmed_type == "P" else "NON_PRODUCTION",
-    }
+    revised = dict(classification)
     cursor.execute(
-        "INSERT INTO time_classification_revision "
+        "INSERT INTO dpr_operation_classification_revision "
         "(activity_id,previous_json,revised_json,revision_type,reason,created_by) "
-        "VALUES (%s,%s,%s,'legacy_npt',%s,%s)",
-        (activity_id, _json_dumps(previous), _json_dumps(revised), note or "同步既有NPT确认结果", actor),
+        "VALUES (%s,%s,%s,'npt_confirmation',%s,%s)",
+        (activity_id, _json_dumps(previous), _json_dumps(revised), note or "NPT确认模块人工确认", actor),
     )
     cursor.execute(
-        "UPDATE fact_time_classification SET confirmed_op_type=%s,productive_flag=%s,"
+        "UPDATE dpr_operation_classification SET confirmed_op_type=%s,productive_flag=%s,work_bucket=%s,"
+        "billing_status=%s,responsibility=%s,cause_code=%s,service_line=%s,confirmation_status='CONFIRMED',"
         "confirmed_at=NOW(),confirmed_by=%s,change_reason=%s,updated_by=%s,version=version+1 "
         "WHERE activity_id=%s",
-        (confirmed_type, revised["productive_flag"], actor, note or "同步既有NPT确认结果", actor, activity_id),
+        (
+            revised["confirmed_op_type"], revised["productive_flag"], revised["work_bucket"],
+            revised["billing_status"], revised["responsibility"], revised["cause_code"], revised["service_line"],
+            actor, note or "NPT确认模块人工确认", actor, activity_id,
+        ),
     )
+
+
+def _mark_npt_fact_draft(cursor: Any, *, record_id: str, row_no: int, actor: str) -> None:
+    cursor.execute(
+        "UPDATE dpr_operation_classification c "
+        "JOIN dpr_operation a ON a.id=c.activity_id "
+        "JOIN dpr_report d ON d.id=a.daily_report_id "
+        "SET c.confirmation_status='DRAFT',c.updated_by=%s,c.version=c.version+1 "
+        "WHERE d.record_id=%s AND a.source_row_no=%s AND a.source_op_type IN ('SC','NPT') "
+        "AND c.confirmation_status<>'CONFIRMED'",
+        (actor, record_id, row_no),
+    )
+
+
+def _npt_reference_code_sets() -> dict[str, set[str]]:
+    categories = ("WORK_BUCKET", "RESPONSIBILITY", "BILLING_STATUS", "CAUSE_CODE")
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT category.category_code,value.value_code FROM md_appendix_value value "
+                "JOIN md_appendix_category category ON category.id=value.category_id "
+                "WHERE category.category_code IN (%s,%s,%s,%s) "
+                "AND category.status='active' AND value.status='active'",
+                categories,
+            )
+            rows = cursor.fetchall()
+    result = {category: set() for category in categories}
+    for row in rows:
+        category = _text(row.get("category_code"))
+        if category in result:
+            result[category].add(_text(row.get("value_code")))
+    return result
 
 
 def is_available() -> bool:
@@ -1527,7 +2385,7 @@ def _upsert_record(cursor: Any, record: dict[str, str]) -> None:
     )
     cursor.execute(
         f"""
-        INSERT INTO report_records ({", ".join(columns)})
+        INSERT INTO dpr_report_record ({", ".join(columns)})
         VALUES ({placeholders})
         ON DUPLICATE KEY UPDATE {update_clause}
         """,
@@ -1590,7 +2448,7 @@ def _record_to_public(row: dict[str, Any]) -> dict[str, str]:
         "wellbore": _text(row.get("wellbore")),
         "rig": _text(row.get("rig")),
         "rig_id": _text(row.get("rig_id")),
-        "wellbore_id": _text(row.get("wellbore_id")),
+        "well_id": _text(row.get("well_id")),
         "project_id": _text(row.get("project_id")),
         "job_id": _text(row.get("job_id")),
         "master_match_status": _text(row.get("master_match_status")),
@@ -1631,7 +2489,7 @@ def _payload_metadata(row: dict[str, Any]) -> dict[str, str]:
         "source_file": _text(row.get("source_file")),
         "parser": _text(row.get("parser")),
         "rig_id": _text(row.get("rig_id")),
-        "wellbore_id": _text(row.get("wellbore_id")),
+        "well_id": _text(row.get("well_id")),
         "project_id": _text(row.get("project_id")),
         "job_id": _text(row.get("job_id")),
         "master_match_status": _text(row.get("master_match_status")),
@@ -1681,10 +2539,22 @@ def _npt_candidate_records(
     sql = f"""
         SELECT
           r.record_id, r.report_type, r.report_date, r.wellbore, r.rig, r.locked,
-          r.confirmation_status, r.confirmation_note, rr.row_no, rr.row_json
-        FROM report_records r
-        LEFT JOIN report_rows rr
+          r.confirmation_status, r.confirmation_note, rr.row_no, rr.row_json,
+          c.productive_flag AS fact_productive_flag,
+          c.confirmed_op_type AS fact_confirmed_op_type,
+          c.work_bucket AS fact_work_bucket,
+          c.billing_status AS fact_billing_status,
+          c.responsibility AS fact_responsibility,
+          c.cause_code AS fact_cause_code,
+          c.service_line AS fact_service_line,
+          c.confirmation_status AS fact_confirmation_status,
+          c.version AS fact_version
+        FROM dpr_report_record r
+        LEFT JOIN dpr_report_row rr
           ON rr.record_id = r.record_id AND rr.module_name = 'operations'
+        LEFT JOIN dpr_report d ON d.record_id=r.record_id
+        LEFT JOIN dpr_operation a ON a.daily_report_id=d.id AND a.source_row_no=rr.row_no
+        LEFT JOIN dpr_operation_classification c ON c.activity_id=a.id
         {where_sql}
         ORDER BY r.report_date, r.record_id, rr.row_no
     """
@@ -1712,12 +2582,24 @@ def _npt_candidate_records(
         if not row_json:
             continue
         row_json["row_no"] = _text(row.get("row_no"))
+        row_json["_fact_classification"] = {
+            "productive_flag": _text(row.get("fact_productive_flag")),
+            "confirmed_op_type": _text(row.get("fact_confirmed_op_type")),
+            "work_bucket": _text(row.get("fact_work_bucket")),
+            "billing_status": _text(row.get("fact_billing_status")),
+            "responsibility": _text(row.get("fact_responsibility")),
+            "cause_code": _text(row.get("fact_cause_code")),
+            "service_line": _text(row.get("fact_service_line")),
+            "confirmation_status": _text(row.get("fact_confirmation_status")),
+            "version": _text(row.get("fact_version")),
+        }
+        row_json["_review_status"] = _text(row.get("fact_confirmation_status"))
         record["operations"].append(row_json)
     return list(grouped.values())
 
 
 def _npt_row_revision(row: dict[str, Any]) -> str:
-    persisted = {key: value for key, value in row.items() if key != "row_no"}
+    persisted = {key: value for key, value in row.items() if key != "row_no" and not key.startswith("_")}
     value = json.dumps(persisted, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -1789,6 +2671,14 @@ def _text(value: Any) -> str:
 
 def _truthy(value: Any) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "locked", "confirmed"}
+
+
+def _positive_int(value: Any) -> int | None:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
 
 
 def _translation_source_hash(value: Any) -> str:

@@ -7,6 +7,8 @@ from drilling_report_parser.pdf_report_parser import (
     _clean_operation_details,
     _normalize_op_type,
     _parse_incidents,
+    _parse_fluid_losses,
+    _parse_report_fields,
     parse_pdf_daily_report,
 )
 
@@ -28,6 +30,26 @@ def sample_pdf(name_part: str) -> Path:
 
 
 class PdfReportParserTest(unittest.TestCase):
+    def test_report_number_accepts_full_ecuador_country_label(self) -> None:
+        lines = [
+            "Event: DEV DRILLING Date:JVNC-024 07/15/2026",
+            "Prim. Reason: INICIAL MOVE ECUADOR Report No: 15",
+        ]
+
+        fields = _parse_report_fields(lines, "\n".join(lines), "\n".join(lines))
+
+        self.assertEqual(fields["reportNo"], "15")
+
+    def test_fluid_losses_are_parsed_as_numeric_text_without_units(self) -> None:
+        rows = _parse_fluid_losses(
+            "FLUID LOSSES\nInjected Volume: 12.50 (bbl)\nReturned Volume: 3.25 (bbl)"
+        )
+
+        self.assertEqual(rows, [{
+            "injected_volume_bbl": "12.50",
+            "returned_volume_bbl": "3.25",
+        }])
+
     def test_operation_type_keeps_source_sc_value(self) -> None:
         self.assertEqual(_normalize_op_type("SC"), "SC")
 
@@ -125,6 +147,11 @@ class PdfReportParserTest(unittest.TestCase):
         self.assertEqual(len(payload["survey_data"]), 6)
         self.assertEqual(len(payload["bha_components"]), 13)
         self.assertEqual(len(payload["operations"]), 13)
+        self.assertEqual(payload["fluid_losses"], [{
+            "injected_volume_bbl": "0.0",
+            "returned_volume_bbl": "0.0",
+        }])
+        self.assertNotIn("daily_costs", payload)
         self.assertEqual(payload["operations"][0]["op_sub"], "POOH Bit / BHA / Oth")
         self.assertTrue(all(row["op_type"] in {"P", "NPT"} for row in payload["operations"]))
         self.assertFalse(any("BHA / Oth" in row["operation_details"] for row in payload["operations"]))
@@ -168,6 +195,11 @@ class PdfReportParserTest(unittest.TestCase):
         self.assertEqual(len(payload["survey_data"]), 6)
         self.assertEqual(len(payload["bha_components"]), 12)
         self.assertEqual(len(payload["operations"]), 6)
+        self.assertEqual(payload["fluid_losses"], [{
+            "injected_volume_bbl": "0.0",
+            "returned_volume_bbl": "0.0",
+        }])
+        self.assertNotIn("daily_costs", payload)
         self.assertEqual(payload["operations"][0]["op_sub"], "Rotary - Directional")
         self.assertTrue(all(row["op_type"] in {"P", "NPT"} for row in payload["operations"]))
         self.assertFalse(any("NG Directional" in row["operation_details"] or "BHA / Oth" in row["operation_details"] for row in payload["operations"]))

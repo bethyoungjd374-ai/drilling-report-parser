@@ -41,6 +41,7 @@ from .storage import (
     list_ai_job_status,
     list_records,
     list_translation_queue_records,
+    load_activity_classifications,
     load_npt_confirmation_detail,
     load_operation_translations,
     load_report_payload,
@@ -2018,6 +2019,8 @@ class FormHandler(BaseHTTPRequestHandler):
             self._send_json({"error": str(exc)}, status=409)
         except RuntimeError as exc:
             self._send_json({"error": str(exc)}, status=409)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:  # pragma: no cover - keeps local app useful.
             self._send_json({"error": str(exc)}, status=500)
 
@@ -2126,6 +2129,15 @@ class FormHandler(BaseHTTPRequestHandler):
         )
         if isinstance(metadata, dict):
             metadata.update(result)
+            normalization = result.get("normalization", {}) if isinstance(result, dict) else {}
+            if isinstance(normalization, dict) and normalization.get("normalization_status") != "NORMALIZATION_FAILED":
+                if not normalization.get("hours_validation_required"):
+                    warnings = [
+                        warning for warning in warnings
+                        if not warning.lower().startswith("operation hours total ")
+                    ]
+                metadata["validation_status"] = "warning" if warnings else "ok"
+                metadata["validation_warnings"] = "; ".join(warnings)
             record_id = str(metadata.get("record_id", "") or "")
             if queue_translation:
                 _invalidate_translation_jobs([record_id])
@@ -3216,7 +3228,7 @@ TRANSLATION_SECTION_LABELS = {
     "report_fields": "日报基础信息",
     "operations": "作业明细",
     "bha_components": "BHA 组件",
-    "daily_costs": "日费用",
+    "fluid_losses": "漏失情况",
     "bulks": "批量物料",
     "mud_products": "泥浆产品",
     "perforation_intervals": "射孔井段",
@@ -3230,8 +3242,8 @@ TRANSLATION_FIELD_LABELS = {
     "incidentComments": "事故备注", "description": "作业描述", "supervisor1": "主管 1",
     "supervisor2": "主管 2", "engineer": "工程师", "pamEngineer": "PAM 工程师",
     "geologist": "地质师", "safetyComments": "安全备注", "op_sub": "作业子类",
-    "operation_details": "作业明细", "component": "组件名称", "cost_description": "费用描述",
-    "vendor": "供应商", "bulk": "物料名称", "product": "产品名称", "formation": "地层",
+    "operation_details": "作业明细", "component": "组件名称",
+    "injected_volume_bbl": "注入体积", "returned_volume_bbl": "返出体积", "bulk": "物料名称", "product": "产品名称", "formation": "地层",
     "charges": "射孔弹", "status": "状态说明", "comments": "明细备注",
 }
 
@@ -4504,6 +4516,9 @@ def _extraction_queue_snapshot() -> dict[str, object]:
         if not _payload_has_extraction_units(report_payload, report_type, enabled_rules):
             continue
         status = str(record.get("extraction_status", "") or "PENDING").strip().upper()
+        error = str(record.get("extraction_error", "") or "").strip()
+        if error and status not in {"QUEUED", "IN_PROGRESS", "COMPLETED", "NOT_REQUIRED"}:
+            status = "FAILED"
         version = str(record.get("extraction_version", "") or "")
         stale = bool(version and current_version and version != current_version)
         effective_status = "STALE" if stale and status == "COMPLETED" else status
@@ -4512,14 +4527,15 @@ def _extraction_queue_snapshot() -> dict[str, object]:
             "report_date": record.get("reportDate", ""), "report_no": record.get("reportNo", ""),
             "wellbore": record.get("wellbore", ""), "rig": record.get("rig", ""),
             "status": effective_status, "progress": record.get("extraction_progress", ""),
-            "error": record.get("extraction_error", ""), "version": version,
+            "error": error, "version": version,
             "updated_at": record.get("extraction_updated_at", ""),
             "needs_extraction": _extraction_record_needs_processing(record, current_version),
         })
     return {
         "current_version": current_version, "worker_count": EXTRACTION_WORKERS,
         "auto_execute": bool(config.get("auto_execute", True)),
-        "pending_count": sum(1 for item in records if item["needs_extraction"]),
+        "pending_count": sum(1 for item in records if item["needs_extraction"] and item["status"] != "FAILED"),
+        "failed_count": sum(1 for item in records if item["status"] == "FAILED"),
         "processing_count": sum(1 for item in records if item["status"] in {"QUEUED", "IN_PROGRESS"}),
         "is_running": any(item["status"] in {"QUEUED", "IN_PROGRESS"} for item in records),
         "records": records,
@@ -4581,10 +4597,13 @@ def _translation_queue_snapshot() -> dict[str, object]:
     items: list[dict[str, object]] = []
     for record in list_translation_queue_records():
         status = str(record.get("translation_status", "") or "PENDING").strip().upper()
+        error = str(record.get("translation_error", "") or "").strip()
+        if error and status not in {"QUEUED", "IN_PROGRESS", "COMPLETED", "NOT_REQUIRED"}:
+            status = "FAILED"
         version = str(record.get("translation_version", "") or "")
         needs_translation = _translation_record_needs_processing(record, current_version)
         if status == "FAILED":
-            reason = str(record.get("translation_error", "") or "上次翻译失败")
+            reason = error or "上次翻译失败"
         elif status == "STOPPED":
             reason = "已停止，可继续未完成翻译"
         elif status == "QUEUED":
@@ -4610,12 +4629,14 @@ def _translation_queue_snapshot() -> dict[str, object]:
             "translation_updated_at": record.get("translation_updated_at", ""),
             "translation_version": version,
             "needs_translation": needs_translation,
+            "error": error,
             "reason": reason,
         })
     return {
         "current_version": current_version,
         "worker_count": TRANSLATION_WORKERS,
-        "pending_count": sum(1 for item in items if item["needs_translation"]),
+        "pending_count": sum(1 for item in items if item["needs_translation"] and item["status"] != "FAILED"),
+        "failed_count": sum(1 for item in items if item["status"] == "FAILED"),
         "processing_count": sum(1 for item in items if item["status"] in {"QUEUED", "IN_PROGRESS"}),
         "is_running": any(item["status"] in {"QUEUED", "IN_PROGRESS"} for item in items),
         "records": items,
@@ -5439,7 +5460,12 @@ def _report_identity_errors(payload: dict[str, object]) -> list[str]:
     return [label for field, label in labels if not str(fields.get(field, "") or "").strip()]
 
 
-def _validation_warnings(payload: dict[str, object], report_type: str) -> list[str]:
+def _validation_warnings(
+    payload: dict[str, object],
+    report_type: str,
+    *,
+    validate_operation_total: bool = True,
+) -> list[str]:
     fields = payload.get("report_fields", {})
     if not isinstance(fields, dict):
         return ["report_fields missing"]
@@ -5482,7 +5508,7 @@ def _validation_warnings(payload: dict[str, object], report_type: str) -> list[s
             clock_hours = clock_hours_by_row.get(index - 1)
             if clock_hours is not None and _has_value(row.get("hours")) and abs(clock_hours - hours) > 0.1:
                 warnings.append(f"operations row {index} time duration mismatch")
-        if abs(total_hours - 24.0) > 0.05:
+        if validate_operation_total and abs(total_hours - 24.0) > 0.05:
             warnings.append(f"operation hours total {total_hours:.2f}")
     elif report_type in required_by_type:
         warnings.append("operations missing")
@@ -5568,14 +5594,14 @@ TIME_FIELDS = {"from", "to", "mudTime", "entry_time"}
 NUMERIC_REPORT_FIELDS = {
     "todayMd", "prevMd", "progress", "rotHrsToday", "lastCasingSize", "lastCasingDepth",
     "nextCasingSize", "nextCasingDepth", "formTestEmw", "pumpRate", "pumpPress",
-    "stringWeightUp", "stringWeightDown", "torqueOnBottom", "mudMd", "mudDensity", "mudTemperature", "rheologyTemp",
+    "stringWeightUp", "stringWeightDown", "torqueOffBottom", "torqueOnBottom", "mudMd", "mudDensity", "mudTemperature", "rheologyTemp",
     "viscosity", "pv", "yp", "gel10s", "gel10m", "gel30m", "apiWl", "oilPercent",
     "waterPercent", "sand", "ecd", "bitSize", "bhaMdIn", "bhaMdOut", "bhaTotalLength",
     "daysSinceRi", "daysSinceLta", "afeCost", "dailyCost", "cumulativeCost",
     "totalPersonnel", "groundElev",
 }
 NUMERIC_TABLE_FIELDS = {
-    "md", "incl", "azi", "tvd", "vse", "ns", "dls", "build", "od", "id", "joints",
+    "md", "incl", "azi", "tvd", "vse", "ns", "ew", "dls", "build", "od", "id", "joints",
     "length", "hours", "amount", "qty_start", "qty_used", "qty_end", "top_md", "base_md",
     "density", "phase", "penetration", "diameter", "trip",
 }
@@ -6052,6 +6078,10 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
     rows = _filtered_fact_rows(database_path, params)
     records = rows["records"]
     npt_rows = [row for row in rows["operations"] if row["op_type"] == "NPT"]
+    pending_review_rows = [
+        row for row in rows["operations"]
+        if row.get("source_op_type") in {"SC", "NPT"} and not row.get("statistics_ready")
+    ]
     category_filter = _param(params, "reason")
     if category_filter:
         npt_rows = [row for row in npt_rows if row["reason"] == category_filter]
@@ -6072,6 +6102,8 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
             "well_count": len(wells),
             "event_count": len(npt_rows),
             "total_npt": round(total_npt, 2),
+            "pending_review_count": len(pending_review_rows),
+            "pending_review_hours": round(sum(float(row.get("hours", 0) or 0) for row in pending_review_rows), 2),
         },
         "by_rig": [{"label": key, "hours": round(value, 2)} for key, value in by_rig],
         "by_well": [{"label": key, "hours": round(value, 2)} for key, value in by_well[:10]],
@@ -6091,6 +6123,11 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
             "to": row.get("to", ""),
             "time_range": row.get("time_range", ""),
             "hours": round(row["hours"], 2),
+            "work_bucket": row.get("work_bucket", ""),
+            "billing_status": row.get("billing_status", ""),
+            "responsibility": row.get("responsibility", ""),
+            "cause_code": row.get("cause_code", ""),
+            "classification_status": row.get("classification_status", ""),
             "service_line": row.get("service_line", ""),
             "extraction_status": row.get("extraction_status", ""),
             "extraction_error": row.get("extraction_error", ""),
@@ -6104,7 +6141,7 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
             "operation_translation_error": row.get("operation_translation_error", ""),
         } for row in _default_sort_npt_rows(npt_rows)],
         **quality,
-        "scope_note": "基于已保存到 MySQL 的日报解析数据；分类按日报 OP CODE / OP SUB 汇总",
+        "scope_note": "P 采用日报原值直接生效；SC/NPT 仅在 NPT确认 提交后进入正式统计，待确认时段不计入正式NPT。",
     }
 
 
@@ -6145,10 +6182,17 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
     extraction_version = str(_load_ai_extraction_config().get("version", "") or "")
     extraction_index: dict[tuple[str, int], dict[str, Any]] = {}
     raw_records = list_records(database_path)
+    raw_record_ids = [str(record.get("record_id", "") or "") for record in raw_records]
     payloads = load_report_payloads(
         database_path,
-        [str(record.get("record_id", "") or "") for record in raw_records],
+        raw_record_ids,
     )
+    try:
+        classification_index = load_activity_classifications(database_path, raw_record_ids)
+    except ValueError:
+        # Legacy workbook-backed tests and one-off imports have no standard fact
+        # table. Production runtime remains MySQL-only.
+        classification_index = {}
     project_config = _load_project_team_config()
     translation_index: dict[tuple[str, str], dict[str, str]] = {}
     try:
@@ -6212,10 +6256,26 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                 if not isinstance(row, dict):
                     continue
                 hours = _safe_float(row.get("hours"))
-                op_type = _effective_operation_type(row)
+                record_id = str(matched_record.get("record_id", "") or "")
+                classification = classification_index.get((record_id, row_no), {})
+                source_op_type = str(
+                    classification.get("source_op_type", "")
+                    or row.get("system_op_type", "")
+                    or row.get("op_type", "")
+                    or ""
+                ).strip().upper()
+                classification_status = str(
+                    classification.get("confirmation_status", "")
+                    or ("AUTO_CONFIRMED" if source_op_type == "P" else "PENDING")
+                ).strip().upper()
+                if source_op_type == "P":
+                    op_type = "P"
+                elif classification_status == "CONFIRMED":
+                    op_type = str(classification.get("confirmed_op_type", "") or source_op_type).strip().upper()
+                else:
+                    op_type = "PENDING"
                 extraction = extraction_index.get((str(matched_record.get("record_id", "") or ""), row_no), {})
                 operation_details = str(row.get("operation_details", "") or "")
-                record_id = str(matched_record.get("record_id", "") or "")
                 translation = translation_index.get((record_id, f"{record_id}:operations:{row_no}"), {})
                 translated_operation_details, operation_translation_status = _current_operation_translation(operation_details, translation)
                 if op_type == "NPT":
@@ -6244,6 +6304,10 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                     "from": str(row.get("from", "") or ""),
                     "to": str(row.get("to", "") or ""),
                     "op_type": op_type,
+                    "source_op_type": source_op_type,
+                    "confirmed_op_type": str(classification.get("confirmed_op_type", "") or ""),
+                    "classification_status": classification_status,
+                    "statistics_ready": source_op_type == "P" or classification_status == "CONFIRMED",
                     "op_code": str(row.get("op_code", "") or ""),
                     "op_sub": str(row.get("op_sub", "") or ""),
                     "operation_details": operation_details,
@@ -6251,7 +6315,11 @@ def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> di
                     "operation_translation_status": operation_translation_status,
                     "operation_translation_error": str(translation.get("error_message", "") or ""),
                     "source_row_no": row_no,
-                    "service_line": extracted_service_line or str(row.get("service_line", "") or ""),
+                    "work_bucket": str(classification.get("work_bucket", "") or ""),
+                    "billing_status": str(classification.get("billing_status", "") or ""),
+                    "responsibility": str(classification.get("responsibility", "") or ""),
+                    "cause_code": str(classification.get("cause_code", "") or ""),
+                    "service_line": str(classification.get("service_line", "") or "") or extracted_service_line or str(row.get("service_line", "") or ""),
                     "extraction_status": extraction_status,
                     "extraction_error": extraction_error,
                     "extraction_updated_at": extraction_updated_at,
@@ -6614,7 +6682,7 @@ def _expand_drilling_parameter_values(fields: dict[str, object]) -> None:
     if not any(key in fields for key in (
         "lastCasing", "lastCasingSize", "lastCasingDepth", "nextCasing", "nextCasingSize",
         "nextCasingDepth", "formTestType", "formTestEmw", "lastBopPressTest", "pumpRate",
-        "pumpPress", "stringWeightUp", "stringWeightDown", "stringWeightUpDown", "torqueOnBottom",
+        "pumpPress", "stringWeightUp", "stringWeightDown", "stringWeightUpDown", "torqueOffBottom", "torqueOnBottom",
     )):
         return
     for legacy, first, second, marker in (
@@ -6638,7 +6706,7 @@ def _sync_drilling_parameter_compatibility_fields(fields: dict[str, object]) -> 
     parameter_keys = {
         "lastCasing", "lastCasingSize", "lastCasingDepth", "nextCasing", "nextCasingSize",
         "nextCasingDepth", "formTestType", "formTestEmw", "lastBopPressTest", "pumpRate",
-        "pumpPress", "stringWeightUp", "stringWeightDown", "stringWeightUpDown", "torqueOnBottom",
+        "pumpPress", "stringWeightUp", "stringWeightDown", "stringWeightUpDown", "torqueOffBottom", "torqueOnBottom",
     }
     if not any(key in fields for key in parameter_keys):
         return

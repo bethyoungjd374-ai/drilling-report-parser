@@ -30,7 +30,7 @@
 `db/init.sql` 新增：
 
 - `translation_memory`：人工确认的完整句/段译例，不受当前 Prompt 版本限制；
-- `translation_revisions`：人工修订前后文本、操作人、说明和时间。
+- `translation_revision`：人工修订前后文本、操作人、说明和时间。
 
 应用启动时继续执行幂等的 `CREATE TABLE IF NOT EXISTS`。现有 `translation_content` 不迁移、不删除，仍用于日报译文和同版本精确缓存。
 

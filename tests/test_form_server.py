@@ -1398,6 +1398,13 @@ class FormServerImportTest(unittest.TestCase):
         self.assertIn("mudDensity missing", warnings)
         self.assertIn("operation hours total 8.00", warnings)
 
+        middle_day_warnings = form_server._validation_warnings(
+            payload,
+            "drilling",
+            validate_operation_total=False,
+        )
+        self.assertNotIn("operation hours total 8.00", middle_day_warnings)
+
     def test_operation_duration_mismatch_is_flagged(self) -> None:
         payload = {
             "report_fields": {

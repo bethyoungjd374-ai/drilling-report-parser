@@ -24,7 +24,7 @@ CLASSIFICATION_FIELDS = (
 def current_rule_version(cursor: Any | None = None) -> str:
     if cursor is not None:
         cursor.execute(
-            "SELECT rule_version AS version FROM time_classification_rule "
+            "SELECT rule_version AS version FROM dpr_operation_classification_rule "
             "WHERE status='active' ORDER BY updated_at DESC,id DESC LIMIT 1"
         )
         return str((cursor.fetchone() or {}).get("version", "") or "classification-v1")
@@ -37,10 +37,17 @@ def classify_activity(cursor: Any, row: dict[str, Any]) -> dict[str, Any]:
     op_code = str(row.get("op_code", "") or "").strip()
     op_sub = str(row.get("op_sub", "") or "").strip()
     details = str(row.get("operation_details", "") or "").strip()
-    source_type = str(row.get("confirmed_op_type", "") or row.get("op_type", "") or "").strip().upper()
+    # The source value is immutable.  A later NPT review may create an effective
+    # type, but it must never become the next normalization run's source value.
+    source_type = str(
+        row.get("source_op_type", "")
+        or row.get("system_op_type", "")
+        or row.get("op_type", "")
+        or ""
+    ).strip().upper()
     source_type = source_type if source_type in {"P", "SC", "NPT"} else ""
     cursor.execute(
-        "SELECT * FROM time_classification_rule WHERE status='active' ORDER BY priority, id"
+        "SELECT * FROM dpr_operation_classification_rule WHERE status='active' ORDER BY priority, id"
     )
     matched: list[dict[str, Any]] = []
     for rule in cursor.fetchall():
@@ -61,13 +68,18 @@ def classify_activity(cursor: Any, row: dict[str, Any]) -> dict[str, Any]:
         signatures = {json.dumps(output, ensure_ascii=False, sort_keys=True) for output in outputs}
         if len(signatures) == 1:
             result = _complete_classification(outputs[0], source_type)
+            if source_type in {"SC", "NPT"}:
+                # Responsibility, standby/work bucket and billing are formal
+                # business decisions made in the NPT confirmation workflow.
+                # Rules may match the row, but may not make those decisions.
+                result = _default_classification(source_type)
             result.update({
                 "rule_id": int(best[0]["id"]),
                 "rule_version": str(best[0].get("rule_version", "") or ""),
                 # The source report's explicit P/SC/NPT value is authoritative.
                 # A rule can enrich workload/billing/cause fields, but a rule-only
                 # type remains pending until the missing source value is reviewed.
-                "confirmation_status": "AUTO_CONFIRMED" if source_type else "PENDING",
+                "confirmation_status": "AUTO_CONFIRMED" if source_type == "P" else "PENDING",
                 "confidence": 1.0 if source_type else 0.75,
             })
             return result
@@ -90,10 +102,11 @@ def classify_activity(cursor: Any, row: dict[str, Any]) -> dict[str, Any]:
 
 def upsert_activity_classification(cursor: Any, activity_id: int, row: dict[str, Any]) -> dict[str, Any]:
     classification = classify_activity(cursor, row)
-    fields = [*CLASSIFICATION_FIELDS, "rule_id", "rule_version", "confirmation_status", "confidence"]
+    classification["productivity_type_code"] = classification.get("productive_flag", "")
+    fields = ["productive_flag", "productivity_type_code", *CLASSIFICATION_FIELDS[1:], "rule_id", "rule_version", "confirmation_status", "confidence"]
     cursor.execute(
         f"""
-        INSERT INTO fact_time_classification
+        INSERT INTO dpr_operation_classification
           (activity_id, {', '.join(fields)}, created_by, updated_by)
         VALUES (%s, {', '.join(['%s'] * len(fields))}, 'system', 'system')
         ON DUPLICATE KEY UPDATE
@@ -113,7 +126,7 @@ def list_rules(*, status: str = "", limit: int = 500) -> list[dict[str, Any]]:
     with _db_connection() as connection:
         with connection.cursor() as cursor:
             cursor.execute(
-                f"SELECT * FROM time_classification_rule {where} ORDER BY priority, rule_code LIMIT %s",
+                f"SELECT * FROM dpr_operation_classification_rule {where} ORDER BY priority, rule_code LIMIT %s",
                 args,
             )
             rows = cursor.fetchall()
@@ -166,7 +179,7 @@ def save_rule(payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
                         raise ValueError("更新规则必须提供 version。")
                     cursor.execute(
                         """
-                        UPDATE time_classification_rule
+                        UPDATE dpr_operation_classification_rule
                         SET rule_code=%s, rule_name=%s, priority=%s, op_code_pattern=%s,
                             op_sub_pattern=%s, keyword_pattern=%s, classification_json=%s,
                             rule_version=%s, status=%s, change_reason=%s,
@@ -180,7 +193,7 @@ def save_rule(payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
                 else:
                     cursor.execute(
                         """
-                        INSERT INTO time_classification_rule
+                        INSERT INTO dpr_operation_classification_rule
                           (rule_code, rule_name, priority, op_code_pattern, op_sub_pattern,
                            keyword_pattern, classification_json, rule_version, status,
                            change_reason, created_by, updated_by)
@@ -189,7 +202,7 @@ def save_rule(payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
                         [*values.values(), actor, actor],
                     )
                     rule_id = int(cursor.lastrowid)
-                cursor.execute("SELECT * FROM time_classification_rule WHERE id=%s", (rule_id,))
+                cursor.execute("SELECT * FROM dpr_operation_classification_rule WHERE id=%s", (rule_id,))
                 row = cursor.fetchone()
             connection.commit()
         except Exception as exc:
@@ -210,10 +223,11 @@ def list_confirmation_queue(*, status: str = "", limit: int = 1000) -> list[dict
                 SELECT c.*, a.daily_report_id, a.source_row_no, a.hours, a.op_code, a.op_sub,
                        a.source_op_type, a.operation_details, d.record_id, d.report_date,
                        d.report_type, d.match_status
-                FROM fact_time_classification c
-                JOIN fact_activity a ON a.id=c.activity_id
-                JOIN fact_daily_report d ON d.id=a.daily_report_id
+                FROM dpr_operation_classification c
+                JOIN dpr_operation a ON a.id=c.activity_id
+                JOIN dpr_report d ON d.id=a.daily_report_id
                 WHERE c.confirmation_status IN ({placeholders})
+                  AND COALESCE(a.source_op_type, '') NOT IN ('SC','NPT')
                 ORDER BY d.report_date DESC, d.record_id, a.source_row_no
                 LIMIT %s
                 """,
@@ -234,12 +248,18 @@ def confirm_classification(activity_id: int, payload: dict[str, Any], *, actor: 
     with _db_connection() as connection:
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM fact_time_classification WHERE activity_id=%s FOR UPDATE", (activity_id,))
+                cursor.execute(
+                    "SELECT c.*,a.source_op_type FROM dpr_operation_classification c "
+                    "JOIN dpr_operation a ON a.id=c.activity_id WHERE c.activity_id=%s FOR UPDATE",
+                    (activity_id,),
+                )
                 previous = cursor.fetchone()
                 if not previous:
                     raise KeyError(activity_id)
+                if str(previous.get("source_op_type", "") or "").strip().upper() in {"SC", "NPT"}:
+                    raise ValueError("SC/NPT 必须在前台 NPT确认 模块完成调整、责任和待工属性划分。")
                 cursor.execute(
-                    "INSERT INTO time_classification_revision "
+                    "INSERT INTO dpr_operation_classification_revision "
                     "(activity_id, previous_json, revised_json, revision_type, reason, created_by) "
                     "VALUES (%s,%s,%s,'manual',%s,%s)",
                     (
@@ -252,15 +272,16 @@ def confirm_classification(activity_id: int, payload: dict[str, Any], *, actor: 
                 )
                 assignments = ", ".join(f"{field}=%s" for field in CLASSIFICATION_FIELDS)
                 cursor.execute(
-                    f"UPDATE fact_time_classification SET {assignments}, confirmation_status='CONFIRMED', "
+                    f"UPDATE dpr_operation_classification SET {assignments}, confirmation_status='CONFIRMED', "
+                    "productivity_type_code=%s, "
                     "confirmed_at=NOW(), confirmed_by=%s, change_reason=%s, updated_by=%s, version=version+1 "
                     "WHERE activity_id=%s AND version=%s",
-                    [*[revised[field] for field in CLASSIFICATION_FIELDS], actor, reason, actor, activity_id, expected_version],
+                    [*[revised[field] for field in CLASSIFICATION_FIELDS], revised["productive_flag"], actor, reason, actor, activity_id, expected_version],
                 )
                 if cursor.rowcount != 1:
                     raise RuntimeError("分类已被其他用户修改，请刷新后重试。")
                 cursor.execute(
-                    "SELECT d.record_id FROM fact_activity a JOIN fact_daily_report d ON d.id=a.daily_report_id "
+                    "SELECT d.record_id FROM dpr_operation a JOIN dpr_report d ON d.id=a.daily_report_id "
                     "WHERE a.id=%s",
                     (activity_id,),
                 )
@@ -268,19 +289,20 @@ def confirm_classification(activity_id: int, payload: dict[str, Any], *, actor: 
                 record_id = str(report_row.get("record_id", "") or "")
                 if record_id:
                     cursor.execute(
-                        "SELECT COUNT(*) count FROM fact_time_classification c "
-                        "JOIN fact_activity a ON a.id=c.activity_id JOIN fact_daily_report d ON d.id=a.daily_report_id "
-                        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED')",
+                        "SELECT COUNT(*) count FROM dpr_operation_classification c "
+                        "JOIN dpr_operation a ON a.id=c.activity_id JOIN dpr_report d ON d.id=a.daily_report_id "
+                        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED') "
+                        "AND COALESCE(a.source_op_type,'') NOT IN ('SC','NPT')",
                         (record_id,),
                     )
                     if int((cursor.fetchone() or {}).get("count", 0) or 0) == 0:
                         cursor.execute(
-                            "UPDATE data_quality_issue SET status='RESOLVED',resolution_note='全部活动已人工确认',"
+                            "UPDATE dq_issue SET status='RESOLVED',resolution_note='全部活动已人工确认',"
                             "resolved_at=NOW(),resolved_by=%s,updated_by=%s,version=version+1 "
                             "WHERE issue_key=%s AND status='OPEN'",
                             (actor, actor, f"{record_id}:CLASSIFICATION_PENDING"),
                         )
-                cursor.execute("SELECT * FROM fact_time_classification WHERE activity_id=%s", (activity_id,))
+                cursor.execute("SELECT * FROM dpr_operation_classification WHERE activity_id=%s", (activity_id,))
                 row = cursor.fetchone()
             connection.commit()
         except Exception:
@@ -293,14 +315,15 @@ def reclassify_non_manual(*, actor: str) -> dict[str, int | str]:
     """Apply the current rules without overwriting manually confirmed rows."""
     processed = 0
     pending = 0
+    npt_pending = 0
     with _db_connection() as connection:
         try:
             with connection.cursor() as cursor:
                 rule_version = current_rule_version(cursor)
                 cursor.execute(
                     "SELECT a.id activity_id,a.op_code,a.op_sub,a.source_op_type,a.operation_details,d.record_id "
-                    "FROM fact_activity a JOIN fact_daily_report d ON d.id=a.daily_report_id "
-                    "LEFT JOIN fact_time_classification c ON c.activity_id=a.id "
+                    "FROM dpr_operation a JOIN dpr_report d ON d.id=a.daily_report_id "
+                    "LEFT JOIN dpr_operation_classification c ON c.activity_id=a.id "
                     "WHERE c.confirmation_status IS NULL OR c.confirmation_status<>'CONFIRMED' "
                     "ORDER BY d.report_date,d.record_id,a.source_row_no"
                 )
@@ -309,24 +332,30 @@ def reclassify_non_manual(*, actor: str) -> dict[str, int | str]:
                 for row in rows:
                     classification = upsert_activity_classification(cursor, int(row["activity_id"]), {
                         "op_code": row.get("op_code", ""), "op_sub": row.get("op_sub", ""),
-                        "confirmed_op_type": row.get("source_op_type", ""),
+                        "source_op_type": row.get("source_op_type", ""),
                         "operation_details": row.get("operation_details", ""),
                     })
                     processed += 1
-                    pending += int(classification.get("confirmation_status") not in {"CONFIRMED", "AUTO_CONFIRMED"})
+                    is_pending = classification.get("confirmation_status") not in {"CONFIRMED", "AUTO_CONFIRMED"}
+                    source_type = str(row.get("source_op_type", "") or "").strip().upper()
+                    if is_pending and source_type in {"SC", "NPT"}:
+                        npt_pending += 1
+                    elif is_pending:
+                        pending += 1
                     record_ids.add(str(row.get("record_id", "") or ""))
                 for record_id in record_ids:
                     cursor.execute(
-                        "SELECT COUNT(*) count FROM fact_time_classification c "
-                        "JOIN fact_activity a ON a.id=c.activity_id JOIN fact_daily_report d ON d.id=a.daily_report_id "
-                        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED')",
+                        "SELECT COUNT(*) count FROM dpr_operation_classification c "
+                        "JOIN dpr_operation a ON a.id=c.activity_id JOIN dpr_report d ON d.id=a.daily_report_id "
+                        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED') "
+                        "AND COALESCE(a.source_op_type,'') NOT IN ('SC','NPT')",
                         (record_id,),
                     )
                     record_pending = int((cursor.fetchone() or {}).get("count", 0) or 0)
                     issue_key = f"{record_id}:CLASSIFICATION_PENDING"
                     if record_pending:
                         cursor.execute(
-                            "INSERT INTO data_quality_issue "
+                            "INSERT INTO dq_issue "
                             "(issue_key,issue_type,severity,entity_type,entity_id,record_id,details_json,status,created_by,updated_by) "
                             "VALUES (%s,'CLASSIFICATION_PENDING','warning','report',%s,%s,%s,'OPEN',%s,%s) "
                             "ON DUPLICATE KEY UPDATE details_json=VALUES(details_json),status='OPEN',resolution_note='',"
@@ -335,7 +364,7 @@ def reclassify_non_manual(*, actor: str) -> dict[str, int | str]:
                         )
                     else:
                         cursor.execute(
-                            "UPDATE data_quality_issue SET status='RESOLVED',resolution_note='规则重算后已全部确认',"
+                            "UPDATE dq_issue SET status='RESOLVED',resolution_note='规则重算后已全部确认',"
                             "resolved_at=NOW(),resolved_by=%s,updated_by=%s,version=version+1 "
                             "WHERE issue_key=%s AND status='OPEN'",
                             (actor, actor, issue_key),
@@ -344,7 +373,7 @@ def reclassify_non_manual(*, actor: str) -> dict[str, int | str]:
         except Exception:
             connection.rollback()
             raise
-    return {"processed": processed, "pending": pending, "rule_version": rule_version}
+    return {"processed": processed, "pending": pending, "npt_pending": npt_pending, "rule_version": rule_version}
 
 
 def _default_classification(source_type: str) -> dict[str, str]:
