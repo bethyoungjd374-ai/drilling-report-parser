@@ -14,11 +14,7 @@
 
 有效期统一采用 `[valid_from, valid_to)`。同一井级精确关系优先于井队级关系；零匹配为 `UNASSIGNED`，多匹配为 `AMBIGUOUS`，不会复制事实行。
 
-## 功能开关
-
-```dotenv
-DRP_MASTER_DATA_V2=true
-```
+主数据关系现为必选运行路径，不再提供双轨功能开关。测试阶段未维护完整关系的日报会保留为 `UNASSIGNED`，但不会进入正式统计；主数据补齐后可统一刷新匹配结果。
 
 ## 迁移与核对
 
@@ -52,7 +48,7 @@ DRP_MASTER_DATA_V2=true
 - 项目井范围：`project_id`、`well_id`、`job_type`、`scope_note`、`valid_from`、`valid_to`、`status`、`change_reason`、`version`。
 - `assignment_note/scope_note` 保存业务说明；`change_reason` 只保存本次变更的审计原因，两者不得混用。
 
-“项目与队伍”使用批量接口 `POST /api/admin/project-relationships` 在单个数据库事务中保存一个项目的全部关系。正式数据写入成功后，系统自动由 MySQL 生成只读兼容版 `project_team_config.json`；旧 JSON 不再是关系维护来源。
+“项目与队伍”使用批量接口 `POST /api/admin/project-relationships` 在单个数据库事务中保存一个项目的全部关系。运行时只读取 MySQL 正式关系，不再生成或读取 `project_team_config.json`。迁移脚本仍可把旧文件作为一次性来源，迁移后由 `migration_batch`、`migration_entry` 留存审计。
 
 主数据、关系、质量问题和分类规则接口均使用现有登录与权限体系。写操作要求管理员权限，并写入创建人、修改人、原因、版本号及后台审计日志。并发更新必须提交 `version`，版本不一致返回冲突。
 

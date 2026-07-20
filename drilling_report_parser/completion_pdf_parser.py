@@ -226,11 +226,24 @@ def _operation_end_top(words: list[dict[str, Any]], header_top: float, page_heig
         if word["top"] <= header_top + 24:
             continue
         text = word["text"]
-        if text in {"Combustible", "INTERVALOS", "June"}:
+        if text in {"Combustible", "June"}:
+            candidates.append(word["top"])
+        elif text == "INTERVALOS" and _is_perforation_interval_heading(words, word):
             candidates.append(word["top"])
         elif word["x0"] < 260 and (text.startswith("**") or text.startswith("*CUADRILLA")):
             candidates.append(word["top"])
     return min(candidates) - 3 if candidates else page_height - 30
+
+
+def _is_perforation_interval_heading(words: list[dict[str, Any]], interval_word: dict[str, Any]) -> bool:
+    """Distinguish the lower perforation table from prose inside an operation row."""
+
+    return any(
+        abs(word["top"] - interval_word["top"]) <= 3
+        and word["x0"] >= interval_word["x1"]
+        and re.sub(r"[^A-ZÁÉÍÓÚÑ]", "", word["text"].upper()).startswith("CAÑONEAD")
+        for word in words
+    )
 
 
 def _operation_row_starts(words: list[dict[str, Any]], header_top: float, end_top: float) -> list[dict[str, Any]]:
@@ -243,7 +256,11 @@ def _operation_row_starts(words: list[dict[str, Any]], header_top: float, end_to
         same_line = [item for item in words if abs(item["top"] - word["top"]) <= 2.8]
         has_to = any(TIME_TOKEN_RE.match(item["text"]) and 200 <= item["x0"] <= 222 for item in same_line)
         has_hours = any(re.match(r"^\d+(?:\.\d+)?$", item["text"]) and 218 <= item["x0"] <= 235 for item in same_line)
-        if has_to and has_hours:
+        has_operation_value = any(
+            item["text"].strip() and 234 <= item["x0"] <= 324
+            for item in same_line
+        )
+        if has_to and (has_hours or has_operation_value):
             starts.append(word)
     return starts
 
@@ -252,17 +269,42 @@ def _operation_from_words(words: list[dict[str, Any]]) -> dict[str, str] | None:
     start = _column_text(words, 180, 202, first_line_only=True)
     end = _column_text(words, 202, 219.5, first_line_only=True)
     hours = _column_text(words, 219.5, 234.4, first_line_only=True)
+    hours_source = "DECLARED"
+    if not hours:
+        hours = _hours_from_clock_range(start, end)
+        hours_source = "CLOCK_DERIVED"
     if not (start and end and hours):
         return None
     return {
         "from": start,
         "to": end,
         "hours": hours,
+        "hours_source": hours_source,
         "op_code": _normalize_op_code(_column_text(words, 234.4, 266)),
         "op_sub": _clean_op_sub(_column_text(words, 266, 302)),
         "op_type": _normalize_op_type(_column_text(words, 302, 324, first_line_only=True)),
         "operation_details": _clean_operation_details(_column_text(words, 324, 590, preserve_lines=True)),
     }
+
+
+def _hours_from_clock_range(start: str, end: str) -> str:
+    def minutes(value: str) -> int | None:
+        match = re.fullmatch(r"(\d{1,2}):(\d{2})", value.strip())
+        if not match:
+            return None
+        hour, minute = int(match.group(1)), int(match.group(2))
+        if minute >= 60 or hour > 24 or (hour == 24 and minute):
+            return None
+        return hour * 60 + minute
+
+    start_minutes = minutes(start)
+    end_minutes = minutes(end)
+    if start_minutes is None or end_minutes is None:
+        return ""
+    if end_minutes <= start_minutes:
+        end_minutes += 24 * 60
+    duration = (end_minutes - start_minutes) / 60
+    return f"{duration:.2f}"
 
 
 def _column_text(

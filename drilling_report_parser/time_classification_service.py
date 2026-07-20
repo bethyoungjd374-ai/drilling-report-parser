@@ -21,6 +21,16 @@ CLASSIFICATION_FIELDS = (
 )
 
 
+def _pending_classification_count(cursor: Any, record_id: str) -> int:
+    cursor.execute(
+        "SELECT COUNT(*) count FROM dpr_operation_classification c "
+        "JOIN dpr_operation a ON a.id=c.activity_id JOIN dpr_report d ON d.id=a.daily_report_id "
+        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED')",
+        (record_id,),
+    )
+    return int((cursor.fetchone() or {}).get("count", 0) or 0)
+
+
 def current_rule_version(cursor: Any | None = None) -> str:
     if cursor is not None:
         cursor.execute(
@@ -288,14 +298,7 @@ def confirm_classification(activity_id: int, payload: dict[str, Any], *, actor: 
                 report_row = cursor.fetchone() or {}
                 record_id = str(report_row.get("record_id", "") or "")
                 if record_id:
-                    cursor.execute(
-                        "SELECT COUNT(*) count FROM dpr_operation_classification c "
-                        "JOIN dpr_operation a ON a.id=c.activity_id JOIN dpr_report d ON d.id=a.daily_report_id "
-                        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED') "
-                        "AND COALESCE(a.source_op_type,'') NOT IN ('SC','NPT')",
-                        (record_id,),
-                    )
-                    if int((cursor.fetchone() or {}).get("count", 0) or 0) == 0:
+                    if _pending_classification_count(cursor, record_id) == 0:
                         cursor.execute(
                             "UPDATE dq_issue SET status='RESOLVED',resolution_note='全部活动已人工确认',"
                             "resolved_at=NOW(),resolved_by=%s,updated_by=%s,version=version+1 "
@@ -344,14 +347,7 @@ def reclassify_non_manual(*, actor: str) -> dict[str, int | str]:
                         pending += 1
                     record_ids.add(str(row.get("record_id", "") or ""))
                 for record_id in record_ids:
-                    cursor.execute(
-                        "SELECT COUNT(*) count FROM dpr_operation_classification c "
-                        "JOIN dpr_operation a ON a.id=c.activity_id JOIN dpr_report d ON d.id=a.daily_report_id "
-                        "WHERE d.record_id=%s AND c.confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED') "
-                        "AND COALESCE(a.source_op_type,'') NOT IN ('SC','NPT')",
-                        (record_id,),
-                    )
-                    record_pending = int((cursor.fetchone() or {}).get("count", 0) or 0)
+                    record_pending = _pending_classification_count(cursor, record_id)
                     issue_key = f"{record_id}:CLASSIFICATION_PENDING"
                     if record_pending:
                         cursor.execute(

@@ -79,6 +79,54 @@ def load_report_payloads(
     return payloads
 
 
+def load_analytics_view_rows(
+    database_path: str | Path,
+    *,
+    date_from: str = "",
+    date_to: str = "",
+    rigs: list[str] | tuple[str, ...] = (),
+    report_type: str = "",
+    wellbore: str = "",
+    exact_wellbore: bool = False,
+    project_ids: list[str] | tuple[str, ...] = (),
+) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    payload = mysql_database.load_analytics_view_rows(
+        None,
+        date_from=date_from,
+        date_to=date_to,
+        rigs=rigs,
+        report_type=report_type,
+        wellbore=wellbore,
+        exact_wellbore=exact_wellbore,
+        project_ids=project_ids,
+    )
+    _clear_mysql_failure()
+    return payload
+
+
+def load_monthly_efficiency_report_rows(
+    database_path: str | Path,
+    *,
+    date_from: str = "",
+    date_to: str = "",
+    year_start: str = "",
+) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    payload = mysql_database.load_monthly_efficiency_report_rows(
+        None,
+        date_from=date_from,
+        date_to=date_to,
+        year_start=year_start,
+    )
+    _clear_mysql_failure()
+    return payload
+
+
 def save_translation_content(database_path: str | Path, record_id: str, rows: list[dict[str, Any]]) -> None:
     _validate_mysql_label(database_path)
     from . import mysql_database
@@ -289,6 +337,32 @@ def list_records(
     )
     _clear_mysql_failure()
     return records
+
+
+def load_production_report_remarks(
+    database_path: str | Path,
+    remark_keys: list[str] | tuple[str, ...] = (),
+) -> dict[str, str]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.load_production_report_remarks(None, remark_keys)
+    _clear_mysql_failure()
+    return rows
+
+
+def save_production_report_remark(
+    database_path: str | Path,
+    remark_key: str,
+    remark_text: str,
+    *,
+    actor: str,
+) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.save_production_report_remark(None, remark_key, remark_text, actor=actor)
+    _clear_mysql_failure()
 
 
 def list_ai_job_status(kind: str) -> list[dict[str, str]]:

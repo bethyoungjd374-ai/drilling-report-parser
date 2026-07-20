@@ -41,6 +41,71 @@ def test_operational_parameter_values_are_normalized_without_units() -> None:
     assert fields["torqueOnBottom"] == "27000"
 
 
+def test_completeness_is_not_inferred_without_an_explicit_period() -> None:
+    records = [
+        {"reportDate": "2026-06-01", "validation_status": "ok"},
+        {"reportDate": "2026-06-30", "validation_status": "warning"},
+    ]
+
+    result = form_server._completeness(records)
+
+    assert result == {
+        "assessed": False,
+        "percent": None,
+        "missing_days": None,
+        "warning_days": 1,
+        "observed_days": 2,
+        "coverage_basis": "NOT_ASSESSED_WITHOUT_EXPLICIT_PERIOD",
+    }
+
+
+def test_completeness_uses_only_the_explicit_calendar_period() -> None:
+    records = [
+        {"reportDate": "2026-06-01", "validation_status": "ok"},
+        {"reportDate": "2026-06-03", "validation_status": "warning"},
+        {"reportDate": "2026-07-01", "validation_status": "warning"},
+    ]
+
+    result = form_server._completeness(records, date_from="2026-06-01", date_to="2026-06-03")
+
+    assert result == {
+        "assessed": True,
+        "percent": 66.7,
+        "missing_days": 1,
+        "warning_days": 1,
+        "observed_days": 2,
+        "expected_days": 3,
+        "coverage_basis": "CALENDAR_DAY_WITH_ANY_MATCHED_REPORT",
+    }
+
+
+def test_analytics_quality_exposes_pending_hours_and_readiness() -> None:
+    operations = [
+        {
+            "record_id": "ready",
+            "source_row_no": 1,
+            "hours": 8,
+            "classification_status": "AUTO_CONFIRMED",
+            "statistics_ready": True,
+        },
+        {
+            "record_id": "pending",
+            "source_row_no": 1,
+            "hours": 4,
+            "classification_status": "PENDING",
+            "statistics_ready": False,
+        },
+    ]
+
+    result = form_server._analytics_quality_fields([], operations)
+
+    assert result["unconfirmed_classification_count"] == 1
+    assert result["unconfirmed_classification_hours"] == 4.0
+    assert result["statistics_ready_hours"] == 8.0
+    assert result["statistics_ready_percent"] == 66.7
+    assert result["statistics_ready"] is False
+
+
 class FormServerImportTest(unittest.TestCase):
     def setUp(self) -> None:
         self.repository_tmp = tempfile.TemporaryDirectory()
@@ -60,15 +125,6 @@ class FormServerImportTest(unittest.TestCase):
 
         def load_payload(path: Path, record_id: str) -> dict[str, Any]:
             return excel_database.load_report_payload(repository(path), record_id)
-
-        def load_payloads(path: Path, record_ids: list[str], **_kwargs: Any) -> dict[str, dict[str, Any]]:
-            payloads = {}
-            for record_id in record_ids:
-                try:
-                    payloads[record_id] = excel_database.load_report_payload(repository(path), record_id)
-                except KeyError:
-                    continue
-            return payloads
 
         def operation_translations(path: Path, record_ids: list[str]) -> list[dict[str, str]]:
             return [
@@ -92,7 +148,6 @@ class FormServerImportTest(unittest.TestCase):
         patchers = [
             patch.object(form_server, "save_report_payload", side_effect=save_payload),
             patch.object(form_server, "load_report_payload", side_effect=load_payload),
-            patch.object(form_server, "load_report_payloads", side_effect=load_payloads),
             patch.object(form_server, "list_records", side_effect=records),
             patch.object(form_server, "load_operation_translations", side_effect=operation_translations),
             patch.object(form_server, "load_extraction_results", return_value=[]),
@@ -121,14 +176,37 @@ class FormServerImportTest(unittest.TestCase):
         handler._import_move_pdf()
 
         self.assertEqual(
-            [(call.args[0], call.args[1]) for call in handler._import_report_pdf.call_args_list],
+            [call.args[0] for call in handler._import_report_pdf.call_args_list],
             [
-                ("drilling", form_server.parse_pdf_daily_report),
-                ("completion", form_server.parse_completion_pdf_daily_report),
-                ("workover", form_server.parse_workover_pdf_daily_report),
-                ("drilling", form_server.parse_move_pdf_daily_report),
+                "drilling",
+                "completion",
+                "workover",
+                "move",
             ],
         )
+
+    def test_drilling_import_passes_selected_template_profile(self) -> None:
+        handler = object.__new__(form_server.FormHandler)
+        handler.path = "/api/import-pdf?template_profile=compatible"
+        handler._import_report_pdf = Mock()
+
+        handler._import_pdf()
+
+        handler._import_report_pdf.assert_called_once_with("drilling", template_profile="compatible")
+
+    def test_unknown_drilling_template_returns_validation_error(self) -> None:
+        handler = object.__new__(form_server.FormHandler)
+        handler._read_pdf_upload = Mock(return_value=form_server.UploadedFile(
+            filename="daily.pdf",
+            data=b"%PDF-unknown-template",
+        ))
+        handler._send_json = Mock()
+
+        handler._import_report_pdf("drilling", template_profile="unknown")
+
+        response = handler._send_json.call_args
+        self.assertIn("不支持的钻井 PDF 模板", response.args[0]["error"])
+        self.assertEqual(response.kwargs["status"], 400)
 
     def test_multi_report_pdf_import_stores_every_segment_and_returns_reports(self) -> None:
         writer = PdfWriter()
@@ -165,7 +243,9 @@ class FormServerImportTest(unittest.TestCase):
         handler._store_source_pdf = Mock()
         handler._send_json = Mock()
 
-        handler._import_report_pdf("completion", parser)
+        strategy = Mock(storage_report_type="completion", parser=parser)
+        with patch.object(form_server, "pdf_import_strategy", return_value=strategy):
+            handler._import_report_pdf("completion")
 
         self.assertEqual(handler._store_payload.call_count, 2)
         self.assertEqual(handler._store_source_pdf.call_count, 2)
@@ -206,7 +286,9 @@ class FormServerImportTest(unittest.TestCase):
         handler._store_source_pdf = Mock()
         handler._send_json = Mock()
 
-        handler._import_report_pdf("completion", Mock(return_value=payload))
+        strategy = Mock(storage_report_type="completion", parser=Mock(return_value=payload))
+        with patch.object(form_server, "pdf_import_strategy", return_value=strategy):
+            handler._import_report_pdf("completion")
 
         handler._store_payload.assert_not_called()
         handler._store_source_pdf.assert_not_called()
@@ -215,7 +297,7 @@ class FormServerImportTest(unittest.TestCase):
         self.assertIn("当前上传入口是完井日报", error_payload["error"])
         self.assertEqual(handler._send_json.call_args.kwargs["status"], 400)
 
-    def test_rig_move_event_is_accepted_and_stored_as_drilling(self) -> None:
+    def test_rig_move_event_is_accepted_and_stored_as_move(self) -> None:
         writer = PdfWriter()
         writer.add_blank_page(width=101, height=300)
         output = BytesIO()
@@ -241,13 +323,15 @@ class FormServerImportTest(unittest.TestCase):
         handler._store_source_pdf = Mock()
         handler._send_json = Mock()
 
-        handler._import_report_pdf("drilling", Mock(return_value=payload))
+        strategy = Mock(storage_report_type="move", parser=Mock(return_value=payload))
+        with patch.object(form_server, "pdf_import_strategy", return_value=strategy):
+            handler._import_report_pdf("move")
 
         handler._store_payload.assert_called_once()
-        self.assertEqual(handler._store_payload.call_args.args[1], "drilling")
+        self.assertEqual(handler._store_payload.call_args.args[1], "move")
         stored_payload = handler._store_payload.call_args.args[0]
         self.assertEqual(stored_payload["metadata"]["detected_event_type"], "move")
-        self.assertEqual(stored_payload["metadata"]["detected_report_type"], "drilling")
+        self.assertEqual(stored_payload["metadata"]["detected_report_type"], "move")
 
     def test_multi_report_type_mismatch_rejects_the_whole_batch(self) -> None:
         writer = PdfWriter()
@@ -280,7 +364,9 @@ class FormServerImportTest(unittest.TestCase):
         handler._store_source_pdf = Mock()
         handler._send_json = Mock()
 
-        handler._import_report_pdf("completion", parser)
+        strategy = Mock(storage_report_type="completion", parser=parser)
+        with patch.object(form_server, "pdf_import_strategy", return_value=strategy):
+            handler._import_report_pdf("completion")
 
         handler._store_payload.assert_not_called()
         handler._store_source_pdf.assert_not_called()
@@ -560,6 +646,177 @@ class FormServerImportTest(unittest.TestCase):
             {"label": "RIG A", "hours": 2.0},
             {"label": "RIG B", "hours": 0.0},
         ])
+
+    def test_mysql_production_analytics_uses_only_ready_view_hours(self) -> None:
+        record = {
+            "record_id": "drilling:well-a:2026-06-01:1", "report_type": "drilling",
+            "reportDate": "2026-06-01", "rig": "RIG A", "wellbore": "WELL A",
+            "project_id": "5", "project_name": "Project A", "project_contract": "C-1",
+            "validation_status": "ok", "event": "DRILLING", "master_match_status": "MATCHED",
+        }
+        rows = {
+            "records": [record],
+            "operations": [
+                {**record, "hours": 8.0, "op_type": "P", "source_op_type": "P", "statistics_ready": True,
+                 "classification_status": "AUTO_CONFIRMED", "reason": "DRILLING"},
+                {**record, "hours": 16.0, "op_type": "PENDING", "source_op_type": "NPT", "statistics_ready": False,
+                 "classification_status": "PENDING", "reason": "WAITING"},
+            ],
+            "quality": {"unassigned_count": 3, "ambiguous_count": 1},
+        }
+        with patch.object(form_server, "load_analytics_view_rows", return_value=rows) as loader, patch.object(
+            form_server, "_enrich_operation_translation_rows"
+        ), patch.object(form_server, "_enrich_operation_extraction_rows"):
+            payload = form_server._production_summary_payload(Path("mysql"), {})
+
+        loader.assert_called_once()
+        self.assertEqual(payload["kpis"]["total_hours"], 8.0)
+        self.assertEqual(payload["details"][0]["drilling_hours"], 8.0)
+        self.assertEqual(payload["unassigned_count"], 3)
+        self.assertEqual(payload["unconfirmed_classification_count"], 1)
+
+    def test_monthly_efficiency_report_keeps_pending_fields_out_of_weighted_efficiency(self) -> None:
+        source_rows = [
+            {
+                "job_id": 11, "job_code": "JOB-11", "job_type": "drilling",
+                "project_id": 5, "project_name": "Project A", "well_id": 7, "well_name": "WELL-A",
+                "well_profile_code": "",
+                "rig_name": "RIG-A", "report_start_date": "2026-06-01", "report_end_date": "2026-06-03",
+                "report_count": 3, "operation_count": 6, "pending_operation_count": 0,
+                "production_hours": 18, "npt_hours": 2, "sc_hours": 4, "pending_hours": 0,
+                "events": {"DRILLING_START": "2026-06-01", "DRILLING_END": "2026-06-03"},
+                "month_progress_ft": 600, "year_progress_ft": 900, "month_progress_count": 3,
+                "year_progress_count": 5, "current_depth_ft": 1500,
+            },
+            {
+                "job_id": 12, "job_code": "JOB-12", "job_type": "workover",
+                "project_id": 5, "project_name": "Project A", "well_id": 8, "well_name": "WELL-B",
+                "rig_name": "RIG-A", "report_start_date": "2026-06-10", "report_end_date": "2026-06-10",
+                "report_count": 1, "operation_count": 2, "pending_operation_count": 1,
+                "production_hours": 8, "npt_hours": 0, "sc_hours": 0, "pending_hours": 8,
+                "events": {"WORKOVER_START": "2026-06-10"},
+            },
+        ]
+        with patch.object(
+            form_server,
+            "load_monthly_efficiency_report_rows",
+            return_value={"latest_month": "2026-06", "rows": source_rows},
+        ) as loader:
+            payload = form_server._monthly_efficiency_report_payload(
+                Path("mysql"), {"date_from": ["2026-06-01"], "date_to": ["2026-06-30"]}
+            )
+
+        loader.assert_called_once_with(
+            Path("mysql"), date_from="2026-06-01", date_to="2026-06-30", year_start="2026-01-01"
+        )
+        self.assertEqual(payload["grain"], "date_range + project + well + job_type + job_id")
+        self.assertEqual(payload["kpis"]["weighted_efficiency"], 0.9)
+        self.assertEqual(payload["kpis"]["efficiency_job_count"], 1)
+        self.assertEqual(payload["details"][0]["actual_cycle_days"], 3)
+        self.assertEqual(payload["details"][0]["well_profile"], "")
+        self.assertNotIn("sequence_no", payload["details"][0])
+        self.assertEqual(payload["details"][0]["source_status"], "AVAILABLE")
+        self.assertIsNone(payload["details"][0]["move_setup_hours"])
+        self.assertIn("搬安时长", payload["details"][0]["pending_fields"])
+        self.assertIsNone(payload["details"][1]["efficiency"])
+        self.assertEqual(payload["details"][1]["source_status"], "PARTIAL")
+
+    def test_monthly_efficiency_export_writes_pending_instead_of_zero(self) -> None:
+        data = form_server._monthly_efficiency_workbook_bytes([{
+            "month": "2026-06", "project_name": "Project A", "wellbore": "WELL-A",
+            "job_type_label": "钻井", "production_hours": 12,
+            "well_profile": "",
+            "npt_hours": 0, "sc_hours": 0, "efficiency": 1.0,
+            "move_setup_hours": None, "source_status": "AVAILABLE", "pending_fields": ["搬安时长"],
+        }], "2026-06-01", "2026-06-30", "zh")
+
+        workbook = form_server.load_workbook(BytesIO(data), data_only=True)
+        sheet = workbook["时效报表"]
+        headers = {cell.value: cell.column for cell in sheet[1]}
+        self.assertEqual(sheet.cell(2, headers["搬安(h)"]).value, "待定")
+        self.assertIsNone(sheet.cell(2, headers["井型"]).value)
+        self.assertEqual(sheet.cell(2, headers["作业时效"]).value, 1.0)
+        self.assertEqual(workbook.sheetnames, ["时效报表"])
+
+    def test_monthly_efficiency_uses_current_operation_translation_for_chinese_reason(self) -> None:
+        source_rows = [{
+            "job_id": 11, "job_type": "drilling", "project_id": 5, "project_name": "Project A",
+            "well_id": 7, "well_name": "WELL-A", "operation_count": 1, "pending_operation_count": 0,
+            "production_hours": 0, "npt_hours": 1, "sc_hours": 0, "pending_hours": 0,
+            "nonproductive_description": "ESPERA DE SERVICIO",
+            "nonproductive_operations": [{
+                "record_id": "record-1", "source_row_no": 3,
+                "operation_details": "ESPERA DE SERVICIO",
+                "operation_details_normalized": "ESPERA DE SERVICIO",
+            }],
+        }]
+        translation = {
+            "record_id": "record-1", "entity_id": "record-1:operations:3",
+            "source_text": "ESPERA DE SERVICIO", "translated_text": "等待服务公司",
+            "source_hash": hashlib.sha256("ESPERA DE SERVICIO".encode("utf-8")).hexdigest(),
+            "translation_status": "COMPLETED",
+        }
+        with patch.object(
+            form_server, "load_monthly_efficiency_report_rows",
+            return_value={"latest_month": "2026-06", "rows": source_rows},
+        ), patch.object(form_server, "load_operation_translations", return_value=[translation]):
+            payload = form_server._monthly_efficiency_report_payload(
+                Path("mysql"), {"date_from": ["2026-06-01"], "date_to": ["2026-06-30"]}
+            )
+
+        self.assertEqual(payload["details"][0]["nonproductive_description"], "ESPERA DE SERVICIO")
+        self.assertEqual(payload["details"][0]["nonproductive_description_zh"], "等待服务公司")
+
+    def test_monthly_efficiency_export_omits_removed_source_columns_and_uses_chinese_reason(self) -> None:
+        data = form_server._monthly_efficiency_workbook_bytes([{
+            "month": "2026-06", "project_name": "Project A", "wellbore": "WELL-A",
+            "job_type_label": "钻井",
+            "nonproductive_description": "ESPERA DE SERVICIO",
+            "nonproductive_description_zh": "等待服务公司",
+            "other_remarks": "不应导出", "report_count": 3, "source_status": "AVAILABLE",
+            "pending_fields": ["搬安时长"],
+        }], "2026-06-01", "2026-06-30", "zh")
+
+        workbook = form_server.load_workbook(BytesIO(data), data_only=True)
+        sheet = workbook["时效报表"]
+        headers = {cell.value: cell.column for cell in sheet[1]}
+        self.assertEqual(sheet.cell(2, headers["非生产原因"]).value, "等待服务公司")
+        self.assertNotIn("日报其他备注", headers)
+        self.assertNotIn("来源日报数", headers)
+        self.assertNotIn("时效数据状态", headers)
+        self.assertNotIn("待定字段", headers)
+        self.assertNotIn("批次", headers)
+
+    def test_monthly_efficiency_default_date_range_is_unlimited(self) -> None:
+        with patch.object(
+            form_server,
+            "load_monthly_efficiency_report_rows",
+            return_value={"available_date_from": "2026-04-01", "available_date_to": "2026-07-20", "rows": []},
+        ) as loader:
+            payload = form_server._monthly_efficiency_report_payload(Path("mysql"), {})
+
+        loader.assert_called_once_with(Path("mysql"), date_from="", date_to="", year_start="")
+        self.assertEqual(payload["date_from"], "")
+        self.assertEqual(payload["date_to"], "")
+        self.assertEqual(payload["filters"]["available_date_from"], "2026-04-01")
+
+    def test_monthly_efficiency_export_follows_spanish_language_and_visible_columns(self) -> None:
+        data = form_server._monthly_efficiency_workbook_bytes([{
+            "project_name": "Proyecto A", "wellbore": "POZO-A", "job_type": "drilling",
+            "job_type_label": "钻井",
+            "nonproductive_description": "ESPERA DE SERVICIO",
+            "nonproductive_description_zh": "等待服务公司",
+        }], "", "", "es")
+
+        workbook = form_server.load_workbook(BytesIO(data), data_only=True)
+        sheet = workbook["Reporte eficiencia"]
+        headers = {cell.value: cell.column for cell in sheet[1]}
+        self.assertEqual(len(headers), 30)
+        self.assertEqual(sheet.cell(2, headers["Especialidad"]).value, "Perforación")
+        self.assertEqual(sheet.cell(2, headers["Motivo no productivo"]).value, "ESPERA DE SERVICIO")
+        self.assertNotIn("统计月份", headers)
+        self.assertNotIn("合同号", headers)
+        self.assertNotIn("Lote", headers)
 
     def test_ai_extraction_rules_validate_source_and_target_fields(self) -> None:
         config = form_server._normalize_ai_extraction_config({
@@ -993,617 +1250,42 @@ class FormServerImportTest(unittest.TestCase):
         self.assertFalse(form_server._payload_has_extraction_units(p_only, "drilling", [rule]))
         self.assertTrue(form_server._payload_has_extraction_units(with_npt, "drilling", [rule]))
 
-    def test_project_team_normalization_preserves_rig_binding_metadata(self) -> None:
-        normalized = form_server._normalize_project_team_config({
-            "teams": [{"name": "00 SINOPEC 248"}],
-            "projects": [{
-                "contract_no": "EC-2026-001",
-                "project_name": "Test Project",
-                "rigs": [{
-                    "rig": "00 SINOPEC 248",
-                    "start_date": "2026-07-04",
-                    "end_date": "2026-08-04",
-                    "wells": ["PCNC-040"],
-                    "note": "phase 1",
-                }],
-            }],
-        })
+    def test_rig_name_normalization_unifies_report_variants(self) -> None:
+        self.assertEqual(form_server._normalize_rig_name("00 SINOPEC 248"), "SINOPEC 248")
+        self.assertEqual(form_server._normalize_rig_name("W248"), "SINOPEC 248")
 
-        self.assertEqual(normalized["teams"][0]["name"], "SINOPEC 248")
-        self.assertEqual(normalized["teams"][0]["aliases"], ["00 SINOPEC 248"])
-        rig = normalized["projects"][0]["rigs"][0]
-        self.assertEqual(rig["rig"], "SINOPEC 248")
-        self.assertEqual(rig["start_date"], "2026-07-04")
-        self.assertEqual(rig["end_date"], "2026-08-04")
-        self.assertEqual(rig["note"], "phase 1")
-        self.assertEqual(rig["wells"], ["PCNC-040"])
+    def test_production_filter_rigs_uses_records_and_rejects_placeholders(self) -> None:
+        with patch.object(form_server, "list_records", return_value=[
+            {"rig": "W248"},
+            {"rig": "DRPPLACEHOLDER A 168"},
+        ]):
+            rigs = form_server._production_filter_rigs([
+                {"rig": "00 SINOPEC 168"},
+                {"rig": "UNKNOWN"},
+            ])
+        self.assertEqual(rigs, ["SINOPEC 168", "SINOPEC 248"])
 
-    def test_project_team_normalization_drops_placeholder_rigs(self) -> None:
-        normalized = form_server._normalize_project_team_config({
-            "teams": [
-                {"name": "DRPPLACEHOLDER A 248"},
-                {"name": "SINOPEC 248"},
-            ],
-            "projects": [{
-                "contract_no": "EC-2026-001",
-                "project_name": "Test Project",
-                "rigs": [
-                    {"rig": "DRPPLACEHOLDER A 248", "wells": ["BAD-001"]},
-                    {"rig": "SINOPEC 248", "wells": ["PCNC-040"]},
-                ],
-            }],
-            "pending_wells": [
-                {"rig": "DRPPLACEHOLDER A 248", "wellbore": "BAD-001"},
-                {"rig": "SINOPEC 248", "wellbore": "PCNC-040"},
-            ],
-        })
-
-        self.assertEqual([team["name"] for team in normalized["teams"]], ["SINOPEC 248"])
-        self.assertEqual([rig["rig"] for rig in normalized["projects"][0]["rigs"]], ["SINOPEC 248"])
-        self.assertEqual([item["rig"] for item in normalized["pending_wells"]], ["SINOPEC 248"])
-
-    def test_production_filter_rigs_excludes_placeholder_and_unbound_global_teams(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            original_list_records = form_server.list_records
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [
-                        {"name": "DRPPLACEHOLDER A 248"},
-                        {"name": "SINOPEC 999"},
-                    ],
-                    "projects": [{
-                        "id": "project-1",
-                        "contract_no": "EC-2026-001",
-                        "project_name": "Test Project",
-                        "status": "active",
-                        "rigs": [{"rig": "SINOPEC 933", "wells": []}],
-                    }],
-                })
-                form_server.list_records = lambda database_path: [
-                    {"rig": "DRPPLACEHOLDER A 248"},
-                    {"rig": "SINOPEC 127"},
-                ]
-
-                rigs = form_server._production_filter_rigs([{"rig": "SINOPEC 248"}], Path(tmp) / "unused.xlsx")
-
-                self.assertEqual(rigs, ["SINOPEC 127", "SINOPEC 248", "SINOPEC 933"])
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-                form_server.list_records = original_list_records
-
-    def test_project_assignment_matches_project_period_rig_and_well(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 248", "aliases": ["00 SINOPEC 248"]}],
-                    "projects": [{
-                        "id": "project-1",
-                        "contract_no": "EC-2026-001",
-                        "project_name": "Test Project",
-                        "status": "active",
-                        "start_date": "2026-07-01",
-                        "end_date": "2026-07-31",
-                        "rigs": [{"rig": "SINOPEC 248", "wells": ["PCNC-040"]}],
-                    }],
-                })
-
-                matches = form_server._project_assignments_for_record({
-                    "rig": "00 SINOPEC 248",
-                    "wellbore": "PCNC-040",
-                    "reportDate": "2026-07-15",
-                }, {"project-1"})
-                self.assertEqual(matches[0]["project_name"], "Test Project")
-                self.assertEqual(form_server._project_assignments_for_record({
-                    "rig": "00 SINOPEC 248",
-                    "wellbore": "PCNC-041",
-                    "reportDate": "2026-07-15",
-                }, {"project-1"}), [])
-                self.assertEqual(form_server._project_assignments_for_record({
-                    "rig": "00 SINOPEC 248",
-                    "wellbore": "PCNC-040",
-                    "reportDate": "2026-08-01",
-                }, {"project-1"}), [])
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-
-    def test_rig_name_normalization_unifies_report_and_monthly_variants(self) -> None:
-        variants = ["905", "W905", "SP905", "RIG905", "SINOPEC905", "SINOPEC-905", "SINOPEC 905"]
-        self.assertEqual(
-            {form_server._normalize_rig_name(value) for value in variants},
-            {"SINOPEC 905"},
-        )
-
-    def test_project_assignment_prefers_exact_well_over_wildcard_project(self) -> None:
-        config = form_server._normalize_project_team_config({
-            "teams": [{"name": "SINOPEC 905"}],
-            "projects": [
-                {
-                    "id": "exact-project",
-                    "contract_no": "EC-EXACT",
-                    "project_name": "Exact",
-                    "start_date": "2026-01-01",
-                    "end_date": "2026-12-31",
-                    "rigs": [{"rig": "SINOPEC 905", "wells": ["SHSG-160"]}],
-                },
-                {
-                    "id": "wildcard-project",
-                    "contract_no": "EC-WILDCARD",
-                    "project_name": "Wildcard",
-                    "start_date": "2026-01-01",
-                    "end_date": "2026-12-31",
-                    "rigs": [{"rig": "W905", "wells": []}],
-                },
-            ],
-        })
-
-        resolution = form_server._project_assignment_resolution({
-            "rig": "SINOPEC-905",
-            "wellbore": "SHSG-160",
-            "reportDate": "2026-06-11",
-        }, config=config)
-
-        self.assertEqual(resolution["status"], "MATCHED")
-        self.assertEqual(resolution["assignment"]["project_id"], "exact-project")
-        self.assertEqual(len(resolution["matches"]), 1)
-
-    def test_project_assignment_rejects_multiple_wildcard_projects(self) -> None:
-        config = form_server._normalize_project_team_config({
-            "teams": [{"name": "SINOPEC 168"}],
-            "projects": [
-                {
-                    "id": "project-1",
-                    "project_name": "One",
-                    "start_date": "2026-01-01",
-                    "end_date": "2026-12-31",
-                    "rigs": [{"rig": "SINOPEC 168", "wells": []}],
-                },
-                {
-                    "id": "project-2",
-                    "project_name": "Two",
-                    "start_date": "2026-01-01",
-                    "end_date": "2026-12-31",
-                    "rigs": [{"rig": "SP168", "wells": []}],
-                },
-            ],
-        })
-        record = {"rig": "RIG168", "wellbore": "TCHA-006I", "reportDate": "2026-06-10"}
-
-        resolution = form_server._project_assignment_resolution(record, config=config)
-
-        self.assertEqual(resolution["status"], "AMBIGUOUS")
-        self.assertEqual(len(resolution["matches"]), 2)
-        self.assertEqual(form_server._project_assignments_for_record(record, config=config), [])
-
-    def test_discovered_well_does_not_mutate_project_configuration(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 248"}, {"name": "SINOPEC 168"}],
-                    "projects": [
-                        {
-                            "id": "project-1",
-                            "contract_no": "EC-2026-001",
-                            "project_name": "Drilling Project",
-                            "status": "active",
-                            "start_date": "2026-01-01",
-                            "end_date": "2026-12-31",
-                            "rigs": [{"rig": "SINOPEC 248", "wells": ["EXISTING-001"]}],
-                        },
-                        {
-                            "id": "project-2",
-                            "contract_no": "EC-2026-002",
-                            "project_name": "Move Project",
-                            "status": "active",
-                            "start_date": "2026-01-01",
-                            "end_date": "2026-12-31",
-                            "rigs": [{"rig": "SINOPEC 168", "wells": []}],
-                        },
-                    ],
-                })
-
-                before = form_server.PROJECT_TEAM_PATH.read_text(encoding="utf-8")
-                with patch.object(form_server, "list_records", return_value=[{
-                    "rig": "SINOPEC 248",
-                    "wellbore": "PCNC-040",
-                    "reportDate": "2026-06-11",
-                    "report_type": "drilling",
-                    "created_at": "2026-06-11T00:00:00",
-                }]):
-                    discovered = form_server._sync_project_wells_from_database(Path("mysql"))
-                config = form_server._load_project_team_config()
-                first_project = next(project for project in config["projects"] if project["id"] == "project-1")
-                second_project = next(project for project in config["projects"] if project["id"] == "project-2")
-                self.assertEqual(first_project["rigs"][0]["wells"], ["EXISTING-001"])
-                self.assertEqual(second_project["rigs"][0]["wells"], [])
-                self.assertEqual(config["pending_wells"], [])
-                self.assertEqual(discovered["pending_wells"][0]["wellbore"], "PCNC-040")
-                self.assertEqual(form_server.PROJECT_TEAM_PATH.read_text(encoding="utf-8"), before)
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-
-    def test_project_mode_production_report_groups_well_stage_dates(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            database_path = Path(tmp) / "report_database.xlsx"
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 248"}],
-                    "projects": [{
-                        "id": "project-1",
-                        "contract_no": "EC-2026-001",
-                        "project_name": "Test Project",
-                        "status": "active",
-                        "start_date": "2026-06-01",
-                        "end_date": "2026-06-30",
-                        "rigs": [{"rig": "SINOPEC 248", "wells": ["PCNC-040"]}],
-                    }],
-                })
-
-                def store(report_type: str, date: str, event: str, hours: str, report_no: str) -> None:
-                    form_server.save_report_payload(database_path, {
-                        "report_fields": {
-                            "event": event,
-                            "reportDate": date,
-                            "reportNo": report_no,
-                            "wellbore": "PCNC-040",
-                            "rig": "SINOPEC 248",
-                        },
-                        "operations": [{"hours": hours, "op_type": "P", "operation_details": event}],
-                    }, report_type)
-
-                store("drilling", "2026-06-01", "Rig Move", "0", "1")
-                store("move", "2026-06-01", "MOVE", "12", "2")
-                store("drilling", "2026-06-02", "DRILLING", "24", "3")
-                store("drilling", "2026-06-05", "drilling", "24", "4")
-                store("completion", "2026-06-10", "Completion", "18", "5")
-                store("completion", "2026-06-11", "Completion", "6", "7")
-                store("workover", "2026-06-12", "WORKOVER", "6", "6")
-
-                payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"], "project": ["project-1"]})
-                self.assertEqual(len(payload["details"]), 1)
-                detail = payload["details"][0]
-                self.assertEqual(detail["wellbore"], "PCNC-040")
-                self.assertEqual(detail["contract_project"], "EC-2026-001 / Test Project")
-                self.assertEqual(detail["move_date"], "2026-06-01")
-                self.assertEqual(detail["drilling_start_date"], "2026-06-02")
-                self.assertEqual(detail["drilling_finish_date"], "2026-06-05")
-                self.assertEqual(detail["completion_date"], "2026-06-11")
-                self.assertEqual(detail["workover_date"], "2026-06-12")
-                self.assertEqual(detail["move_hours"], 12.0)
-                self.assertEqual(detail["drilling_hours"], 48.0)
-                self.assertEqual(detail["completion_hours"], 24.0)
-                self.assertEqual(detail["workover_hours"], 6.0)
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-
-    def test_project_report_keeps_unassigned_wells_pending(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            database_path = Path(tmp) / "report_database.xlsx"
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 183"}],
-                    "projects": [{
-                        "id": "project-1",
-                        "contract_no": "EC-2026-001",
-                        "project_name": "Test Project",
-                        "status": "active",
-                        "start_date": "2026-06-01",
-                        "end_date": "2026-06-30",
-                        "rigs": [{"rig": "SINOPEC 183", "wells": ["OLD-001"]}],
-                    }],
-                })
-
-                for report_type, event, date, report_no in [
-                    ("completion", "Completion", "2026-06-11", "1"),
-                    ("workover", "Workover", "2026-06-12", "2"),
-                ]:
-                    form_server.save_report_payload(database_path, {
-                        "report_fields": {
-                            "event": event,
-                            "reportDate": date,
-                            "reportNo": report_no,
-                            "wellbore": "GCLH-022",
-                            "rig": "SINOPEC 183",
-                        },
-                        "operations": [{"hours": "12", "op_type": "P", "operation_details": event}],
-                    }, report_type)
-
-                payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"], "project": ["project-1"]})
-                discovered = form_server._sync_project_wells_from_database(database_path)
-                config = form_server._load_project_team_config()
-                project = config["projects"][0]
-
-                self.assertEqual(project["rigs"][0]["wells"], ["OLD-001"])
-                self.assertEqual(config["pending_wells"], [])
-                self.assertEqual(payload["details"], [])
-                self.assertEqual(discovered["pending_wells"][0]["wellbore"], "GCLH-022")
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-
-    def test_production_report_remarks_are_user_saved_only(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            original_remarks_path = form_server.PRODUCTION_REPORT_REMARKS_PATH
-            database_path = Path(tmp) / "report_database.xlsx"
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            form_server.PRODUCTION_REPORT_REMARKS_PATH = Path(tmp) / "production_report_remarks.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 248"}],
-                    "projects": [{
-                        "id": "project-1",
-                        "contract_no": "EC-2026-001",
-                        "project_name": "Test Project",
-                        "status": "active",
-                        "start_date": "2026-06-01",
-                        "end_date": "2026-06-30",
-                        "rigs": [{"rig": "SINOPEC 248", "wells": ["PCNC-040"]}],
-                    }],
-                })
-                form_server.save_report_payload(database_path, {
-                    "report_fields": {
-                        "event": "DRILLING",
-                        "reportDate": "2026-06-11",
-                        "reportNo": "1",
-                        "wellbore": "PCNC-040",
-                        "rig": "SINOPEC 248",
-                    },
-                    "operations": [{"hours": "24", "op_type": "P", "operation_details": "Drilling"}],
-                }, "drilling")
-
-                payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"], "project": ["project-1"]})
-                detail = payload["details"][0]
-                self.assertEqual(detail["remarks"], "")
-
-                form_server._save_production_report_remarks({detail["remark_key"]: "用户填写备注"})
-                payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"], "project": ["project-1"]})
-                self.assertEqual(payload["details"][0]["remarks"], "用户填写备注")
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-                form_server.PRODUCTION_REPORT_REMARKS_PATH = original_remarks_path
-
-    def test_project_mode_production_report_filters_by_multiple_rigs_across_projects(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            database_path = Path(tmp) / "report_database.xlsx"
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 127"}, {"name": "SINOPEC 248"}, {"name": "SINOPEC 933"}],
-                    "projects": [
-                        {
-                            "id": "project-1",
-                            "contract_no": "EC-2026-001",
-                            "project_name": "First Project",
-                            "status": "active",
-                            "start_date": "2026-06-01",
-                            "end_date": "2026-06-30",
-                            "rigs": [
-                                {"rig": "SINOPEC 127", "wells": ["LOBC-010"]},
-                                {"rig": "SINOPEC 248", "wells": ["PCNC-040"]},
-                            ],
-                        },
-                        {
-                            "id": "project-2",
-                            "contract_no": "EC-2026-002",
-                            "project_name": "Second Project",
-                            "status": "active",
-                            "start_date": "2026-06-01",
-                            "end_date": "2026-06-30",
-                            "rigs": [{"rig": "SINOPEC 933", "wells": ["ACAH-270H"]}],
-                        },
-                    ],
-                })
-                for rig, wellbore, report_type, date, event in [
-                    ("SINOPEC 127", "LOBC-010", "completion", "2026-06-11", "Completion"),
-                    ("SINOPEC 248", "PCNC-040", "drilling", "2026-06-11", "DRILLING"),
-                    ("SINOPEC 933", "ACAH-270H", "workover", "2026-06-10", "WORKOVER"),
-                ]:
-                    form_server.save_report_payload(database_path, {
-                        "report_fields": {
-                            "event": event,
-                            "reportDate": date,
-                            "reportNo": f"{rig}-{wellbore}",
-                            "wellbore": wellbore,
-                            "rig": rig,
-                        },
-                        "operations": [{"hours": "24", "op_type": "P", "operation_details": event}],
-                    }, report_type)
-
-                payload = form_server._production_summary_payload(database_path, {
-                    "project_mode": ["1"],
-                    "rig": ["SINOPEC 127", "SINOPEC 933"],
-                })
-                wells = {item["wellbore"] for item in payload["details"]}
-                projects = {item["contract_project"] for item in payload["details"]}
-
-                self.assertEqual(wells, {"LOBC-010", "ACAH-270H"})
-                self.assertEqual(projects, {"EC-2026-001 / First Project", "EC-2026-002 / Second Project"})
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-
-    def test_project_mode_production_report_intersects_projects_rigs_and_well_query(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            database_path = Path(tmp) / "report_database.xlsx"
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 127"}, {"name": "SINOPEC 248"}, {"name": "SINOPEC 933"}],
-                    "projects": [
-                        {
-                            "id": "project-1",
-                            "contract_no": "EC-2026-001",
-                            "project_name": "First Project",
-                            "status": "active",
-                            "start_date": "2026-06-01",
-                            "end_date": "2026-06-30",
-                            "rigs": [
-                                {"rig": "SINOPEC 127", "wells": ["LOBC-010"]},
-                                {"rig": "SINOPEC 248", "wells": ["PCNC-040", "PCNC-039"]},
-                            ],
-                        },
-                        {
-                            "id": "project-2",
-                            "contract_no": "EC-2026-002",
-                            "project_name": "Second Project",
-                            "status": "active",
-                            "start_date": "2026-06-01",
-                            "end_date": "2026-06-30",
-                            "rigs": [{"rig": "SINOPEC 933", "wells": ["ACAH-270H"]}],
-                        },
-                    ],
-                })
-                for rig, wellbore, report_type, date, event in [
-                    ("SINOPEC 127", "LOBC-010", "completion", "2026-06-11", "Completion"),
-                    ("SINOPEC 248", "PCNC-040", "drilling", "2026-06-11", "DRILLING"),
-                    ("SINOPEC 248", "PCNC-039", "drilling", "2026-06-12", "DRILLING"),
-                    ("SINOPEC 933", "ACAH-270H", "workover", "2026-06-10", "WORKOVER"),
-                ]:
-                    form_server.save_report_payload(database_path, {
-                        "report_fields": {
-                            "event": event,
-                            "reportDate": date,
-                            "reportNo": f"{rig}-{wellbore}",
-                            "wellbore": wellbore,
-                            "rig": rig,
-                        },
-                        "operations": [{"hours": "24", "op_type": "P", "operation_details": event}],
-                    }, report_type)
-
-                payload = form_server._production_summary_payload(database_path, {
-                    "project_mode": ["1"],
-                    "project": ["project-1"],
-                    "rig": ["SINOPEC 248", "SINOPEC 933"],
-                    "wellbore": ["PCNC"],
-                })
-
-                self.assertEqual({item["wellbore"] for item in payload["details"]}, {"PCNC-039", "PCNC-040"})
-                self.assertEqual({item["project_id"] for item in payload["details"]}, {"project-1"})
-                self.assertEqual(payload["filters"]["rigs"], ["SINOPEC 127", "SINOPEC 248", "SINOPEC 933"])
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
-
-    def test_well_stats_returns_card_basic_fields_and_stage_dates(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_database_path = form_server.DATABASE_PATH
-            original_users_path = form_server.USERS_PATH
-            form_server.DATABASE_PATH = Path(tmp) / "report_database.xlsx"
-            form_server.USERS_PATH = Path(tmp) / "users.json"
-            form_server.SESSIONS.clear()
-            try:
-                for report_type, date, event, report_no in [
-                    ("drilling", "2026-06-01", "Rig Move", "1"),
-                    ("drilling", "2026-06-02", "DRILLING", "2"),
-                    ("completion", "2026-06-10", "Completion", "3"),
-                    ("completion", "2026-06-11", "Final report", "4"),
-                ]:
-                    form_server.save_report_payload(form_server.DATABASE_PATH, {
-                        "report_fields": {
-                            "event": event,
-                            "reportDate": date,
-                            "reportNo": report_no,
-                            "wellbore": "PCNC-040",
-                            "rig": "00 SINOPEC 248",
-                            "afeNumber": "AFE-001",
-                        },
-                        "operations": [{"hours": "24", "op_type": "P", "operation_details": event}],
-                    }, report_type)
-
-                server = form_server.ThreadingHTTPServer(("127.0.0.1", 0), form_server.FormHandler)
-                thread = threading.Thread(target=server.serve_forever, daemon=True)
-                thread.start()
-                try:
-                    cookie = _login(server.server_port, "admin", "admin123")
-                    response = _get_json(server.server_port, "/api/well-stats?wellbore=PCNC-040", cookie)
-                    self.assertEqual(response["status"], 200, response["body"])
-                    payload = json.loads(response["body"])
-                    self.assertEqual(payload["rig"], "SINOPEC 248")
-                    self.assertEqual(payload["afe_number"], "AFE-001")
-                    self.assertEqual(payload["move_date"], "2026-06-01")
-                    self.assertEqual(payload["drilling_start_date"], "2026-06-02")
-                    self.assertEqual(payload["completion_date"], "2026-06-11")
-                finally:
-                    server.shutdown()
-                    server.server_close()
-                    thread.join(timeout=2)
-            finally:
-                form_server.DATABASE_PATH = original_database_path
-                form_server.USERS_PATH = original_users_path
-                form_server.SESSIONS.clear()
-
-    def test_project_well_sync_keeps_ambiguous_wells_pending(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            original_project_team_path = form_server.PROJECT_TEAM_PATH
-            database_path = Path(tmp) / "report_database.xlsx"
-            form_server.PROJECT_TEAM_PATH = Path(tmp) / "project_team_config.json"
-            try:
-                form_server._save_project_team_config({
-                    "teams": [{"name": "SINOPEC 127"}],
-                    "projects": [
-                        {
-                            "id": "project-1",
-                            "contract_no": "EC-2026-001",
-                            "project_name": "First Project",
-                            "status": "active",
-                            "start_date": "2026-06-01",
-                            "end_date": "2026-06-30",
-                            "rigs": [],
-                        },
-                        {
-                            "id": "project-2",
-                            "contract_no": "EC-2026-002",
-                            "project_name": "Second Project",
-                            "status": "active",
-                            "start_date": "2026-06-01",
-                            "end_date": "2026-06-30",
-                            "rigs": [],
-                        },
-                    ],
-                })
-                form_server.save_report_payload(database_path, {
-                    "report_fields": {
-                        "event": "Completion",
-                        "reportDate": "2026-06-11",
-                        "reportNo": "1",
-                        "wellbore": "LOBC-010",
-                        "rig": "SINOPEC 127",
-                    },
-                    "operations": [{"hours": "8", "op_type": "P", "operation_details": "Completion"}],
-                }, "completion")
-
-                config = form_server._sync_project_wells_from_database(database_path)
-
-                self.assertEqual(config["pending_wells"], [{
-                    "rig": "SINOPEC 127",
-                    "wellbore": "LOBC-010",
-                    "report_type": "completion",
-                    "source": "report",
-                    "created_at": config["pending_wells"][0]["created_at"],
-                }])
-
-                project_payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"], "project": ["project-1"]})
-                self.assertEqual(project_payload["details"], [])
-
-                all_payload = form_server._production_summary_payload(database_path, {"project_mode": ["1"]})
-                self.assertEqual(len(all_payload["details"]), 1)
-                detail = all_payload["details"][0]
-                self.assertEqual(detail["project_id"], form_server.UNASSIGNED_PROJECT_ID)
-                self.assertEqual(detail["contract_project"], "未归属项目")
-                self.assertEqual(detail["wellbore"], "LOBC-010")
-                self.assertEqual(detail["completion_date"], "2026-06-11")
-                self.assertEqual(detail["completion_hours"], 8.0)
-            finally:
-                form_server.PROJECT_TEAM_PATH = original_project_team_path
+    def test_production_report_remarks_are_loaded_from_structured_storage(self) -> None:
+        records = [{
+            "record_id": "drilling:WELL-1:2026-07-18:1",
+            "project_id": "7",
+            "project_name": "Project A",
+            "project_contract": "C-1",
+            "rig": "W248",
+            "wellbore": "WELL-1",
+            "report_type": "drilling",
+            "reportDate": "2026-07-18",
+            "event": "DRILLING",
+            "validation_status": "ok",
+        }]
+        with patch.object(
+            form_server,
+            "load_production_report_remarks",
+            return_value={"7|SINOPEC 248|WELL-1": "用户维护备注"},
+        ):
+            details = form_server._production_report_details(records, [])
+        self.assertEqual(details[0]["remarks"], "用户维护备注")
+        self.assertEqual(details[0]["remark_key"], "7|SINOPEC 248|WELL-1")
 
     def test_drilling_validation_matches_detail_required_fields(self) -> None:
         payload = {

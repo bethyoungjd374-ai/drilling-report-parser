@@ -3,10 +3,28 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from drilling_report_parser.completion_pdf_parser import _ref_datum_number, parse_completion_pdf_daily_report
+import pdfplumber
+
+from drilling_report_parser.completion_pdf_parser import (
+    _parse_operation_page,
+    _ref_datum_number,
+    parse_completion_pdf_daily_report,
+)
 
 
-SAMPLE_DIR = Path("/Users/wujianhui/Documents/1、Work/厄瓜多尔资料/华为ai任务资料/完井日报")
+SAMPLE_DIRS = (
+    Path("/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/华为ai任务资料/完井日报"),
+    Path("/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/完井"),
+    Path("/Users/wujianhui/Documents/1、Work/厄瓜多尔资料/华为ai任务资料/完井日报"),
+)
+
+
+def sample_pdf(name: str) -> Path:
+    for sample_dir in SAMPLE_DIRS:
+        matches = sorted(sample_dir.rglob(name)) if sample_dir.exists() else []
+        if matches:
+            return matches[0]
+    return SAMPLE_DIRS[0] / name
 
 
 class CompletionPdfParserTest(unittest.TestCase):
@@ -15,7 +33,7 @@ class CompletionPdfParserTest(unittest.TestCase):
         self.assertEqual(_ref_datum_number("ORIGINAL KB @1,045.17ft"), "1045.17")
 
     def test_parse_schas_completion_sample(self) -> None:
-        pdf = SAMPLE_DIR / "06112026-SCHAS-513-SIN-219-PEC-007-V1R1 REPORTE DIARIO DE COMPLETACIÓN.pdf"
+        pdf = sample_pdf("06112026-SCHAS-513-SIN-219-PEC-007-V1R1 REPORTE DIARIO DE COMPLETACIÓN.pdf")
         if not pdf.exists():
             self.skipTest(f"Sample PDF not found: {pdf}")
         payload = parse_completion_pdf_daily_report(pdf)
@@ -36,7 +54,7 @@ class CompletionPdfParserTest(unittest.TestCase):
         self.assertNotIn("daily_costs", payload)
 
     def test_parse_lobc_completion_sample(self) -> None:
-        pdf = SAMPLE_DIR / "06112026-LOBC-010-SIN-127-PEC-008-V1R1-REPORTE DIARIO DE COMPLETACIÓN.pdf"
+        pdf = sample_pdf("06112026-LOBC-010-SIN-127-PEC-008-V1R1-REPORTE DIARIO DE COMPLETACIÓN.pdf")
         if not pdf.exists():
             self.skipTest(f"Sample PDF not found: {pdf}")
         payload = parse_completion_pdf_daily_report(pdf)
@@ -58,6 +76,19 @@ class CompletionPdfParserTest(unittest.TestCase):
         self.assertEqual(interval["top_md"], "10991.00")
         self.assertEqual(interval["base_md"], "11023.00")
         self.assertEqual(interval["status"], "OPEN")
+
+    def test_operation_interval_prose_does_not_truncate_remaining_rows(self) -> None:
+        pdf = sample_pdf("REPORTES COMPLETOS CPI - SCHR-407.pdf")
+        if not pdf.exists():
+            self.skipTest(f"Sample PDF not found: {pdf}")
+
+        with pdfplumber.open(pdf) as document:
+            rows = _parse_operation_page(document.pages[5])
+
+        self.assertEqual(len(rows), 8)
+        self.assertAlmostEqual(sum(float(row["hours"]) for row in rows), 24.0)
+        self.assertEqual(rows[0]["from"], "6:00")
+        self.assertEqual(rows[-1]["to"], "6:00")
 
 
 if __name__ == "__main__":

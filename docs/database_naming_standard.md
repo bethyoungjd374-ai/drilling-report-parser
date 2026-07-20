@@ -74,6 +74,8 @@ dpr_report_record（来源、处理状态、原始业务标识）
 | HSE 事件 | `hsse_incident`；只有来源明确为事故时才创建 |
 | 数据治理 | `dq_issue`、`md_*`、`rel_*`、`biz_job` |
 
+Operation 的字段口径、时效校验和正式统计门禁见 [operation-structured-data-standard.md](operation-structured-data-standard.md)。
+
 `biz_job_event`、`biz_job_depth_progress` 属于作业实例，不属于“公共日报事实”；`hsse_incident` 属于 HSE 域；`dq_issue` 属于数据质量域，所以均不使用 `dpr_common` 前缀。
 
 ### 主数据、项目和作业关系
@@ -92,7 +94,7 @@ md_project
 - `md_alias` 必须保存来源系统和确认状态。日报中的新井号只尝试匹配已确认别名，不得反向自动创建主数据。
 - `dpr_report` 通过 `project_id`、`job_id`、`rig_id`、`well_id` 关联治理层；匹配失败仍保留日报，并在 `dq_issue` 中登记。
 - 同一项目、同一井在同一天由“搬迁”切换到“钻井”等不同作业阶段时，可以存在两个 `biz_job`；日级精度下的同井钻机关系不视为资源冲突。不同井或不同项目的钻机有效期重叠仍是错误。
-- 项目资源冲突以 `rel_project_team_assignment` 为准；`rel_project_rig_assignment` 只保留旧接口兼容，不重复生成同一批质量问题。
+- 项目资源冲突以 `rel_project_team_assignment` 为准；旧 `rel_project_rig_assignment` 已在完成交叉核对后退役，不再提供写入接口。
 - 项目关系使用左闭右开的有效期 `[valid_from, valid_to)`，避免相邻班次或项目交接在边界日重复命中。
 
 ## 5. 强类型和审计规则

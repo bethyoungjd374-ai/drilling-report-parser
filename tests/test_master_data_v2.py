@@ -9,25 +9,37 @@ from drilling_report_parser.field_registry import (
     parse_string_weight_pair,
 )
 from drilling_report_parser.master_data_service import (
+    ASSIGNMENT_ENTITIES,
     _relationship_period_overlaps,
     _relationship_scope_overlaps,
     delete_master_entity,
     list_appendix_values,
     normalize_alias,
 )
-from drilling_report_parser.time_classification_service import classify_activity, save_rule
+from drilling_report_parser.operation_standardization import standardize_operation_code
+from drilling_report_parser.time_classification_service import (
+    _pending_classification_count,
+    classify_activity,
+    save_rule,
+)
 from drilling_report_parser.form_server import _normalize_ai_extraction_rule
 from drilling_report_parser.report_normalization_service import (
     _activity_datetimes,
+    _activity_time_facts,
+    _merge_activity_windows,
     _boundary_report_dates,
+    _boundary_report_segments,
     _has_business_value,
     _move_load_counts,
     _nullable_float,
     _nullable_report_no,
     _percentage_from_text,
+    _report_normalization_status,
     _sync_incident,
+    refresh_report_master_matches,
     synchronize_structured_report_facts,
 )
+from scripts.migrate_master_data_v2 import _normalize_well_profile_code
 
 
 def test_rig_aliases_share_one_canonical_name() -> None:
@@ -38,6 +50,18 @@ def test_rig_aliases_share_one_canonical_name() -> None:
 def test_suspected_well_typos_are_not_automatically_merged() -> None:
     assert normalize_alias("wellbore", "PCN-041") != normalize_alias("wellbore", "PCNA-041")
     assert normalize_alias("wellbore", "SHSG-160") != normalize_alias("wellbore", "SHSH-160")
+
+
+def test_well_profile_accepts_only_explicit_source_values() -> None:
+    assert _normalize_well_profile_code("直井") == "VERTICAL"
+    assert _normalize_well_profile_code("定向井") == "DIRECTIONAL"
+    assert _normalize_well_profile_code("水平井") == "HORIZONTAL"
+    assert _normalize_well_profile_code("侧钻井") == "SIDETRACK"
+    assert _normalize_well_profile_code("directional") == "DIRECTIONAL"
+    assert _normalize_well_profile_code("油井") == ""
+    assert _normalize_well_profile_code("修井") == ""
+    assert _normalize_well_profile_code("GCLH-024H") == ""
+    assert _normalize_well_profile_code("") == ""
 
 
 def test_report_hour_boundaries_use_only_first_and_last_dates() -> None:
@@ -84,6 +108,62 @@ def test_activity_timeline_rolls_cross_midnight_end_to_next_day() -> None:
     started_at, ended_at = _activity_datetimes("2026-06-10", "22:30", "03:00", 4.5)
     assert started_at == datetime(2026, 6, 10, 22, 30)
     assert ended_at == datetime(2026, 6, 11, 3, 0)
+
+
+def test_activity_time_facts_persist_source_clock_and_validate_duration() -> None:
+    facts = _activity_time_facts("2026-06-10", "22:30", "03:00", 4.5)
+    assert facts["source_from_text"] == "22:30"
+    assert facts["source_to_text"] == "03:00"
+    assert facts["clock_hours"] == 4.5
+    assert facts["duration_variance_hours"] == 0.0
+    assert facts["cross_midnight_flag"] is True
+    assert facts["time_validation_status"] == "VALID"
+
+
+def test_activity_time_facts_block_mismatched_duration_from_official_statistics() -> None:
+    facts = _activity_time_facts("2026-06-10", "08:00", "12:00", 3.0)
+    assert facts["clock_hours"] == 4.0
+    assert facts["duration_variance_hours"] == -1.0
+    assert facts["time_validation_status"] == "DURATION_MISMATCH"
+
+
+def test_job_rig_activity_windows_keep_exact_handoff_without_overlap() -> None:
+    windows = [
+        (datetime(2026, 6, 7, 6), datetime(2026, 6, 7, 22)),
+        (datetime(2026, 6, 7, 22), datetime(2026, 6, 8, 6)),
+        (datetime(2026, 6, 9, 6), datetime(2026, 6, 10, 6)),
+    ]
+
+    assert _merge_activity_windows(windows) == [
+        (datetime(2026, 6, 7, 6), datetime(2026, 6, 8, 6)),
+        (datetime(2026, 6, 9, 6), datetime(2026, 6, 10, 6)),
+    ]
+
+
+def test_hour_validation_treats_gaps_as_separate_report_segments() -> None:
+    rows = [
+        {"report_date": "2025-09-07"},
+        {"report_date": "2025-09-08"},
+        {"report_date": "2025-10-01"},
+        {"report_date": "2025-10-02"},
+    ]
+
+    assert _boundary_report_segments(rows) == [
+        ("2025-09-07", "2025-09-08"),
+        ("2025-10-01", "2025-10-02"),
+    ]
+
+
+def test_operation_category_codes_are_stable_and_source_labels_remain_separate() -> None:
+    assert standardize_operation_code("Surface equipment / BOP") == "SURFACE_EQUIPMENT_BOP"
+    assert standardize_operation_code("  Pre-job   safety meeting ", level="subcategory") == "PRE_JOB_SAFETY_MEETING"
+    assert standardize_operation_code("", level="subcategory") == "UNSPECIFIED"
+
+
+def test_reviewed_operation_aliases_merge_ocr_splits_without_changing_source_text() -> None:
+    assert standardize_operation_code("COMPLETI ON OPS") == "COMPLETION_OPS"
+    assert standardize_operation_code("RIG MANTAINA NCE") == "RIG_MAINTENANCE"
+    assert standardize_operation_code("CEME") == "CEMENTING"
 
 
 def test_move_metrics_are_extracted_from_explicit_summary_text() -> None:
@@ -270,9 +350,8 @@ def test_project_relationship_period_uses_half_open_boundaries() -> None:
     assert _relationship_period_overlaps(first, overlapping) is True
 
 
-def test_project_rig_scope_conflicts_across_projects_for_same_rig() -> None:
-    assert _relationship_scope_overlaps("project-rig", {"rig_id": 9, "project_id": 1}, {"rig_id": 9, "project_id": 2}) is True
-    assert _relationship_scope_overlaps("project-rig", {"rig_id": 9}, {"rig_id": 10}) is False
+def test_retired_project_rig_scope_is_not_a_supported_relationship_kind() -> None:
+    assert "project-rig" not in ASSIGNMENT_ENTITIES
 
 
 def test_project_team_scope_conflicts_across_projects_for_same_team() -> None:
@@ -283,6 +362,37 @@ def test_project_team_scope_conflicts_across_projects_for_same_team() -> None:
 def test_project_well_scope_all_jobs_conflicts_with_specific_job() -> None:
     assert _relationship_scope_overlaps("project-well", {"well_id": 7, "job_type": ""}, {"well_id": 7, "job_type": "workover"}) is True
     assert _relationship_scope_overlaps("project-well", {"well_id": 7, "job_type": "drilling"}, {"well_id": 7, "job_type": "workover"}) is False
+
+
+def test_master_relationship_refresh_moves_historical_report_into_matched_scope() -> None:
+    connection = MagicMock()
+    connection.__enter__.return_value = connection
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    cursor.fetchall.return_value = [{
+        "id": 7, "record_id": "drilling:well-a:2026-06-01:1",
+        "report_date": "2026-06-01", "report_type": "drilling",
+        "rig_id": 2, "well_id": 3, "rig": "RIG A", "wellbore": "WELL A",
+    }]
+    connection.cursor.return_value = cursor
+    with patch("drilling_report_parser.report_normalization_service._db_connection", return_value=connection), patch(
+        "drilling_report_parser.report_normalization_service.resolve_master_id", side_effect=[2, 3]
+    ), patch(
+        "drilling_report_parser.report_normalization_service.resolve_project_assignment",
+        return_value={"status": "MATCHED", "project_id": 5, "job_id": 9, "message": "", "matches": []},
+    ):
+        result = refresh_report_master_matches(actor="admin")
+
+    statements = [call.args[0] for call in cursor.execute.call_args_list]
+    assert any("UPDATE dpr_report\n" in statement for statement in statements)
+    assert any("UPDATE dpr_report_record" in statement for statement in statements)
+    assert result == {"matched": 1, "unassigned": 0, "ambiguous": 0, "normalization_failed": 0}
+    connection.commit.assert_called_once()
+
+
+def test_missing_master_data_is_unassigned_not_normalization_failed() -> None:
+    assert _report_normalization_status("2026-07-18") == "NORMALIZED"
+    assert _report_normalization_status("") == "NORMALIZATION_FAILED"
 
 
 def test_time_rule_requires_a_match_condition_before_database_write() -> None:
@@ -363,3 +473,13 @@ def test_rule_only_time_type_stays_pending_when_source_type_is_missing() -> None
     })
     assert result["confirmed_op_type"] == "NPT"
     assert result["confirmation_status"] == "PENDING"
+
+
+def test_pending_classification_count_includes_sc_and_npt_rows() -> None:
+    cursor = MagicMock()
+    cursor.fetchone.return_value = {"count": 2}
+
+    assert _pending_classification_count(cursor, "report-1") == 2
+    statement = cursor.execute.call_args.args[0]
+    assert "source_op_type" not in statement
+    assert "confirmation_status NOT IN ('CONFIRMED','AUTO_CONFIRMED')" in statement

@@ -10,6 +10,8 @@ from typing import Any
 
 from .field_registry import parse_afe_depth_days, parse_numeric_field, parse_string_weight_pair
 from .master_data_service import resolve_master_id, resolve_project_assignment
+from .operation_standardization import standardize_operation_code
+from .text_structure import normalize_translation_paragraph
 from .time_classification_service import upsert_activity_classification
 
 
@@ -40,7 +42,7 @@ def synchronize_saved_report(
     match_message = str(resolution.get("message", "") or "")
     project_id = _positive_int(resolution.get("project_id"))
     job_id = _positive_int(resolution.get("job_id"))
-    normalization_status = "NORMALIZED" if rig_id and well_id and report_date else "NORMALIZATION_FAILED"
+    normalization_status = _report_normalization_status(report_date)
 
     cursor.execute(
         """
@@ -97,41 +99,74 @@ def synchronize_saved_report(
     )
 
     source_rows: set[int] = set()
-    pending_classifications = 0
     invalid_activity_hours = 0
+    invalid_activity_times = 0
+    mismatched_activity_times = 0
     total_hours = 0.0
     for row_no, row in enumerate(operations, start=1):
         if not isinstance(row, dict):
             continue
         source_rows.add(row_no)
         hours = _nullable_float(row.get("hours"))
+        hours_source = str(row.get("hours_source", "DECLARED") or "DECLARED").strip().upper()
+        if hours_source not in {"DECLARED", "CLOCK_DERIVED"}:
+            hours_source = "DECLARED"
         if hours is None:
             invalid_activity_hours += 1
         total_hours += hours or 0.0
         source_hash = _activity_hash(row)
-        started_at, ended_at = _activity_datetimes(report_date or "", row.get("from"), row.get("to"), hours)
+        time_facts = _activity_time_facts(report_date or "", row.get("from"), row.get("to"), hours)
+        if time_facts["time_validation_status"] in {"MISSING_TIME", "INVALID_TIME"}:
+            invalid_activity_times += 1
+        elif time_facts["time_validation_status"] == "DURATION_MISMATCH":
+            mismatched_activity_times += 1
+        details = str(row.get("operation_details", "") or "")
+        normalized_details = normalize_translation_paragraph(details)
         cursor.execute(
             """
             INSERT INTO dpr_operation
-              (daily_report_id, source_row_no, started_at, ended_at, hours, op_code, op_sub,
-               source_op_type, operation_details, source_hash, created_by, updated_by)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+              (daily_report_id, source_row_no, source_from_text, source_to_text,
+               started_at, ended_at, hours, hours_source, clock_hours, duration_variance_hours,
+               cross_midnight_flag, time_validation_status, op_code, op_sub,
+               work_category_code, work_subcategory_code, source_op_type,
+               operation_details, operation_details_normalized, description_hash,
+               source_hash, created_by, updated_by)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON DUPLICATE KEY UPDATE
+              source_from_text=VALUES(source_from_text), source_to_text=VALUES(source_to_text),
               started_at=VALUES(started_at), ended_at=VALUES(ended_at), hours=VALUES(hours),
-              op_code=VALUES(op_code), op_sub=VALUES(op_sub), source_op_type=VALUES(source_op_type),
-              operation_details=VALUES(operation_details), source_hash=VALUES(source_hash),
+              hours_source=VALUES(hours_source),
+              clock_hours=VALUES(clock_hours), duration_variance_hours=VALUES(duration_variance_hours),
+              cross_midnight_flag=VALUES(cross_midnight_flag),
+              time_validation_status=VALUES(time_validation_status), op_code=VALUES(op_code),
+              op_sub=VALUES(op_sub), work_category_code=VALUES(work_category_code),
+              work_subcategory_code=VALUES(work_subcategory_code),
+              source_op_type=VALUES(source_op_type), operation_details=VALUES(operation_details),
+              operation_details_normalized=VALUES(operation_details_normalized),
+              description_hash=VALUES(description_hash), source_hash=VALUES(source_hash),
               updated_by=VALUES(updated_by), version=version+1
             """,
             (
                 daily_report_id,
                 row_no,
-                started_at,
-                ended_at,
+                time_facts["source_from_text"],
+                time_facts["source_to_text"],
+                time_facts["started_at"],
+                time_facts["ended_at"],
                 hours,
+                hours_source,
+                time_facts["clock_hours"],
+                time_facts["duration_variance_hours"],
+                time_facts["cross_midnight_flag"],
+                time_facts["time_validation_status"],
                 str(row.get("op_code", "") or ""),
                 str(row.get("op_sub", "") or ""),
+                standardize_operation_code(row.get("op_code")),
+                standardize_operation_code(row.get("op_sub"), level="subcategory"),
                 str(row.get("system_op_type", "") or row.get("op_type", "") or "").upper(),
-                str(row.get("operation_details", "") or ""),
+                details,
+                normalized_details,
+                hashlib.sha256(normalized_details.encode("utf-8")).hexdigest() if normalized_details else "",
                 source_hash,
                 actor,
                 actor,
@@ -142,13 +177,7 @@ def synchronize_saved_report(
             (daily_report_id, row_no),
         )
         activity_id = int((cursor.fetchone() or {})["id"])
-        classification = upsert_activity_classification(cursor, activity_id, row)
-        source_type = str(row.get("system_op_type", "") or row.get("op_type", "") or "").strip().upper()
-        if (
-            classification.get("confirmation_status") not in {"CONFIRMED", "AUTO_CONFIRMED"}
-            and source_type not in {"SC", "NPT"}
-        ):
-            pending_classifications += 1
+        upsert_activity_classification(cursor, activity_id, row)
 
     if source_rows:
         placeholders = ",".join(["%s"] * len(source_rows))
@@ -159,6 +188,15 @@ def synchronize_saved_report(
     else:
         cursor.execute("DELETE FROM dpr_operation WHERE daily_report_id=%s", (daily_report_id,))
 
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM dpr_operation activity "
+        "LEFT JOIN dpr_operation_classification classification ON classification.activity_id=activity.id "
+        "WHERE activity.daily_report_id=%s "
+        "AND COALESCE(classification.confirmation_status,'PENDING') NOT IN ('CONFIRMED','AUTO_CONFIRMED')",
+        (daily_report_id,),
+    )
+    pending_classifications = int((cursor.fetchone() or {}).get("count_value", 0) or 0)
+
     _refresh_quality_issues(
         cursor,
         record_id=record_id,
@@ -168,6 +206,8 @@ def synchronize_saved_report(
         resolution=resolution,
         pending_classifications=pending_classifications,
         invalid_activity_hours=invalid_activity_hours,
+        invalid_activity_times=invalid_activity_times,
+        mismatched_activity_times=mismatched_activity_times,
         fields=fields,
         actor=actor,
     )
@@ -493,6 +533,12 @@ def _nullable_date(value: object) -> str | None:
     return None
 
 
+def _report_normalization_status(report_date: object) -> str:
+    """Treat missing master-data links as assignment quality, not fact failure."""
+
+    return "NORMALIZED" if _nullable_date(report_date) else "NORMALIZATION_FAILED"
+
+
 def _nullable_time(value: object) -> str | None:
     text = _text(value)
     match = re.search(r"\b(\d{1,2}):(\d{2})\b", text)
@@ -506,6 +552,101 @@ def _number_pair(value: object) -> tuple[float | None, float | None]:
     numbers = re.findall(r"[-+]?\d+(?:\.\d+)?", _text(value).replace(",", ""))
     parsed = [float(item) for item in numbers[:2]]
     return (parsed[0] if parsed else None, parsed[1] if len(parsed) > 1 else None)
+
+
+def refresh_report_master_matches(*, actor: str = "system") -> dict[str, int]:
+    """Re-evaluate stored reports after master-data relationships change."""
+    counts = {"matched": 0, "unassigned": 0, "ambiguous": 0, "normalization_failed": 0}
+    with _db_connection() as connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT report.id,report.record_id,report.report_date,report.report_type,
+                           report.rig_id,report.well_id,source.rig,source.wellbore
+                    FROM dpr_report report
+                    JOIN dpr_report_record source ON source.record_id=report.record_id
+                    ORDER BY report.id
+                    FOR UPDATE
+                    """
+                )
+                reports = list(cursor.fetchall() or [])
+                for report in reports:
+                    record_id = str(report.get("record_id", "") or "")
+                    report_date = str(report.get("report_date", "") or "")[:10]
+                    report_type = str(report.get("report_type", "") or "")
+                    rig_id = resolve_master_id(cursor, "rig", report.get("rig")) or _positive_int(report.get("rig_id"))
+                    well_id = resolve_master_id(cursor, "well", report.get("wellbore")) or _positive_int(report.get("well_id"))
+                    resolution = resolve_project_assignment(
+                        cursor,
+                        report_date=report_date,
+                        report_type=report_type,
+                        rig_id=rig_id,
+                        well_id=well_id,
+                    )
+                    match_status = str(resolution.get("status", "UNASSIGNED") or "UNASSIGNED")
+                    match_message = str(resolution.get("message", "") or "")
+                    project_id = _positive_int(resolution.get("project_id"))
+                    job_id = _positive_int(resolution.get("job_id"))
+                    normalization_status = _report_normalization_status(report_date)
+                    cursor.execute(
+                        """
+                        UPDATE dpr_report
+                        SET project_id=%s,job_id=%s,rig_id=%s,well_id=%s,match_status=%s,
+                            match_message=%s,normalization_status=%s,updated_by=%s,version=version+1
+                        WHERE id=%s
+                        """,
+                        (
+                            project_id, job_id, rig_id, well_id, match_status,
+                            match_message, normalization_status, actor, report["id"],
+                        ),
+                    )
+                    cursor.execute(
+                        """
+                        UPDATE dpr_report_record
+                        SET project_id=%s,job_id=%s,rig_id=%s,well_id=%s,
+                            master_match_status=%s,master_match_message=%s
+                        WHERE record_id=%s
+                        """,
+                        (project_id, job_id, rig_id, well_id, match_status, match_message, record_id),
+                    )
+                    cursor.execute(
+                        """
+                        UPDATE dq_issue
+                        SET status='RESOLVED',resolution_note='主数据关系变更后自动重算',resolved_at=NOW(),
+                            resolved_by=%s,updated_by=%s,version=version+1
+                        WHERE record_id=%s AND status='OPEN'
+                          AND issue_type IN ('MASTER_RIG_UNRESOLVED','MASTER_WELL_UNRESOLVED',
+                                             'PROJECT_UNASSIGNED','PROJECT_AMBIGUOUS')
+                        """,
+                        (actor, actor, record_id),
+                    )
+                    if not rig_id:
+                        _upsert_issue(cursor, record_id, "MASTER_RIG_UNRESOLVED", "error", {"message": "井队未匹配主数据"}, actor)
+                    if not well_id:
+                        _upsert_issue(cursor, record_id, "MASTER_WELL_UNRESOLVED", "error", {"message": "井未匹配主数据"}, actor)
+                    if match_status in {"UNASSIGNED", "AMBIGUOUS"}:
+                        _upsert_issue(
+                            cursor,
+                            record_id,
+                            f"PROJECT_{match_status}",
+                            "error",
+                            {"message": match_message, "matches": resolution.get("matches", [])},
+                            actor,
+                        )
+                    if normalization_status != "NORMALIZED":
+                        counts["normalization_failed"] += 1
+                    elif match_status == "MATCHED":
+                        counts["matched"] += 1
+                    elif match_status == "AMBIGUOUS":
+                        counts["ambiguous"] += 1
+                    else:
+                        counts["unassigned"] += 1
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+    return counts
 
 
 def list_quality_issues(*, status: str = "OPEN", issue_type: str = "", limit: int = 1000) -> list[dict[str, Any]]:
@@ -565,6 +706,8 @@ def _refresh_quality_issues(
     resolution: dict[str, Any],
     pending_classifications: int,
     invalid_activity_hours: int,
+    invalid_activity_times: int,
+    mismatched_activity_times: int,
     fields: dict[str, Any],
     actor: str,
 ) -> None:
@@ -607,6 +750,24 @@ def _refresh_quality_issues(
             "ACTIVITY_HOURS_INVALID",
             "error",
             {"invalid_count": invalid_activity_hours, "message": "作业时长缺失或不是纯数字"},
+            actor,
+        )
+    if invalid_activity_times:
+        _upsert_issue(
+            cursor,
+            record_id,
+            "ACTIVITY_TIME_INVALID",
+            "error",
+            {"invalid_count": invalid_activity_times, "message": "作业起止时间缺失或无法解析"},
+            actor,
+        )
+    if mismatched_activity_times:
+        _upsert_issue(
+            cursor,
+            record_id,
+            "ACTIVITY_DURATION_MISMATCH",
+            "error",
+            {"mismatch_count": mismatched_activity_times, "message": "申报时长与起止时间计算值不一致"},
             actor,
         )
     if _nullable_date(fields.get("reportDate")) is None:
@@ -669,7 +830,7 @@ def refresh_boundary_hour_issues(
     wellbore: str,
     actor: str = "system",
 ) -> dict[str, Any]:
-    """Rebuild 24-hour checks for the first/last report day of one well and report type."""
+    """Rebuild 24-hour checks for every contiguous report segment boundary."""
     normalized_type = str(report_type or "").strip().lower()
     normalized_wellbore = str(wellbore or "").strip()
     if not normalized_type or (not well_id and not normalized_wellbore):
@@ -711,11 +872,19 @@ def refresh_boundary_hour_issues(
         )
 
     first_date, last_date = _boundary_report_dates(rows)
+    segment_roles: dict[str, tuple[str, str, str]] = {}
+    for segment_first, segment_last in _boundary_report_segments(rows):
+        if segment_first == segment_last:
+            segment_roles[segment_first] = ("FIRST_AND_LAST", segment_first, segment_last)
+        else:
+            segment_roles[segment_first] = ("FIRST", segment_first, segment_last)
+            segment_roles[segment_last] = ("LAST", segment_first, segment_last)
     boundary_record_ids: list[str] = []
     for row in rows:
         record_id = str(row.get("record_id", "") or "")
         report_date = str(row.get("report_date", "") or "")
-        is_boundary = bool(report_date and report_date in {first_date, last_date})
+        boundary = segment_roles.get(report_date)
+        is_boundary = boundary is not None
         if is_boundary:
             boundary_record_ids.append(record_id)
         total_hours = _safe_float(row.get("total_hours"))
@@ -728,7 +897,7 @@ def refresh_boundary_hour_issues(
         ]
         if is_boundary and activity_count and abs(total_hours - 24.0) > 0.05:
             warnings.append(warning)
-            boundary_role = "FIRST_AND_LAST" if first_date == last_date else "FIRST" if report_date == first_date else "LAST"
+            boundary_role, segment_first, segment_last = boundary
             _upsert_issue(
                 cursor,
                 record_id,
@@ -739,8 +908,8 @@ def refresh_boundary_hour_issues(
                     "difference": round(total_hours - 24.0, 3),
                     "report_type": normalized_type,
                     "boundary_role": boundary_role,
-                    "first_report_date": first_date,
-                    "last_report_date": last_date,
+                    "first_report_date": segment_first,
+                    "last_report_date": segment_last,
                 },
                 actor,
             )
@@ -760,6 +929,21 @@ def _boundary_report_dates(rows: list[dict[str, Any]]) -> tuple[str, str]:
     if not dates:
         return "", ""
     return dates[0], dates[-1]
+
+
+def _boundary_report_segments(rows: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    dates = sorted({str(row.get("report_date", "") or "") for row in rows if row.get("report_date")})
+    if not dates:
+        return []
+    segments: list[list[str]] = [[dates[0]]]
+    for value in dates[1:]:
+        previous = datetime.strptime(segments[-1][-1], "%Y-%m-%d")
+        current = datetime.strptime(value, "%Y-%m-%d")
+        if current - previous > timedelta(days=1):
+            segments.append([value])
+        else:
+            segments[-1].append(value)
+    return [(segment[0], segment[-1]) for segment in segments]
 
 
 def _upsert_issue(
@@ -823,31 +1007,51 @@ def _sync_job_rig_assignment(
     report_date: str,
     actor: str,
 ) -> None:
-    try:
-        start = datetime.strptime(report_date, "%Y-%m-%d")
-    except ValueError:
-        return
-    end = start + timedelta(days=1)
+    del report_date
     cursor.execute(
-        "SELECT * FROM rel_job_rig_assignment WHERE job_id=%s AND rig_id=%s AND status='active' "
-        "AND valid_from <= %s AND COALESCE(valid_to,'9999-12-31 23:59:59') >= %s ORDER BY valid_from LIMIT 1",
-        (job_id, rig_id, end, start),
+        """
+        SELECT report.report_date, MIN(activity.started_at) AS started_at,
+               MAX(activity.ended_at) AS ended_at
+        FROM dpr_report report
+        LEFT JOIN dpr_operation activity ON activity.daily_report_id=report.id
+        WHERE report.job_id=%s AND report.rig_id=%s AND report.report_date IS NOT NULL
+        GROUP BY report.id, report.report_date
+        ORDER BY report.report_date, report.id
+        """,
+        (job_id, rig_id),
     )
-    existing = cursor.fetchone()
-    if existing:
-        current_start = existing["valid_from"]
-        current_end = existing.get("valid_to")
+    windows: list[tuple[datetime, datetime]] = []
+    for row in cursor.fetchall() or []:
+        report_day = row.get("report_date")
+        day_start = datetime.combine(report_day, datetime.min.time())
+        start = row.get("started_at") or day_start
+        end = row.get("ended_at") or day_start + timedelta(days=1)
+        if end > start:
+            windows.append((start, end))
+
+    cursor.execute(
+        "DELETE FROM rel_job_rig_assignment "
+        "WHERE job_id=%s AND rig_id=%s AND change_reason='由标准日报自动建立'",
+        (job_id, rig_id),
+    )
+    for start, end in _merge_activity_windows(windows):
         cursor.execute(
-            "UPDATE rel_job_rig_assignment SET valid_from=%s,valid_to=%s,updated_by=%s,version=version+1 WHERE id=%s",
-            (min(current_start, start), max(current_end, end) if current_end else None, actor, existing["id"]),
+            "INSERT INTO rel_job_rig_assignment "
+            "(job_id,rig_id,valid_from,valid_to,status,change_reason,created_by,updated_by) "
+            "VALUES (%s,%s,%s,%s,'active','由标准日报自动建立',%s,%s)",
+            (job_id, rig_id, start, end, actor, actor),
         )
-        return
-    cursor.execute(
-        "INSERT INTO rel_job_rig_assignment "
-        "(job_id,rig_id,valid_from,valid_to,status,change_reason,created_by,updated_by) "
-        "VALUES (%s,%s,%s,%s,'active','由标准日报自动建立',%s,%s)",
-        (job_id, rig_id, start, end, actor, actor),
-    )
+
+
+def _merge_activity_windows(windows: list[tuple[datetime, datetime]]) -> list[tuple[datetime, datetime]]:
+    merged: list[tuple[datetime, datetime]] = []
+    for start, end in sorted(windows):
+        if not merged or start > merged[-1][1]:
+            merged.append((start, end))
+            continue
+        previous_start, previous_end = merged[-1]
+        merged[-1] = (previous_start, max(previous_end, end))
+    return merged
 
 
 def _sync_job_events(
@@ -948,6 +1152,44 @@ def _activity_datetimes(
     if start is not None and end is not None and end <= start and (hours or 0) > 0:
         end += timedelta(days=1)
     return start, end
+
+
+def _activity_time_facts(
+    report_date: str, start_value: object, end_value: object, hours: float | None
+) -> dict[str, Any]:
+    """Return persisted time facts without discarding the source clock text."""
+    source_from_text = str(start_value or "").strip()[:16]
+    source_to_text = str(end_value or "").strip()[:16]
+    started_at, ended_at = _activity_datetimes(report_date, source_from_text, source_to_text, hours)
+    clock_hours = None
+    duration_variance_hours = None
+    if started_at is not None and ended_at is not None:
+        clock_hours = round((ended_at - started_at).total_seconds() / 3600, 3)
+        if hours is not None:
+            duration_variance_hours = round(hours - clock_hours, 3)
+
+    if hours is None:
+        status = "MISSING_HOURS"
+    elif not source_from_text or not source_to_text:
+        status = "MISSING_TIME"
+    elif started_at is None or ended_at is None:
+        status = "INVALID_TIME"
+    elif abs(duration_variance_hours or 0.0) > 0.05:
+        status = "DURATION_MISMATCH"
+    else:
+        status = "VALID"
+    return {
+        "source_from_text": source_from_text,
+        "source_to_text": source_to_text,
+        "started_at": started_at,
+        "ended_at": ended_at,
+        "clock_hours": clock_hours,
+        "duration_variance_hours": duration_variance_hours,
+        "cross_midnight_flag": bool(
+            started_at is not None and ended_at is not None and ended_at.date() > started_at.date()
+        ),
+        "time_validation_status": status,
+    }
 
 
 def _percentage_from_text(value: object, label: str) -> float | None:

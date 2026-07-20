@@ -35,6 +35,22 @@ CONFIRMED_SOURCE_ALIASES = (
     ("well", "JVNC-024", "JVN-024", "2026-06-monthly-table4-table6"),
 )
 
+WELL_PROFILE_CODES = {
+    "VERTICAL": "VERTICAL",
+    "DIRECTIONAL": "DIRECTIONAL",
+    "HORIZONTAL": "HORIZONTAL",
+    "SIDETRACK": "SIDETRACK",
+    "直井": "VERTICAL",
+    "定向井": "DIRECTIONAL",
+    "水平井": "HORIZONTAL",
+    "侧钻井": "SIDETRACK",
+}
+
+
+def _normalize_well_profile_code(value: object) -> str:
+    raw = str(value or "").strip()
+    return WELL_PROFILE_CODES.get(raw, WELL_PROFILE_CODES.get(raw.upper(), ""))
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Seed and backfill the V2 master-data model.")
@@ -123,22 +139,26 @@ def migrate(
                 continue
             rig_id, created = _ensure_rig(cursor, raw_rig, batch_id, f"config:project:{project_id}:rig:{raw_rig}", actor)
             counters["rigs"] += int(created)
+            cursor.execute("SELECT team_id FROM md_rig WHERE id=%s", (rig_id,))
+            team_id = int((cursor.fetchone() or {}).get("team_id") or 0)
+            if not team_id:
+                raise RuntimeError(f"设备 {raw_rig} 未关联正式队伍主数据。")
             valid_from = str(rig_item.get("start_date", "") or "") or project_start
             valid_to = _exclusive_end(str(rig_item.get("end_date", "") or "")) or project_end
             counters["assignments"] += int(_ensure_assignment(
                 cursor,
-                "rel_project_rig_assignment",
+                "rel_project_team_assignment",
                 {
                     "project_id": project_id,
-                    "rig_id": rig_id,
+                    "team_id": team_id,
                     "valid_from": f"{valid_from} 00:00:00",
                     "valid_to": f"{valid_to} 00:00:00" if valid_to else None,
                     "service_discipline": "",
                     "priority": 100,
                 },
-                ("project_id", "rig_id", "valid_from"),
+                ("project_id", "team_id", "valid_from"),
                 batch_id,
-                f"config:project:{project_id}:rig:{rig_id}:{valid_from}",
+                f"config:project:{project_id}:team:{team_id}:{valid_from}",
                 actor,
             ))
             for raw_well in rig_item.get("wells", []) if isinstance(rig_item.get("wells"), list) else []:
@@ -226,7 +246,7 @@ def migrate(
                 f"{path}:{item['sheet']}:{item['row_no']}",
                 actor,
                 block_id=block_id,
-                well_type=item.get("well_type", ""),
+                well_profile=item.get("well_profile", ""),
             )
             counters["wells"] += int(created_well)
 
@@ -432,6 +452,22 @@ def _ensure_rig(
         "rig",
         actor,
     )
+    team_id, _ = _ensure_simple_master(
+        cursor,
+        "md_team",
+        "team_code",
+        canonical,
+        {
+            "team_name": canonical,
+            "team_type_code": "WORKOVER" if rig_type == "workover" else "DRILLING",
+            "company_id": owner_organization_id,
+        },
+        batch_id,
+        f"{locator}:team",
+        "team",
+        actor,
+    )
+    cursor.execute("UPDATE md_rig SET team_id=%s,updated_by=%s WHERE id=%s", (team_id, actor, rig_id))
     _ensure_alias(cursor, "rig", raw_name, rig_id, batch_id, locator, actor)
     return rig_id, created
 
@@ -445,15 +481,20 @@ def _ensure_well(
     *,
     block_id: int | None = None,
     well_type: str = "",
+    well_profile: str = "",
 ) -> tuple[int, bool]:
     code = normalize_alias("well", raw_code)
+    profile_code = _normalize_well_profile_code(well_profile)
     existing_well_id = _existing_well_id(cursor, raw_code)
     if existing_well_id:
         cursor.execute(
             "UPDATE md_well SET block_id=COALESCE(block_id,%s), "
-            "well_type_code=IF(well_type_code='',%s,well_type_code), updated_by=%s "
+            "well_type_code=IF(well_type_code='',%s,well_type_code), "
+            "version=version+IF(well_profile_code='' AND %s<>'',1,0), "
+            "change_reason=IF(well_profile_code='' AND %s<>'','月报表4井型明确字段迁移',change_reason), "
+            "well_profile_code=IF(well_profile_code='',%s,well_profile_code), updated_by=%s "
             "WHERE id=%s",
-            (block_id, well_type or "DEVELOPMENT", actor, existing_well_id),
+            (block_id, well_type or "DEVELOPMENT", profile_code, profile_code, profile_code, actor, existing_well_id),
         )
         _ensure_alias(cursor, "well", raw_code, existing_well_id, batch_id, locator, actor)
         return existing_well_id, False
@@ -462,12 +503,22 @@ def _ensure_well(
         "md_well",
         "well_code",
         code,
-        {"well_name": code, "block_id": block_id, "well_type_code": well_type or "DEVELOPMENT"},
+        {
+            "well_name": code,
+            "block_id": block_id,
+            "well_type_code": well_type or "DEVELOPMENT",
+            "well_profile_code": profile_code,
+        },
         batch_id,
         f"{locator}:well",
         "well",
         actor,
     )
+    if created_well and profile_code:
+        cursor.execute(
+            "UPDATE md_well SET change_reason='月报表4井型明确字段迁移' WHERE id=%s",
+            (well_id,),
+        )
     _ensure_alias(cursor, "well", raw_code, well_id, batch_id, locator, actor)
     return well_id, created_well
 
@@ -642,7 +693,15 @@ def _workbook_master_rows(path: Path, kind: str) -> Iterable[dict[str, Any]]:
     sheet = next((item for item in workbook.worksheets if item.max_row > 1), workbook.active)
     if kind in {"table4", "table5"}:
         start_row = 4
-        columns = {"rig": 2, "country": 3, "organization": 4, "block": 5, "rig_model": 6, "wellbore": 7, "well_type": 8}
+        columns = {
+            "rig": 2,
+            "country": 3,
+            "organization": 4,
+            "block": 5,
+            "rig_model": 6,
+            "wellbore": 7,
+            ("well_profile" if kind == "table4" else "source_well_kind"): 8,
+        }
         discipline = "drilling" if kind == "table4" else "workover"
     else:
         start_row = 6
@@ -656,6 +715,8 @@ def _workbook_master_rows(path: Path, kind: str) -> Iterable[dict[str, Any]]:
         if not values.get("rig") or not values.get("wellbore"):
             continue
         values["discipline"] = discipline or values.get("discipline", "")
+        if "well_profile" in values:
+            values["well_profile"] = _normalize_well_profile_code(values["well_profile"])
         values["sheet"] = sheet.title
         values["row_no"] = row_no
         yield values
@@ -748,7 +809,7 @@ def _rollback_tables() -> set[str]:
     return {
         "rel_job_rig_assignment",
         "rel_project_well_scope",
-        "rel_project_rig_assignment",
+        "rel_project_team_assignment",
         "biz_job",
         "md_alias",
         "md_project",

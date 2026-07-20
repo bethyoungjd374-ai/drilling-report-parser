@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" type="image/svg+xml" href="./assets/drilling-completion-logo.svg" />
-    <link rel="stylesheet" href="./styles.css?v=npt-confirm-workflow-v3" />
+    <link rel="stylesheet" href="./styles.css?v=monthly-profile-source-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -41,6 +41,7 @@
             <div class="menu-items">
               <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/nav/clock-hour-4.svg" alt="" /><span data-i18n="menuRigProductionSummary">时效分析</span></a>
               <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><img class="menu-item-icon" src="./icons/nav/report-analytics.svg" alt="" /><span data-i18n="menuProductionDetailReport">生产报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="monthly-efficiency-report" data-title-i18n="menuMonthlyEfficiencyReport" data-desc-i18n="descMonthlyEfficiencyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuMonthlyEfficiencyReport">月度时效报表</span></a>
               <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/nav/hourglass.svg" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
               <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/nav/clipboard-check.svg" alt="" /><span data-i18n="menuRigNptRanking">NPT确认</span></a>
             </div>
@@ -85,6 +86,13 @@
               <button type="button" data-lang="zh">中</button>
               <button type="button" data-lang="es">ES</button>
             </div>
+            <label class="template-profile-control">
+              <span data-i18n="pdfTemplateProfile">PDF 模板</span>
+              <select id="drillingPdfTemplate" aria-label="PDF 模板">
+                <option value="original" data-i18n="pdfTemplateOriginal">原模板</option>
+                <option value="compatible" data-i18n="pdfTemplateCompatible">兼容模板（自动识别）</option>
+              </select>
+            </label>
             <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden />
             <button class="button secondary" type="button" id="importPdf" data-i18n="importPdf">导入 PDF 日报</button>
             <button class="button" type="button" data-save-report="drilling" data-i18n="saveDatabase">保存</button>
@@ -786,6 +794,70 @@
           </section>
         </section>
 
+        <section id="monthlyEfficiencyReportPage" class="module-page analytics-page monthly-efficiency-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuProductionReport">生产分析</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuMonthlyEfficiencyReport">月度时效报表</strong>
+              </nav>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+          <section class="monthly-efficiency-workspace" data-analytics-filter="monthlyEfficiency">
+            <div class="panel monthly-efficiency-toolbar">
+              <div class="monthly-efficiency-filters">
+                <div class="monthly-date-range-field" data-monthly-date-range>
+                  <button class="monthly-date-range-trigger" type="button" data-monthly-date-range-toggle aria-expanded="false">
+                    <span data-monthly-date-range-label>不限日期</span>
+                    <img src="./icons/nav/calendar-stats.svg" alt="" />
+                  </button>
+                  <div class="monthly-date-range-popover" data-monthly-date-range-popover hidden>
+                    <div class="monthly-date-range-inputs">
+                      <label><span data-i18n="monthlyDateStart">日期起</span><input type="date" data-monthly-date-from-draft /></label>
+                      <label><span data-i18n="monthlyDateEnd">日期止</span><input type="date" data-monthly-date-to-draft /></label>
+                    </div>
+                    <div class="monthly-date-range-actions">
+                      <button class="button secondary" type="button" data-monthly-date-range-clear data-i18n="monthlyDateClear">清除</button>
+                      <button class="button" type="button" data-monthly-date-range-apply data-i18n="monthlyDateApply">确定</button>
+                    </div>
+                  </div>
+                  <input type="hidden" name="date_from" />
+                  <input type="hidden" name="date_to" />
+                </div>
+                <label class="monthly-inline-filter"><select name="project" aria-label="项目"><option value="">全部项目</option></select></label>
+                <label class="monthly-inline-filter"><select name="rig" aria-label="井队"><option value="">全部井队</option></select></label>
+                <label class="monthly-inline-filter"><select name="job_type" aria-label="专业类型"><option value="">全部类型</option></select></label>
+                <label class="monthly-inline-filter monthly-well-filter"><input type="search" name="wellbore" aria-label="井号" placeholder="输入井号" /></label>
+                <div class="monthly-efficiency-actions">
+                  <button class="button" type="button" data-analytics-search="monthlyEfficiency">查询</button>
+                  <button class="button secondary" type="button" data-analytics-reset="monthlyEfficiency">重置</button>
+                  <button class="button secondary" type="button" data-analytics-export="monthlyEfficiency">导出Excel</button>
+                </div>
+              </div>
+            </div>
+            <section class="analytics-kpis monthly-efficiency-kpis" data-analytics-kpis="monthlyEfficiency"></section>
+            <section class="panel monthly-efficiency-report-panel">
+              <div class="monthly-report-meta">
+                <div>
+                  <h2>钻、完、修井基础数据与时效明细</h2>
+                  <p data-monthly-efficiency-note>有明确来源的字段正常统计；无来源或口径未确认的字段保持待定。</p>
+                </div>
+                <div class="monthly-report-month" data-monthly-efficiency-month>—</div>
+              </div>
+              <div class="monthly-method-note" data-monthly-method-note></div>
+              <div class="table-wrap monthly-efficiency-table-wrap" data-table-host="monthlyEfficiency"></div>
+            </section>
+          </section>
+        </section>
+
         <section id="nptStatsPage" class="module-page analytics-page npt-stats-dashboard" hidden>
           <header class="topbar placeholder-topbar">
             <div>
@@ -961,6 +1033,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=npt-confirm-workflow-v3"></script>
+    <script src="./app.js?v=monthly-profile-source-v1"></script>
   </body>
 </html>

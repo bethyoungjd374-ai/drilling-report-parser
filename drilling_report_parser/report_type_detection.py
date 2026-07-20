@@ -14,7 +14,7 @@ REPORT_TYPE_LABELS = {
     "drilling": "钻井日报",
     "completion": "完井日报",
     "workover": "修井日报",
-    "move": "搬迁事件",
+    "move": "搬迁日报",
 }
 
 _EVENT_TYPE_PATTERNS = {
@@ -62,14 +62,9 @@ def detect_report_type_from_event(value: object) -> str:
 
 
 def storage_report_type_for_event_type(event_type: str) -> str:
-    """Return the report schema used to store an Event category.
+    """Return the independently stored daily-report category for an Event."""
 
-    Rig-move reports use the drilling daily-report template and belong to the
-    drilling record stream.  ``move`` remains an Event category so calendars
-    and production timelines can distinguish move days from drilling days.
-    """
-
-    return "drilling" if str(event_type or "").strip().lower() == "move" else str(event_type or "").strip().lower()
+    return str(event_type or "").strip().lower()
 
 
 def storage_report_type_from_event(value: object) -> str:

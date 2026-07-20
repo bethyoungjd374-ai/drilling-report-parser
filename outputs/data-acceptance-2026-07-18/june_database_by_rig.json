@@ -1,0 +1,92 @@
+[
+  {
+    "rig_name": "SINOPEC 127",
+    "report_count": 1,
+    "observed_days": 1,
+    "first_date": "2026-06-11",
+    "last_date": "2026-06-11",
+    "parsed_hours": "24.000",
+    "official_hours": "24.000",
+    "pending_hours": "0.000"
+  },
+  {
+    "rig_name": "SINOPEC 129",
+    "report_count": 13,
+    "observed_days": 13,
+    "first_date": "2026-06-11",
+    "last_date": "2026-06-28",
+    "parsed_hours": "306.000",
+    "official_hours": "306.000",
+    "pending_hours": "0.000"
+  },
+  {
+    "rig_name": "SINOPEC 168",
+    "report_count": 1,
+    "observed_days": 1,
+    "first_date": "2026-06-10",
+    "last_date": "2026-06-10",
+    "parsed_hours": "24.000",
+    "official_hours": "24.000",
+    "pending_hours": "0.000"
+  },
+  {
+    "rig_name": "SINOPEC 183",
+    "report_count": 13,
+    "observed_days": 13,
+    "first_date": "2026-06-01",
+    "last_date": "2026-06-30",
+    "parsed_hours": "300.000",
+    "official_hours": "224.500",
+    "pending_hours": "75.500"
+  },
+  {
+    "rig_name": "SINOPEC 191",
+    "report_count": 13,
+    "observed_days": 13,
+    "first_date": "2026-06-16",
+    "last_date": "2026-06-28",
+    "parsed_hours": "300.000",
+    "official_hours": "300.000",
+    "pending_hours": "0.000"
+  },
+  {
+    "rig_name": "SINOPEC 219",
+    "report_count": 1,
+    "observed_days": 1,
+    "first_date": "2026-06-11",
+    "last_date": "2026-06-11",
+    "parsed_hours": "24.000",
+    "official_hours": "5.500",
+    "pending_hours": "18.500"
+  },
+  {
+    "rig_name": "SINOPEC 248",
+    "report_count": 1,
+    "observed_days": 1,
+    "first_date": "2026-06-11",
+    "last_date": "2026-06-11",
+    "parsed_hours": "24.000",
+    "official_hours": "6.000",
+    "pending_hours": "18.000"
+  },
+  {
+    "rig_name": "SINOPEC 905",
+    "report_count": 1,
+    "observed_days": 1,
+    "first_date": "2026-06-11",
+    "last_date": "2026-06-11",
+    "parsed_hours": "24.000",
+    "official_hours": "24.000",
+    "pending_hours": "0.000"
+  },
+  {
+    "rig_name": "SINOPEC 933",
+    "report_count": 23,
+    "observed_days": 22,
+    "first_date": "2026-06-01",
+    "last_date": "2026-06-30",
+    "parsed_hours": "503.000",
+    "official_hours": "493.000",
+    "pending_hours": "10.000"
+  }
+]

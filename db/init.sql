@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS dpr_report_record (
   mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_report_records_record_id (record_id),
+  UNIQUE KEY uq_report_records_business_identity (report_type, report_date, report_no, wellbore),
   KEY idx_report_records_type_date (report_type, report_date),
   KEY idx_report_records_well_date (wellbore, report_date),
   KEY idx_report_records_type_well_date (report_type, well_id, report_date),
@@ -396,7 +397,7 @@ CREATE TABLE IF NOT EXISTS md_well (
   well_type_code VARCHAR(64) NOT NULL DEFAULT 'DEVELOPMENT',
   surface_latitude DECIMAL(10,7) NULL,
   surface_longitude DECIMAL(10,7) NULL,
-  well_profile_code VARCHAR(64) NOT NULL DEFAULT 'VERTICAL',
+  well_profile_code VARCHAR(64) NOT NULL DEFAULT '',
   trajectory_status_code VARCHAR(64) NOT NULL DEFAULT 'PLANNED',
   kickoff_md_m DECIMAL(12,2) NULL,
   planned_td_md_m DECIMAL(12,2) NULL,
@@ -507,30 +508,6 @@ CREATE TABLE IF NOT EXISTS rel_project_team_assignment (
   CONSTRAINT ck_rel_project_team_period CHECK (valid_to IS NULL OR valid_to > valid_from)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS rel_project_rig_assignment (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  project_id BIGINT UNSIGNED NOT NULL,
-  rig_id BIGINT UNSIGNED NOT NULL,
-  valid_from DATETIME NOT NULL,
-  valid_to DATETIME NULL,
-  service_discipline VARCHAR(32) NOT NULL DEFAULT '',
-  assignment_note VARCHAR(512) NOT NULL DEFAULT '',
-  priority INT NOT NULL DEFAULT 100,
-  status VARCHAR(32) NOT NULL DEFAULT 'active',
-  change_reason VARCHAR(512) NOT NULL DEFAULT '',
-  version INT UNSIGNED NOT NULL DEFAULT 1,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by VARCHAR(128) NOT NULL DEFAULT '',
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  updated_by VARCHAR(128) NOT NULL DEFAULT '',
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_project_rig_assignment_start (project_id, rig_id, valid_from),
-  KEY idx_project_rig_assignment_lookup (rig_id, valid_from, valid_to, status),
-  CONSTRAINT fk_project_rig_assignment_project FOREIGN KEY (project_id) REFERENCES md_project(id),
-  CONSTRAINT fk_project_rig_assignment_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id),
-  CONSTRAINT ck_rel_project_rig_period CHECK (valid_to IS NULL OR valid_to > valid_from)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS rel_project_well_scope (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   project_id BIGINT UNSIGNED NOT NULL,
@@ -635,13 +612,24 @@ CREATE TABLE IF NOT EXISTS dpr_operation (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   daily_report_id BIGINT UNSIGNED NOT NULL,
   source_row_no INT NOT NULL,
+  source_from_text VARCHAR(16) NOT NULL DEFAULT '' COMMENT '来源表格FROM原文',
+  source_to_text VARCHAR(16) NOT NULL DEFAULT '' COMMENT '来源表格TO原文',
   started_at DATETIME NULL,
   ended_at DATETIME NULL,
-  hours DECIMAL(6,3) NULL COMMENT '来源作业时长，单位h；解析失败保留NULL',
+  hours DECIMAL(6,3) NULL COMMENT '统计作业时长，单位h；优先来源申报，缺失时可由钟表时间推导',
+  hours_source VARCHAR(16) NOT NULL DEFAULT 'DECLARED' COMMENT 'DECLARED/CLOCK_DERIVED',
+  clock_hours DECIMAL(6,3) NULL COMMENT '由起止时间计算的钟表时长，单位h',
+  duration_variance_hours DECIMAL(7,3) NULL COMMENT '申报时长减钟表时长，单位h',
+  cross_midnight_flag BOOLEAN NOT NULL DEFAULT FALSE COMMENT '结束时间是否跨至次日',
+  time_validation_status VARCHAR(32) NOT NULL DEFAULT 'MISSING_TIME' COMMENT 'VALID/DURATION_MISMATCH/MISSING_TIME/INVALID_TIME/MISSING_HOURS',
   op_code VARCHAR(64) NOT NULL DEFAULT '',
   op_sub VARCHAR(128) NOT NULL DEFAULT '',
+  work_category_code VARCHAR(80) NOT NULL DEFAULT 'UNSPECIFIED' COMMENT '标准化一级工作分类代码',
+  work_subcategory_code VARCHAR(160) NOT NULL DEFAULT 'UNSPECIFIED' COMMENT '标准化二级工作分类代码',
   source_op_type VARCHAR(16) NOT NULL DEFAULT '',
-  operation_details TEXT NULL,
+  operation_details TEXT NULL COMMENT '来源工作内容描述原文，非JSON',
+  operation_details_normalized TEXT NULL COMMENT '规范化空白后的工作内容描述',
+  description_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '规范化工作描述SHA-256',
   source_hash VARCHAR(64) NOT NULL DEFAULT '',
   version INT UNSIGNED NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -651,9 +639,15 @@ CREATE TABLE IF NOT EXISTS dpr_operation (
   PRIMARY KEY (id),
   UNIQUE KEY uq_fact_activity_row (daily_report_id, source_row_no),
   KEY idx_fact_activity_code (op_code, op_sub),
+  KEY idx_fact_activity_work_category (work_category_code, work_subcategory_code),
+  KEY idx_fact_activity_time_type (source_op_type, time_validation_status),
+  KEY idx_fact_activity_timeline (started_at, ended_at),
   CONSTRAINT fk_fact_activity_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
   CONSTRAINT ck_fact_activity_hours CHECK (hours IS NULL OR (hours >= 0 AND hours <= 24)),
-  CONSTRAINT ck_fact_activity_timeline CHECK (started_at IS NULL OR ended_at IS NULL OR ended_at > started_at)
+  CONSTRAINT ck_fact_activity_hours_source CHECK (hours_source IN ('DECLARED','CLOCK_DERIVED')),
+  CONSTRAINT ck_fact_activity_timeline CHECK (started_at IS NULL OR ended_at IS NULL OR ended_at > started_at),
+  CONSTRAINT ck_fact_activity_source_type CHECK (source_op_type IN ('','P','SC','NPT')),
+  CONSTRAINT ck_fact_activity_time_status CHECK (time_validation_status IN ('VALID','DURATION_MISMATCH','MISSING_TIME','INVALID_TIME','MISSING_HOURS'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS dpr_operation_classification_rule (
@@ -1240,48 +1234,26 @@ CREATE TABLE IF NOT EXISTS dq_issue (
   CONSTRAINT fk_data_quality_issue_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS monthly_report_snapshot (
+CREATE TABLE IF NOT EXISTS production_report_remark (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  snapshot_code VARCHAR(191) NOT NULL,
-  report_type VARCHAR(64) NOT NULL,
-  period_start DATE NOT NULL,
-  period_end DATE NOT NULL,
+  remark_key VARCHAR(255) NOT NULL,
   project_id BIGINT UNSIGNED NULL,
-  rule_version VARCHAR(64) NOT NULL DEFAULT '',
-  source_cutoff_at DATETIME NOT NULL,
-  snapshot_status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
-  snapshot_version INT UNSIGNED NOT NULL DEFAULT 1,
-  supersedes_id BIGINT UNSIGNED NULL,
-  frozen_at DATETIME NULL,
-  frozen_by VARCHAR(128) NOT NULL DEFAULT '',
-  reopened_at DATETIME NULL,
-  reopened_by VARCHAR(128) NOT NULL DEFAULT '',
-  change_reason VARCHAR(512) NOT NULL DEFAULT '',
+  rig_id BIGINT UNSIGNED NULL,
+  well_id BIGINT UNSIGNED NULL,
+  source_rig_name VARCHAR(255) NOT NULL DEFAULT '',
+  source_well_name VARCHAR(255) NOT NULL DEFAULT '',
+  remark_text VARCHAR(500) NOT NULL DEFAULT '',
   version INT UNSIGNED NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_by VARCHAR(128) NOT NULL DEFAULT '',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   updated_by VARCHAR(128) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
-  UNIQUE KEY uq_monthly_report_snapshot_code (snapshot_code),
-  UNIQUE KEY uq_monthly_report_snapshot_version (report_type, period_start, period_end, project_id, snapshot_version),
-  KEY idx_monthly_report_snapshot_lookup (report_type, period_start, snapshot_status),
-  CONSTRAINT fk_monthly_report_snapshot_project FOREIGN KEY (project_id) REFERENCES md_project(id),
-  CONSTRAINT fk_monthly_report_snapshot_previous FOREIGN KEY (supersedes_id) REFERENCES monthly_report_snapshot(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS monthly_report_snapshot_row (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  snapshot_id BIGINT UNSIGNED NOT NULL,
-  row_no INT NOT NULL,
-  row_key VARCHAR(255) NOT NULL,
-  row_json JSON NOT NULL,
-  lineage_json JSON NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_monthly_report_snapshot_row (snapshot_id, row_no),
-  KEY idx_monthly_report_snapshot_row_key (snapshot_id, row_key),
-  CONSTRAINT fk_monthly_report_snapshot_row_header FOREIGN KEY (snapshot_id) REFERENCES monthly_report_snapshot(id) ON DELETE CASCADE
+  UNIQUE KEY uq_production_report_remark_key (remark_key),
+  KEY idx_production_report_remark_scope (project_id, rig_id, well_id),
+  CONSTRAINT fk_production_report_remark_project FOREIGN KEY (project_id) REFERENCES md_project(id),
+  CONSTRAINT fk_production_report_remark_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id),
+  CONSTRAINT fk_production_report_remark_well FOREIGN KEY (well_id) REFERENCES md_well(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS migration_batch (
@@ -1318,39 +1290,157 @@ CREATE TABLE IF NOT EXISTS migration_entry (
   CONSTRAINT fk_migration_entry_batch FOREIGN KEY (batch_id) REFERENCES migration_batch(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE OR REPLACE VIEW vw_rig_production_timeline AS
+CREATE OR REPLACE VIEW vw_operation_structured AS
 SELECT
   fdr.record_id,
   fdr.report_date,
+  fdr.report_no,
   fdr.report_type,
   fdr.project_id,
-  project.project_name,
   fdr.job_id,
   fdr.rig_id,
-  rig.rig_name,
-  model.model_name AS rig_model,
   fdr.well_id,
-  well.well_name,
+  fdr.match_status,
+  fdr.normalization_status,
   activity.id AS activity_id,
   activity.source_row_no,
+  activity.source_from_text,
+  activity.source_to_text,
+  activity.started_at,
+  activity.ended_at,
+  activity.cross_midnight_flag,
+  activity.hours AS declared_hours,
+  activity.hours_source,
+  activity.clock_hours,
+  activity.duration_variance_hours,
+  activity.time_validation_status,
+  activity.op_code,
+  activity.op_sub,
+  activity.work_category_code,
+  activity.work_subcategory_code,
   activity.source_op_type,
-  activity.hours,
+  COALESCE(NULLIF(classification.confirmed_op_type,''), activity.source_op_type) AS effective_op_type,
+  activity.operation_details,
+  activity.operation_details_normalized,
+  activity.description_hash,
+  activity.source_hash,
   classification.productive_flag,
+  classification.productivity_type_code,
   classification.confirmed_op_type,
   classification.work_bucket,
   classification.billing_status,
   classification.responsibility,
   classification.cause_code,
   classification.service_line,
-  classification.confirmation_status
+  classification.rule_id,
+  classification.rule_version,
+  classification.confirmation_status,
+  classification.confidence,
+  CASE
+    WHEN activity.time_validation_status <> 'VALID' THEN 'TIME_REVIEW_REQUIRED'
+    WHEN COALESCE(classification.confirmation_status,'PENDING') NOT IN ('CONFIRMED','AUTO_CONFIRMED') THEN 'CLASSIFICATION_PENDING'
+    ELSE 'READY'
+  END AS statistics_status,
+  CASE
+    WHEN activity.time_validation_status = 'VALID'
+     AND COALESCE(classification.confirmation_status,'PENDING') IN ('CONFIRMED','AUTO_CONFIRMED')
+    THEN activity.hours
+  END AS statistical_hours
 FROM dpr_report fdr
 JOIN dpr_operation activity ON activity.daily_report_id = fdr.id
-LEFT JOIN dpr_operation_classification classification ON classification.activity_id = activity.id
-LEFT JOIN md_project project ON project.id = fdr.project_id
-LEFT JOIN md_rig rig ON rig.id = fdr.rig_id
-LEFT JOIN md_rig_model model ON model.id = rig.rig_model_id
-LEFT JOIN md_well well ON well.id = fdr.well_id
-WHERE fdr.normalization_status = 'NORMALIZED' AND fdr.match_status = 'MATCHED';
+LEFT JOIN dpr_operation_classification classification ON classification.activity_id = activity.id;
+
+CREATE OR REPLACE VIEW vw_report_analytics AS
+SELECT
+  report.record_id,
+  report.report_date,
+  report.report_no,
+  report.report_type,
+  report.project_id,
+  project.project_code,
+  project.project_name,
+  contract.contract_no AS project_contract,
+  report.job_id,
+  report.rig_id,
+  COALESCE(rig.rig_name, source.rig) AS rig_name,
+  rig_model.model_name AS rig_model,
+  report.well_id,
+  COALESCE(well.well_name, source.wellbore) AS well_name,
+  report.match_status,
+  report.match_message,
+  report.normalization_status,
+  summary.event_name AS event,
+  summary.afe_number,
+  source.validation_status,
+  source.master_match_status,
+  source.master_match_message
+FROM dpr_report report
+JOIN dpr_report_record source ON source.record_id = report.record_id
+LEFT JOIN md_project project ON project.id = report.project_id
+LEFT JOIN md_contract contract ON contract.id = project.contract_id
+LEFT JOIN md_rig rig ON rig.id = report.rig_id
+LEFT JOIN md_rig_model rig_model ON rig_model.id = rig.rig_model_id
+LEFT JOIN md_well well ON well.id = report.well_id
+LEFT JOIN dpr_report_summary summary ON summary.daily_report_id = report.id;
+
+CREATE OR REPLACE VIEW vw_rig_production_timeline AS
+SELECT
+  operation.record_id,
+  operation.report_date,
+  operation.report_no,
+  operation.report_type,
+  operation.project_id,
+  report.project_code,
+  report.project_name,
+  report.project_contract,
+  operation.job_id,
+  operation.rig_id,
+  report.rig_name,
+  report.rig_model,
+  operation.well_id,
+  report.well_name,
+  report.event,
+  report.afe_number,
+  report.validation_status,
+  report.master_match_status,
+  report.master_match_message,
+  operation.activity_id,
+  operation.source_row_no,
+  operation.source_from_text,
+  operation.source_to_text,
+  operation.started_at,
+  operation.ended_at,
+  operation.cross_midnight_flag,
+  operation.declared_hours AS hours,
+  operation.hours_source,
+  operation.clock_hours,
+  operation.duration_variance_hours,
+  operation.time_validation_status,
+  operation.op_code,
+  operation.op_sub,
+  operation.work_category_code,
+  operation.work_subcategory_code,
+  operation.source_op_type,
+  operation.effective_op_type,
+  operation.operation_details,
+  operation.operation_details_normalized,
+  operation.productive_flag,
+  operation.productivity_type_code,
+  operation.confirmed_op_type,
+  operation.work_bucket,
+  operation.billing_status,
+  operation.responsibility,
+  operation.cause_code,
+  operation.service_line,
+  operation.rule_id,
+  operation.rule_version,
+  operation.confirmation_status,
+  operation.confidence,
+  operation.statistics_status,
+  operation.statistical_hours
+FROM vw_operation_structured operation
+JOIN vw_report_analytics report ON report.record_id = operation.record_id
+WHERE operation.normalization_status = 'NORMALIZED' AND operation.match_status = 'MATCHED';
 
 CREATE OR REPLACE VIEW vw_report_record_typed AS
 SELECT
@@ -1379,10 +1469,10 @@ SELECT
   rig_name,
   rig_model,
   work_bucket,
-  ROUND(SUM(hours), 3) AS hours,
+  ROUND(SUM(statistical_hours), 3) AS hours,
   COUNT(DISTINCT record_id) AS report_count
 FROM vw_rig_production_timeline
-WHERE source_op_type = 'P' OR confirmation_status = 'CONFIRMED'
+WHERE statistics_status = 'READY'
 GROUP BY CAST(DATE_FORMAT(report_date, '%Y-%m-01') AS DATE), project_id, project_name, rig_id, rig_name, rig_model, work_bucket;
 
 CREATE OR REPLACE VIEW vw_drilling_basic_metrics AS
@@ -1427,30 +1517,40 @@ SELECT
   MIN(rig.rig_name) AS rig_name,
   MIN(report.report_date) AS period_start,
   MAX(report.report_date) AS period_end,
-  ROUND(SUM(CASE WHEN classification.productive_flag = 'PRODUCTION'
+  ROUND(SUM(CASE WHEN activity.time_validation_status = 'VALID'
+                  AND classification.productive_flag = 'PRODUCTION'
                   AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END), 3) AS productive_hours,
   ROUND(SUM(CASE WHEN classification.productive_flag <> 'PRODUCTION'
                   AND classification.confirmed_op_type <> 'SC'
-                  AND classification.confirmation_status = 'CONFIRMED' THEN activity.hours ELSE 0 END), 3) AS included_nonproductive_hours,
+                  AND classification.confirmation_status = 'CONFIRMED'
+                  AND activity.time_validation_status = 'VALID' THEN activity.hours ELSE 0 END), 3) AS included_nonproductive_hours,
   ROUND(SUM(CASE WHEN classification.confirmed_op_type = 'SC'
-                  AND classification.confirmation_status = 'CONFIRMED' THEN activity.hours ELSE 0 END), 3) AS excluded_hours,
-  ROUND(SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
-                  AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN activity.hours ELSE 0 END), 3) AS pending_review_hours,
+                  AND classification.confirmation_status = 'CONFIRMED'
+                  AND activity.time_validation_status = 'VALID' THEN activity.hours ELSE 0 END), 3) AS excluded_hours,
+  ROUND(SUM(CASE WHEN activity.time_validation_status <> 'VALID'
+                  OR COALESCE(classification.confirmation_status,'PENDING') NOT IN ('CONFIRMED','AUTO_CONFIRMED')
+                 THEN activity.hours ELSE 0 END), 3) AS pending_review_hours,
   ROUND(SUM(activity.hours), 3) AS total_hours,
-  CASE WHEN SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
-                       AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN 1 ELSE 0 END) > 0 THEN NULL
+  CASE WHEN SUM(CASE WHEN activity.time_validation_status <> 'VALID'
+                       OR COALESCE(classification.confirmation_status,'PENDING') NOT IN ('CONFIRMED','AUTO_CONFIRMED') THEN 1 ELSE 0 END) > 0 THEN NULL
        WHEN SUM(CASE WHEN classification.confirmed_op_type <> 'SC'
-                      AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END) = 0 THEN 0
+                      AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED')
+                      AND activity.time_validation_status = 'VALID' THEN activity.hours ELSE 0 END) = 0 THEN 0
        ELSE ROUND(SUM(CASE WHEN classification.productive_flag = 'PRODUCTION'
-                            AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END)
+                            AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED')
+                            AND activity.time_validation_status = 'VALID' THEN activity.hours ELSE 0 END)
                   / SUM(CASE WHEN classification.confirmed_op_type <> 'SC'
-                              AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN activity.hours ELSE 0 END), 6) END AS efficiency,
-  SUM(CASE WHEN classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN 1 ELSE 0 END) AS confirmed_rows,
-  SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
-            AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN 1 ELSE 0 END) AS pending_rows,
-  CASE WHEN SUM(CASE WHEN activity.source_op_type IN ('SC','NPT')
-                      AND COALESCE(classification.confirmation_status,'PENDING') <> 'CONFIRMED' THEN 1 ELSE 0 END) = 0
-       THEN 'OFFICIAL' ELSE 'PENDING_NPT_CONFIRMATION' END AS official_status,
+                              AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED')
+                              AND activity.time_validation_status = 'VALID' THEN activity.hours ELSE 0 END), 6) END AS efficiency,
+  SUM(CASE WHEN activity.time_validation_status = 'VALID'
+            AND classification.confirmation_status IN ('CONFIRMED','AUTO_CONFIRMED') THEN 1 ELSE 0 END) AS confirmed_rows,
+  SUM(CASE WHEN activity.time_validation_status <> 'VALID'
+            OR COALESCE(classification.confirmation_status,'PENDING') NOT IN ('CONFIRMED','AUTO_CONFIRMED') THEN 1 ELSE 0 END) AS pending_rows,
+  CASE WHEN SUM(CASE WHEN activity.time_validation_status <> 'VALID' THEN 1 ELSE 0 END) > 0
+       THEN 'PENDING_TIME_REVIEW'
+       WHEN SUM(CASE WHEN COALESCE(classification.confirmation_status,'PENDING') NOT IN ('CONFIRMED','AUTO_CONFIRMED') THEN 1 ELSE 0 END) > 0
+       THEN 'PENDING_CLASSIFICATION'
+       ELSE 'OFFICIAL' END AS official_status,
   GROUP_CONCAT(DISTINCT report.record_id ORDER BY report.record_id) AS source_ids
 FROM biz_job job
 JOIN md_project project ON project.id = job.project_id

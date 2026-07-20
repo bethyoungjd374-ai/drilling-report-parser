@@ -20,7 +20,7 @@ from email.policy import default as email_policy
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 import urllib.error
 import urllib.request
@@ -29,8 +29,7 @@ from collections import deque
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
-from .completion_pdf_parser import parse_completion_pdf_daily_report
-from .database_common import natural_record_id
+from .database_common import natural_record_id, safe_float as _safe_float
 from .db_config import mysql_settings
 from .text_structure import normalize_multiline
 from .storage import (
@@ -41,11 +40,12 @@ from .storage import (
     list_ai_job_status,
     list_records,
     list_translation_queue_records,
-    load_activity_classifications,
+    load_analytics_view_rows,
+    load_monthly_efficiency_report_rows,
     load_npt_confirmation_detail,
     load_operation_translations,
+    load_production_report_remarks,
     load_report_payload,
-    load_report_payloads,
     load_extraction_results,
     load_translation_content,
     load_translation_memory,
@@ -53,6 +53,7 @@ from .storage import (
     mysql_status,
     reset_translation_state,
     save_npt_confirmation,
+    save_production_report_remark,
     save_report_payload,
     save_extraction_results,
     save_translation_content,
@@ -63,28 +64,31 @@ from .storage import (
     update_record_extraction_status,
     upsert_translation_content,
 )
-from .move_pdf_parser import parse_move_pdf_daily_report
 from .master_data_service import (
-    build_legacy_project_team_config,
     delete_master_entity,
     list_appendix_values,
     list_assignments,
     list_master_entities,
+    list_reporting_projects,
     save_assignment,
     save_master_entity,
     save_project_relationships,
     validate_assignment,
 )
-from .pdf_report_parser import parse_pdf_daily_report
 from .pdf_batch import PdfReportSegment, split_pdf_daily_reports
-from .report_type_detection import (
-    REPORT_TYPE_LABELS as PDF_REPORT_TYPE_LABELS,
-    extract_pdf_report_events,
-    normalize_report_event,
-    report_types_from_event,
-    storage_report_type_for_event_type,
+from .pdf_import_service import (
+    PdfParser,
+    inherit_consistent_batch_rigs as _inherit_consistent_batch_rigs,
+    pdf_import_response as _pdf_import_response,
+    pdf_import_strategy,
+    report_identity_errors as _report_identity_errors,
+    validate_pdf_report_type as _validate_pdf_report_type,
 )
-from .report_normalization_service import list_quality_issues, resolve_quality_issue
+from .report_normalization_service import (
+    list_quality_issues,
+    refresh_report_master_matches,
+    resolve_quality_issue,
+)
 from .report_schema import REPORT_TABLES, REPORT_TYPE_ORDER, ROW_COLUMNS, TRANSLATION_SCOPE_FIELDS
 from .runtime_files import (
     append_jsonl,
@@ -118,7 +122,6 @@ from .translation.experience_store import (
     save_experience_pool,
     update_experience_status,
 )
-from .workover_pdf_parser import parse_workover_pdf_daily_report
 from .time_classification_service import (
     confirm_classification,
     list_confirmation_queue,
@@ -135,24 +138,21 @@ SOURCE_PDF_DIR = ROOT / "outputs" / "source_pdfs"
 CONFIG_PATH = ROOT / "outputs" / "system_config.json"
 USERS_PATH = ROOT / "outputs" / "users.json"
 ROLES_PATH = ROOT / "outputs" / "roles.json"
-PROJECT_TEAM_PATH = ROOT / "outputs" / "project_team_config.json"
 TRANSLATION_TERMS_PATH = ROOT / "outputs" / "translation_terms.json"
 TRANSLATION_TUNING_PATH = ROOT / "outputs" / "translation_tuning.json"
 AI_MODELS_PATH = ROOT / "outputs" / "ai_model_configs.json"
 AI_EXTRACTION_RULES_PATH = ROOT / "outputs" / "ai_extraction_rules.json"
 AI_EXTRACTION_PIPELINE_VERSION = "bilingual-evidence-v1"
 DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation" / "drilling_terms.json"
-PRODUCTION_REPORT_REMARKS_PATH = ROOT / "outputs" / "production_report_remarks.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
-TRANSLATION_METRICS_PATH = ROOT / "outputs" / "translation_metrics.jsonl"
+TRANSLATION_METRICS_PATH = ROOT / "outputs" / "runtime" / "translation_metrics.jsonl"
 TRANSLATION_DEBUG_LOG_PATH = ROOT / "outputs" / "translation_debug_logs.jsonl"
 TRANSLATION_EXPERIENCE_PATH = ROOT / "outputs" / "translation_experience.json"
-AI_JOB_MONITOR_PATH = ROOT / "outputs" / "ai_job_monitor.jsonl"
+AI_JOB_MONITOR_PATH = ROOT / "outputs" / "runtime" / "ai_job_monitor.jsonl"
 BACKUP_DIR = ROOT / "outputs" / "backups"
 SESSIONS: dict[str, dict[str, object]] = {}
 CONFIG_WRITE_LOCK = threading.RLock()
 AUDIT_LOG_LOCK = threading.Lock()
-DRP_MASTER_DATA_V2 = os.environ.get("DRP_MASTER_DATA_V2", "1").strip().lower() not in {"0", "false", "off", "no"}
 
 
 def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
@@ -271,6 +271,16 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._production_summary_export(parsed.query)
             return
+        if parsed.path == "/api/monthly-efficiency-report":
+            if not self._require_permission("view"):
+                return
+            self._monthly_efficiency_report(parsed.query)
+            return
+        if parsed.path == "/api/monthly-efficiency-report-export":
+            if not self._require_permission("export"):
+                return
+            self._monthly_efficiency_report_export(parsed.query)
+            return
         if parsed.path == "/api/npt-stats":
             if not self._require_permission("view"):
                 return
@@ -319,9 +329,6 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/admin/roles":
             self._admin_roles()
-            return
-        if parsed.path == "/api/admin/project-teams":
-            self._admin_project_teams()
             return
         if parsed.path == "/api/admin/translation-terms":
             self._admin_translation_terms()
@@ -372,9 +379,6 @@ class FormHandler(BaseHTTPRequestHandler):
             self._admin_audit_logs()
             return
         if parsed.path.startswith("/api/admin/master-data/"):
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return
             if not self._require_permission("view"):
                 return
             entity = parsed.path.removeprefix("/api/admin/master-data/").strip("/")
@@ -389,19 +393,13 @@ class FormHandler(BaseHTTPRequestHandler):
             )
             return
         if parsed.path == "/api/admin/assignments":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return
             if not self._require_permission("view"):
                 return
             query = parse_qs(parsed.query)
-            kind = str((query.get("kind") or ["project-rig"])[0])
+            kind = str((query.get("kind") or ["project-team"])[0])
             self._v2_json_call(lambda: {"items": list_assignments(kind, status=str((query.get("status") or [""])[0]))})
             return
         if parsed.path == "/api/admin/data-quality/issues":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return
             if not self._require_permission("view"):
                 return
             query = parse_qs(parsed.query)
@@ -412,17 +410,11 @@ class FormHandler(BaseHTTPRequestHandler):
             )})
             return
         if parsed.path == "/api/admin/time-classification/rules":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return
             if not self._require_permission("view"):
                 return
             self._v2_json_call(lambda: {"items": list_rules()})
             return
         if parsed.path == "/api/admin/time-classification/queue":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return
             if not self._require_permission("view"):
                 return
             query = parse_qs(parsed.query)
@@ -450,9 +442,6 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/admin/roles":
             self._admin_save_roles()
-            return
-        if self.path == "/api/admin/project-teams":
-            self._admin_save_project_teams()
             return
         if self.path == "/api/admin/translation-terms":
             self._admin_save_translation_terms()
@@ -505,22 +494,23 @@ class FormHandler(BaseHTTPRequestHandler):
         if self.path == "/api/admin/translations/stop":
             self._admin_stop_translations()
             return
-        if self.path == "/api/import-pdf":
+        request_path = urlparse(self.path).path
+        if request_path == "/api/import-pdf":
             if not self._require_permission("import"):
                 return
             self._import_pdf()
             return
-        if self.path == "/api/import-completion-pdf":
+        if request_path == "/api/import-completion-pdf":
             if not self._require_permission("import"):
                 return
             self._import_completion_pdf()
             return
-        if self.path == "/api/import-workover-pdf":
+        if request_path == "/api/import-workover-pdf":
             if not self._require_permission("import"):
                 return
             self._import_workover_pdf()
             return
-        if self.path == "/api/import-move-pdf":
+        if request_path == "/api/import-move-pdf":
             if not self._require_permission("import"):
                 return
             self._import_move_pdf()
@@ -565,23 +555,21 @@ class FormHandler(BaseHTTPRequestHandler):
         if not master_match:
             self.send_error(404)
             return
-        if not DRP_MASTER_DATA_V2:
-            self.send_error(404)
-            return
         user = self._require_admin()
         if not user:
             return
         entity = master_match.group(1)
         payload = self._read_json_body()
 
-        def delete_master_and_refresh_compatibility() -> dict[str, object]:
+        def delete_master_and_refresh_matches() -> dict[str, object]:
             item = delete_master_entity(entity, payload, actor=str(user.get("username", "admin")))
-            if entity in {"rigs", "drilling-rigs", "workover-rigs", "teams", "projects", "contracts", "aliases", "organizations", "companies"}:
-                _refresh_legacy_project_team_config()
-            return {"item": item}
+            match_refresh: dict[str, int] = {}
+            if entity in {"rigs", "drilling-rigs", "workover-rigs", "wells", "teams", "projects", "aliases"}:
+                match_refresh = refresh_report_master_matches(actor=str(user.get("username", "admin")))
+            return {"item": item, "match_refresh": match_refresh}
 
         self._v2_json_call(
-            delete_master_and_refresh_compatibility,
+            delete_master_and_refresh_matches,
             audit_user=user,
             audit_action="delete_master_data",
             audit_target=f"{entity}:{payload.get('id', '')}",
@@ -593,72 +581,59 @@ class FormHandler(BaseHTTPRequestHandler):
         path = parsed.path
         master_match = re.fullmatch(r"/api/admin/master-data/([^/]+)", path)
         if master_match:
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
             entity = master_match.group(1)
             payload = self._read_json_body()
-            def save_master_and_compatibility() -> dict[str, object]:
+            def save_master_and_refresh_matches() -> dict[str, object]:
                 item = save_master_entity(entity, payload, actor=str(user.get("username", "admin")))
-                if entity in {"rigs", "drilling-rigs", "workover-rigs", "teams", "projects", "contracts", "aliases", "organizations", "companies"}:
-                    _refresh_legacy_project_team_config()
-                return {"item": item}
-            self._v2_json_call(save_master_and_compatibility, audit_user=user, audit_action="save_master_data", audit_target=entity)
+                match_refresh: dict[str, int] = {}
+                if entity in {"rigs", "drilling-rigs", "workover-rigs", "wells", "teams", "projects", "aliases"}:
+                    match_refresh = refresh_report_master_matches(actor=str(user.get("username", "admin")))
+                return {"item": item, "match_refresh": match_refresh}
+            self._v2_json_call(save_master_and_refresh_matches, audit_user=user, audit_action="save_master_data", audit_target=entity)
             return True
         if path == "/api/admin/assignments":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
             payload = self._read_json_body()
-            kind = str(payload.pop("kind", "project-rig") or "project-rig")
-            def save_assignment_and_compatibility() -> dict[str, object]:
+            kind = str(payload.pop("kind", "project-team") or "project-team")
+            def save_assignment_and_refresh_matches() -> dict[str, object]:
                 item = save_assignment(kind, payload, actor=str(user.get("username", "admin")))
-                if kind in {"project-team", "project-rig", "project-well"}:
-                    _refresh_legacy_project_team_config()
-                return {"item": item}
-            self._v2_json_call(save_assignment_and_compatibility, audit_user=user, audit_action="save_assignment", audit_target=kind)
+                match_refresh: dict[str, int] = {}
+                if kind in {"project-team", "project-well"}:
+                    match_refresh = refresh_report_master_matches(actor=str(user.get("username", "admin")))
+                return {"item": item, "match_refresh": match_refresh}
+            self._v2_json_call(save_assignment_and_refresh_matches, audit_user=user, audit_action="save_assignment", audit_target=kind)
             return True
         if path == "/api/admin/project-relationships":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
             payload = self._read_json_body()
-            def save_relationships_and_compatibility() -> dict[str, object]:
+            def save_relationships_and_refresh_matches() -> dict[str, object]:
                 result = save_project_relationships(payload, actor=str(user.get("username", "admin")))
-                _refresh_legacy_project_team_config()
-                return {"relationships": result}
+                match_refresh = refresh_report_master_matches(actor=str(user.get("username", "admin")))
+                return {"relationships": result, "match_refresh": match_refresh}
             self._v2_json_call(
-                save_relationships_and_compatibility,
+                save_relationships_and_refresh_matches,
                 audit_user=user,
                 audit_action="save_project_relationships",
                 audit_target=str(payload.get("project_id", "")),
             )
             return True
         if path == "/api/admin/assignments/validate":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
             payload = self._read_json_body()
-            kind = str(payload.pop("kind", "project-rig") or "project-rig")
+            kind = str(payload.pop("kind", "project-team") or "project-team")
             self._v2_json_call(lambda: validate_assignment(kind, payload), audit_user=user, audit_action="validate_assignment", audit_target=kind)
             return True
         issue_match = re.fullmatch(r"/api/admin/data-quality/issues/(\d+)/resolve", path)
         if issue_match:
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
@@ -671,18 +646,12 @@ class FormHandler(BaseHTTPRequestHandler):
             )}, audit_user=user, audit_action="resolve_data_quality_issue", audit_target=issue_match.group(1))
             return True
         if path == "/api/admin/time-classification/rules":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
             self._v2_json_call(lambda: {"item": save_rule(self._read_json_body(), actor=str(user.get("username", "admin")))}, audit_user=user, audit_action="save_time_classification_rule", audit_target="rules")
             return True
         if path == "/api/admin/time-classification/confirm":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
@@ -693,9 +662,6 @@ class FormHandler(BaseHTTPRequestHandler):
             )}, audit_user=user, audit_action="confirm_time_classification", audit_target=str(payload.get("activity_id", "")))
             return True
         if path == "/api/admin/time-classification/reclassify":
-            if not DRP_MASTER_DATA_V2:
-                self.send_error(404)
-                return True
             user = self._require_admin()
             if not user:
                 return True
@@ -884,24 +850,6 @@ class FormHandler(BaseHTTPRequestHandler):
         _save_roles(roles)
         _write_audit(user, "save_roles", "system_admin", "roles", True, f"{len(roles)} roles")
         self._send_json({"ok": True, "roles": roles})
-
-    def _admin_project_teams(self) -> None:
-        user = self._require_admin()
-        if not user:
-            return
-        self._send_json(_sync_project_wells_from_database(DATABASE_PATH))
-
-    def _admin_save_project_teams(self) -> None:
-        user = self._require_admin()
-        if not user:
-            return
-        payload = self._read_json_body()
-        payload.pop("pending_wells", None)
-        config = _normalize_project_team_config(payload)
-        _save_project_team_config(config)
-        config = _sync_project_wells_from_database(DATABASE_PATH)
-        _write_audit(user, "save_project_teams", "system_admin", "project_team_config", True, f"{len(config['projects'])} projects / {len(config['teams'])} teams")
-        self._send_json({"ok": True, **config})
 
     def _admin_translation_terms(self) -> None:
         user = self._require_admin()
@@ -1625,7 +1573,7 @@ class FormHandler(BaseHTTPRequestHandler):
             "database_host": settings.host,
             "database_port": settings.port,
             "mysql": mysql_status(),
-            "features": {"master_data_v2": DRP_MASTER_DATA_V2},
+            "features": {"master_data_v2": True},
             "source_pdf_count": source_pdf_count,
             "backups": [],
         })
@@ -1693,26 +1641,34 @@ class FormHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _import_pdf(self) -> None:
-        self._import_report_pdf("drilling", parse_pdf_daily_report)
+        query = parse_qs(urlparse(getattr(self, "path", "")).query)
+        profile = (query.get("template_profile") or ["original"])[0]
+        self._import_report_pdf("drilling", template_profile=profile)
 
     def _import_completion_pdf(self) -> None:
-        self._import_report_pdf("completion", parse_completion_pdf_daily_report)
+        self._import_report_pdf("completion")
 
     def _import_workover_pdf(self) -> None:
-        self._import_report_pdf("workover", parse_workover_pdf_daily_report)
+        self._import_report_pdf("workover")
 
     def _import_move_pdf(self) -> None:
-        # Rig-move PDFs share the drilling schema and are displayed as move
-        # days by their Event value in the drilling calendar.
-        self._import_report_pdf("drilling", parse_move_pdf_daily_report)
+        self._import_report_pdf("move")
 
     def _import_report_pdf(
         self,
-        report_type: str,
-        parser: Callable[[bytes], dict[str, Any]],
+        import_type: str,
+        *,
+        template_profile: str = "original",
     ) -> None:
         try:
             upload = self._read_pdf_upload()
+            strategy = pdf_import_strategy(
+                import_type,
+                template_profile=template_profile,
+                source_filename=upload.filename,
+            )
+            report_type = strategy.storage_report_type
+            parser = strategy.parser
             pdf_bytes = upload.data
             segments = split_pdf_daily_reports(pdf_bytes, parser)
             payloads = self._parse_import_segments(upload, segments, parser)
@@ -1731,7 +1687,7 @@ class FormHandler(BaseHTTPRequestHandler):
         self,
         upload: UploadedFile,
         segments: list[PdfReportSegment],
-        parser: Callable[[bytes], dict[str, Any]],
+        parser: PdfParser,
     ) -> list[dict[str, Any]]:
         source_file = Path(upload.filename).name
         report_count = len(segments)
@@ -1871,12 +1827,12 @@ class FormHandler(BaseHTTPRequestHandler):
         if not remark_key:
             self._send_json({"error": "缺少备注行标识。"}, status=400)
             return
-        remarks = _load_production_report_remarks()
-        if remark:
-            remarks[remark_key] = remark
-        else:
-            remarks.pop(remark_key, None)
-        _save_production_report_remarks(remarks)
+        save_production_report_remark(
+            DATABASE_PATH,
+            remark_key,
+            remark,
+            actor=str(user.get("username", "") or "system"),
+        )
         _write_audit(user, "save_production_report_remark", "production_report", remark_key, True, "")
         self._send_json({"ok": True, "remark_key": remark_key, "remarks": remark})
 
@@ -1894,66 +1850,7 @@ class FormHandler(BaseHTTPRequestHandler):
         self._send_json({"records": records})
 
     def _well_stats(self, query: str) -> None:
-        params = parse_qs(query)
-        report_type = (params.get("report_type") or [""])[0]
-        wellbore = (params.get("wellbore") or [""])[0]
-        records = list_records(DATABASE_PATH)
-        matched = [
-            record for record in records
-            if (not report_type or record.get("report_type") == report_type)
-            and (not wellbore or record.get("wellbore") == wellbore)
-        ]
-        payloads = load_report_payloads(
-            DATABASE_PATH,
-            [str(record.get("record_id") or "") for record in matched],
-        )
-        stats = {
-            "days": len({record.get("reportDate") for record in matched if record.get("reportDate")}),
-            "total_hours": 0.0,
-            "npt_hours": 0.0,
-            "p_hours": 0.0,
-            "sc_hours": 0.0,
-            "rig": "",
-            "afe_number": "",
-            "move_date": "",
-            "drilling_start_date": "",
-            "completion_date": "",
-            "workover_date": "",
-        }
-        for record in matched:
-            record_id = str(record.get("record_id") or "")
-            if not record_id:
-                continue
-            payload = payloads.get(record_id)
-            if payload is None:
-                continue
-            fields = payload.get("report_fields", {}) if isinstance(payload.get("report_fields", {}), dict) else {}
-            if not stats["rig"] and fields.get("rig"):
-                stats["rig"] = _normalize_rig_name(str(fields.get("rig", "") or ""))
-            if not stats["afe_number"] and fields.get("afeNumber"):
-                stats["afe_number"] = str(fields.get("afeNumber", "") or "")
-            report_date = str(fields.get("reportDate", "") or record.get("reportDate", "") or "")
-            event = str(fields.get("event", "") or record.get("event", "") or "")
-            _apply_well_stat_dates(stats, event, report_date, str(record.get("report_type", "") or ""))
-            operations = payload.get("operations", [])
-            if not isinstance(operations, list):
-                continue
-            for row in operations:
-                if not isinstance(row, dict):
-                    continue
-                try:
-                    hours = float(str(row.get("hours", "") or "0").replace(",", ""))
-                except ValueError:
-                    hours = 0.0
-                op_type = _effective_operation_type(row)
-                stats["total_hours"] += hours
-                if op_type == "NPT":
-                    stats["npt_hours"] += hours
-                elif op_type == "SC":
-                    stats["sc_hours"] += hours
-                elif op_type == "P":
-                    stats["p_hours"] += hours
-        self._send_json(stats)
+        self._send_json(_well_stats_payload(DATABASE_PATH, parse_qs(query)))
 
     def _production_summary(self, query: str) -> None:
         self._send_json(_production_summary_payload(DATABASE_PATH, parse_qs(query)))
@@ -1976,6 +1873,37 @@ class FormHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Content-Disposition", f"attachment; filename=\"production-report.xlsx\"; filename*=UTF-8''{quote(filename)}")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _monthly_efficiency_report(self, query: str) -> None:
+        self._send_json(_monthly_efficiency_report_payload(DATABASE_PATH, parse_qs(query)))
+
+    def _monthly_efficiency_report_export(self, query: str) -> None:
+        params = parse_qs(query)
+        payload = _monthly_efficiency_report_payload(DATABASE_PATH, params)
+        rows = payload.get("details", [])
+        if not isinstance(rows, list):
+            rows = []
+        rows = _sort_monthly_efficiency_rows(rows, _param(params, "sort_field"), _param(params, "sort_dir"))
+        language = "es" if _param(params, "language").lower() == "es" else "zh"
+        data = _monthly_efficiency_workbook_bytes(
+            rows,
+            str(payload.get("date_from", "") or ""),
+            str(payload.get("date_to", "") or ""),
+            language,
+        )
+        scope_label = _monthly_efficiency_scope_label(
+            str(payload.get("date_from", "") or ""),
+            str(payload.get("date_to", "") or ""),
+            language,
+        )
+        report_name = "Reporte de eficiencia" if language == "es" else "月度时效报表"
+        filename = f"{report_name}-{scope_label}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f"attachment; filename=\"monthly-efficiency-report.xlsx\"; filename*=UTF-8''{quote(filename)}")
         self.end_headers()
         self.wfile.write(data)
 
@@ -2908,8 +2836,6 @@ def _ensure_admin_files() -> None:
         _save_config(_default_config())
     if not ROLES_PATH.exists():
         _save_roles(_default_roles())
-    if not PROJECT_TEAM_PATH.exists():
-        _save_project_team_config(_default_project_team_config())
     if not TRANSLATION_TERMS_PATH.exists():
         _save_translation_terms_config(_default_translation_terms_config())
     if not TRANSLATION_TUNING_PATH.exists():
@@ -2968,54 +2894,6 @@ def _load_roles() -> list[dict[str, object]]:
 def _save_roles(roles: list[dict[str, object]]) -> None:
     _ensure_parent(ROLES_PATH)
     _atomic_write_json(ROLES_PATH, _normalize_roles(roles))
-
-
-def _default_project_team_config() -> dict[str, object]:
-    return {"teams": [], "projects": [], "pending_wells": []}
-
-
-def _load_project_team_config() -> dict[str, object]:
-    _ensure_parent(PROJECT_TEAM_PATH)
-    if not PROJECT_TEAM_PATH.exists():
-        return _default_project_team_config()
-    try:
-        data = json.loads(PROJECT_TEAM_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        data = {}
-    return _normalize_project_team_config(data)
-
-
-def _save_project_team_config(config: dict[str, object]) -> None:
-    _ensure_parent(PROJECT_TEAM_PATH)
-    _atomic_write_json(PROJECT_TEAM_PATH, _normalize_project_team_config(config))
-
-
-def _refresh_legacy_project_team_config() -> dict[str, object]:
-    """Regenerate the legacy read-only project JSON from MySQL V2 relations."""
-    pending = _load_project_team_config().get("pending_wells", [])
-    config = build_legacy_project_team_config()
-    config["pending_wells"] = pending if isinstance(pending, list) else []
-    _save_project_team_config(config)
-    return config
-
-
-def _load_production_report_remarks() -> dict[str, str]:
-    _ensure_parent(PRODUCTION_REPORT_REMARKS_PATH)
-    if not PRODUCTION_REPORT_REMARKS_PATH.exists():
-        return {}
-    try:
-        data = json.loads(PRODUCTION_REPORT_REMARKS_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        data = {}
-    if not isinstance(data, dict):
-        return {}
-    return {str(key): str(value or "")[:500] for key, value in data.items() if str(key).strip()}
-
-
-def _save_production_report_remarks(remarks: dict[str, str]) -> None:
-    _ensure_parent(PRODUCTION_REPORT_REMARKS_PATH)
-    clean = {str(key): str(value or "")[:500] for key, value in remarks.items() if str(key).strip() and str(value or "").strip()}
-    _atomic_write_json(PRODUCTION_REPORT_REMARKS_PATH, clean)
 
 
 def _default_translation_terms_config() -> dict[str, object]:
@@ -5241,121 +5119,6 @@ def _list_value(value: object) -> list[object]:
     return value if isinstance(value, list) else []
 
 
-def _normalize_project_team_config(raw: object) -> dict[str, object]:
-    source = raw if isinstance(raw, dict) else {}
-    now = datetime.now().isoformat(timespec="seconds")
-    teams: list[dict[str, object]] = []
-    seen_teams: set[str] = set()
-    for item in _list_value(source.get("teams")):
-        if not isinstance(item, dict):
-            continue
-        raw_name = str(item.get("name", "") or item.get("rig", "") or "").strip()
-        name = _normalize_rig_name(raw_name)
-        if not _is_valid_rig_name(name) or name in seen_teams:
-            continue
-        aliases = _normalized_string_list(item.get("aliases"))
-        if raw_name and raw_name != name and raw_name not in aliases:
-            aliases.insert(0, raw_name)
-        teams.append({
-            "id": str(item.get("id") or uuid.uuid4()),
-            "name": name,
-            "code": str(item.get("code", "") or "").strip(),
-            "contractor": str(item.get("contractor", "") or "").strip(),
-            "aliases": aliases,
-            "status": str(item.get("status", "active") or "active").strip() or "active",
-            "created_at": str(item.get("created_at") or now),
-        })
-        seen_teams.add(name)
-
-    projects: list[dict[str, object]] = []
-    seen_projects: set[str] = set()
-    for item in _list_value(source.get("projects")):
-        if not isinstance(item, dict):
-            continue
-        contract_no = str(item.get("contract_no", "") or "").strip()
-        project_name = str(item.get("project_name", "") or item.get("name", "") or "").strip()
-        key = contract_no or project_name
-        if not key or key in seen_projects:
-            continue
-        rigs: list[dict[str, object]] = []
-        seen_rigs: set[str] = set()
-        for rig_item in _list_value(item.get("rigs")):
-            if not isinstance(rig_item, dict):
-                continue
-            rig_name = _normalize_rig_name(str(rig_item.get("rig", "") or rig_item.get("name", "") or "").strip())
-            if not _is_valid_rig_name(rig_name) or rig_name in seen_rigs:
-                continue
-            wells = sorted({str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()})
-            rigs.append({
-                "rig": rig_name,
-                "start_date": str(rig_item.get("start_date", "") or "").strip(),
-                "end_date": str(rig_item.get("end_date", "") or "").strip(),
-                "wells": wells,
-                "note": str(rig_item.get("note", "") or "").strip(),
-            })
-            seen_rigs.add(rig_name)
-        projects.append({
-            "id": str(item.get("id") or uuid.uuid4()),
-            "contract_no": contract_no,
-            "project_name": project_name,
-            "status": str(item.get("status", "active") or "active").strip() or "active",
-            "start_date": str(item.get("start_date", "") or "").strip(),
-            "end_date": str(item.get("end_date", "") or "").strip(),
-            "note": str(item.get("note", "") or "").strip(),
-            "rigs": rigs,
-            "created_at": str(item.get("created_at") or now),
-            "updated_at": str(item.get("updated_at") or now),
-        })
-        seen_projects.add(key)
-
-    pending: list[dict[str, object]] = []
-    seen_pending: set[tuple[str, str]] = set()
-    for item in _list_value(source.get("pending_wells")):
-        if not isinstance(item, dict):
-            continue
-        rig = _normalize_rig_name(str(item.get("rig", "") or "").strip())
-        wellbore = str(item.get("wellbore", "") or "").strip()
-        if not _is_valid_rig_name(rig) or not wellbore or (rig, wellbore) in seen_pending:
-            continue
-        pending.append({
-            "rig": rig,
-            "wellbore": wellbore,
-            "report_type": str(item.get("report_type", "") or "").strip(),
-            "source": str(item.get("source", "report") or "report").strip(),
-            "created_at": str(item.get("created_at") or now),
-        })
-        seen_pending.add((rig, wellbore))
-    return {"teams": teams, "projects": projects, "pending_wells": pending}
-
-
-def _sync_project_wells_from_database(database_path: Path = DATABASE_PATH) -> dict[str, object]:
-    config = _load_project_team_config()
-    discovered: dict[tuple[str, str], dict[str, object]] = {}
-    for record in list_records(database_path):
-        report_type = str(record.get("report_type", "") or "").strip()
-        if report_type not in {"drilling", "completion", "workover"}:
-            continue
-        rig = _normalize_rig_name(str(record.get("rig", "") or "").strip())
-        wellbore = str(record.get("wellbore", "") or "").strip()
-        if not _is_valid_rig_name(rig) or not wellbore:
-            continue
-        if _project_assignments_for_record(record, config=config):
-            continue
-        key = (rig, wellbore)
-        discovered.setdefault(key, {
-            "rig": rig,
-            "wellbore": wellbore,
-            "report_type": report_type,
-            "source": "report",
-            "created_at": str(record.get("created_at", "") or ""),
-        })
-    config["pending_wells"] = sorted(
-        discovered.values(),
-        key=lambda item: (str(item.get("rig", "")), str(item.get("wellbore", ""))),
-    )
-    return config
-
-
 def _load_users() -> list[dict[str, object]]:
     if not USERS_PATH.exists():
         _ensure_admin_files()
@@ -5493,136 +5256,6 @@ def main() -> None:
     server = ThreadingHTTPServer((args.host, args.port), FormHandler)
     print(f"Drilling report form: http://{args.host}:{args.port}/web_form/")
     server.serve_forever()
-
-
-def _report_identity_errors(payload: dict[str, object]) -> list[str]:
-    fields = payload.get("report_fields", {})
-    if not isinstance(fields, dict):
-        return ["日报日期", "井号", "井队"]
-    labels = (("reportDate", "日报日期"), ("wellbore", "井号"), ("rig", "井队"))
-    return [label for field, label in labels if not str(fields.get(field, "") or "").strip()]
-
-
-def _validate_pdf_report_type(
-    expected_report_type: str,
-    payload: dict[str, Any],
-    segment: PdfReportSegment,
-    *,
-    report_index: int,
-    report_count: int,
-) -> None:
-    fields = payload.get("report_fields", {})
-    parsed_event = str(fields.get("event", "") or "").strip() if isinstance(fields, dict) else ""
-    source_events = extract_pdf_report_events(segment.data)
-    event_values = list(dict.fromkeys(
-        value for value in (*source_events, parsed_event) if normalize_report_event(value)
-    ))
-    detected_event_types = {
-        report_type
-        for value in event_values
-        for report_type in report_types_from_event(value)
-    }
-
-    metadata = payload.get("metadata", {})
-    source_file = str(metadata.get("source_file", "") or "") if isinstance(metadata, dict) else ""
-    source_label = f"（{source_file}）" if source_file else ""
-    page_label = (
-        f"第{segment.start_page}页"
-        if segment.start_page == segment.end_page
-        else f"第{segment.start_page}-{segment.end_page}页"
-    )
-    report_label = f"合并 PDF 第{report_index}份日报，{page_label}，" if report_count > 1 else f"{page_label}，"
-    expected_label = PDF_REPORT_TYPE_LABELS.get(expected_report_type, expected_report_type)
-    event_label = " / ".join(event_values)
-
-    if not event_values:
-        raise ValueError(
-            f"日报类型校验失败{source_label}：{report_label}基本信息中缺少 Event 字段，"
-            f"不能作为{expected_label}解析入库。"
-        )
-    if not detected_event_types:
-        raise ValueError(
-            f"日报类型校验失败{source_label}：{report_label}无法根据 Event“{event_label}”识别日报类型，"
-            f"不能作为{expected_label}解析入库。"
-        )
-    if len(detected_event_types) != 1:
-        detected_labels = "、".join(
-            PDF_REPORT_TYPE_LABELS.get(value, value) for value in sorted(detected_event_types)
-        )
-        raise ValueError(
-            f"日报类型校验失败{source_label}：{report_label}Event 内容存在类型冲突“{event_label}”"
-            f"（同时匹配{detected_labels}），已拒绝入库。"
-        )
-
-    detected_event_type = next(iter(detected_event_types))
-    detected_storage_type = storage_report_type_for_event_type(detected_event_type)
-    if detected_storage_type != expected_report_type:
-        detected_label = PDF_REPORT_TYPE_LABELS.get(detected_event_type, detected_event_type)
-        storage_label = PDF_REPORT_TYPE_LABELS.get(detected_storage_type, detected_storage_type)
-        raise ValueError(
-            f"日报类型不匹配{source_label}：{report_label}Event“{event_label}”识别为{detected_label}，"
-            f"该事件应归入{storage_label}，当前上传入口是{expected_label}。"
-            f"请改用{storage_label}入口重新上传；本次未入库。"
-        )
-
-    if isinstance(metadata, dict):
-        metadata["detected_event_type"] = detected_event_type
-        metadata["detected_report_type"] = detected_storage_type
-        metadata["report_type_validated"] = True
-
-
-def _pdf_import_response(
-    payloads: list[dict[str, Any]],
-    source_file: str,
-    report_count: int,
-) -> dict[str, Any]:
-    if not payloads:
-        raise ValueError("PDF 中未识别到日报。")
-    if report_count == 1:
-        return payloads[0]
-
-    # Keep the first report at the top level for compatibility with clients
-    # that predate multi-report imports.  Updated clients consume `reports`.
-    response = dict(payloads[0])
-    first_metadata = payloads[0].get("metadata", {})
-    metadata = dict(first_metadata) if isinstance(first_metadata, dict) else {}
-    metadata.update({
-        "source_file": Path(source_file).name,
-        "multi_report": True,
-        "imported_count": len(payloads),
-    })
-    response["metadata"] = metadata
-    response["reports"] = payloads
-    return response
-
-
-def _inherit_consistent_batch_rigs(payloads: list[dict[str, Any]]) -> None:
-    """Fill a missing rig only when the same well has one unanimous batch rig."""
-
-    rigs_by_well: dict[str, dict[str, str]] = {}
-    for payload in payloads:
-        fields = payload.get("report_fields", {})
-        if not isinstance(fields, dict):
-            continue
-        wellbore = " ".join(str(fields.get("wellbore", "") or "").upper().split())
-        rig = " ".join(str(fields.get("rig", "") or "").split())
-        if not wellbore or not rig:
-            continue
-        rig_key = re.sub(r"[^A-Z0-9]+", "", rig.upper())
-        rigs_by_well.setdefault(wellbore, {})[rig_key] = rig
-
-    for payload in payloads:
-        fields = payload.get("report_fields", {})
-        if not isinstance(fields, dict) or str(fields.get("rig", "") or "").strip():
-            continue
-        wellbore = " ".join(str(fields.get("wellbore", "") or "").upper().split())
-        candidates = rigs_by_well.get(wellbore, {})
-        if len(candidates) != 1:
-            continue
-        fields["rig"] = next(iter(candidates.values()))
-        metadata = payload.setdefault("metadata", {})
-        if isinstance(metadata, dict):
-            metadata["batch_inherited_fields"] = ["rig"]
 
 
 def _validation_warnings(
@@ -5777,19 +5410,63 @@ REPORT_TYPE_LABELS = {
     "workover": "修井",
     "move": "搬迁/推井架",
 }
-UNASSIGNED_PROJECT_ID = "__unassigned__"
-AMBIGUOUS_PROJECT_ID = "__ambiguous__"
+
+
+def _well_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    exact_params = {**params, "wellbore_exact": ["1"]}
+    rows = _filtered_fact_rows(database_path, exact_params)
+    records = rows["records"]
+    operations = [row for row in rows["operations"] if row.get("statistics_ready", True)]
+    stats: dict[str, object] = {
+        "days": len({record.get("reportDate") for record in records if record.get("reportDate")}),
+        "total_hours": 0.0,
+        "npt_hours": 0.0,
+        "p_hours": 0.0,
+        "sc_hours": 0.0,
+        "rig": "",
+        "afe_number": "",
+        "move_date": "",
+        "drilling_start_date": "",
+        "completion_date": "",
+        "workover_date": "",
+    }
+    for record in records:
+        if not stats["rig"] and record.get("rig"):
+            stats["rig"] = _normalize_rig_name(str(record.get("rig", "") or ""))
+        if not stats["afe_number"] and record.get("afeNumber"):
+            stats["afe_number"] = str(record.get("afeNumber", "") or "")
+        _apply_well_stat_dates(
+            stats,
+            str(record.get("event", "") or ""),
+            str(record.get("reportDate", "") or ""),
+            str(record.get("report_type", "") or ""),
+        )
+    for row in operations:
+        hours = float(row.get("hours", 0) or 0)
+        op_type = str(row.get("op_type", "") or "").upper()
+        stats["total_hours"] = float(stats["total_hours"]) + hours
+        key = {"P": "p_hours", "SC": "sc_hours", "NPT": "npt_hours"}.get(op_type)
+        if key:
+            stats[key] = float(stats[key]) + hours
+    for key in ("total_hours", "npt_hours", "p_hours", "sc_hours"):
+        stats[key] = round(float(stats[key]), 2)
+    return stats
 
 
 def _production_summary_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
     rows = _filtered_fact_rows(database_path, params)
     records = rows["records"]
-    operations = rows["operations"]
+    all_operations = rows["operations"]
+    operations = [row for row in all_operations if row.get("statistics_ready", True)]
     unique_rigs = sorted({record["rig"] for record in records if record["rig"]})
     unique_wells = sorted({record["wellbore"] for record in records if record["wellbore"]})
     total_hours = sum(row["hours"] for row in operations)
     npt_hours = sum(row["hours"] for row in operations if row["op_type"] == "NPT")
-    completeness = _completeness(records)
+    completeness = _completeness(
+        records,
+        date_from=_param(params, "date_from"),
+        date_to=_param(params, "date_to"),
+    )
 
     by_rig: dict[str, dict[str, float]] = {}
     npt_by_rig: dict[str, float] = {rig: 0.0 for rig in unique_rigs}
@@ -5811,7 +5488,7 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
 
     project_mode = _truthy(_param(params, "project_mode")) or bool(_param_values(params, "project"))
     details = _production_report_details(records, operations) if project_mode else _production_summary_details(records, operations)
-    quality = _analytics_quality_fields(records, operations)
+    quality = _analytics_quality_fields(records, all_operations, rows.get("quality"))
 
     return {
         "filters": _filter_options(records, database_path),
@@ -5828,8 +5505,271 @@ def _production_summary_payload(database_path: Path, params: dict[str, list[str]
         "monthly": [{"month": month, **{key: round(value, 2) for key, value in values.items()}} for month, values in sorted(monthly.items())],
         "details": details,
         **quality,
-        "scope_note": "基于已保存到 MySQL 的日报解析数据",
+        "scope_note": "仅统计主数据关系已匹配，且时效与分类状态可正式生效的日报 operation。",
     }
+
+
+def _monthly_efficiency_report_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    date_from = _param(params, "date_from") if _valid_iso_date(_param(params, "date_from")) else ""
+    date_to = _param(params, "date_to") if _valid_iso_date(_param(params, "date_to")) else ""
+    if date_from and date_to and date_from > date_to:
+        date_from, date_to = date_to, date_from
+    cumulative_year = (date_from or date_to)[:4]
+    year_start = f"{cumulative_year}-01-01" if cumulative_year else ""
+    source = load_monthly_efficiency_report_rows(
+        database_path,
+        date_from=date_from,
+        date_to=date_to,
+        year_start=year_start,
+    )
+    source_rows = source.get("rows", [])
+    if not isinstance(source_rows, list):
+        source_rows = []
+    _enrich_monthly_efficiency_translations(source_rows)
+    scope_value = _monthly_efficiency_scope_label(date_from, date_to, "zh")
+    all_rows = [_monthly_efficiency_row(row, scope_value) for row in source_rows if isinstance(row, dict)]
+
+    projects = _param_values(params, "project")
+    rigs = _param_values(params, "rig")
+    job_types = _param_values(params, "job_type")
+    source_statuses = _param_values(params, "source_status")
+    well_query = _param(params, "wellbore").strip().lower()
+    details = [
+        row for row in all_rows
+        if (not projects or str(row.get("project_id", "")) in projects)
+        and (not rigs or str(row.get("rig", "")) in rigs)
+        and (not job_types or str(row.get("job_type", "")) in job_types)
+        and (not source_statuses or str(row.get("source_status", "")) in source_statuses)
+        and (not well_query or well_query in str(row.get("wellbore", "")).lower())
+    ]
+
+    official_efficiency_rows = [
+        row for row in details
+        if row.get("efficiency") is not None and row.get("source_status") == "AVAILABLE"
+    ]
+    weighted_p = sum(_safe_float(row.get("production_hours")) for row in official_efficiency_rows)
+    weighted_npt = sum(_safe_float(row.get("npt_hours")) for row in official_efficiency_rows)
+    weighted_denominator = weighted_p + weighted_npt
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "filters": {
+            "selected_date_from": date_from,
+            "selected_date_to": date_to,
+            "available_date_from": str(source.get("available_date_from", "") or ""),
+            "available_date_to": str(source.get("available_date_to", "") or ""),
+            "projects": _monthly_filter_options(all_rows, "project_id", "project_name"),
+            "rigs": _monthly_filter_options(all_rows, "rig", "rig"),
+            "job_types": [
+                {"value": value, "label": REPORT_TYPE_LABELS.get(value, value)}
+                for value in ("drilling", "completion", "workover")
+                if any(row.get("job_type") == value for row in all_rows)
+            ],
+            "source_statuses": [
+                {"value": "AVAILABLE", "label": "时效可用"},
+                {"value": "PARTIAL", "label": "部分可用"},
+                {"value": "PENDING", "label": "待定"},
+            ],
+        },
+        "kpis": {
+            "job_count": len(details),
+            "well_count": len({str(row.get("well_id", "")) for row in details if row.get("well_id") not in (None, "")}),
+            "report_count": sum(int(row.get("report_count", 0) or 0) for row in details),
+            "production_hours": round(sum(_safe_float(row.get("production_hours")) for row in details), 2),
+            "npt_hours": round(sum(_safe_float(row.get("npt_hours")) for row in details), 2),
+            "sc_hours": round(sum(_safe_float(row.get("sc_hours")) for row in details), 2),
+            "weighted_efficiency": round(weighted_p / weighted_denominator, 4) if weighted_denominator else None,
+            "efficiency_job_count": len(official_efficiency_rows),
+            "pending_hours": round(sum(_safe_float(row.get("pending_hours")) for row in details), 2),
+        },
+        "details": details,
+        "grain": "date_range + project + well + job_type + job_id",
+        "scope_note": "仅展示主数据已匹配且所选日期范围内存在标准日报的钻井、完井、修井作业实例；日期为空时不限日期；效率=P/(P+NPT)，SC单列且不进入分母。",
+        "scope_note_es": "Solo se muestran instancias de perforación, completación y reacondicionamiento con datos maestros vinculados y reportes estándar dentro del rango; sin fechas no hay límite. Eficiencia=P/(P+NPT); SC se muestra por separado.",
+        "pending_note": "无明确来源或口径尚未确认的字段显示“待定”，不按0处理，也不参与汇总。",
+    }
+
+
+def _valid_iso_date(value: str) -> bool:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value or "")):
+        return False
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def _monthly_efficiency_scope_label(date_from: str, date_to: str, language: str = "zh") -> str:
+    if date_from and date_to:
+        return f"{date_from}_{date_to}"
+    if date_from:
+        return f"{'Desde' if language == 'es' else '自'}{date_from}"
+    if date_to:
+        return f"{'Hasta' if language == 'es' else '截至'}{date_to}"
+    return "Todas las fechas" if language == "es" else "全部日期"
+
+
+def _monthly_efficiency_row(source: dict[str, object], scope_value: str) -> dict[str, object]:
+    job_type = str(source.get("job_type", "") or "")
+    events = source.get("events") if isinstance(source.get("events"), dict) else {}
+    start_type, end_type = {
+        "drilling": ("DRILLING_START", "DRILLING_END"),
+        "completion": ("COMPLETION_START", "COMPLETION_END"),
+        "workover": ("WORKOVER_START", "WORKOVER_END"),
+    }.get(job_type, ("", ""))
+    event_start_date = str(events.get(start_type, "") or "") if start_type else ""
+    event_end_date = str(events.get(end_type, "") or "") if end_type else ""
+    actual_cycle_days: int | None = None
+    if event_start_date and event_end_date:
+        try:
+            actual_cycle_days = (date.fromisoformat(event_end_date) - date.fromisoformat(event_start_date)).days + 1
+        except ValueError:
+            actual_cycle_days = None
+
+    operation_count = int(source.get("operation_count", 0) or 0)
+    pending_operation_count = int(source.get("pending_operation_count", 0) or 0)
+    if operation_count:
+        production_hours = round(_safe_float(source.get("production_hours")), 3)
+        npt_hours = round(_safe_float(source.get("npt_hours")), 3)
+        sc_hours = round(_safe_float(source.get("sc_hours")), 3)
+    else:
+        production_hours = npt_hours = sc_hours = None
+    efficiency: float | None = None
+    if operation_count and not pending_operation_count:
+        denominator = _safe_float(production_hours) + _safe_float(npt_hours)
+        efficiency = round(_safe_float(production_hours) / denominator, 6) if denominator else 0.0
+    source_status = "AVAILABLE" if operation_count and not pending_operation_count else ("PARTIAL" if operation_count else "PENDING")
+
+    month_progress_count = int(source.get("month_progress_count", 0) or 0)
+    year_progress_count = int(source.get("year_progress_count", 0) or 0)
+    pending_fields: list[str] = []
+    field_checks = [
+        ("设计井深", source.get("design_depth_ft") is not None),
+        ("当前井深", source.get("current_depth_ft") is not None),
+        ("当月进尺", month_progress_count > 0),
+        ("年累计进尺", year_progress_count > 0),
+        ("明确作业开始事件", bool(event_start_date)),
+        ("明确作业结束事件", bool(event_end_date)),
+        ("实际作业周期", actual_cycle_days is not None),
+        ("搬安时长", False),
+        ("日费制维修时长", False),
+        ("零费率维修时长", False),
+        ("事故复杂时长", False),
+        ("其他非生产时长", False),
+        ("井控/事故事件", False),
+    ]
+    pending_fields.extend(label for label, available in field_checks if not available)
+    if pending_operation_count:
+        pending_fields.append("未完成确认的作业时长")
+
+    return {
+        "date_scope": scope_value,
+        "job_id": str(source.get("job_id", "") or ""),
+        "job_code": str(source.get("job_code", "") or ""),
+        "job_type": job_type,
+        "job_type_label": REPORT_TYPE_LABELS.get(job_type, job_type),
+        "project_id": str(source.get("project_id", "") or ""),
+        "project_code": str(source.get("project_code", "") or ""),
+        "project_name": str(source.get("project_name", "") or ""),
+        "contract_no": str(source.get("contract_no", "") or ""),
+        "well_id": str(source.get("well_id", "") or ""),
+        "wellbore": str(source.get("well_name", "") or source.get("well_code", "") or ""),
+        "well_type": str(source.get("well_type_code", "") or ""),
+        "well_profile": str(source.get("well_profile_code", "") or ""),
+        "rig": str(source.get("rig_name", "") or ""),
+        "team_code": str(source.get("team_code", "") or ""),
+        "team_name": str(source.get("team_name", "") or ""),
+        "team_company": str(source.get("team_company", "") or ""),
+        "rig_model": str(source.get("rig_model", "") or ""),
+        "country": str(source.get("country", "") or ""),
+        "block": str(source.get("block_name", "") or source.get("block_code", "") or ""),
+        "report_start_date": str(source.get("report_start_date", "") or "")[:10],
+        "report_end_date": str(source.get("report_end_date", "") or "")[:10],
+        "event_start_date": event_start_date,
+        "event_end_date": event_end_date,
+        "actual_cycle_days": actual_cycle_days,
+        "design_depth_ft": round(float(source["design_depth_ft"]), 2) if source.get("design_depth_ft") is not None else None,
+        "current_depth_ft": round(float(source["current_depth_ft"]), 2) if source.get("current_depth_ft") is not None else None,
+        "month_progress_ft": round(_safe_float(source.get("month_progress_ft")), 2) if month_progress_count else None,
+        "year_progress_ft": round(_safe_float(source.get("year_progress_ft")), 2) if year_progress_count else None,
+        "production_hours": production_hours,
+        "npt_hours": npt_hours,
+        "sc_hours": sc_hours,
+        "efficiency": efficiency,
+        "pending_hours": round(_safe_float(source.get("pending_hours")), 3),
+        "move_setup_hours": None,
+        "repair_paid_hours": None,
+        "repair_zero_hours": None,
+        "incident_complex_hours": None,
+        "other_nonproductive_hours": None,
+        "well_control_incident": None,
+        "nonproductive_description": str(source.get("nonproductive_description", "") or ""),
+        "nonproductive_description_zh": str(source.get("nonproductive_description_zh", "") or ""),
+        "other_remarks": str(source.get("other_remarks", "") or ""),
+        "report_count": int(source.get("report_count", 0) or 0),
+        "operation_count": operation_count,
+        "pending_operation_count": pending_operation_count,
+        "record_id": str(source.get("record_id", "") or ""),
+        "report_type": job_type,
+        "source_status": source_status,
+        "pending_fields": pending_fields,
+        "pending_field_count": len(pending_fields),
+    }
+
+
+def _enrich_monthly_efficiency_translations(source_rows: list[dict[str, object]]) -> None:
+    operations = [
+        operation
+        for source in source_rows
+        if isinstance(source, dict) and isinstance(source.get("nonproductive_operations"), list)
+        for operation in (source.get("nonproductive_operations") or [])
+        if isinstance(operation, dict)
+    ]
+    record_ids = list(dict.fromkeys(
+        str(operation.get("record_id", "") or "")
+        for operation in operations
+        if str(operation.get("record_id", "") or "")
+    ))
+    try:
+        translations = load_operation_translations(DATABASE_PATH, record_ids)
+    except Exception:
+        translations = []
+    translation_index = {
+        (str(row.get("record_id", "") or ""), str(row.get("entity_id", "") or "")): row
+        for row in translations
+    }
+    for source in source_rows:
+        if not isinstance(source, dict):
+            continue
+        source_operations = source.get("nonproductive_operations")
+        if not isinstance(source_operations, list):
+            source["nonproductive_description_zh"] = ""
+            continue
+        translated_descriptions: list[str] = []
+        for operation in source_operations:
+            if not isinstance(operation, dict):
+                continue
+            record_id = str(operation.get("record_id", "") or "")
+            row_no = str(operation.get("source_row_no", "") or "")
+            source_text = str(operation.get("operation_details", "") or "")
+            fallback_text = str(operation.get("operation_details_normalized", "") or source_text).strip()
+            translation = translation_index.get((record_id, f"{record_id}:operations:{row_no}"), {})
+            translated_text, _ = _current_operation_translation(source_text, translation)
+            display_text = translated_text or fallback_text
+            if display_text and display_text not in translated_descriptions:
+                translated_descriptions.append(display_text)
+        source["nonproductive_description_zh"] = "\n".join(translated_descriptions)
+
+
+def _monthly_filter_options(rows: list[dict[str, object]], value_key: str, label_key: str) -> list[dict[str, str]]:
+    values: dict[str, str] = {}
+    for row in rows:
+        value = str(row.get(value_key, "") or "")
+        label = str(row.get(label_key, "") or value)
+        if value:
+            values[value] = label
+    return [{"value": value, "label": label} for value, label in sorted(values.items(), key=lambda item: item[1])]
 
 
 def _production_summary_details(records: list[dict[str, object]], operations: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -5874,7 +5814,7 @@ def _production_summary_details(records: list[dict[str, object]], operations: li
 
 def _production_report_details(records: list[dict[str, object]], operations: list[dict[str, object]]) -> list[dict[str, object]]:
     detail: dict[tuple[str, str, str], dict[str, object]] = {}
-    saved_remarks = _load_production_report_remarks()
+    saved_remarks = load_production_report_remarks(DATABASE_PATH)
     for record in records:
         rig = str(record.get("rig", "") or "") or "未识别井队"
         wellbore = str(record.get("wellbore", "") or "")
@@ -5969,6 +5909,28 @@ def _sort_production_export_rows(rows: list[object], sort_field: str, sort_dir: 
     return sorted(clean_rows, key=key, reverse=reverse)
 
 
+def _sort_monthly_efficiency_rows(rows: list[object], sort_field: str, sort_dir: str) -> list[dict[str, object]]:
+    clean_rows = [row for row in rows if isinstance(row, dict)]
+    if not sort_field:
+        return clean_rows
+    reverse = str(sort_dir or "").lower() != "asc"
+    numeric_fields = {
+        "actual_cycle_days", "design_depth_ft", "current_depth_ft",
+        "month_progress_ft", "year_progress_ft", "production_hours", "npt_hours",
+        "sc_hours", "efficiency", "pending_hours", "move_setup_hours",
+        "repair_paid_hours", "repair_zero_hours", "incident_complex_hours",
+        "other_nonproductive_hours", "report_count", "operation_count", "pending_field_count",
+    }
+
+    def key(row: dict[str, object]) -> tuple[int, object]:
+        value = row.get(sort_field)
+        if value in (None, ""):
+            return (1, "")
+        return (0, _safe_float(value)) if sort_field in numeric_fields else (0, str(value))
+
+    return sorted(clean_rows, key=key, reverse=reverse)
+
+
 def _default_sort_npt_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     return sorted(
         rows,
@@ -6031,6 +5993,78 @@ def _production_report_workbook_bytes(rows: list[dict[str, object]], show_rig: b
     return buffer.getvalue()
 
 
+def _monthly_efficiency_workbook_bytes(
+    rows: list[dict[str, object]],
+    date_from: str = "",
+    date_to: str = "",
+    language: str = "zh",
+) -> bytes:
+    zh_columns: list[tuple[str, str]] = [
+        ("project_name", "项目"), ("team_code", "井队"), ("team_company", "所属公司"),
+        ("country", "国家"), ("block", "区块"), ("rig_model", "钻机型号"),
+        ("wellbore", "井号"), ("well_type", "井别"), ("well_profile", "井型"),
+        ("job_type_label", "专业"),
+        ("report_start_date", "日报覆盖起"), ("report_end_date", "日报覆盖止"),
+        ("event_start_date", "明确开始"), ("event_end_date", "明确结束"),
+        ("actual_cycle_days", "实际周期(d)"), ("design_depth_ft", "设计井深(ft)"),
+        ("current_depth_ft", "当前井深(ft)"), ("month_progress_ft", "区间进尺(ft)"),
+        ("year_progress_ft", "累计进尺(ft)"), ("production_hours", "生产(h)"),
+        ("npt_hours", "NPT(h)"), ("sc_hours", "SC(h)"), ("efficiency", "作业时效"),
+        ("pending_hours", "待确认(h)"), ("move_setup_hours", "搬安(h)"),
+        ("repair_paid_hours", "日费维修(h)"), ("repair_zero_hours", "零费维修(h)"),
+        ("incident_complex_hours", "事故复杂(h)"),
+        ("other_nonproductive_hours", "其他非生产(h)"),
+        ("nonproductive_description", "非生产原因"),
+    ]
+    es_labels = [
+        "Proyecto", "Taladro", "Empresa", "País", "Bloque", "Modelo", "Pozo",
+        "Tipo de pozo", "Perfil", "Especialidad", "Inicio cobertura",
+        "Fin cobertura", "Inicio confirmado", "Fin confirmado", "Ciclo real (d)",
+        "Profundidad diseño (ft)", "Profundidad actual (ft)", "Avance del periodo (ft)",
+        "Avance acumulado (ft)", "Producción (h)", "NPT(h)", "SC(h)", "Eficiencia",
+        "Pendiente (h)", "Mudanza/instalación (h)", "Reparación diaria (h)",
+        "Reparación sin tarifa (h)", "Incidente/complejidad (h)",
+        "Otro no productivo (h)", "Motivo no productivo",
+    ]
+    language = "es" if language == "es" else "zh"
+    columns = [(key, es_labels[index] if language == "es" else label) for index, (key, label) in enumerate(zh_columns)]
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = ("Reporte eficiencia" if language == "es" else "时效报表")[:31]
+    header_fill = PatternFill("solid", fgColor="0B4D7A")
+    header_font = Font(color="FFFFFF", bold=True)
+    for column_index, (_, label) in enumerate(columns, start=1):
+        cell = worksheet.cell(row=1, column=column_index, value=label)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    for row_index, row in enumerate(rows, start=2):
+        for column_index, (key, _) in enumerate(columns, start=1):
+            value = row.get(key)
+            if key == "job_type_label" and language == "es":
+                value = {"drilling": "Perforación", "completion": "Completación", "workover": "Reacondicionamiento"}.get(str(row.get("job_type", "") or ""), row.get("job_type") or value)
+            if key == "nonproductive_description" and language == "zh" and row.get("nonproductive_description_zh"):
+                value = row.get("nonproductive_description_zh")
+            pending_label = "Pendiente" if language == "es" else "待定"
+            missing_value = None if key == "well_profile" else pending_label
+            cell = worksheet.cell(row=row_index, column=column_index, value=value if value not in (None, "") else missing_value)
+            cell.alignment = Alignment(vertical="top", wrap_text=key == "nonproductive_description")
+            if key == "efficiency" and isinstance(value, (int, float)):
+                cell.number_format = "0.00%"
+    for column_index, (key, label) in enumerate(columns, start=1):
+        width = max(12, len(label) + 4)
+        if key in {"project_name", "team_company"}:
+            width = 24
+        elif key == "nonproductive_description":
+            width = 42
+        worksheet.column_dimensions[worksheet.cell(row=1, column=column_index).column_letter].width = width
+    worksheet.auto_filter.ref = worksheet.dimensions
+    worksheet.freeze_panes = "A2"
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
 def _npt_report_workbook_bytes(rows: list[dict[str, object]], show_rig: bool = False) -> bytes:
     columns: list[tuple[str, str]] = [
         ("wellbore", "井号"),
@@ -6080,13 +6114,6 @@ def _npt_report_workbook_bytes(rows: list[dict[str, object]], show_rig: bool = F
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
-
-
-def _safe_float(value: object) -> float:
-    try:
-        return round(float(value or 0), 2)
-    except (TypeError, ValueError):
-        return 0.0
 
 
 def _production_report_remark_key(project_id: str, rig: str, wellbore: str) -> str:
@@ -6195,7 +6222,7 @@ def _enrich_operation_translation_rows(rows: object) -> None:
         if not isinstance(row, dict):
             continue
         record_id = str(row.get("record_id", "") or "")
-        row_no = str(row.get("row_no", "") or "")
+        row_no = str(row.get("source_row_no", "") or row.get("row_no", "") or "")
         translation = index.get((record_id, f"{record_id}:operations:{row_no}"), {})
         translated_text, status = _current_operation_translation(str(row.get("operation_details", "") or ""), translation)
         row["translated_operation_details"] = translated_text
@@ -6223,8 +6250,8 @@ def _enrich_operation_extraction_rows(rows: object) -> None:
         if not isinstance(row, dict):
             continue
         record_id = str(row.get("record_id", "") or "")
-        row_no = int(row.get("row_no", 0) or 0)
-        op_type = str(row.get("system_op_type", "") or "").strip().upper()
+        row_no = int(row.get("source_row_no", 0) or row.get("row_no", 0) or 0)
+        op_type = str(row.get("source_op_type", "") or row.get("system_op_type", "") or "").strip().upper()
         if op_type == "NPT":
             service_line, status, error, updated_at = _current_operation_extraction(
                 str(row.get("operation_details", "") or ""),
@@ -6233,7 +6260,7 @@ def _enrich_operation_extraction_rows(rows: object) -> None:
             )
         else:
             service_line, status, error, updated_at = "", "NOT_REQUIRED", "", ""
-        row["service_line"] = service_line
+        row["service_line"] = str(row.get("service_line", "") or "") or service_line
         row["extraction_status"] = status
         row["extraction_error"] = error
         row["extraction_updated_at"] = updated_at
@@ -6258,7 +6285,7 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
     by_well = _sum_by(npt_rows, "wellbore")
     by_reason = _sum_by(npt_rows, "reason")
     by_month = _sum_by(npt_rows, "month")
-    quality = _analytics_quality_fields(records, rows["operations"])
+    quality = _analytics_quality_fields(records, rows["operations"], rows.get("quality"))
 
     return {
         "filters": {**_filter_options(records, database_path), "reasons": sorted({row["reason"] for row in rows["operations"] if row["op_type"] == "NPT"})},
@@ -6306,13 +6333,14 @@ def _npt_stats_payload(database_path: Path, params: dict[str, list[str]]) -> dic
             "operation_translation_error": row.get("operation_translation_error", ""),
         } for row in _default_sort_npt_rows(npt_rows)],
         **quality,
-        "scope_note": "P 采用日报原值直接生效；SC/NPT 仅在 NPT确认 提交后进入正式统计，待确认时段不计入正式NPT。",
+        "scope_note": "仅统计主数据关系已匹配的数据；P 采用日报原值，SC/NPT 仅在 NPT确认 提交后进入正式统计。",
     }
 
 
 def _analytics_quality_fields(
     records: list[dict[str, object]],
     operations: list[dict[str, object]],
+    view_quality: object = None,
 ) -> dict[str, object]:
     statuses: dict[str, set[str]] = {"UNASSIGNED": set(), "AMBIGUOUS": set()}
     for record in records:
@@ -6325,174 +6353,50 @@ def _analytics_quality_fields(
         for row in operations
         if str(row.get("classification_status", "CONFIRMED") or "CONFIRMED") not in {"CONFIRMED", "AUTO_CONFIRMED"}
     }
+    total_hours = sum(float(row.get("hours", 0) or 0) for row in operations)
+    unconfirmed_hours = sum(
+        float(row.get("hours", 0) or 0)
+        for row in operations
+        if str(row.get("classification_status", "CONFIRMED") or "CONFIRMED")
+        not in {"CONFIRMED", "AUTO_CONFIRMED"}
+    )
+    ready_hours = sum(
+        float(row.get("hours", 0) or 0)
+        for row in operations
+        if bool(row.get("statistics_ready", True))
+    )
+    quality = view_quality if isinstance(view_quality, dict) else {}
+    rule_versions = sorted({str(row.get("rule_version", "") or "") for row in operations if row.get("rule_version")})
+    unassigned_count = int(quality.get("unassigned_count", len(statuses["UNASSIGNED"])) or 0)
+    ambiguous_count = int(quality.get("ambiguous_count", len(statuses["AMBIGUOUS"])) or 0)
     return {
-        "unassigned_count": len(statuses["UNASSIGNED"]),
-        "ambiguous_count": len(statuses["AMBIGUOUS"]),
+        "unassigned_count": unassigned_count,
+        "ambiguous_count": ambiguous_count,
         "unconfirmed_classification_count": len(unconfirmed),
-        "rule_version": "legacy-v1",
+        "unconfirmed_classification_hours": round(unconfirmed_hours, 3),
+        "statistics_ready_hours": round(ready_hours, 3),
+        "statistics_ready_percent": round((ready_hours / total_hours * 100) if total_hours else 0, 1),
+        "statistics_ready": not unassigned_count and not ambiguous_count and not unconfirmed,
+        "rule_version": rule_versions[-1] if rule_versions else "legacy-v1",
         "snapshot_id": "",
     }
 
 
-def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> dict[str, list[dict[str, object]]]:
-    date_from = _param(params, "date_from")
-    date_to = _param(params, "date_to")
-    rig_filter = {_normalize_rig_name(value) for value in _param_values(params, "rig")}
-    type_filter = _param(params, "report_type")
-    well_filter = _param(params, "wellbore")
-    project_filter = set(_param_values(params, "project"))
-    project_mode = _truthy(_param(params, "project_mode")) or bool(project_filter)
-    records = []
-    operations = []
-    extraction_version = str(_load_ai_extraction_config().get("version", "") or "")
-    extraction_index: dict[tuple[str, int], dict[str, Any]] = {}
-    raw_records = list_records(database_path)
-    raw_record_ids = [str(record.get("record_id", "") or "") for record in raw_records]
-    payloads = load_report_payloads(
+def _filtered_fact_rows(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    rows = load_analytics_view_rows(
         database_path,
-        raw_record_ids,
+        date_from=_param(params, "date_from"),
+        date_to=_param(params, "date_to"),
+        rigs=tuple(_normalize_rig_name(value) for value in _param_values(params, "rig")),
+        report_type=_param(params, "report_type"),
+        wellbore=_param(params, "wellbore"),
+        exact_wellbore=_truthy(_param(params, "wellbore_exact")),
+        project_ids=tuple(_param_values(params, "project")),
     )
-    try:
-        classification_index = load_activity_classifications(database_path, raw_record_ids)
-    except ValueError:
-        # Legacy workbook-backed tests and one-off imports have no standard fact
-        # table. Production runtime remains MySQL-only.
-        classification_index = {}
-    project_config = _load_project_team_config()
-    translation_index: dict[tuple[str, str], dict[str, str]] = {}
-    try:
-        translation_index = {
-            (str(row.get("record_id", "") or ""), str(row.get("entity_id", "") or "")): row
-            for row in load_operation_translations(database_path, [str(record.get("record_id", "") or "") for record in raw_records])
-        }
-    except Exception:
-        translation_index = {}
-    try:
-        for result in load_extraction_results(database_path):
-            if str(result.get("target_field", "") or "") == "service_line" and str(result.get("source_section", "") or "") == "operations":
-                extraction_index[(str(result.get("record_id", "") or ""), int(result.get("source_row_no", 0) or 0))] = result
-    except Exception:
-        extraction_index = {}
-    for raw_record in raw_records:
-        record = {**raw_record, "rig": _normalize_rig_name(str(raw_record.get("rig", "") or ""))}
-        report_date = record.get("reportDate", "")
-        if date_from and report_date < date_from:
-            continue
-        if date_to and report_date > date_to:
-            continue
-        if rig_filter and record.get("rig") not in rig_filter:
-            continue
-        if type_filter and record.get("report_type") != type_filter:
-            continue
-        if well_filter and well_filter.lower() not in str(record.get("wellbore", "") or "").lower():
-            continue
-        resolution = _project_assignment_resolution(record, config=project_config)
-        match_status = str(resolution.get("status", "UNASSIGNED") or "UNASSIGNED")
-        assignment = resolution.get("assignment")
-        project_matches = [assignment] if isinstance(assignment, dict) else []
-        if project_filter and (
-            match_status != "MATCHED"
-            or not project_matches
-            or str(project_matches[0].get("project_id", "") or "") not in project_filter
-        ):
-            continue
-        if project_mode and not project_matches:
-            project_matches = [
-                _ambiguous_project_assignment()
-                if match_status == "AMBIGUOUS"
-                else _unassigned_project_assignment()
-            ]
-        record = {
-            **record,
-            "master_match_status": match_status,
-            "master_match_message": str(resolution.get("message", "") or ""),
-        }
-        matched_records = [{**record, **project} for project in project_matches] if project_matches else [record]
-        payload = payloads.get(str(record.get("record_id") or ""))
-        if payload is None:
-            continue
-        fields = payload.get("report_fields", {}) if isinstance(payload.get("report_fields", {}), dict) else {}
-        event = str(fields.get("event", "") or record.get("event", "") or "")
-        payload_report_date = str(fields.get("reportDate", "") or report_date)
-        enriched_records = [{**matched_record, "event": event, "reportDate": payload_report_date} for matched_record in matched_records]
-        records.extend(enriched_records)
-        for matched_record in enriched_records:
-            for row_no, row in enumerate(payload.get("operations", []) if isinstance(payload.get("operations", []), list) else [], start=1):
-                if not isinstance(row, dict):
-                    continue
-                hours = _safe_float(row.get("hours"))
-                record_id = str(matched_record.get("record_id", "") or "")
-                classification = classification_index.get((record_id, row_no), {})
-                source_op_type = str(
-                    classification.get("source_op_type", "")
-                    or row.get("system_op_type", "")
-                    or row.get("op_type", "")
-                    or ""
-                ).strip().upper()
-                classification_status = str(
-                    classification.get("confirmation_status", "")
-                    or ("AUTO_CONFIRMED" if source_op_type == "P" else "PENDING")
-                ).strip().upper()
-                if source_op_type == "P":
-                    op_type = "P"
-                elif classification_status == "CONFIRMED":
-                    op_type = str(classification.get("confirmed_op_type", "") or source_op_type).strip().upper()
-                else:
-                    op_type = "PENDING"
-                extraction = extraction_index.get((str(matched_record.get("record_id", "") or ""), row_no), {})
-                operation_details = str(row.get("operation_details", "") or "")
-                translation = translation_index.get((record_id, f"{record_id}:operations:{row_no}"), {})
-                translated_operation_details, operation_translation_status = _current_operation_translation(operation_details, translation)
-                if op_type == "NPT":
-                    extracted_service_line, extraction_status, extraction_error, extraction_updated_at = _current_operation_extraction(
-                        operation_details,
-                        extraction,
-                        extraction_version,
-                    )
-                else:
-                    extracted_service_line, extraction_status, extraction_error, extraction_updated_at = "", "NOT_REQUIRED", "", ""
-                fact = {
-                    "record_id": matched_record.get("record_id", ""),
-                    "report_type": matched_record.get("report_type", ""),
-                    "reportDate": payload_report_date,
-                    "month": payload_report_date[:7],
-                    "wellbore": matched_record.get("wellbore", ""),
-                    "rig": matched_record.get("rig", ""),
-                    "project_id": matched_record.get("project_id", ""),
-                    "project_name": matched_record.get("project_name", ""),
-                    "project_contract": matched_record.get("project_contract", ""),
-                    "master_match_status": matched_record.get("master_match_status", ""),
-                    "master_match_message": matched_record.get("master_match_message", ""),
-                    "validation_status": matched_record.get("validation_status", ""),
-                    "event": event,
-                    "hours": hours,
-                    "from": str(row.get("from", "") or ""),
-                    "to": str(row.get("to", "") or ""),
-                    "op_type": op_type,
-                    "source_op_type": source_op_type,
-                    "confirmed_op_type": str(classification.get("confirmed_op_type", "") or ""),
-                    "classification_status": classification_status,
-                    "statistics_ready": source_op_type == "P" or classification_status == "CONFIRMED",
-                    "op_code": str(row.get("op_code", "") or ""),
-                    "op_sub": str(row.get("op_sub", "") or ""),
-                    "operation_details": operation_details,
-                    "translated_operation_details": translated_operation_details,
-                    "operation_translation_status": operation_translation_status,
-                    "operation_translation_error": str(translation.get("error_message", "") or ""),
-                    "source_row_no": row_no,
-                    "work_bucket": str(classification.get("work_bucket", "") or ""),
-                    "billing_status": str(classification.get("billing_status", "") or ""),
-                    "responsibility": str(classification.get("responsibility", "") or ""),
-                    "cause_code": str(classification.get("cause_code", "") or ""),
-                    "service_line": str(classification.get("service_line", "") or "") or extracted_service_line or str(row.get("service_line", "") or ""),
-                    "extraction_status": extraction_status,
-                    "extraction_error": extraction_error,
-                    "extraction_updated_at": extraction_updated_at,
-                }
-                fact["time_range"] = _operation_time_range(fact)
-                fact["reason"] = _operation_category(fact)
-                operations.append(fact)
-    return {"records": records, "operations": operations}
+    operations = rows.get("operations", [])
+    _enrich_operation_translation_rows(operations)
+    _enrich_operation_extraction_rows(operations)
+    return rows
 
 
 def _filter_options(records: list[dict[str, str]], database_path: Path = DATABASE_PATH) -> dict[str, object]:
@@ -6511,14 +6415,6 @@ def _production_filter_rigs(records: list[dict[str, str]], database_path: Path =
         for name in [_normalize_rig_name(str(record.get("rig", "") or ""))]
         if _is_valid_rig_name(name)
     }
-    config = _load_project_team_config()
-    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
-        if str(project.get("status", "active") or "active") != "active":
-            continue
-        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
-            name = _normalize_rig_name(str(rig_item.get("rig", "") or ""))
-            if _is_valid_rig_name(name):
-                rigs.add(name)
     for record in list_records(database_path):
         name = _normalize_rig_name(str(record.get("rig", "") or ""))
         if _is_valid_rig_name(name):
@@ -6534,150 +6430,54 @@ def _param_values(params: dict[str, list[str]], name: str) -> list[str]:
 
 
 def _project_filter_options() -> list[dict[str, str]]:
-    projects = _load_project_team_config().get("projects", [])
-    options = []
-    for project in projects if isinstance(projects, list) else []:
-        if str(project.get("status", "active") or "active") != "active":
-            continue
-        project_id = str(project.get("id", "") or "").strip()
-        label = str(project.get("project_name", "") or project.get("contract_no", "") or project_id).strip()
-        if not project_id or not label:
-            continue
-        options.append({
-            "value": project_id,
-            "label": label,
-            "contract_no": str(project.get("contract_no", "") or ""),
-            "start_date": str(project.get("start_date", "") or ""),
-            "end_date": str(project.get("end_date", "") or ""),
-        })
-    return options
+    return list_reporting_projects()
 
 
-def _project_assignments_for_record(
-    record: dict[str, str],
-    selected_projects: set[str] | None = None,
-    config: dict[str, object] | None = None,
-) -> list[dict[str, str]]:
-    resolution = _project_assignment_resolution(record, config=config)
-    if resolution["status"] != "MATCHED":
-        return []
-    assignment = resolution.get("assignment")
-    if not isinstance(assignment, dict):
-        return []
-    if selected_projects and str(assignment.get("project_id", "") or "") not in selected_projects:
-        return []
-    return [assignment]
-
-
-def _project_assignment_resolution(
-    record: dict[str, str],
+def _completeness(
+    records: list[dict[str, str]],
     *,
-    config: dict[str, object] | None = None,
+    date_from: str = "",
+    date_to: str = "",
 ) -> dict[str, object]:
-    rig = _normalize_rig_name(str(record.get("rig", "") or "").strip())
-    wellbore = str(record.get("wellbore", "") or "").strip()
-    report_date = str(record.get("reportDate", "") or "").strip()
-    if not _is_valid_rig_name(rig):
-        return {"status": "UNASSIGNED", "assignment": None, "matches": [], "message": "未识别井队"}
-    config = config or _load_project_team_config()
-    exact_matches: list[dict[str, str]] = []
-    wildcard_matches: list[dict[str, str]] = []
-    for project in config.get("projects", []) if isinstance(config.get("projects"), list) else []:
-        project_id = str(project.get("id", "") or "").strip()
-        if str(project.get("status", "active") or "active") != "active":
-            continue
-        if not _date_in_range(report_date, str(project.get("start_date", "") or ""), str(project.get("end_date", "") or "")):
-            continue
-        for rig_item in project.get("rigs", []) if isinstance(project.get("rigs"), list) else []:
-            if not _rig_name_matches(config, str(rig_item.get("rig", "") or "").strip(), rig):
-                continue
-            if not _date_in_range(report_date, str(rig_item.get("start_date", "") or ""), str(rig_item.get("end_date", "") or "")):
-                continue
-            wells = {str(well or "").strip() for well in _list_value(rig_item.get("wells")) if str(well or "").strip()}
-            if wells and wellbore not in wells:
-                continue
-            match = {
-                "project_id": project_id,
-                "project_name": str(project.get("project_name", "") or project.get("contract_no", "") or project_id),
-                "project_contract": str(project.get("contract_no", "") or ""),
-            }
-            (exact_matches if wells else wildcard_matches).append(match)
-            break
-    candidates = exact_matches if exact_matches else wildcard_matches
-    unique_matches = {
-        str(match.get("project_id", "") or ""): match
-        for match in candidates
-        if str(match.get("project_id", "") or "")
-    }
-    matches = list(unique_matches.values())
-    if len(matches) == 1:
-        return {"status": "MATCHED", "assignment": matches[0], "matches": matches, "message": ""}
-    if len(matches) > 1:
-        labels = [str(match.get("project_name", "") or match.get("project_id", "")) for match in matches]
-        return {
-            "status": "AMBIGUOUS",
-            "assignment": None,
-            "matches": matches,
-            "message": f"同时匹配多个项目：{', '.join(labels)}",
-        }
-    return {"status": "UNASSIGNED", "assignment": None, "matches": [], "message": "未匹配到有效项目关系"}
+    """Assess uploaded calendar-day coverage only when the caller supplies a period.
 
-
-def _unassigned_project_assignment() -> dict[str, str]:
-    return {
-        "project_id": UNASSIGNED_PROJECT_ID,
-        "project_name": "未归属项目",
-        "project_contract": "",
-    }
-
-
-def _ambiguous_project_assignment() -> dict[str, str]:
-    return {
-        "project_id": AMBIGUOUS_PROJECT_ID,
-        "project_name": "项目归属冲突",
-        "project_contract": "",
-    }
-
-
-def _rig_name_matches(config: dict[str, object], configured_name: str, report_name: str) -> bool:
-    if configured_name == report_name:
-        return True
-    for team in config.get("teams", []) if isinstance(config.get("teams"), list) else []:
-        if not _team_name_matches(team, configured_name):
-            continue
-        return _team_name_matches(team, report_name)
-    return False
-
-
-def _team_name_matches(team: object, value: str) -> bool:
-    if not isinstance(team, dict):
-        return False
-    target = str(value or "").strip()
-    if not target:
-        return False
-    names = {str(team.get("name", "") or "").strip(), *{str(alias or "").strip() for alias in _list_value(team.get("aliases"))}}
-    return target in names
-
-
-def _date_in_range(value: str, start: str, end: str) -> bool:
-    if not start and not end:
-        return True
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value or ""):
-        return False
-    if start and value < start:
-        return False
-    if end and value > end:
-        return False
-    return True
-
-
-def _completeness(records: list[dict[str, str]]) -> dict[str, object]:
+    The database may intentionally contain a partial test corpus. Inferring an
+    expected period from the earliest and latest uploaded reports turns those
+    intentional gaps into false data-quality failures, so an unbounded request
+    reports observations without manufacturing a completeness percentage.
+    """
     uploaded = {record.get("reportDate") for record in records if record.get("reportDate")}
     warnings = {record.get("reportDate") for record in records if record.get("reportDate") and record.get("validation_status") == "warning"}
-    missing = _missing_dates(uploaded)
-    expected = len(uploaded) + len(missing)
-    percent = round(((len(uploaded) - len(warnings) * 0.35) / expected * 100) if expected else 0, 1)
-    return {"percent": max(0, percent), "missing_days": len(missing), "warning_days": len(warnings)}
+    if not (
+        re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_from or "")
+        and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_to or "")
+        and date_from <= date_to
+    ):
+        return {
+            "assessed": False,
+            "percent": None,
+            "missing_days": None,
+            "warning_days": len(warnings),
+            "observed_days": len(uploaded),
+            "coverage_basis": "NOT_ASSESSED_WITHOUT_EXPLICIT_PERIOD",
+        }
+    start = datetime.strptime(date_from, "%Y-%m-%d").date()
+    end = datetime.strptime(date_to, "%Y-%m-%d").date()
+    expected_dates = {
+        date.fromordinal(value).isoformat()
+        for value in range(start.toordinal(), end.toordinal() + 1)
+    }
+    missing = expected_dates - uploaded
+    percent = round((len(uploaded & expected_dates) / len(expected_dates) * 100) if expected_dates else 0, 1)
+    return {
+        "assessed": True,
+        "percent": percent,
+        "missing_days": len(missing),
+        "warning_days": len(warnings & expected_dates),
+        "observed_days": len(uploaded & expected_dates),
+        "expected_days": len(expected_dates),
+        "coverage_basis": "CALENDAR_DAY_WITH_ANY_MATCHED_REPORT",
+    }
 
 
 def _missing_dates(dates: set[str]) -> list[str]:
@@ -6722,22 +6522,6 @@ def _operation_time_range(row: dict[str, object]) -> str:
     if start and end:
         return f"{start} - {end}"
     return start or end
-
-
-def _safe_float(value: object) -> float:
-    try:
-        return float(str(value or "0").replace(",", ""))
-    except ValueError:
-        return 0.0
-
-
-def _effective_operation_type(row: dict[str, object]) -> str:
-    return str(
-        row.get("confirmed_op_type", "")
-        or row.get("op_type", "")
-        or row.get("system_op_type", "")
-        or ""
-    ).strip().upper()
 
 
 def _truthy(value: object) -> bool:

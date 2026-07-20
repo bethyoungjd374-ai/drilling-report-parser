@@ -105,12 +105,6 @@ ASSIGNMENT_ENTITIES: dict[str, dict[str, object]] = {
         "overlap": ("team_id",),
         "required": ("project_id", "team_id"),
     },
-    "project-rig": {
-        "table": "rel_project_rig_assignment",
-        "fields": ("project_id", "rig_id", "valid_from", "valid_to", "service_discipline", "assignment_note", "priority", "status", "change_reason"),
-        "overlap": ("rig_id",),
-        "required": ("project_id", "rig_id"),
-    },
     "project-well": {
         "table": "rel_project_well_scope",
         "fields": ("project_id", "well_id", "job_type", "scope_note", "valid_from", "valid_to", "status", "change_reason"),
@@ -139,13 +133,11 @@ REFERENCE_TABLE_LABELS = {
     "md_contract": "合同",
     "md_project": "项目",
     "rel_project_team_assignment": "项目队伍关系",
-    "rel_project_rig_assignment": "项目设备关系",
     "rel_project_well_scope": "项目井范围",
     "biz_job": "作业实例",
     "rel_job_rig_assignment": "作业设备关系",
     "dpr_report": "标准日报",
     "dpr_report_record": "原始日报",
-    "monthly_report_snapshot": "月报快照",
     "md_alias": "别名",
 }
 
@@ -218,6 +210,31 @@ def list_appendix_values(category_code: str) -> list[dict[str, Any]]:
             )
             rows = cursor.fetchall()
     return [_json_row(row) for row in rows]
+
+
+def list_reporting_projects() -> list[dict[str, str]]:
+    """Return the formal project filter projection used by analytics APIs."""
+
+    with _db_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT project.id,project.project_code,project.project_name,
+                       contract.contract_no,project.valid_from,project.valid_to
+                FROM md_project project
+                LEFT JOIN md_contract contract ON contract.id=project.contract_id
+                WHERE project.status='active'
+                ORDER BY project.project_name,project.project_code
+                """
+            )
+            rows = cursor.fetchall()
+    return [{
+        "value": str(row.get("id") or ""),
+        "label": str(row.get("project_name") or row.get("project_code") or row.get("id") or ""),
+        "contract_no": str(row.get("contract_no") or ""),
+        "start_date": str(row.get("valid_from") or "")[:10],
+        "end_date": str(row.get("valid_to") or "")[:10],
+    } for row in rows]
 
 
 def save_master_entity(entity: str, payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
@@ -470,7 +487,7 @@ def save_assignment(kind: str, payload: dict[str, Any], *, actor: str) -> dict[s
 
 
 def save_project_relationships(payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
-    """Save all project-rig and project-well relationships in one transaction."""
+    """Save all project-team and project-well relationships in one transaction."""
     project_id = int(payload.get("project_id", 0) or 0)
     reason = str(payload.get("change_reason", "") or "").strip()
     if not project_id:
@@ -563,8 +580,6 @@ def _validate_relationship_batch(cursor: Any, kind: str, rows: list[dict[str, An
 
 
 def _relationship_scope_overlaps(kind: str, left: dict[str, Any], right: dict[str, Any]) -> bool:
-    if kind == "project-rig":
-        return int(left.get("rig_id") or 0) == int(right.get("rig_id") or 0)
     if kind == "project-team":
         return int(left.get("team_id") or 0) == int(right.get("team_id") or 0)
     if int(left.get("well_id") or 0) != int(right.get("well_id") or 0):
@@ -601,84 +616,6 @@ def _save_relationship_row(cursor: Any, kind: str, row: dict[str, Any], actor: s
         f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})",
         [*values.values(), actor, actor],
     )
-
-
-def build_legacy_project_team_config() -> dict[str, Any]:
-    """Build the read-only legacy JSON shape from formal master data and relationships."""
-    with _db_connection() as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT rig.*, organization.organization_name AS contractor FROM md_rig rig "
-                "LEFT JOIN md_organization organization ON organization.id=rig.owner_organization_id ORDER BY rig.rig_code"
-            )
-            rigs = cursor.fetchall()
-            cursor.execute(
-                "SELECT entity_id, alias_value FROM md_alias WHERE entity_type='rig' AND status='active' "
-                "AND confirmation_status='confirmed' ORDER BY id"
-            )
-            alias_rows = cursor.fetchall()
-            cursor.execute(
-                "SELECT project.*, contract.contract_no FROM md_project project "
-                "LEFT JOIN md_contract contract ON contract.id=project.contract_id ORDER BY project.project_code"
-            )
-            projects = cursor.fetchall()
-            cursor.execute("SELECT * FROM rel_project_team_assignment WHERE status='active' ORDER BY valid_from, id")
-            rig_assignments = cursor.fetchall()
-            cursor.execute("SELECT * FROM rel_project_well_scope WHERE status='active' ORDER BY valid_from, id")
-            well_scopes = cursor.fetchall()
-            cursor.execute("SELECT id, well_code FROM md_well")
-            wells = cursor.fetchall()
-    aliases_by_rig: dict[int, list[str]] = {}
-    for row in alias_rows:
-        aliases_by_rig.setdefault(int(row["entity_id"]), []).append(str(row["alias_value"]))
-    rig_by_team_id = {int(row["team_id"]): row for row in rigs if row.get("team_id")}
-    well_by_id = {int(row["id"]): str(row["well_code"]) for row in wells}
-    scopes_by_project: dict[int, list[dict[str, Any]]] = {}
-    for row in well_scopes:
-        scopes_by_project.setdefault(int(row["project_id"]), []).append(row)
-    assignments_by_project: dict[int, list[dict[str, Any]]] = {}
-    for row in rig_assignments:
-        assignments_by_project.setdefault(int(row["project_id"]), []).append(row)
-    team_items = [{
-        "id": str(row["id"]),
-        "name": str(row.get("rig_name") or row.get("rig_code") or ""),
-        "code": str(row.get("rig_code") or ""),
-        "contractor": str(row.get("contractor") or ""),
-        "aliases": aliases_by_rig.get(int(row["id"]), []),
-        "status": str(row.get("status") or "active"),
-        "created_at": _json_row(row).get("created_at", ""),
-    } for row in rigs]
-    project_items: list[dict[str, Any]] = []
-    for project in projects:
-        project_id = int(project["id"])
-        wells = sorted({
-            well_by_id.get(int(scope["well_id"]), "")
-            for scope in scopes_by_project.get(project_id, [])
-            if well_by_id.get(int(scope["well_id"]), "")
-        })
-        project_rigs = []
-        for assignment in assignments_by_project.get(project_id, []):
-            rig = rig_by_team_id.get(int(assignment["team_id"]), {})
-            project_rigs.append({
-                "rig": str(rig.get("rig_name") or rig.get("rig_code") or assignment["team_id"]),
-                "start_date": str(assignment["valid_from"])[:10],
-                "end_date": str(assignment.get("valid_to") or "")[:10],
-                "wells": wells,
-                "note": str(assignment.get("assignment_note") or assignment.get("service_discipline") or ""),
-            })
-        project_items.append({
-            "id": str(project_id),
-            "contract_no": str(project.get("contract_no") or ""),
-            "project_name": str(project.get("project_name") or project.get("project_code") or ""),
-            "status": "active" if project.get("status") == "active" else "closed",
-            "start_date": str(project.get("valid_from") or "")[:10],
-            "end_date": str(project.get("valid_to") or "")[:10],
-            "note": str(project.get("service_scope") or ""),
-            "rigs": project_rigs,
-            "created_at": _json_row(project).get("created_at", ""),
-            "updated_at": _json_row(project).get("updated_at", ""),
-        })
-    return {"teams": team_items, "projects": project_items, "pending_wells": []}
 
 
 def resolve_master_id(cursor: Any, entity_type: str, raw_value: object) -> int | None:
@@ -753,20 +690,6 @@ def resolve_project_assignment(
             JOIN rel_project_team_assignment ra
               ON ra.project_id=p.id AND ra.team_id=source_rig.team_id AND ra.status='active'
              AND ra.valid_from<=%s AND (ra.valid_to IS NULL OR ra.valid_to>%s)
-            WHERE p.status='active'
-            ORDER BY p.id
-            """,
-            (rig_id, at_value, at_value),
-        )
-        candidates = cursor.fetchall()
-    if not candidates:
-        cursor.execute(
-            """
-            SELECT DISTINCT p.id, p.project_code, p.project_name
-            FROM md_project p
-            JOIN rel_project_rig_assignment legacy
-              ON legacy.project_id=p.id AND legacy.rig_id=%s AND legacy.status='active'
-             AND legacy.valid_from<=%s AND (legacy.valid_to IS NULL OR legacy.valid_to>%s)
             WHERE p.status='active'
             ORDER BY p.id
             """,

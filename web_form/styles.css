@@ -26,6 +26,366 @@
   --glass-y: 18vh;
 }
 
+/* Monthly efficiency report: wide, report-first production analysis surface. */
+.monthly-efficiency-page {
+  background: #f3f6fa;
+}
+
+.monthly-efficiency-workspace {
+  display: grid;
+  gap: 14px;
+  padding: 14px 0 28px;
+}
+
+.monthly-efficiency-toolbar {
+  display: grid;
+  padding: 12px 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(20, 50, 84, 0.06);
+}
+
+.monthly-report-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.monthly-report-meta h2 {
+  margin: 3px 0 0;
+  color: #18324d;
+}
+
+.monthly-source-badge i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.monthly-source-badge.available i { background: #17a673; }
+.monthly-source-badge.partial i { background: #f59e0b; }
+.monthly-source-badge.pending i { background: #94a3b8; }
+
+.monthly-efficiency-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(180px, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.monthly-efficiency-filters label,
+.monthly-date-range-field {
+  display: grid;
+  gap: 6px;
+  color: #52677c;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.monthly-efficiency-filters input,
+.monthly-efficiency-filters select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #cfdbe8;
+  border-radius: 8px;
+  background: #fff;
+  color: #263d54;
+}
+
+.monthly-date-range-field {
+  position: relative;
+}
+
+.monthly-date-range-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #cfdbe8;
+  border-radius: 8px;
+  background: #fff;
+  color: #263d54;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.monthly-date-range-trigger:hover,
+.monthly-date-range-trigger[aria-expanded="true"] {
+  border-color: #6aa6d8;
+  box-shadow: 0 0 0 3px rgba(29, 111, 159, 0.1);
+}
+
+.monthly-date-range-trigger img {
+  width: 17px;
+  height: 17px;
+  opacity: 0.72;
+}
+
+.monthly-date-range-popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 380px;
+  padding: 14px;
+  border: 1px solid #cfdae7;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(16, 46, 76, 0.18);
+}
+
+.monthly-date-range-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.monthly-date-range-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.monthly-date-range-actions .button {
+  min-width: 72px;
+  min-height: 34px;
+}
+
+.monthly-efficiency-actions {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.monthly-efficiency-actions .button {
+  min-height: 38px;
+}
+
+.analytics-kpis.monthly-efficiency-kpis {
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  margin-bottom: 0;
+}
+
+.monthly-efficiency-kpis .analytics-kpi {
+  min-height: 110px;
+  border-top: 3px solid #1d6f9f;
+  background: #fff;
+}
+
+.monthly-efficiency-report-panel {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.monthly-report-meta {
+  padding: 17px 20px 13px;
+  border-bottom: 1px solid #e2e9f1;
+}
+
+.monthly-report-meta h2 {
+  font-size: 17px;
+}
+
+.monthly-report-meta p {
+  margin: 5px 0 0;
+  color: #6f8194;
+  font-size: 12px;
+}
+
+.monthly-report-month {
+  padding: 7px 12px;
+  border: 1px solid #cbdbea;
+  border-radius: 8px;
+  background: #f3f8fc;
+  color: #135c8e;
+  font-size: 15px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.monthly-method-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 20px;
+  border-bottom: 1px solid #e3eaf2;
+  background: #f8fafc;
+  color: #617388;
+  font-size: 11px;
+}
+
+.monthly-method-note strong {
+  flex: 0 0 auto;
+  color: #274a67;
+}
+
+.monthly-method-note span + span {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.monthly-efficiency-table-wrap {
+  max-width: 100%;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+.monthly-efficiency-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.monthly-efficiency-table th,
+.monthly-efficiency-table td {
+  min-width: 100px;
+  max-width: 180px;
+  height: 42px;
+  padding: 8px 10px;
+  border-right: 1px solid #e5ebf2;
+  border-bottom: 1px solid #e5ebf2;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.monthly-efficiency-table thead th {
+  position: sticky;
+  top: 31px;
+  z-index: 3;
+  height: 44px;
+  background: #eef4f8;
+  color: #35536d;
+  font-weight: 700;
+}
+
+.monthly-efficiency-table .monthly-group-header th {
+  top: 0;
+  height: 31px;
+  min-width: auto;
+  padding: 6px 10px;
+  border-color: rgba(255,255,255,0.18);
+  background: #164f75;
+  color: #fff;
+  text-align: center;
+  letter-spacing: .04em;
+}
+
+.monthly-efficiency-table tbody tr:nth-child(even) td {
+  background: #fafcfe;
+}
+
+.monthly-efficiency-table tbody tr:hover td {
+  background: #edf7ff;
+}
+
+.monthly-efficiency-table .table-sort-button {
+  justify-content: center;
+  color: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.monthly-efficiency-table thead tr:not(.monthly-group-header) th:nth-child(1),
+.monthly-efficiency-table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 180px;
+  max-width: 180px;
+  box-shadow: 1px 0 0 #d9e3ec;
+}
+
+.monthly-efficiency-table thead tr:not(.monthly-group-header) th:nth-child(1) {
+  z-index: 5;
+  background: #e5eff6;
+}
+
+.monthly-efficiency-table th:nth-child(7),
+.monthly-efficiency-table td:nth-child(7) {
+  min-width: 140px;
+}
+
+.monthly-efficiency-table th:nth-child(30),
+.monthly-efficiency-table td:nth-child(30) {
+  min-width: 240px;
+  max-width: 300px;
+}
+
+.monthly-pending-value {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #7b8795;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.monthly-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.monthly-source-badge.available { background: #e9f8f2; color: #147553; }
+.monthly-source-badge.partial { background: #fff5df; color: #a15c05; }
+
+.monthly-long-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+}
+
+@media (max-width: 1500px) {
+  .monthly-efficiency-filters {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+  .monthly-efficiency-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .analytics-kpis.monthly-efficiency-kpis {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .monthly-efficiency-workspace { padding: 12px 0 20px; }
+  .monthly-report-meta,
+  .monthly-method-note { align-items: stretch; flex-direction: column; }
+  .monthly-efficiency-filters { grid-template-columns: 1fr 1fr; }
+  .monthly-date-range-popover { width: min(380px, calc(100vw - 44px)); }
+  .monthly-efficiency-actions { grid-column: 1 / -1; flex-wrap: wrap; }
+  .analytics-kpis.monthly-efficiency-kpis { grid-template-columns: 1fr 1fr; }
+  .monthly-method-note span + span { margin-left: 0; white-space: normal; }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -784,6 +1144,33 @@ h2 {
   flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
+}
+
+.template-profile-control {
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 2px 6px 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.template-profile-control select {
+  width: auto;
+  min-width: 128px;
+  min-height: 28px;
+  height: 28px;
+  padding: 3px 24px 3px 7px;
+  border-radius: 5px;
+  background-color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .front-userbar {
@@ -2089,10 +2476,16 @@ td textarea {
 
 #productionSummaryPage .production-time-grid {
   grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-  grid-template-rows: minmax(250px, 0.82fr) minmax(300px, 1.18fr);
+  /*
+   * Keep the paired summary cards compact. Fractional rows in an auto-height
+   * grid formed a sizing cycle with the 100%-height chart children and could
+   * stretch this row to several hundred empty pixels as the rig list grew.
+   */
+  grid-template-rows: clamp(400px, 44vh, 480px) clamp(380px, 48vh, 520px);
   gap: 14px;
   margin-bottom: 0;
-  min-height: clamp(560px, calc(100vh - 300px), 760px);
+  min-height: 0;
+  align-items: stretch;
 }
 
 #productionSummaryPage .production-time-card {
@@ -2124,6 +2517,7 @@ td textarea {
   gap: 7px;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 4px 0;
 }
 
@@ -6736,6 +7130,16 @@ body.modal-open {
     min-width: 0;
     width: 100%;
     justify-content: space-between;
+  }
+
+  .template-profile-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .template-profile-control select {
+    flex: 1;
+    width: auto;
   }
 
   .language-switch button {

@@ -11,6 +11,12 @@ from drilling_report_parser.pdf_report_parser import (
     _parse_report_fields,
     parse_pdf_daily_report,
 )
+from drilling_report_parser.drilling_pdf_templates import (
+    _filename_header_fields,
+    _short_other_remarks,
+    _strip_report_footer,
+    parse_compatible_pdf_daily_report,
+)
 
 
 SAMPLE_DIRS = [
@@ -30,6 +36,112 @@ def sample_pdf(name_part: str) -> Path:
 
 
 class PdfReportParserTest(unittest.TestCase):
+    def test_compatible_filename_fields_support_sinopec_export_name(self) -> None:
+        fields = _filename_header_fields(
+            "04232026-LOBC-009-SIN-127-PEC-013-V1R1-REPORTE DIARIO.pdf"
+        )
+
+        self.assertEqual(fields, {
+            "reportDate": "2026-04-23",
+            "wellbore": "LOBC-009",
+            "rig": "SINOPEC 127",
+            "reportNo": "13",
+        })
+
+    def test_compatible_short_remarks_cross_page_and_skip_repeated_header(self) -> None:
+        pages = [
+            "OPERATIONS\nOTHER REMARKS\n04/29/2026 8:23:44PM Page 1 of 2",
+            "\n".join([
+                "EP PETROECUADOR",
+                "Event: DEV DRILLING Date:DAILY OPERATIONS SHORT REPORT04/23/2026",
+                "Prim. Reason: DEEPEN DIR LOBC-009ECU Report No: 13",
+                "Description: Inicio OPR:DIRECTO CON PEC4/10/2026",
+                "** CUADRILLA COMPLETA",
+                "- EVACUACION DE CORTES DIARIO: 73.2 M3",
+                "04/29/2026 8:23:44PM Page 2 of 2",
+            ]),
+        ]
+
+        remarks = _short_other_remarks(pages)
+
+        self.assertEqual(
+            remarks,
+            "** CUADRILLA COMPLETA - EVACUACION DE CORTES DIARIO: 73.2 M3",
+        )
+        self.assertNotIn("EP PETROECUADOR", remarks)
+        self.assertNotIn("Page 2 of 2", remarks)
+
+    def test_compatible_footer_cleanup_accepts_am_and_pm(self) -> None:
+        self.assertEqual(
+            _strip_report_footer("OBSERVACION 4/29/2026 8:15:56PM Page 2 of 2"),
+            "OBSERVACION",
+        )
+
+    def test_compatible_profile_parses_lobc_short_report(self) -> None:
+        sample_dir = Path(
+            "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin"
+        )
+        matches = sorted(sample_dir.glob("04232026-LOBC-009-*.pdf"))
+        if not matches:
+            self.skipTest("LOBC-009 short report sample not found")
+
+        payload = parse_compatible_pdf_daily_report(matches[0])
+        fields = payload["report_fields"]
+
+        self.assertEqual(fields["event"], "DEV DRILLING")
+        self.assertEqual(fields["reportDate"], "2026-04-23")
+        self.assertEqual(fields["reportNo"], "13")
+        self.assertEqual(fields["wellbore"], "LOBC-009")
+        self.assertEqual(fields["rig"], "SINOPEC 127")
+        self.assertEqual(fields["primaryReason"], "DEEPEN DIR")
+        self.assertEqual(payload["metadata"]["template_profile"], "compatible")
+        self.assertEqual(payload["metadata"]["template_variant"], "daily_operations_short_report")
+        self.assertNotIn("OPERATIONS From To", fields["forecast24h"])
+        self.assertIn("CUADRILLA COMPLETA", fields["otherRemarks"])
+        self.assertIn("EVACUACION DE CORTES DIARIO", fields["otherRemarks"])
+        self.assertNotIn("EP PETROECUADOR", fields["otherRemarks"])
+        self.assertNotIn("Page 2 of 2", fields["otherRemarks"])
+        self.assertFalse(any(
+            "OTHER REMARKS" in row["operation_details"].upper()
+            for row in payload["operations"]
+        ))
+        self.assertEqual(fields["mudType"], "FLUIDO POLIMÉRICO")
+        self.assertEqual(fields["mudDensity"], "10.2")
+        self.assertEqual(fields["viscosity"], "43")
+        self.assertEqual(fields["pv"], "11")
+        self.assertEqual(fields["yp"], "12")
+        self.assertEqual(fields["gel10s"], "10")
+        self.assertEqual(fields["gel10m"], "17")
+        self.assertEqual(fields["gel30m"], "25")
+        self.assertEqual(fields["apiWl"], "14.6")
+        self.assertEqual(fields["sand"], "0.1")
+
+    def test_compatible_profile_fills_blank_rig_from_filename(self) -> None:
+        sample_dir = Path(
+            "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin"
+        )
+        matches = sorted(sample_dir.glob("04112026-LOBC-009-*.pdf"))
+        if not matches:
+            self.skipTest("LOBC-009 legacy report sample not found")
+
+        payload = parse_compatible_pdf_daily_report(matches[0])
+
+        self.assertEqual(payload["report_fields"]["rig"], "SINOPEC 127")
+        self.assertEqual(payload["metadata"]["filename_fallback_fields"], ["rig"])
+
+    def test_compatible_profile_removes_full_report_footer_from_remarks(self) -> None:
+        sample_dir = Path(
+            "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/日报资料/钻井/ow fin"
+        )
+        matches = sorted(sample_dir.glob("04152026-LOBC-009-*.pdf"))
+        if not matches:
+            self.skipTest("LOBC-009 footer sample not found")
+
+        remarks = parse_compatible_pdf_daily_report(matches[0])["report_fields"]["otherRemarks"]
+
+        self.assertIn("CUADRILLA COMPLETA", remarks)
+        self.assertNotIn("Page 2 of 2", remarks)
+
     def test_report_number_accepts_full_ecuador_country_label(self) -> None:
         lines = [
             "Event: DEV DRILLING Date:JVNC-024 07/15/2026",
