@@ -29,7 +29,11 @@ import urllib.request
 from collections import deque
 
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.drawing.image import Image as OpenpyxlImage
+from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+from openpyxl.drawing.xdr import XDRPositiveSize2D
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils.units import pixels_to_EMU
 
 from .database_common import natural_record_id, safe_float as _safe_float
 from .db_config import mysql_settings
@@ -45,6 +49,7 @@ from .storage import (
     load_analytics_view_rows,
     load_drilling_basic_monthly_report_rows,
     load_drilling_workover_efficiency_monthly_report_rows,
+    load_monthly_team_workload_report_rows,
     load_workover_basic_monthly_report_rows,
     load_monthly_efficiency_report_rows,
     load_npt_confirmation_detail,
@@ -141,6 +146,8 @@ WEB_ROOT = ROOT / "web_form"
 MONTHLY_DRILLING_BASIC_TEMPLATE = WEB_ROOT / "templates" / "drilling-basic-indicators-monthly.xlsx"
 MONTHLY_WORKOVER_BASIC_TEMPLATE = WEB_ROOT / "templates" / "workover-basic-indicators-monthly.xlsx"
 MONTHLY_DRILLING_WORKOVER_EFFICIENCY_TEMPLATE = WEB_ROOT / "templates" / "drilling-workover-efficiency-monthly.xlsx"
+MONTHLY_TEAM_WORKLOAD_TEMPLATE = WEB_ROOT / "templates" / "monthly-team-workload.xlsx"
+SINOPEC_LOGO_PATH = WEB_ROOT / "assets" / "sinopec-logo.png"
 MONTHLY_REPORT_FONT_NAME = "宋体"
 MONTHLY_REPORT_TITLE_FONT_SIZE = 20
 MONTHLY_REPORT_HEADER_FONT_SIZE = 11
@@ -303,6 +310,11 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._monthly_drilling_workover_efficiency_report(parsed.query)
             return
+        if parsed.path == "/api/monthly-team-workload-report":
+            if not self._require_permission("view"):
+                return
+            self._monthly_team_workload_report(parsed.query)
+            return
         if parsed.path == "/api/monthly-efficiency-report-export":
             if not self._require_permission("export"):
                 return
@@ -322,6 +334,11 @@ class FormHandler(BaseHTTPRequestHandler):
             if not self._require_permission("export"):
                 return
             self._monthly_drilling_workover_efficiency_template_export(parsed.query)
+            return
+        if parsed.path == "/api/monthly-team-workload-template-export":
+            if not self._require_permission("export"):
+                return
+            self._monthly_team_workload_template_export(parsed.query)
             return
         if parsed.path == "/api/npt-stats":
             if not self._require_permission("view"):
@@ -1932,6 +1949,9 @@ class FormHandler(BaseHTTPRequestHandler):
     def _monthly_drilling_workover_efficiency_report(self, query: str) -> None:
         self._send_json(_monthly_drilling_workover_efficiency_report_payload(DATABASE_PATH, parse_qs(query)))
 
+    def _monthly_team_workload_report(self, query: str) -> None:
+        self._send_json(_monthly_team_workload_report_payload(DATABASE_PATH, parse_qs(query)))
+
     def _monthly_efficiency_report_export(self, query: str) -> None:
         params = parse_qs(query)
         payload = _monthly_efficiency_report_payload(DATABASE_PATH, params)
@@ -2007,6 +2027,23 @@ class FormHandler(BaseHTTPRequestHandler):
         self.send_header(
             "Content-Disposition",
             f"attachment; filename=\"drilling-workover-efficiency-monthly.xlsx\"; filename*=UTF-8''{quote(filename)}",
+        )
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _monthly_team_workload_template_export(self, query: str = "") -> None:
+        if not MONTHLY_TEAM_WORKLOAD_TEMPLATE.exists():
+            self._send_json({"error": "月度工作量统计表模板不存在"}, status=404)
+            return
+        payload = _monthly_team_workload_report_payload(DATABASE_PATH, parse_qs(query))
+        data = _monthly_team_workload_workbook_bytes(payload)
+        filename = f"月度工作量统计表-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header(
+            "Content-Disposition",
+            f"attachment; filename=\"monthly-team-workload.xlsx\"; filename*=UTF-8''{quote(filename)}",
         )
         self.end_headers()
         self.wfile.write(data)
@@ -6082,6 +6119,220 @@ def _monthly_drilling_workover_efficiency_workbook_bytes(payload: dict[str, obje
     worksheet.merge_cells(start_row=note_row + 1, start_column=1, end_row=note_row + 1, end_column=18)
     worksheet.merge_cells(start_row=note_row + 2, start_column=1, end_row=note_row + 2, end_column=18)
     _normalize_monthly_workbook_style(worksheet, header_end_row=5, body_start_row=6)
+    if getattr(workbook, "calculation", None) is not None:
+        workbook.calculation.calcMode = "auto"
+        workbook.calculation.fullCalcOnLoad = True
+        workbook.calculation.forceFullCalc = True
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def _monthly_team_workload_report_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    selected_month, selected_date, source, available_months = _monthly_selected_source(
+        database_path, params, load_monthly_team_workload_report_rows,
+    )
+    source_rows = source.get("rows", [])
+    all_rows = [dict(row) for row in source_rows if isinstance(row, dict)] if isinstance(source_rows, list) else []
+    project_ids = set(_param_values(params, "project"))
+    team_codes = set(_param_values(params, "team"))
+    filtered_rows = [
+        row for row in all_rows
+        if (not project_ids or str(row.get("project_id", "")) in project_ids)
+        and (not team_codes or str(row.get("team_code", "")) in team_codes)
+    ]
+    hour_keys = (
+        "operation_hours",
+        "move_hours",
+        "manned_standby_hours",
+        "unmanned_standby_hours",
+        "force_majeure_hours",
+        "zero_rate_repair_hours",
+    )
+    grouped: dict[tuple[str, str], dict[str, object]] = {}
+    for source_row in filtered_rows:
+        profession = str(source_row.get("profession", "drilling") or "drilling").lower()
+        team_name = str(source_row.get("team_name") or source_row.get("team_code") or "未匹配队伍")
+        group = grouped.setdefault((profession, team_name), {
+            "profession": profession,
+            "profession_label": "修井" if profession == "workover" else "钻井",
+            "category_label": "修井" if profession == "workover" else "钻机",
+            "team_code": team_name,
+            "team_name": team_name,
+            "remarks": "",
+            **{key: 0.0 for key in hour_keys},
+        })
+        for key in hour_keys:
+            group[key] = float(group.get(key, 0) or 0) + float(source_row.get(key, 0) or 0)
+    rows = sorted(
+        grouped.values(),
+        key=lambda row: (0 if row.get("profession") == "drilling" else 1, str(row.get("team_name", ""))),
+    )
+    for index, row in enumerate(rows, start=1):
+        for key in hour_keys:
+            row[key] = round(float(row.get(key, 0) or 0), 1)
+        row["total_hours"] = round(sum(float(row.get(key, 0) or 0) for key in hour_keys), 1)
+        row["sequence"] = index
+    return {
+        "report_month": selected_month,
+        "report_date": selected_date,
+        "month_start": str(source.get("month_start", "") or ""),
+        "month_end": str(source.get("month_end", "") or ""),
+        "filters": {
+            "available_months": available_months,
+            "projects": _monthly_filter_options(all_rows, "project_id", "project_name"),
+            "teams": _monthly_filter_options(all_rows, "team_code", "team_name"),
+        },
+        "rows": rows,
+        "grain": "selected natural month + standard team + profession",
+        "scope_note": "按标准队伍和专业汇总。钻井包含搬迁、钻井及完井日报；作业时间=P+SC+项目允许NPT内的有日费维修，维修/零日费为超出允许NPT部分；有人待工、无人待工和不可抗力待工暂按0。",
+    }
+
+
+def _monthly_team_workload_workbook_bytes(payload: dict[str, object]) -> bytes:
+    workbook = Workbook()
+    worksheet = workbook.active
+    rows = payload.get("rows", [])
+    data_rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+    report_month = str(payload.get("report_month", "") or "")
+    try:
+        report_year, report_month_number = (int(part) for part in report_month.split("-"))
+    except (TypeError, ValueError):
+        report_year, report_month_number = date.today().year, date.today().month
+    worksheet.title = f"{report_month_number}月份"
+    worksheet.merge_cells("A1:J2")
+    worksheet["A1"] = f"{report_year}年{report_month_number}月厄子公司石油工程项目工作量统计表"
+    worksheet.row_dimensions[1].height = 42
+    worksheet.row_dimensions[2].height = 24
+    if SINOPEC_LOGO_PATH.exists():
+        logo = OpenpyxlImage(SINOPEC_LOGO_PATH)
+        logo_width_px = 71
+        logo_height_px = 74
+        logo.anchor = OneCellAnchor(
+            _from=AnchorMarker(
+                col=0,
+                colOff=pixels_to_EMU(3),
+                row=0,
+                rowOff=pixels_to_EMU(7),
+            ),
+            ext=XDRPositiveSize2D(
+                cx=pixels_to_EMU(logo_width_px),
+                cy=pixels_to_EMU(logo_height_px),
+            ),
+        )
+        worksheet.add_image(logo)
+
+    worksheet.merge_cells("A3:A4")
+    worksheet.merge_cells("B3:B4")
+    worksheet.merge_cells("C3:H3")
+    worksheet.merge_cells("I3:I4")
+    worksheet.merge_cells("J3:J4")
+    worksheet["A3"] = "一"
+    worksheet["B3"] = "作业队伍"
+    worksheet["C3"] = "工作时间（单位：小时）"
+    worksheet["I3"] = "合计"
+    worksheet["J3"] = "备注"
+    for column, value in enumerate(("作业", "搬迁", "有人待工", "无人待工", "不可抗力待工", "维修/零日费"), start=3):
+        worksheet.cell(row=4, column=column, value=value)
+    worksheet.row_dimensions[3].height = 35.5
+    worksheet.row_dimensions[4].height = 33
+
+    data_start_row = 5
+    hour_keys = (
+        "operation_hours",
+        "move_hours",
+        "manned_standby_hours",
+        "unmanned_standby_hours",
+        "force_majeure_hours",
+        "zero_rate_repair_hours",
+    )
+    category_ranges: dict[str, list[int]] = {}
+    for row_index, row in enumerate(data_rows, start=data_start_row):
+        category = str(row.get("category_label", "") or "")
+        category_ranges.setdefault(category, []).append(row_index)
+        worksheet.cell(row=row_index, column=1, value=category)
+        worksheet.cell(row=row_index, column=2, value=row.get("team_name") or row.get("team_code"))
+        for column, key in enumerate(hour_keys, start=3):
+            worksheet.cell(row=row_index, column=column, value=float(row.get(key, 0) or 0)).number_format = "0.0"
+        worksheet.cell(row=row_index, column=9, value=f"=SUM(C{row_index}:H{row_index})").number_format = "0.0"
+        worksheet.cell(row=row_index, column=10, value=row.get("remarks") or None)
+        worksheet.row_dimensions[row_index].height = 33
+    for category, row_indexes in category_ranges.items():
+        if not category or not row_indexes:
+            continue
+        first_row, last_row = min(row_indexes), max(row_indexes)
+        if last_row > first_row:
+            worksheet.merge_cells(start_row=first_row, start_column=1, end_row=last_row, end_column=1)
+        worksheet.cell(row=first_row, column=1, value=category)
+        worksheet.cell(row=first_row, column=1).alignment = Alignment(horizontal="center", vertical="center")
+
+    footer_row = data_start_row + len(data_rows)
+    worksheet.merge_cells(start_row=footer_row, start_column=2, end_row=footer_row, end_column=4)
+    worksheet[f"A{footer_row}"] = "负责人："
+    worksheet[f"F{footer_row}"] = "工程部审核："
+    worksheet[f"I{footer_row}"] = "制表："
+    worksheet.row_dimensions[footer_row].height = 42
+    note_row = footer_row + 1
+    worksheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=10)
+    worksheet.cell(row=note_row, column=1, value="备注：28日至月末期间的工作量为预估值。")
+    worksheet.cell(row=note_row, column=1).alignment = Alignment(horizontal="right", vertical="center")
+    worksheet.row_dimensions[note_row].height = 24
+
+    thin = Side(style="thin", color="FF000000")
+    report_border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    for row_index in range(1, note_row + 1):
+        for column in range(1, 11):
+            cell = worksheet.cell(row=row_index, column=column)
+            cell.border = report_border
+            cell.fill = PatternFill(fill_type=None)
+            cell.font = Font(name=MONTHLY_REPORT_FONT_NAME, size=MONTHLY_REPORT_BODY_FONT_SIZE, color="FF000000")
+            cell.alignment = center
+    worksheet["A1"].font = Font(
+        name=MONTHLY_REPORT_FONT_NAME,
+        size=MONTHLY_REPORT_TITLE_FONT_SIZE,
+        bold=True,
+        color="FF000000",
+    )
+    worksheet["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    for row_index in (3, 4):
+        for column in range(1, 11):
+            worksheet.cell(row=row_index, column=column).font = Font(
+                name=MONTHLY_REPORT_FONT_NAME,
+                size=MONTHLY_REPORT_HEADER_FONT_SIZE,
+                bold=True,
+                color="FF000000",
+            )
+    for row_index in range(data_start_row, footer_row):
+        for column in range(3, 10):
+            worksheet.cell(row=row_index, column=column).number_format = "0.0"
+    for column in (1, 6, 9):
+        worksheet.cell(row=footer_row, column=column).font = Font(
+            name=MONTHLY_REPORT_FONT_NAME,
+            size=MONTHLY_REPORT_BODY_FONT_SIZE,
+            bold=True,
+            color="FF000000",
+        )
+        worksheet.cell(row=footer_row, column=column).alignment = Alignment(horizontal="left", vertical="center")
+    worksheet.cell(row=note_row, column=1).font = Font(
+        name=MONTHLY_REPORT_FONT_NAME,
+        size=MONTHLY_REPORT_BODY_FONT_SIZE,
+        bold=True,
+        color="FF000000",
+    )
+    worksheet.cell(row=note_row, column=1).alignment = Alignment(horizontal="right", vertical="center")
+
+    worksheet.sheet_view.showGridLines = False
+    worksheet.print_area = f"A1:J{note_row}"
+    worksheet.page_setup.orientation = "landscape"
+    worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A4
+    worksheet.page_setup.fitToWidth = 1
+    worksheet.page_setup.fitToHeight = 1
+    worksheet.sheet_properties.pageSetUpPr.fitToPage = True
+    widths = (10.15, 20.49, 10.99, 10.99, 13.82, 10.15, 14.99, 13.82, 23.15, 49.15)
+    for column, width in enumerate(widths, start=1):
+        worksheet.column_dimensions[chr(64 + column)].width = width
     if getattr(workbook, "calculation", None) is not None:
         workbook.calculation.calcMode = "auto"
         workbook.calculation.fullCalcOnLoad = True

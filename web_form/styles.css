@@ -619,6 +619,67 @@
   width: 2239px;
 }
 
+.monthly-team-workload-table {
+  width: 1260px;
+}
+
+.drilling-basic-monthly-table .monthly-team-workload-title-row th {
+  height: 66px;
+  padding: 4px 10px;
+  border-bottom: 1px solid #555;
+}
+
+.monthly-team-workload-title-content {
+  display: grid;
+  grid-template-columns: 58px 1fr 58px;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.monthly-team-workload-title-content img {
+  display: block;
+  width: 52px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.monthly-team-workload-title-content span {
+  text-align: center;
+}
+
+.monthly-team-workload-table .monthly-team-workload-header-row th {
+  height: 36px;
+}
+
+.monthly-team-workload-table .monthly-team-workload-subheader-row th {
+  height: 34px;
+}
+
+.monthly-team-workload-table .template-data-row td {
+  height: 34px;
+  font-size: 12px;
+}
+
+.monthly-team-workload-table .monthly-team-workload-category {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.monthly-team-workload-table .monthly-team-workload-signature-row td {
+  height: 48px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.monthly-team-workload-table .monthly-team-workload-note-row td {
+  height: 28px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .drilling-workover-efficiency-monthly-table .efficiency-template-header-row th {
   height: 30px;
 }

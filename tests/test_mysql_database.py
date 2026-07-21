@@ -11,6 +11,7 @@ from drilling_report_parser.mysql_database import (
     _ensure_master_data_v3_columns,
     _drilling_basic_monthly_scope_row,
     _drilling_workover_efficiency_monthly_row,
+    _monthly_team_workload_row,
     _workover_basic_monthly_job_row,
     _ensure_report_record_columns,
     load_analytics_view_rows,
@@ -118,6 +119,7 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
         self.assertIn("CREATE OR REPLACE VIEW vw_drilling_basic_monthly_source", schema)
         self.assertIn("CREATE OR REPLACE VIEW vw_workover_basic_monthly_source", schema)
         self.assertIn("CREATE OR REPLACE VIEW vw_drilling_workover_efficiency_monthly", schema)
+        self.assertIn("CREATE OR REPLACE VIEW vw_monthly_team_workload", schema)
 
     def test_drilling_workover_efficiency_splits_npt_by_project_allowance(self) -> None:
         result = _drilling_workover_efficiency_monthly_row({
@@ -151,6 +153,26 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
         self.assertEqual(result["well_efficiency"], round(80 / 95, 6))
         self.assertEqual(result["nonproductive_description"], "")
         self.assertEqual(result["remarks"], "")
+
+    def test_monthly_team_workload_total_uses_all_six_hour_buckets(self) -> None:
+        result = _monthly_team_workload_row({
+            "project_id": 14,
+            "project_name": "Project",
+            "profession": "drilling",
+            "team_name": "SINOPEC 127",
+            "operation_hours": 100.125,
+            "move_hours": 24,
+            "manned_standby_hours": 0,
+            "unmanned_standby_hours": 0,
+            "force_majeure_hours": 0,
+            "zero_rate_repair_hours": 5.375,
+        })
+
+        self.assertEqual(result["category_label"], "钻机")
+        self.assertEqual(result["team_name"], "SINOPEC 127")
+        self.assertEqual(result["operation_hours"], 100.125)
+        self.assertEqual(result["zero_rate_repair_hours"], 5.375)
+        self.assertEqual(result["total_hours"], 129.5)
 
     def test_drilling_basic_monthly_row_uses_report_numbers_and_accumulated_hours(self) -> None:
         common = {

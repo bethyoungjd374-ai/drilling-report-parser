@@ -491,6 +491,88 @@ def test_drilling_workover_efficiency_monthly_payload_filters_rows() -> None:
     assert payload["rows"][0]["sequence"] == 1
 
 
+def test_monthly_team_workload_page_is_fourth_monthly_report_and_has_shared_controls() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+
+    monthly_group = html.index('data-i18n="menuMonthlyReport"')
+    efficiency_item = html.index('data-menu-target="drilling-workover-efficiency-monthly-report"', monthly_group)
+    workload_item = html.index('data-menu-target="monthly-team-workload-report"', monthly_group)
+    assert efficiency_item < workload_item
+    assert 'id="monthlyTeamWorkloadReportPage"' in html
+    assert '<input type="hidden" data-monthly-team-workload-date' in html
+    assert 'data-monthly-team-workload-project' in html
+    assert 'data-monthly-team-workload-team' in html
+    assert 'data-monthly-team-workload-export' in html
+    assert 'src="./assets/sinopec-logo.png"' in script
+    assert "填报单位：厄瓜多尔子公司" not in script.split('function renderMonthlyTeamWorkloadTable', 1)[1].split('async function loadMonthlyTeamWorkloadReport', 1)[0]
+    for header in ("作业队伍", "工作时间（单位：小时）", "有人待工", "无人待工", "不可抗力待工", "维修/零日费"):
+        assert header in script
+
+
+def test_monthly_team_workload_payload_groups_projects_by_standard_team_and_profession() -> None:
+    source = {
+        "month_start": "2026-06-01",
+        "month_end": "2026-06-30",
+        "available_months": ["2026-06"],
+        "rows": [
+            {"project_id": 10, "project_name": "A", "team_code": "SINOPEC 127", "team_name": "SINOPEC 127", "profession": "drilling", "operation_hours": 30.25, "move_hours": 6, "manned_standby_hours": 0, "unmanned_standby_hours": 0, "force_majeure_hours": 0, "zero_rate_repair_hours": 1.25},
+            {"project_id": 20, "project_name": "B", "team_code": "SINOPEC 127", "team_name": "SINOPEC 127", "profession": "drilling", "operation_hours": 20.25, "move_hours": 18, "manned_standby_hours": 0, "unmanned_standby_hours": 0, "force_majeure_hours": 0, "zero_rate_repair_hours": 2.25},
+            {"project_id": 20, "project_name": "B", "team_code": "SINOPEC 127", "team_name": "SINOPEC 127", "profession": "workover", "operation_hours": 24, "move_hours": 0, "manned_standby_hours": 0, "unmanned_standby_hours": 0, "force_majeure_hours": 0, "zero_rate_repair_hours": 0},
+        ],
+    }
+    with patch.object(form_server, "load_monthly_team_workload_report_rows", return_value=source):
+        payload = form_server._monthly_team_workload_report_payload(Path("mysql"), {"report_month": ["2026-06"]})
+
+    assert len(payload["rows"]) == 2
+    drilling, workover = payload["rows"]
+    assert drilling["category_label"] == "钻机"
+    assert drilling["team_name"] == "SINOPEC 127"
+    assert drilling["operation_hours"] == 50.5
+    assert drilling["move_hours"] == 24.0
+    assert drilling["zero_rate_repair_hours"] == 3.5
+    assert drilling["total_hours"] == 78.0
+    assert workover["category_label"] == "修井"
+    assert workover["total_hours"] == 24.0
+
+
+def test_monthly_team_workload_export_has_dynamic_rows_and_clean_formulas() -> None:
+    data = form_server._monthly_team_workload_workbook_bytes({
+        "report_month": "2026-06",
+        "report_date": "2026-06-30",
+        "rows": [
+            {"category_label": "钻机", "team_name": "SINOPEC 127", "operation_hours": 100.2, "move_hours": 24, "manned_standby_hours": 0, "unmanned_standby_hours": 0, "force_majeure_hours": 0, "zero_rate_repair_hours": 5.3, "remarks": ""},
+            {"category_label": "修井", "team_name": "SINOPEC 903", "operation_hours": 72, "move_hours": 0, "manned_standby_hours": 0, "unmanned_standby_hours": 0, "force_majeure_hours": 0, "zero_rate_repair_hours": 1, "remarks": ""},
+        ],
+    })
+    workbook = load_workbook(BytesIO(data), data_only=False)
+    worksheet = workbook["6月份"]
+
+    assert worksheet["A1"].value == "2026年6月厄子公司石油工程项目工作量统计表"
+    assert worksheet["F2"].value is None
+    assert "A1:J2" in {str(item) for item in worksheet.merged_cells.ranges}
+    assert worksheet["B5"].value == "SINOPEC 127"
+    assert worksheet["I5"].value == "=SUM(C5:H5)"
+    assert worksheet["I5"].number_format == "0.0"
+    assert worksheet["B6"].value == "SINOPEC 903"
+    assert worksheet["A7"].value == "负责人："
+    assert worksheet["A8"].value == "备注：28日至月末期间的工作量为预估值。"
+    assert worksheet.max_row == 8
+    assert worksheet.max_column == 10
+    assert len(worksheet._images) == 1
+    logo_anchor = worksheet._images[0].anchor
+    assert round(logo_anchor.ext.cx / 9525) == 71
+    assert round(logo_anchor.ext.cy / 9525) == 74
+    assert round(logo_anchor._from.rowOff / 9525) == 7
+    assert _yellow_filled_cells(worksheet) == []
+    assert not any(
+        isinstance(cell.value, str) and "#REF!" in cell.value
+        for row in worksheet.iter_rows()
+        for cell in row
+    )
+
+
 def test_completeness_is_not_inferred_without_an_explicit_period() -> None:
     records = [
         {"reportDate": "2026-06-01", "validation_status": "ok"},

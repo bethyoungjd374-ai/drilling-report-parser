@@ -2951,6 +2951,95 @@ def _drilling_workover_efficiency_monthly_row(source: dict[str, Any]) -> dict[st
     }
 
 
+def load_monthly_team_workload_report_rows(
+    database_path: str | Path | None = None,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    """Load monthly workload rows grouped by project, standard team, and profession."""
+    del database_path
+    initialize_database()
+    selected = date.fromisoformat(report_date)
+    month_start = selected.replace(day=1)
+    next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    month_end = next_month - timedelta(days=1)
+    current_month_start = date.today().replace(day=1)
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT DATE_FORMAT(report_date, '%%Y-%%m') AS report_month
+                FROM dpr_report
+                WHERE report_type IN ('drilling','completion','workover')
+                  AND report_date IS NOT NULL
+                  AND report_date < DATE_ADD(%s, INTERVAL 1 MONTH)
+                ORDER BY report_month DESC
+                """,
+                (current_month_start,),
+            )
+            available_months = [
+                _text(row.get("report_month"))
+                for row in (cursor.fetchall() or [])
+                if _text(row.get("report_month"))
+            ]
+            cursor.execute(
+                """
+                SELECT *
+                FROM vw_monthly_team_workload
+                WHERE month_start = %s
+                ORDER BY profession,team_name,project_id
+                """,
+                (month_start,),
+            )
+            source_rows = [dict(row) for row in (cursor.fetchall() or [])]
+    rows = [_monthly_team_workload_row(source) for source in source_rows]
+    return {
+        "report_date": report_date,
+        "month_start": month_start.isoformat(),
+        "month_end": month_end.isoformat(),
+        "available_months": available_months,
+        "rows": rows,
+    }
+
+
+def _monthly_team_workload_row(source: dict[str, Any]) -> dict[str, Any]:
+    profession = _text(source.get("profession")).lower()
+    team_name = _text(source.get("team_name") or source.get("team_code") or "未匹配队伍")
+    operation_hours = max(0.0, float(source.get("operation_hours") or 0))
+    move_hours = max(0.0, float(source.get("move_hours") or 0))
+    manned_standby_hours = max(0.0, float(source.get("manned_standby_hours") or 0))
+    unmanned_standby_hours = max(0.0, float(source.get("unmanned_standby_hours") or 0))
+    force_majeure_hours = max(0.0, float(source.get("force_majeure_hours") or 0))
+    zero_rate_repair_hours = max(0.0, float(source.get("zero_rate_repair_hours") or 0))
+    total_hours = (
+        operation_hours
+        + move_hours
+        + manned_standby_hours
+        + unmanned_standby_hours
+        + force_majeure_hours
+        + zero_rate_repair_hours
+    )
+    return {
+        "project_id": int(source.get("project_id") or 0),
+        "project_name": _text(source.get("project_name")),
+        "profession": profession,
+        "profession_label": "修井" if profession == "workover" else "钻井",
+        "category_label": "修井" if profession == "workover" else "钻机",
+        "team_code": team_name,
+        "team_name": team_name,
+        "operation_hours": round(operation_hours, 3),
+        "move_hours": round(move_hours, 3),
+        "manned_standby_hours": round(manned_standby_hours, 3),
+        "unmanned_standby_hours": round(unmanned_standby_hours, 3),
+        "force_majeure_hours": round(force_majeure_hours, 3),
+        "zero_rate_repair_hours": round(zero_rate_repair_hours, 3),
+        "total_hours": round(total_hours, 3),
+        "remarks": "",
+        "well_count": int(source.get("well_count") or 0),
+        "report_count": int(source.get("report_count") or 0),
+    }
+
+
 def list_ai_job_status(kind: str) -> list[dict[str, str]]:
     if kind not in {"translation", "extraction"}:
         raise ValueError("Unsupported AI job kind")

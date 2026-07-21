@@ -55,6 +55,7 @@
               <a href="#" class="menu-link" data-menu-target="drilling-basic-monthly-report" data-title-i18n="menuDrillingBasicMonthlyReport" data-desc-i18n="descDrillingBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuDrillingBasicMonthlyReport">钻井基础指标数据月报表</span></a>
               <a href="#" class="menu-link" data-menu-target="workover-basic-monthly-report" data-title-i18n="menuWorkoverBasicMonthlyReport" data-desc-i18n="descWorkoverBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuWorkoverBasicMonthlyReport">修井基础指标数据月报表</span></a>
               <a href="#" class="menu-link" data-menu-target="drilling-workover-efficiency-monthly-report" data-title-i18n="menuDrillingWorkoverEfficiencyMonthlyReport" data-desc-i18n="descDrillingWorkoverEfficiencyMonthlyReport"><img class="menu-item-icon" src="./icons/nav/calendar-stats.svg" alt="" /><span data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井基础时效数据月报</span></a>
+              <a href="#" class="menu-link" data-menu-target="monthly-team-workload-report" data-title-i18n="menuMonthlyTeamWorkloadReport" data-desc-i18n="descMonthlyTeamWorkloadReport"><img class="menu-item-icon" src="./icons/nav/report-analytics.svg" alt="" /><span data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计表</span></a>
             </div>
           </div>
           <div class="menu-group open">
@@ -939,6 +940,39 @@
           </section>
         </section>
 
+        <section id="monthlyTeamWorkloadReportPage" class="module-page drilling-basic-monthly-page monthly-team-workload-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuMonthlyReport">月度报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计表</strong>
+              </nav>
+            </div>
+          </header>
+          <section class="drilling-basic-monthly-workspace">
+            <div class="panel drilling-basic-monthly-toolbar">
+              <div class="drilling-basic-monthly-filters">
+                <div class="monthly-month-picker" data-monthly-month-picker>
+                  <input type="hidden" data-monthly-team-workload-date />
+                  <button class="monthly-month-trigger" type="button" aria-label="填报月份" aria-haspopup="dialog" aria-expanded="false" data-monthly-month-trigger>
+                    <span data-monthly-month-display>请选择月份</span><img src="./icons/nav/calendar-stats.svg" alt="" />
+                  </button>
+                  <div class="monthly-month-popover" role="dialog" aria-label="选择填报月份" data-monthly-month-popover hidden></div>
+                </div>
+                <label><select aria-label="项目" data-monthly-team-workload-project><option value="">全部项目</option></select></label>
+                <label><select aria-label="队伍编号" data-monthly-team-workload-team><option value="">全部队伍</option></select></label>
+                <button class="button" type="button" data-monthly-team-workload-search>查询</button>
+                <button class="button secondary" type="button" data-monthly-team-workload-reset>重置</button>
+                <button class="button" type="button" data-monthly-team-workload-export>导出 Excel</button>
+              </div>
+            </div>
+            <section class="panel drilling-basic-monthly-report-panel">
+              <div class="drilling-basic-monthly-table-wrap" data-monthly-team-workload-table></div>
+            </section>
+          </section>
+        </section>
+
         <section id="monthlyEfficiencyReportPage" class="module-page analytics-page monthly-efficiency-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
@@ -1178,6 +1212,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=monthly-data-rows-v1"></script>
+    <script src="./app.js?v=monthly-team-workload-v1"></script>
   </body>
 </html>

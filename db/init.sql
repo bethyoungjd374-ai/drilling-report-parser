@@ -1639,6 +1639,37 @@ GROUP BY
     ELSE 'drilling'
   END;
 
+CREATE OR REPLACE VIEW vw_monthly_team_workload AS
+SELECT
+  month_start,
+  project_id,
+  MAX(project_code) AS project_code,
+  MAX(project_name) AS project_name,
+  profession,
+  COALESCE(NULLIF(team_name,''), NULLIF(team_code,''), '未匹配队伍') AS team_name,
+  COALESCE(NULLIF(team_code,''), NULLIF(team_name,''), '未匹配队伍') AS team_code,
+  ROUND(SUM(production_hours + LEAST(npt_hours, npt_allowance_hours)), 3) AS operation_hours,
+  ROUND(SUM(move_hours), 3) AS move_hours,
+  CAST(0 AS DECIMAL(18,3)) AS manned_standby_hours,
+  CAST(0 AS DECIMAL(18,3)) AS unmanned_standby_hours,
+  CAST(0 AS DECIMAL(18,3)) AS force_majeure_hours,
+  ROUND(SUM(GREATEST(npt_hours - npt_allowance_hours, 0)), 3) AS zero_rate_repair_hours,
+  ROUND(SUM(
+    production_hours
+    + LEAST(npt_hours, npt_allowance_hours)
+    + move_hours
+    + GREATEST(npt_hours - npt_allowance_hours, 0)
+  ), 3) AS total_hours,
+  COUNT(DISTINCT well_id) AS well_count,
+  SUM(report_count) AS report_count
+FROM vw_drilling_workover_efficiency_monthly
+GROUP BY
+  month_start,
+  project_id,
+  profession,
+  COALESCE(NULLIF(team_name,''), NULLIF(team_code,''), '未匹配队伍'),
+  COALESCE(NULLIF(team_code,''), NULLIF(team_name,''), '未匹配队伍');
+
 CREATE OR REPLACE VIEW vw_monthly_rig_workload AS
 SELECT
   CAST(DATE_FORMAT(report_date, '%Y-%m-01') AS DATE) AS month_start,
