@@ -22,6 +22,18 @@ from drilling_report_parser.form_server import (
 
 
 class TranslationTuningConfigTest(unittest.TestCase):
+    def test_default_scope_includes_event_and_primary_reason_for_every_report_type(self) -> None:
+        config = _normalize_translation_tuning_config({})
+        enabled = {
+            (item["report_type"], item["field_code"])
+            for item in config["scope_rules"]
+            if item["enabled"]
+        }
+
+        for report_type in ("drilling", "completion", "workover"):
+            self.assertIn((report_type, "report_fields.event"), enabled)
+            self.assertIn((report_type, "report_fields.primaryReason"), enabled)
+
     def test_keeps_only_supported_translation_fields(self) -> None:
         config = _normalize_translation_tuning_config({
             "field_policies": [
@@ -34,7 +46,7 @@ class TranslationTuningConfigTest(unittest.TestCase):
         rules = config["scope_rules"]
         self.assertFalse(any(item["field_name"] == "wellbore" for item in rules))
         current_ops = [item for item in rules if item["field_name"] == "currentOps"]
-        self.assertEqual(len(current_ops), 4)
+        self.assertEqual(len(current_ops), 3)
         self.assertTrue(all(item["enabled"] is False for item in current_ops))
         self.assertEqual(config["target_languages"], ["zh-CN"])
 

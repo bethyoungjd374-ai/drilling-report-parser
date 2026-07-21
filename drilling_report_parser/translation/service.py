@@ -48,6 +48,8 @@ DEFAULT_OPENAI_COMPATIBLE_CHUNK_CHARS = 2500
 TRANSLATION_PIPELINE_VERSION = "report-context-v14-deterministic-validation"
 TERM_TYPES = {"protected", "preferred", "contextual", "phrase"}
 TRANSLATABLE_REPORT_FIELDS = {
+    "event",
+    "primaryReason",
     "currentOps",
     "summary24h",
     "forecast24h",
@@ -62,6 +64,8 @@ TRANSLATABLE_ROW_FIELDS = {
     "comments",
 }
 REPORT_FIELD_TRANSLATION_ORDER = (
+    "event",
+    "primaryReason",
     "currentOps",
     "summary24h",
     "forecast24h",

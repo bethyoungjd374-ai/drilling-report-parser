@@ -415,6 +415,12 @@ function renderAdminOverview() {
   `;
 }
 
+const PROJECT_NPT_DEFAULT_HOURS = { drilling: 5, completion: 5, workover: 12 };
+
+function projectTypeLabel(value) {
+  return ({ drilling: "钻井", completion: "完井", workover: "修井" })[value] || "未设置";
+}
+
 const MASTER_ENTITY_DEFINITIONS = {
   regions: { label: "国家/区域", state: "regions", code: "region_code", name: "region_name", fields: [
     ["region_code", "区域编码", "text"], ["region_name", "区域名称", "text"], ["region_type_code", "区域类型", "appendix:REGION_TYPE"],
@@ -456,6 +462,15 @@ const MASTER_ENTITY_DEFINITIONS = {
     ["surface_latitude", "井口纬度", "number"], ["surface_longitude", "井口经度", "number"], ["well_profile_code", "井轨迹类型", "appendix:WELL_PROFILE"],
     ["trajectory_status_code", "轨迹状态", "appendix:TRAJECTORY_STATUS"], ["kickoff_md_m", "造斜点MD(m)", "number"], ["planned_td_md_m", "设计井深MD(m)", "number"],
     ["lifecycle_status_code", "生命周期", "appendix:WELL_STATUS"]
+  ] },
+  contracts: { hidden: true, label: "合同", state: "contracts", code: "contract_no", name: "contract_name", fields: [
+    ["contract_no", "合同号", "text"], ["contract_name", "合同名称", "text"], ["customer_organization_id", "客户公司", "companies"],
+    ["valid_from", "开始日期", "date"], ["valid_to", "结束日期", "date"]
+  ] },
+  projects: { hidden: true, label: "项目", state: "projects", code: "project_code", name: "project_name", fields: [
+    ["project_code", "项目编码", "text"], ["project_name", "项目名称", "text"], ["project_type", "项目类型", "project-type"],
+    ["npt_allowance_hours", "允许 NPT（h）", "number"], ["contract_id", "所属合同", "contracts"], ["service_scope", "服务范围", "text"],
+    ["valid_from", "开始日期", "date"], ["valid_to", "结束日期", "date"]
   ] },
   "appendix-categories": { hidden: true, label: "附录类别", state: "appendixCategories", code: "category_code", name: "category_name", fields: [
     ["category_code", "类别编码", "text"], ["category_name", "类别名称", "text"], ["parent_id", "上级类别", "appendix-categories"],
@@ -585,8 +600,17 @@ function openMasterEntityModal(entity, id = "", preset = {}) {
   const definition = MASTER_ENTITY_DEFINITIONS[entity];
   if (!definition) return;
   const item = { ...preset, ...(masterEntityItems(entity).find((row) => String(row.id) === String(id)) || {}) };
+  if (entity === "projects") {
+    item.project_type = item.project_type || "drilling";
+    if (item.npt_allowance_hours === undefined || item.npt_allowance_hours === null || item.npt_allowance_hours === "") {
+      item.npt_allowance_hours = PROJECT_NPT_DEFAULT_HOURS[item.project_type];
+    }
+  }
   const fields = definition.fields.map(([key, label, type]) => {
     const value = item[key] ?? "";
+    if (type === "project-type") {
+      return `<label>${escapeHtml(label)}<select data-master-field="${escapeHtml(key)}">${[["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"]].map(([optionValue, optionLabel]) => `<option value="${optionValue}" ${optionValue === value ? "selected" : ""}>${optionLabel}</option>`).join("")}</select></label>`;
+    }
     if (String(type).startsWith("appendix:")) {
       const categoryCode = String(type).slice("appendix:".length);
       const category = (adminState.governance.appendixCategories || []).find((row) => row.category_code === categoryCode);
@@ -600,7 +624,8 @@ function openMasterEntityModal(entity, id = "", preset = {}) {
       return `<label>${escapeHtml(label)}<select data-master-field="${escapeHtml(key)}"><option value="">未设置</option>${options.filter((option) => String(option.id) !== String(id) || type !== entity).map((option) => `<option value="${escapeHtml(option.id)}" ${String(option.id) === String(value) ? "selected" : ""}>${escapeHtml(masterOptionLabel(reference.state, option))}</option>`).join("")}</select></label>`;
     }
     if (type === "textarea") return `<label class="wide">${escapeHtml(label)}<textarea data-master-field="${escapeHtml(key)}">${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}</textarea></label>`;
-    return `<label>${escapeHtml(label)}<input data-master-field="${escapeHtml(key)}" type="${type}" value="${escapeHtml(type === "date" ? String(value).slice(0, 10) : value)}" /></label>`;
+    const numberAttributes = key === "npt_allowance_hours" ? ' min="0" max="999999.99" step="0.01" inputmode="decimal" data-project-npt-hours' : "";
+    return `<label>${escapeHtml(label)}<input data-master-field="${escapeHtml(key)}" type="${type}" value="${escapeHtml(type === "date" ? String(value).slice(0, 10) : value)}"${numberAttributes} /></label>`;
   }).join("");
   openAdminModal(
     `${item.id ? "编辑" : "新增"}${definition.label}`,
@@ -639,7 +664,9 @@ async function deleteMasterEntityFromModal(entity, id, version) {
     const response = await adminRequest(`/api/admin/master-data/${entity}?limit=1000`);
     adminState.governance[MASTER_ENTITY_DEFINITIONS[entity].state] = response.items || [];
     if (entity === "appendix-categories") adminState.governance.appendixCategoryId = String(response.items?.[0]?.id || "");
-    closeAdminModal(); renderAdminGovernance(); showToast("主数据已删除");
+    closeAdminModal(); renderAdminGovernance();
+    if (entity === "projects" || entity === "contracts") renderAdminProjects();
+    showToast("主数据已删除");
   } catch (error) { showToast(error.message); }
 }
 
@@ -656,7 +683,9 @@ async function saveMasterEntityFromModal(entity) {
     await adminRequest(`/api/admin/master-data/${entity}`, { method: payload.id ? "PATCH" : "POST", body: JSON.stringify(payload) });
     const response = await adminRequest(`/api/admin/master-data/${entity}?limit=1000`);
     adminState.governance[MASTER_ENTITY_DEFINITIONS[entity].state] = response.items || [];
-    closeAdminModal(); renderAdminGovernance(); showToast("主数据已保存");
+    closeAdminModal(); renderAdminGovernance();
+    if (entity === "projects" || entity === "contracts") renderAdminProjects();
+    showToast("主数据已保存");
   } catch (error) { showToast(error.message); }
 }
 
@@ -1448,9 +1477,10 @@ function renderAdminProjectRelationships(host) {
     const projectTeams = activeTeams.filter((item) => String(item.project_id) === String(project.id));
     const projectWells = activeWells.filter((item) => String(item.project_id) === String(project.id));
     return `<tr><td><strong>${escapeHtml(project.project_name || project.project_code)}</strong><small>${escapeHtml(project.project_code)}</small></td>
-      <td>${escapeHtml(contract.contract_no || "-")}</td><td>${escapeHtml(projectPeriodText({ start_date: project.valid_from, end_date: project.valid_to }))}</td>
+      <td>${escapeHtml(contract.contract_no || "-")}</td><td>${escapeHtml(projectTypeLabel(project.project_type))}</td>
+      <td>${escapeHtml(project.npt_allowance_hours ?? "-")} h</td><td>${escapeHtml(projectPeriodText({ start_date: project.valid_from, end_date: project.valid_to }))}</td>
       <td><span class="status-pill ${project.status === "active" ? "uploaded" : "failed"}">${project.status === "active" ? "启用" : "停用"}</span></td>
-      <td>${projectTeams.length} 队 / ${projectWells.length} 井</td><td><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">维护关系</button></td></tr>`;
+      <td>${projectTeams.length} 队 / ${projectWells.length} 井</td><td><button class="link-button" type="button" data-admin-edit-project-master="${escapeHtml(project.id)}">编辑项目</button><button class="link-button" type="button" data-admin-edit-project="${escapeHtml(project.id)}">维护关系</button></td></tr>`;
   }).join("");
   const teamRows = teams.map((team) => {
     const rows = activeTeams.filter((item) => String(item.team_id) === String(team.id));
@@ -1471,8 +1501,8 @@ function renderAdminProjectRelationships(host) {
       ${adminKpi("关系冲突", conflictTeamIds.size, `${activeWells.length} 个有效井范围`, "logs")}
     </section>
     <section class="panel">
-      <div class="panel-heading"><div><h2>项目关系维护</h2><span class="panel-note">按项目集中维护队伍派遣和井范围；队伍和井属性请到“主数据管理”修改</span></div></div>
-      <div class="table-wrap"><table class="record-table admin-table project-table"><thead><tr><th>项目</th><th>合同号</th><th>项目周期</th><th>状态</th><th>队伍 / 井</th><th>操作</th></tr></thead><tbody>${projectRows || `<tr><td colspan="6">暂无项目主数据</td></tr>`}</tbody></table></div>
+      <div class="panel-heading"><div><h2>项目关系维护</h2><span class="panel-note">按项目集中维护队伍派遣和井范围；队伍和井属性请到“主数据管理”修改</span></div><button class="button small" type="button" data-admin-new-project>新增项目</button></div>
+      <div class="table-wrap"><table class="record-table admin-table project-table"><thead><tr><th>项目</th><th>合同号</th><th>项目类型</th><th>允许 NPT</th><th>项目周期</th><th>状态</th><th>队伍 / 井</th><th>操作</th></tr></thead><tbody>${projectRows || `<tr><td colspan="8">暂无项目主数据</td></tr>`}</tbody></table></div>
     </section>
     <section class="panel"><div class="panel-heading"><h2>队伍派遣总览</h2><span class="panel-note">一个队伍在同一有效时段只能归属一个项目；采用 [开始, 结束) 有效期</span></div>
       <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>队伍</th><th>归属项目</th><th>有效期</th><th>关系状态</th><th>主数据状态</th></tr></thead><tbody>${teamRows || `<tr><td colspan="5">暂无队伍主数据</td></tr>`}</tbody></table></div>
@@ -1670,7 +1700,7 @@ function translationFieldPoliciesMarkup() {
 }
 
 function businessPromptTemplatesMarkup(templates = {}) {
-  return [["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"], ["move", "搬迁"]]
+  return [["drilling", "钻井（含搬迁）"], ["completion", "完井"], ["workover", "修井"]]
     .map(([value, label]) => `<label>${label}<textarea name="translationBusinessPrompt" data-report-type="${value}" rows="3" maxlength="1200">${escapeHtml(templates[value] || "")}</textarea></label>`)
     .join("");
 }
@@ -1740,7 +1770,7 @@ function translationTermsMarkup() {
 }
 
 function translationTermCategoryLabel(value = "general") {
-  return { general: "通用", drilling: "钻井", completion: "完井", workover: "修井", move: "搬迁" }[value] || "通用";
+  return { general: "通用", drilling: "钻井（含搬迁）", completion: "完井", workover: "修井" }[value] || "通用";
 }
 
 function translationTermTypeLabel(value = "preferred") {
@@ -1753,12 +1783,12 @@ function translationTermTypeOptions(selected = "preferred") {
 }
 
 function translationTermCategoryOptions(selected = "general", includeAll = false) {
-  const options = [["general", "通用"], ["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"], ["move", "搬迁"]];
+  const options = [["general", "通用"], ["drilling", "钻井（含搬迁）"], ["completion", "完井"], ["workover", "修井"]];
   return `${includeAll ? `<option value="all" ${selected === "all" ? "selected" : ""}>全部作业类型</option>` : ""}${options.map(([value, label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("")}`;
 }
 
 function translationTermCategorySegments(selected = "all") {
-  const options = [["all", "全部"], ["general", "通用"], ["drilling", "钻井"], ["completion", "完井"], ["workover", "修井"], ["move", "搬迁"]];
+  const options = [["all", "全部"], ["general", "通用"], ["drilling", "钻井（含搬迁）"], ["completion", "完井"], ["workover", "修井"]];
   return options.map(([value, label]) => `<button type="button" class="${selected === value ? "active" : ""}" aria-pressed="${selected === value ? "true" : "false"}" data-translation-term-category-value="${value}">${label}</button>`).join("");
 }
 
@@ -1845,7 +1875,7 @@ function translationMemoryAndLogsMarkup() {
         <section class="panel translation-memory-panel">
           <div class="panel-heading"><div><h2>人工确认翻译记忆</h2><span class="panel-note">只复用完全相同原文，保留作为少量例外兜底</span></div></div>
           <div class="translation-memory-form">
-            <label>日报类型<select name="translationMemoryReportType"><option value="">通用</option><option value="drilling">钻井</option><option value="completion">完井</option><option value="workover">修井</option><option value="move">搬迁</option></select></label>
+            <label>日报类型<select name="translationMemoryReportType"><option value="">通用</option><option value="drilling">钻井（含搬迁）</option><option value="completion">完井</option><option value="workover">修井</option></select></label>
             <label>字段编码<input name="translationMemoryFieldCode" placeholder="operations.operation_details" /></label>
             <label class="wide">西语 / 英语原文<textarea name="translationMemorySource" rows="4" maxlength="12000"></textarea></label>
             <label class="wide">人工确认中文<textarea name="translationMemoryTarget" rows="4" maxlength="12000"></textarea></label>
@@ -1948,7 +1978,7 @@ function v2ProjectWellRow(item = {}) {
   return `<div class="admin-project-rig-row" data-v2-project-well-row>
     <input type="hidden" name="v2WellRelationId" value="${escapeHtml(item.id || "")}" /><input type="hidden" name="v2WellRelationVersion" value="${escapeHtml(item.version || "")}" />
     <label>井<select name="v2WellRelationWellId"><option value="">选择井</option>${v2RelationshipOptions(adminState.governance.wells, item.well_id, "id", ["well_name", "well_code"])}</select></label>
-    <label>作业类型<select name="v2WellRelationJobType"><option value="" ${!item.job_type ? "selected" : ""}>全部作业</option><option value="drilling" ${item.job_type === "drilling" ? "selected" : ""}>钻井</option><option value="completion" ${item.job_type === "completion" ? "selected" : ""}>完井</option><option value="workover" ${item.job_type === "workover" ? "selected" : ""}>修井</option><option value="move" ${item.job_type === "move" ? "selected" : ""}>搬迁</option></select></label>
+    <label>作业类型<select name="v2WellRelationJobType"><option value="" ${!item.job_type ? "selected" : ""}>全部作业</option><option value="drilling" ${item.job_type === "drilling" ? "selected" : ""}>钻井（含搬迁）</option><option value="completion" ${item.job_type === "completion" ? "selected" : ""}>完井</option><option value="workover" ${item.job_type === "workover" ? "selected" : ""}>修井</option></select></label>
     <label>开始日期<input name="v2WellRelationStart" type="date" value="${escapeHtml(String(item.valid_from || "").slice(0, 10))}" /></label>
     <label>结束日期（不含）<input name="v2WellRelationEnd" type="date" value="${escapeHtml(String(item.valid_to || "").slice(0, 10))}" /></label>
     <label>业务说明<input name="v2WellRelationNote" value="${escapeHtml(item.scope_note || "")}" placeholder="井范围说明" /></label>
@@ -3099,6 +3129,9 @@ document.addEventListener("click", (event) => {
   if (confirmDeleteMaster) return deleteMasterEntityFromModal(confirmDeleteMaster.dataset.confirmDeleteMasterEntity, confirmDeleteMaster.dataset.masterId, confirmDeleteMaster.dataset.masterVersion);
   const saveMaster = event.target.closest("[data-save-master-entity]");
   if (saveMaster) return saveMasterEntityFromModal(saveMaster.dataset.saveMasterEntity);
+  if (event.target.closest("[data-admin-new-project]")) return openMasterEntityModal("projects");
+  const editProjectMaster = event.target.closest("[data-admin-edit-project-master]");
+  if (editProjectMaster) return openMasterEntityModal("projects", editProjectMaster.dataset.adminEditProjectMaster);
   if (event.target.closest("[data-new-time-rule]")) return openTimeRuleModal();
   const editTimeRule = event.target.closest("[data-edit-time-rule]");
   if (editTimeRule) return openTimeRuleModal(editTimeRule.dataset.editTimeRule);
@@ -3237,6 +3270,11 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("change", (event) => {
   if (event.target.matches('[name="aiModelApiType"]')) return syncAiModelInterfaceFields(event.target);
+  if (event.target.matches('[data-master-entity-form="projects"] [data-master-field="project_type"]')) {
+    const allowance = event.target.closest('[data-master-entity-form="projects"]')?.querySelector('[data-master-field="npt_allowance_hours"]');
+    if (allowance) allowance.value = String(PROJECT_NPT_DEFAULT_HOURS[event.target.value] ?? 5);
+    return;
+  }
   if (event.target.matches("[data-admin-page-size]")) return setAdminPageSize(event.target.dataset.adminPageSize, Number(event.target.value || ADMIN_DEFAULT_PAGE_SIZE));
   if (event.target.matches("[data-admin-page-jump]")) return commitAdminPageJump(event.target);
   if (event.target.matches('[name="translationPolicyEnabled"]')) {

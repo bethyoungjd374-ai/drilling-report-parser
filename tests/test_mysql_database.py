@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -8,6 +9,9 @@ from drilling_report_parser.mysql_database import (
     DPR_TABLE_ALIASES,
     INIT_SQL_PATH,
     _ensure_master_data_v3_columns,
+    _drilling_basic_monthly_scope_row,
+    _drilling_workover_efficiency_monthly_row,
+    _workover_basic_monthly_job_row,
     _ensure_report_record_columns,
     load_analytics_view_rows,
     _migrate_dpr_table_names,
@@ -111,6 +115,133 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
         self.assertNotIn("CREATE TABLE IF NOT EXISTS rel_project_rig_assignment", schema)
         self.assertIn("hours_source VARCHAR(16)", schema)
         self.assertIn("activity.hours_source", schema)
+        self.assertIn("CREATE OR REPLACE VIEW vw_drilling_basic_monthly_source", schema)
+        self.assertIn("CREATE OR REPLACE VIEW vw_workover_basic_monthly_source", schema)
+        self.assertIn("CREATE OR REPLACE VIEW vw_drilling_workover_efficiency_monthly", schema)
+
+    def test_drilling_workover_efficiency_splits_npt_by_project_allowance(self) -> None:
+        result = _drilling_workover_efficiency_monthly_row({
+            "project_id": 14,
+            "project_name": "Workover Project",
+            "project_type": "workover",
+            "well_id": 25,
+            "well_name": "W-25",
+            "profession": "workover",
+            "team_name": "SINOPEC 933修井队",
+            "country_region": "厄瓜多尔",
+            "team_company": "华东工程",
+            "block_name": "SHUSHUFINDI",
+            "rig_model": "ZJ30",
+            "move_hours": 12.26,
+            "production_hours": 80,
+            "npt_hours": 15,
+            "npt_allowance_hours": 12,
+            "report_count": 4,
+            "operation_count": 20,
+        })
+
+        self.assertEqual(result["profession_label"], "修井")
+        self.assertEqual(result["team_code"], "SINOPEC 933修井队")
+        self.assertEqual(result["move_hours"], 12.3)
+        self.assertEqual(result["production_hours"], 80.0)
+        self.assertEqual(result["paid_repair_hours"], 12.0)
+        self.assertEqual(result["zero_rate_repair_hours"], 3.0)
+        self.assertEqual(result["accident_complex_hours"], 0.0)
+        self.assertEqual(result["other_hours"], 0.0)
+        self.assertEqual(result["well_efficiency"], round(80 / 95, 6))
+        self.assertEqual(result["nonproductive_description"], "")
+        self.assertEqual(result["remarks"], "")
+
+    def test_drilling_basic_monthly_row_uses_report_numbers_and_accumulated_hours(self) -> None:
+        common = {
+            "job_id": 11, "project_id": 2, "project_name": "P", "well_id": 3,
+            "well_name": "W-1", "job_sequence_no": 1, "team_code": "248", "team_name": "SINOPEC 248钻井队",
+            "daily_report_id": 1, "team_id": 9, "country_region": "厄瓜多尔",
+            "team_company": "西南工程", "block_name": "PUCUNA", "rig_model": "ZJ70D",
+            "well_profile_code": "定向井", "planned_start": datetime(2026, 1, 1),
+            "planned_end": datetime(2026, 1, 16), "design_depth_ft": 10000,
+        }
+        rows = [
+            {**common, "report_date": date(2026, 6, 30), "report_no": 1, "report_hours": 12, "daily_progress_ft": 100, "measured_depth_ft": 100},
+            {**common, "daily_report_id": 2, "report_date": date(2026, 7, 1), "report_no": 2, "report_hours": 24, "daily_progress_ft": 200, "measured_depth_ft": 300},
+            {**common, "daily_report_id": 3, "report_date": date(2026, 7, 2), "report_no": 3, "report_hours": 6, "daily_progress_ft": 50, "measured_depth_ft": 350},
+        ]
+        completion = [
+            {**common, "job_id": 12, "report_date": date(2026, 7, 3), "report_no": 1, "report_hours": 12},
+            {**common, "job_id": 12, "report_date": date(2026, 7, 4), "report_no": 2, "report_hours": 12},
+        ]
+
+        result = _drilling_basic_monthly_scope_row(
+            rows, completion, month_start=date(2026, 7, 1), month_end=date(2026, 7, 31), year_start=date(2026, 1, 1)
+        )
+
+        self.assertEqual(result["team_code"], "SINOPEC 248钻井队")
+        self.assertEqual(result["drilling_start_date"], "2026-06-30")
+        self.assertEqual(result["drilling_end_date"], "2026-07-02")
+        self.assertEqual(result["month_progress_ft"], 250.0)
+        self.assertEqual(result["year_progress_ft"], 350.0)
+        self.assertEqual(result["actual_drilling_cycle_days"], 1.75)
+        self.assertEqual(result["actual_completion_cycle_days"], 1.0)
+        self.assertEqual(result["well_control_incident"], "")
+        self.assertEqual(result["accident_waiting"], "")
+        self.assertEqual(result["remarks"], "")
+
+    def test_drilling_basic_monthly_row_supports_completion_only_monthly_scope(self) -> None:
+        completion = [{
+            "job_id": 12, "project_id": 2, "project_name": "P", "well_id": 3,
+            "well_name": "W-1", "job_sequence_no": 1, "team_code": "248",
+            "team_name": "SINOPEC 248钻井队", "daily_report_id": 4, "team_id": 9,
+            "report_date": date(2026, 7, 4), "report_no": 1, "report_hours": 12,
+            "planned_start": datetime(2026, 7, 4), "planned_end": datetime(2026, 7, 6),
+        }]
+
+        result = _drilling_basic_monthly_scope_row(
+            [], completion, month_start=date(2026, 7, 1), month_end=date(2026, 7, 31), year_start=date(2026, 1, 1)
+        )
+
+        self.assertEqual(result["drilling_start_date"], "")
+        self.assertIsNone(result["actual_drilling_cycle_days"])
+        self.assertEqual(result["completion_date"], "2026-07-04")
+        self.assertEqual(result["actual_completion_cycle_days"], 0.5)
+        self.assertEqual(result["planned_completion_cycle_days"], 2.0)
+
+    def test_workover_basic_monthly_row_uses_report_numbers_and_translated_primary_reason(self) -> None:
+        common = {
+            "job_id": 21, "project_id": 2, "project_name": "P", "well_id": 3,
+            "well_name": "W-1", "job_sequence_no": 1, "team_code": "932",
+            "team_name": "SINOPEC 932修井队", "team_id": 9, "country_region": "厄瓜多尔",
+            "team_company": "华东工程", "block_name": "AUCA", "rig_model": "XJ650",
+            "well_profile_name": "油井",
+        }
+        rows = [
+            {**common, "daily_report_id": 1, "report_date": date(2026, 6, 30), "report_no": 1, "primary_reason_source": "PULLING RUN BES", "primary_reason_translated": ""},
+            {**common, "daily_report_id": 2, "report_date": date(2026, 7, 1), "report_no": 2, "primary_reason_source": "PULLING RUN BES", "primary_reason_translated": "检泵"},
+            {**common, "daily_report_id": 3, "report_date": date(2026, 7, 2), "report_no": 3, "primary_reason_source": "PULLING RUN BES", "primary_reason_translated": ""},
+        ]
+
+        result = _workover_basic_monthly_job_row(rows)
+
+        self.assertEqual(result["team_code"], "SINOPEC 932修井队")
+        self.assertEqual(result["workover_start_date"], "2026-06-30")
+        self.assertEqual(result["workover_end_date"], "2026-07-02")
+        self.assertEqual(result["primary_operation"], "检泵")
+        self.assertEqual(result["primary_operation_source"], "PULLING RUN BES")
+        self.assertEqual(result["primary_operation_zh"], "检泵")
+        self.assertEqual(result["well_control_incident"], "")
+        self.assertEqual(result["accident_waiting"], "")
+        self.assertEqual(result["remarks"], "")
+
+    def test_project_schema_contains_type_and_npt_allowance(self) -> None:
+        schema = Path(INIT_SQL_PATH).read_text(encoding="utf-8")
+        cursor = FakeCursor([])
+
+        _ensure_master_data_v3_columns(cursor)
+
+        statements = "\n".join(cursor.statements)
+        self.assertIn("project_type VARCHAR(32) NOT NULL DEFAULT 'drilling'", schema)
+        self.assertIn("npt_allowance_hours DECIMAL(8,2) NOT NULL DEFAULT 5.00", schema)
+        self.assertIn("ALTER TABLE md_project ADD COLUMN project_type", statements)
+        self.assertIn("ALTER TABLE md_project ADD COLUMN npt_allowance_hours", statements)
 
     def test_well_profile_has_no_inferred_default_and_legacy_default_is_cleared(self) -> None:
         schema = Path(INIT_SQL_PATH).read_text(encoding="utf-8")

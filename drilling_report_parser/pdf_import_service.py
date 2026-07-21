@@ -14,7 +14,6 @@ from typing import Any, Callable
 
 from .completion_pdf_parser import parse_completion_pdf_daily_report
 from .drilling_pdf_templates import drilling_pdf_template_parser
-from .move_pdf_parser import parse_move_pdf_daily_report
 from .pdf_batch import PdfReportSegment
 from .report_type_detection import (
     REPORT_TYPE_LABELS,
@@ -46,10 +45,10 @@ def pdf_import_strategy(
     """Resolve one explicit parser strategy without cross-template fallback."""
 
     report_type = str(import_type or "").strip().lower()
-    if report_type == "drilling":
+    if report_type in {"drilling", "move"}:
         profile = str(template_profile or "original").strip().lower()
         return PdfImportStrategy(
-            import_type=report_type,
+            import_type="drilling",
             storage_report_type="drilling",
             parser=drilling_pdf_template_parser(profile, source_filename),
             template_profile=profile,
@@ -57,7 +56,6 @@ def pdf_import_strategy(
     strategies: dict[str, PdfParser] = {
         "completion": parse_completion_pdf_daily_report,
         "workover": parse_workover_pdf_daily_report,
-        "move": parse_move_pdf_daily_report,
     }
     parser = strategies.get(report_type)
     if parser is None:

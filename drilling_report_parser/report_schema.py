@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 
-REPORT_TYPES = {"drilling", "completion", "workover", "move"}
+REPORT_TYPES = {"drilling", "completion", "workover"}
 
-REPORT_TYPE_ORDER = ("drilling", "completion", "workover", "move")
+REPORT_TYPE_ORDER = ("drilling", "completion", "workover")
 
 COMMON_FIELD_COLUMNS = [
     "record_id",
@@ -22,7 +22,9 @@ COMMON_FIELD_COLUMNS = [
 ]
 
 DRILLING_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
-    "todayMd", "prevMd", "progress", "rotHrsToday", "lastCasing", "lastCasingSize",
+    "wellboreNo", "dfs", "todayMd", "prevMd", "progress", "rotHrsToday", "avgRopSlide", "avgRopRot",
+    "dailyCost", "cumulativeCost", "afeCost", "supervisor1", "supervisor2", "engineer", "pamEngineer",
+    "geologist", "totalPersonnel", "lastCasing", "lastCasingSize",
     "lastCasingDepth", "nextCasing", "nextCasingSize", "nextCasingDepth", "formTestType", "formTestEmw",
     "lastBopPressTest", "pumpRate", "pumpPress", "stringWeightUp", "stringWeightDown",
     "stringWeightUpDown", "torqueOffBottom", "torqueOnBottom",
@@ -31,24 +33,21 @@ DRILLING_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
     "gel30m", "apiWl", "oilPercent", "waterPercent", "sand", "ecd", "mudComments",
     "bitNo", "bitSize", "bitManufacturer", "bitSerial", "bitWearIodl", "bitWearBgor", "bhaNo", "bhaMdIn",
     "bhaMdOut", "bhaTotalLength", "safetyIncident", "environmentIncident",
-    "daysSinceRi", "daysSinceLta", "incidentComments",
+    "daysSinceRi", "daysSinceLta", "incidentComments", "groundElev", "afeMdDays",
 ]
 
 COMPLETION_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
+    "completionNo", "wellboreNo", "groundElev", "dol", "dfs", "rigContractName",
     "description", "operationStartDate", "afeCost", "dailyCost", "cumulativeCost",
     "supervisor1", "supervisor2", "engineer", "pamEngineer", "geologist",
     "totalPersonnel", "safetyComments",
 ]
 
 WORKOVER_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
-    "workoverNo", "description", "operationStartDate", "afeCost", "dailyCost",
+    "workoverNo", "wellboreNo", "groundElev", "dol", "dfs", "rigContractName",
+    "description", "operationStartDate", "afeCost", "dailyCost",
     "cumulativeCost", "supervisor1", "supervisor2", "engineer", "pamEngineer",
     "geologist", "totalPersonnel", "safetyComments",
-]
-
-MOVE_FIELD_COLUMNS = COMMON_FIELD_COLUMNS + [
-    "todayMd", "prevMd", "progress", "rotHrsToday", "groundElev", "afeMdDays",
-    "wellborePrefix",
 ]
 
 REPORT_TABLES = {
@@ -81,13 +80,6 @@ REPORT_TABLES = {
             "bulks": "workover_bulks",
             "mud_products": "workover_mud_products",
             "perforation_intervals": "workover_intervals",
-        },
-    },
-    "move": {
-        "field_sheet": "move_fields",
-        "field_columns": MOVE_FIELD_COLUMNS,
-        "multi": {
-            "operations": "move_operations",
         },
     },
 }
@@ -140,9 +132,5 @@ TRANSLATION_SCOPE_FIELDS = {
         "bulks": ["bulk"],
         "mud_products": ["product"],
         "perforation_intervals": ["formation", "charges", "status", "comments"],
-    },
-    "move": {
-        "report_fields": ["event", "primaryReason", "currentOps", "summary24h", "forecast24h", "otherRemarks"],
-        "operations": ["op_sub", "operation_details"],
     },
 }

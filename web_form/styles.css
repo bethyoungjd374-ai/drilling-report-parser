@@ -386,6 +386,335 @@
   .monthly-method-note span + span { margin-left: 0; white-space: normal; }
 }
 
+.drilling-basic-monthly-page {
+  min-width: 0;
+}
+
+.drilling-basic-monthly-workspace {
+  display: grid;
+  gap: 14px;
+  padding: 14px 0 28px;
+}
+
+.drilling-basic-monthly-toolbar {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 14px 16px;
+}
+
+.drilling-basic-monthly-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.drilling-basic-monthly-filters label {
+  display: grid;
+  gap: 5px;
+  color: #5b7182;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.drilling-basic-monthly-filters input,
+.drilling-basic-monthly-filters select {
+  min-width: 148px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #cbdce8;
+  border-radius: 7px;
+  background: #fff;
+  color: #24475f;
+  font: inherit;
+}
+
+.monthly-month-picker {
+  position: relative;
+  flex: 0 0 148px;
+  width: 148px;
+}
+
+.monthly-month-trigger {
+  display: flex;
+  width: 100%;
+  height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  border: 1px solid #cbdce8;
+  border-radius: 7px;
+  background: #fff;
+  color: #24475f;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.monthly-month-trigger:hover {
+  border-color: #7bb7e5;
+}
+
+.monthly-month-trigger:focus-visible,
+.monthly-month-trigger[aria-expanded="true"] {
+  border-color: #178ee4;
+  box-shadow: 0 0 0 2px rgba(23, 142, 228, 0.16);
+  outline: none;
+}
+
+.monthly-month-trigger:disabled {
+  background: #f3f6f8;
+  color: #9aaab5;
+  cursor: not-allowed;
+}
+
+.monthly-month-trigger img {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  opacity: 0.58;
+}
+
+.monthly-month-popover {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 270px;
+  overflow: hidden;
+  border: 1px solid #e2e8ed;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(21, 50, 70, 0.16);
+}
+
+.monthly-month-popover[hidden] {
+  display: none;
+}
+
+.monthly-month-picker-header {
+  display: grid;
+  height: 40px;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.monthly-month-picker-header strong {
+  color: #20262b;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.monthly-month-year-nav {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.monthly-month-year-nav:hover:not(:disabled) {
+  background: #f4f8fb;
+}
+
+.monthly-month-year-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.28;
+}
+
+.monthly-month-year-nav img {
+  width: 12px;
+  height: 12px;
+  opacity: 0.62;
+}
+
+.monthly-month-year-nav img + img {
+  margin-left: -7px;
+}
+
+.monthly-month-year-nav.previous img {
+  transform: rotate(90deg);
+}
+
+.monthly-month-year-nav.next img {
+  transform: rotate(-90deg);
+}
+
+.monthly-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 6px;
+  padding: 10px 12px 12px;
+}
+
+.monthly-month-option {
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #20262b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.monthly-month-option:hover:not(:disabled) {
+  background: #eaf5fd;
+  color: #0b78c8;
+}
+
+.monthly-month-option.selected {
+  background: #178ee4;
+  color: #fff;
+}
+
+.monthly-month-option:disabled {
+  color: #c7cfd5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .monthly-month-popover {
+    width: min(270px, calc(100vw - 48px));
+  }
+}
+
+.drilling-basic-monthly-report-panel {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.drilling-basic-monthly-table-wrap {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #b5bdc3;
+  background: #fff;
+}
+
+.drilling-basic-monthly-table {
+  width: 2580px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+  color: #111;
+  font-family: SimSun, "宋体", serif;
+  font-size: 11px;
+}
+
+.workover-basic-monthly-table {
+  width: 1773px;
+}
+
+.drilling-workover-efficiency-monthly-table {
+  width: 2239px;
+}
+
+.drilling-workover-efficiency-monthly-table .efficiency-template-header-row th {
+  height: 30px;
+}
+
+.drilling-workover-efficiency-monthly-table .efficiency-template-subheader-row th {
+  height: 42px;
+}
+
+.drilling-basic-monthly-table th,
+.drilling-basic-monthly-table td {
+  box-sizing: border-box;
+  padding: 2px 4px;
+  border: 1px solid #555;
+  background: #fff;
+  color: #111;
+  text-align: center;
+  vertical-align: middle;
+  word-break: break-all;
+}
+
+.drilling-basic-monthly-table .template-title-row th {
+  height: 38px;
+  border-bottom: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.drilling-basic-monthly-table .template-meta-row th {
+  height: 27px;
+  padding: 3px 8px;
+  border-top: 0;
+  text-align: left;
+  font-weight: 700;
+}
+
+.drilling-basic-monthly-table .template-meta-row th div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.drilling-basic-monthly-table .template-meta-row .template-fill-time {
+  margin-left: 64px;
+  white-space: nowrap;
+}
+
+.drilling-basic-monthly-table .template-meta-row b {
+  font-weight: 700;
+}
+
+.drilling-basic-monthly-table .template-header-row th {
+  height: 52px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.drilling-basic-monthly-table .template-data-row td {
+  height: 22px;
+}
+
+.drilling-basic-monthly-table .template-highlight {
+  background: #fff;
+}
+
+.drilling-basic-monthly-table .template-summary-row td {
+  height: 24px;
+}
+
+.drilling-basic-monthly-table .template-note-title td,
+.drilling-basic-monthly-table .template-note-row td {
+  border-right: 0;
+  border-left: 0;
+  text-align: left;
+}
+
+.drilling-basic-monthly-table .template-note-title td {
+  height: 28px;
+  font-weight: 700;
+}
+
+.drilling-basic-monthly-table .template-note-row td {
+  height: 20px;
+  border-top: 0;
+  border-bottom: 0;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .drilling-basic-monthly-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1441,6 +1770,15 @@ textarea {
 .report-form .field-grid input[type="date"],
 .report-form .field-grid input[type="number"] {
   font-variant-numeric: tabular-nums;
+}
+
+.report-form input[type="date"].blank-date-value::-webkit-datetime-edit {
+  color: transparent;
+  visibility: hidden;
+}
+
+.report-form input[type="date"].blank-date-value::-webkit-calendar-picker-indicator {
+  visibility: visible;
 }
 
 textarea {

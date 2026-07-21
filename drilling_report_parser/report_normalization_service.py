@@ -267,7 +267,6 @@ def synchronize_structured_report_facts(
         "drilling": ("dpr_drilling_report", "dpr_drilling_fluid_property"),
         "completion": ("dpr_completion_report",),
         "workover": ("dpr_workover_report",),
-        "move": ("dpr_move_report",),
     }
     all_typed_tables = {table for tables in typed_tables.values() for table in tables}
     active_tables = set(typed_tables.get(report_type, ()))
@@ -275,6 +274,15 @@ def synchronize_structured_report_facts(
         cursor.execute(f"DELETE FROM {table} WHERE daily_report_id=%s", (daily_report_id,))
 
     if report_type == "drilling":
+        afe_depth, afe_days = parse_afe_depth_days(fields.get("afeMdDays"))
+        operation_text = " ".join(
+            _text(row.get("operation_details"))
+            for row in (payload.get("operations", []) or [])
+            if isinstance(row, dict)
+        )
+        loads_today, loads_total, loads_planned = _move_load_counts(
+            fields.get("summary24h"), fields.get("otherRemarks"), operation_text
+        )
         drilling_fields = {
             "measured_depth_ft": _nullable_float(fields.get("todayMd")),
             "previous_measured_depth_ft": _nullable_float(fields.get("prevMd")),
@@ -310,6 +318,14 @@ def synchronize_structured_report_facts(
             "days_since_recordable_incident": _nullable_int(fields.get("daysSinceRi")),
             "days_since_lost_time_accident": _nullable_int(fields.get("daysSinceLta")),
             "incident_comments": _nullable_text(fields.get("incidentComments")),
+            "ground_elevation_ft": _nullable_float(fields.get("groundElev")),
+            "afe_design_depth_ft": afe_depth,
+            "afe_design_days": afe_days,
+            "rig_move_progress_pct": _percentage_from_text(fields.get("summary24h"), "RIG MOVE"),
+            "rig_up_progress_pct": _percentage_from_text(fields.get("summary24h"), "RIG UP"),
+            "loads_moved_today": loads_today,
+            "loads_moved_total": loads_total,
+            "loads_planned_total": loads_planned,
         }
         combined_up, combined_down = parse_string_weight_pair(fields.get("stringWeightUpDown"))
         if drilling_fields["string_weight_up_kip"] is None:
@@ -358,29 +374,6 @@ def synchronize_structured_report_facts(
         if report_type == "workover":
             service_fields = {"workover_no": _text(fields.get("workoverNo")), **service_fields}
         _upsert_typed_extension(cursor, f"dpr_{report_type}_report", daily_report_id, service_fields, fields, actor)
-    elif report_type == "move":
-        afe_depth, afe_days = parse_afe_depth_days(fields.get("afeMdDays"))
-        operation_text = " ".join(
-            _text(row.get("operation_details"))
-            for row in (payload.get("operations", []) or [])
-            if isinstance(row, dict)
-        )
-        loads_today, loads_total, loads_planned = _move_load_counts(
-            fields.get("summary24h"), fields.get("otherRemarks"), operation_text
-        )
-        move_fields = {
-            "ground_elevation_ft": _nullable_float(fields.get("groundElev")),
-            "afe_design_depth_ft": afe_depth,
-            "afe_design_days": afe_days,
-            "rig_move_progress_pct": _percentage_from_text(fields.get("summary24h"), "RIG MOVE"),
-            "rig_up_progress_pct": _percentage_from_text(fields.get("summary24h"), "RIG UP"),
-            "loads_moved_today": loads_today,
-            "loads_moved_total": loads_total,
-            "loads_planned_total": loads_planned,
-            "wellbore_prefix": _text(fields.get("wellborePrefix")),
-        }
-        _upsert_typed_extension(cursor, "dpr_move_report", daily_report_id, move_fields, fields, actor)
-
     shared_bulk_mapping = {
         "material_name": ("bulk", _text), "opening_quantity": ("qty_start", _nullable_float),
         "received_quantity": ("qty_received", _nullable_float),

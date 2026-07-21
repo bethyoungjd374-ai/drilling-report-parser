@@ -7,7 +7,7 @@ USE drilling_report_db;
 CREATE TABLE IF NOT EXISTS dpr_report_record (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   record_id VARCHAR(191) NOT NULL COMMENT '稳定日报业务ID',
-  report_type VARCHAR(32) NOT NULL COMMENT '日报类型：drilling/completion/workover/move',
+  report_type VARCHAR(32) NOT NULL COMMENT '日报类型：drilling/completion/workover；搬迁由drilling的Event区分',
   source_file VARCHAR(512) NOT NULL DEFAULT '',
   parser VARCHAR(128) NOT NULL DEFAULT '',
   source_page_start INT UNSIGNED NULL COMMENT '合并PDF内的起始页码，从1开始',
@@ -447,6 +447,8 @@ CREATE TABLE IF NOT EXISTS md_project (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   project_code VARCHAR(128) NOT NULL,
   project_name VARCHAR(255) NOT NULL,
+  project_type VARCHAR(32) NOT NULL DEFAULT 'drilling',
+  npt_allowance_hours DECIMAL(8,2) NOT NULL DEFAULT 5.00,
   contract_id BIGINT UNSIGNED NULL,
   service_scope VARCHAR(255) NOT NULL DEFAULT '',
   valid_from DATE NULL,
@@ -461,7 +463,9 @@ CREATE TABLE IF NOT EXISTS md_project (
   PRIMARY KEY (id),
   UNIQUE KEY uq_md_project_code (project_code),
   KEY idx_md_project_contract (contract_id),
-  CONSTRAINT fk_md_project_contract FOREIGN KEY (contract_id) REFERENCES md_contract(id)
+  CONSTRAINT fk_md_project_contract FOREIGN KEY (contract_id) REFERENCES md_contract(id),
+  CONSTRAINT ck_md_project_type CHECK (project_type IN ('drilling','completion','workover')),
+  CONSTRAINT ck_md_project_npt_allowance CHECK (npt_allowance_hours >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS md_alias (
@@ -605,7 +609,7 @@ CREATE TABLE IF NOT EXISTS dpr_report (
   CONSTRAINT fk_fact_daily_report_job FOREIGN KEY (job_id) REFERENCES biz_job(id),
   CONSTRAINT fk_fact_daily_report_rig FOREIGN KEY (rig_id) REFERENCES md_rig(id),
   CONSTRAINT fk_fact_daily_report_well FOREIGN KEY (well_id) REFERENCES md_well(id),
-  CONSTRAINT ck_fact_daily_report_type CHECK (report_type IN ('drilling','completion','workover','move'))
+  CONSTRAINT ck_fact_daily_report_type CHECK (report_type IN ('drilling','completion','workover'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS dpr_operation (
@@ -839,6 +843,14 @@ CREATE TABLE IF NOT EXISTS dpr_drilling_report (
   days_since_recordable_incident INT NULL COMMENT '距上次可记录事故天数',
   days_since_lost_time_accident INT NULL COMMENT '距上次损失工时事故天数',
   incident_comments TEXT NULL COMMENT '事故说明',
+  ground_elevation_ft DECIMAL(14,3) NULL COMMENT '地面海拔，单位ft；搬迁Event适用',
+  afe_design_depth_ft DECIMAL(14,3) NULL COMMENT 'AFE设计井深，单位ft；搬迁Event适用',
+  afe_design_days DECIMAL(10,3) NULL COMMENT 'AFE设计周期，单位d；搬迁Event适用',
+  rig_move_progress_pct DECIMAL(5,2) NULL COMMENT '搬迁进度，单位%',
+  rig_up_progress_pct DECIMAL(5,2) NULL COMMENT '安装进度，单位%',
+  loads_moved_today INT UNSIGNED NULL COMMENT '当日搬运载荷数量',
+  loads_moved_total INT UNSIGNED NULL COMMENT '累计已搬运载荷数量',
+  loads_planned_total INT UNSIGNED NULL COMMENT '计划搬运载荷总数',
   source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
   version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -929,29 +941,6 @@ CREATE TABLE IF NOT EXISTS dpr_workover_report (
   PRIMARY KEY (daily_report_id),
   CONSTRAINT fk_fact_workover_parameter_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='修井日报扩展参数标准事实';
-
-CREATE TABLE IF NOT EXISTS dpr_move_report (
-  daily_report_id BIGINT UNSIGNED NOT NULL COMMENT '标准日报事实ID',
-  ground_elevation_ft DECIMAL(14,3) NULL COMMENT '地面海拔，单位ft',
-  afe_design_depth_ft DECIMAL(14,3) NULL COMMENT 'AFE设计井深，单位ft',
-  afe_design_days DECIMAL(10,3) NULL COMMENT 'AFE设计周期，单位d',
-  rig_move_progress_pct DECIMAL(5,2) NULL COMMENT '搬迁进度，单位%',
-  rig_up_progress_pct DECIMAL(5,2) NULL COMMENT '安装进度，单位%',
-  loads_moved_today INT UNSIGNED NULL COMMENT '当日搬运载荷数量',
-  loads_moved_total INT UNSIGNED NULL COMMENT '累计已搬运载荷数量',
-  loads_planned_total INT UNSIGNED NULL COMMENT '计划搬运载荷总数',
-  wellbore_prefix VARCHAR(64) NOT NULL DEFAULT '' COMMENT '井号前缀',
-  source_hash CHAR(64) NOT NULL DEFAULT '' COMMENT '来源字段内容哈希',
-  version INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  created_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建人',
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  updated_by VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新人',
-  PRIMARY KEY (daily_report_id),
-  CONSTRAINT fk_fact_move_parameter_report FOREIGN KEY (daily_report_id) REFERENCES dpr_report(id) ON DELETE CASCADE,
-  CONSTRAINT ck_fact_move_progress CHECK (rig_move_progress_pct IS NULL OR (rig_move_progress_pct >= 0 AND rig_move_progress_pct <= 100)),
-  CONSTRAINT ck_fact_rig_up_progress CHECK (rig_up_progress_pct IS NULL OR (rig_up_progress_pct >= 0 AND rig_up_progress_pct <= 100))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='搬迁日报扩展参数标准事实';
 
 CREATE TABLE IF NOT EXISTS dpr_drilling_directional_survey (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '测斜事实ID',
@@ -1459,6 +1448,196 @@ SELECT
   CASE WHEN created_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(created_at AS DATETIME) END AS created_at,
   CASE WHEN updated_at REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN CAST(updated_at AS DATETIME) END AS updated_at
 FROM dpr_report_record;
+
+CREATE OR REPLACE VIEW vw_drilling_basic_monthly_source AS
+SELECT
+  report.id AS daily_report_id,
+  report.record_id,
+  report.report_date,
+  report.report_no,
+  report.report_type,
+  report.project_id,
+  project.project_code,
+  project.project_name,
+  report.job_id,
+  job.job_code,
+  job.job_type,
+  job.sequence_no AS job_sequence_no,
+  job.planned_start,
+  job.planned_end,
+  COALESCE(job.planned_depth_ft, well.planned_td_md_m * 3.280839895) AS design_depth_ft,
+  report.well_id,
+  well.well_code,
+  well.well_name,
+  well.well_profile_code,
+  COALESCE(NULLIF(well_profile_value.value_name,''), well.well_profile_code) AS well_profile_name,
+  block.block_code,
+  block.block_name,
+  COALESCE(NULLIF(region.region_name,''), NULLIF(block.country,'')) AS country_region,
+  report.rig_id,
+  rig.rig_code,
+  rig.rig_name,
+  team.id AS team_id,
+  team.team_code,
+  team.team_name,
+  team_company.organization_name AS team_company,
+  COALESCE(NULLIF(rig.model_code,''), NULLIF(rig_model.model_code,''), NULLIF(team.model_code,''), rig_model.model_name) AS rig_model,
+  drilling.measured_depth_ft,
+  drilling.daily_progress_ft,
+  duration.report_hours,
+  duration.report_ended_at,
+  duration.operation_count
+FROM dpr_report report
+JOIN biz_job job ON job.id = report.job_id
+JOIN md_project project ON project.id = report.project_id
+JOIN md_well well ON well.id = report.well_id
+LEFT JOIN md_block block ON block.id = well.block_id
+LEFT JOIN md_geo_region region ON region.id = block.region_id
+LEFT JOIN md_appendix_category well_profile_category ON well_profile_category.category_code = 'WELL_PROFILE'
+LEFT JOIN md_appendix_value well_profile_value ON well_profile_value.category_id = well_profile_category.id
+  AND well_profile_value.value_code = well.well_profile_code
+LEFT JOIN md_rig rig ON rig.id = report.rig_id
+LEFT JOIN md_rig_model rig_model ON rig_model.id = rig.rig_model_id
+LEFT JOIN md_team team ON team.id = rig.team_id
+LEFT JOIN md_organization team_company ON team_company.id = team.company_id
+LEFT JOIN dpr_drilling_report drilling ON drilling.daily_report_id = report.id
+LEFT JOIN (
+  SELECT
+    daily_report_id,
+    ROUND(SUM(COALESCE(hours,0)),3) AS report_hours,
+    MAX(ended_at) AS report_ended_at,
+    COUNT(*) AS operation_count
+  FROM dpr_operation
+  GROUP BY daily_report_id
+) duration ON duration.daily_report_id = report.id
+WHERE report.report_type IN ('drilling','completion')
+  AND report.match_status = 'MATCHED'
+  AND report.normalization_status = 'NORMALIZED';
+
+CREATE OR REPLACE VIEW vw_workover_basic_monthly_source AS
+SELECT
+  report.id AS daily_report_id,
+  report.record_id,
+  report.report_date,
+  report.report_no,
+  report.report_type,
+  report.project_id,
+  project.project_code,
+  project.project_name,
+  report.job_id,
+  job.job_code,
+  job.job_type,
+  job.sequence_no AS job_sequence_no,
+  report.well_id,
+  well.well_code,
+  well.well_name,
+  well.well_profile_code,
+  COALESCE(NULLIF(well_profile_value.value_name,''), well.well_profile_code) AS well_profile_name,
+  block.block_code,
+  block.block_name,
+  COALESCE(NULLIF(region.region_name,''), NULLIF(block.country,'')) AS country_region,
+  report.rig_id,
+  rig.rig_code,
+  rig.rig_name,
+  team.id AS team_id,
+  team.team_code,
+  team.team_name,
+  team_company.organization_name AS team_company,
+  COALESCE(NULLIF(rig.model_code,''), NULLIF(rig_model.model_code,''), NULLIF(team.model_code,''), rig_model.model_name) AS rig_model,
+  summary.primary_reason AS primary_reason_source,
+  primary_reason_translation.translated_text AS primary_reason_translated
+FROM dpr_report report
+JOIN biz_job job ON job.id = report.job_id
+JOIN md_project project ON project.id = report.project_id
+JOIN md_well well ON well.id = report.well_id
+LEFT JOIN md_block block ON block.id = well.block_id
+LEFT JOIN md_geo_region region ON region.id = block.region_id
+LEFT JOIN md_appendix_category well_profile_category ON well_profile_category.category_code = 'WELL_PROFILE'
+LEFT JOIN md_appendix_value well_profile_value ON well_profile_value.category_id = well_profile_category.id
+  AND well_profile_value.value_code = well.well_profile_code
+LEFT JOIN md_rig rig ON rig.id = report.rig_id
+LEFT JOIN md_rig_model rig_model ON rig_model.id = rig.rig_model_id
+LEFT JOIN md_team team ON team.id = rig.team_id
+LEFT JOIN md_organization team_company ON team_company.id = team.company_id
+LEFT JOIN dpr_report_summary summary ON summary.daily_report_id = report.id
+LEFT JOIN (
+  SELECT record_id, MAX(NULLIF(translated_text,'')) AS translated_text
+  FROM translation_content
+  WHERE field_code = 'report_fields.primaryReason'
+    AND target_language IN ('zh','zh-CN')
+    AND UPPER(translation_status) = 'COMPLETED'
+  GROUP BY record_id
+) primary_reason_translation ON primary_reason_translation.record_id = report.record_id
+WHERE report.report_type = 'workover'
+  AND report.match_status = 'MATCHED'
+  AND report.normalization_status = 'NORMALIZED';
+
+CREATE OR REPLACE VIEW vw_drilling_workover_efficiency_monthly AS
+SELECT
+  CAST(DATE_FORMAT(report.report_date, '%Y-%m-01') AS DATE) AS month_start,
+  report.project_id,
+  MAX(project.project_code) AS project_code,
+  MAX(project.project_name) AS project_name,
+  MAX(project.project_type) AS project_type,
+  MAX(project.npt_allowance_hours) AS npt_allowance_hours,
+  report.well_id,
+  MAX(well.well_code) AS well_code,
+  MAX(well.well_name) AS well_name,
+  CASE
+    WHEN report.report_type = 'workover' OR project.project_type = 'workover' OR project.project_name LIKE '%修井%' THEN 'workover'
+    ELSE 'drilling'
+  END AS profession,
+  GROUP_CONCAT(DISTINCT COALESCE(NULLIF(team.team_name,''), NULLIF(team.team_code,'')) ORDER BY team.team_name SEPARATOR ' / ') AS team_name,
+  GROUP_CONCAT(DISTINCT team.team_code ORDER BY team.team_code SEPARATOR ' / ') AS team_code,
+  GROUP_CONCAT(DISTINCT team_company.organization_name ORDER BY team_company.organization_name SEPARATOR ' / ') AS team_company,
+  GROUP_CONCAT(DISTINCT COALESCE(NULLIF(region.region_name,''), NULLIF(block.country,'')) ORDER BY block.country SEPARATOR ' / ') AS country_region,
+  GROUP_CONCAT(DISTINCT COALESCE(NULLIF(block.block_name,''), NULLIF(block.block_code,'')) ORDER BY block.block_name SEPARATOR ' / ') AS block_name,
+  GROUP_CONCAT(DISTINCT COALESCE(NULLIF(rig.model_code,''), NULLIF(rig_model.model_code,''), NULLIF(team.model_code,''), NULLIF(rig_model.model_name,'')) ORDER BY rig.rig_name SEPARATOR ' / ') AS rig_model,
+  ROUND(SUM(CASE
+    WHEN UPPER(COALESCE(summary.event_name,'')) REGEXP 'RIG[[:space:]_-]*MOV(E|ING)|MOBILI[ZS]ATION|MOVILIZ|搬迁'
+    THEN COALESCE(operation.statistical_hours, operation.declared_hours, 0)
+    ELSE 0
+  END), 3) AS move_hours,
+  ROUND(SUM(CASE
+    WHEN NOT (UPPER(COALESCE(summary.event_name,'')) REGEXP 'RIG[[:space:]_-]*MOV(E|ING)|MOBILI[ZS]ATION|MOVILIZ|搬迁')
+      AND operation.statistics_status = 'READY'
+      AND operation.effective_op_type IN ('P','SC')
+    THEN COALESCE(operation.statistical_hours, 0)
+    ELSE 0
+  END), 3) AS production_hours,
+  ROUND(SUM(CASE
+    WHEN NOT (UPPER(COALESCE(summary.event_name,'')) REGEXP 'RIG[[:space:]_-]*MOV(E|ING)|MOBILI[ZS]ATION|MOVILIZ|搬迁')
+      AND operation.statistics_status = 'READY'
+      AND operation.effective_op_type = 'NPT'
+    THEN COALESCE(operation.statistical_hours, 0)
+    ELSE 0
+  END), 3) AS npt_hours,
+  COUNT(DISTINCT report.record_id) AS report_count,
+  COUNT(DISTINCT operation.activity_id) AS operation_count
+FROM dpr_report report
+JOIN md_project project ON project.id = report.project_id
+JOIN md_well well ON well.id = report.well_id
+LEFT JOIN md_block block ON block.id = well.block_id
+LEFT JOIN md_geo_region region ON region.id = block.region_id
+LEFT JOIN md_rig rig ON rig.id = report.rig_id
+LEFT JOIN md_rig_model rig_model ON rig_model.id = rig.rig_model_id
+LEFT JOIN md_team team ON team.id = rig.team_id
+LEFT JOIN md_organization team_company ON team_company.id = team.company_id
+LEFT JOIN dpr_report_summary summary ON summary.daily_report_id = report.id
+LEFT JOIN vw_operation_structured operation ON operation.record_id = report.record_id
+WHERE report.report_type IN ('drilling','completion','workover')
+  AND report.match_status = 'MATCHED'
+  AND report.normalization_status = 'NORMALIZED'
+  AND report.project_id IS NOT NULL
+  AND report.well_id IS NOT NULL
+GROUP BY
+  CAST(DATE_FORMAT(report.report_date, '%Y-%m-01') AS DATE),
+  report.project_id,
+  report.well_id,
+  CASE
+    WHEN report.report_type = 'workover' OR project.project_type = 'workover' OR project.project_name LIKE '%修井%' THEN 'workover'
+    ELSE 'drilling'
+  END;
 
 CREATE OR REPLACE VIEW vw_monthly_rig_workload AS
 SELECT

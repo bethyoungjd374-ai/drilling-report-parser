@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" type="image/svg+xml" href="./assets/drilling-completion-logo.svg" />
-    <link rel="stylesheet" href="./styles.css?v=monthly-profile-source-v1" />
+    <link rel="stylesheet" href="./styles.css?v=monthly-grid-picker-v2" />
   </head>
   <body>
     <div class="app-shell">
@@ -41,9 +41,20 @@
             <div class="menu-items">
               <a href="#" class="menu-link" data-menu-target="rig-production-summary" data-title-i18n="menuRigProductionSummary" data-desc-i18n="descRigProductionSummary"><img class="menu-item-icon" src="./icons/nav/clock-hour-4.svg" alt="" /><span data-i18n="menuRigProductionSummary">时效分析</span></a>
               <a href="#" class="menu-link" data-menu-target="production-report" data-title-i18n="menuProductionDetailReport" data-desc-i18n="descProductionDetailReport"><img class="menu-item-icon" src="./icons/nav/report-analytics.svg" alt="" /><span data-i18n="menuProductionDetailReport">生产报表</span></a>
-              <a href="#" class="menu-link" data-menu-target="monthly-efficiency-report" data-title-i18n="menuMonthlyEfficiencyReport" data-desc-i18n="descMonthlyEfficiencyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuMonthlyEfficiencyReport">月度时效报表</span></a>
               <a href="#" class="menu-link" data-menu-target="well-npt-confirm" data-title-i18n="menuWellNptConfirm" data-desc-i18n="descWellNptConfirm"><img class="menu-item-icon" src="./icons/nav/hourglass.svg" alt="" /><span data-i18n="menuWellNptConfirm">NPT统计</span></a>
               <a href="#" class="menu-link" data-menu-target="rig-npt-ranking" data-title-i18n="menuRigNptRanking" data-desc-i18n="descRigNptRanking"><img class="menu-item-icon" src="./icons/nav/clipboard-check.svg" alt="" /><span data-i18n="menuRigNptRanking">NPT确认</span></a>
+            </div>
+          </div>
+          <div class="menu-group open">
+            <button class="menu-group-toggle" type="button" aria-expanded="true">
+              <img class="menu-group-icon" src="./icons/nav/file-report.svg" alt="" />
+              <span data-i18n="menuMonthlyReport">月度报表</span>
+              <img class="menu-chevron" src="./icons/nav/chevron-down.svg" alt="" />
+            </button>
+            <div class="menu-items">
+              <a href="#" class="menu-link" data-menu-target="drilling-basic-monthly-report" data-title-i18n="menuDrillingBasicMonthlyReport" data-desc-i18n="descDrillingBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuDrillingBasicMonthlyReport">钻井基础指标数据月报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="workover-basic-monthly-report" data-title-i18n="menuWorkoverBasicMonthlyReport" data-desc-i18n="descWorkoverBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuWorkoverBasicMonthlyReport">修井基础指标数据月报表</span></a>
+              <a href="#" class="menu-link" data-menu-target="drilling-workover-efficiency-monthly-report" data-title-i18n="menuDrillingWorkoverEfficiencyMonthlyReport" data-desc-i18n="descDrillingWorkoverEfficiencyMonthlyReport"><img class="menu-item-icon" src="./icons/nav/calendar-stats.svg" alt="" /><span data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井基础时效数据月报</span></a>
             </div>
           </div>
           <div class="menu-group open">
@@ -132,14 +143,23 @@
                 <label>Date<input name="reportDate" type="date" required /></label>
                 <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
                 <label>Wellbore<input name="wellbore" required /></label>
+                <label>Wellbore No.<input name="wellboreNo" /></label>
                 <label>Rig<input name="rig" required /></label>
                 <label>Primary Reason<input name="primaryReason" /></label>
                 <label>AFE Number<input name="afeNumber" /></label>
                 <label>Ref Datum (ft)<input name="refDatum" /></label>
+                <label>DFS (ft)<input name="dfs" type="number" min="0" step="0.01" /></label>
+                <label>Ground Elevation (ft)<input name="groundElev" type="number" step="0.01" /></label>
+                <label>AFE MD / Days<input name="afeMdDays" /></label>
+                <label>Daily Cost (USD)<input name="dailyCost" /></label>
+                <label>Cumulative Cost (USD)<input name="cumulativeCost" /></label>
+                <label>AFE Cost (USD)<input name="afeCost" /></label>
                 <label>Today's MD (ft)<input name="todayMd" type="number" min="0" step="0.01" required /></label>
                 <label>Prev MD (ft)<input name="prevMd" type="number" min="0" step="0.01" required /></label>
                 <label>Progress (ft)<input name="progress" type="number" min="0" step="0.01" required /></label>
                 <label>Rot Hrs Today (h)<input name="rotHrsToday" type="number" min="0" max="24" step="0.01" /></label>
+                <label>Avg ROP Slide (ft/h)<input name="avgRopSlide" type="number" min="0" step="0.01" /></label>
+                <label>Avg ROP Rot (ft/h)<input name="avgRopRot" type="number" min="0" step="0.01" /></label>
               </div>
             </section>
 
@@ -155,6 +175,21 @@
               </div>
             </section>
 
+            <section class="panel" id="drilling-personnel">
+              <div class="panel-heading">
+                <h2 data-i18n="sectionPersonnel">人员信息</h2>
+                <span class="panel-note">对应 PDF PERSONNEL 区域</span>
+              </div>
+              <div class="field-grid four">
+                <label>Supervisor 1<input name="supervisor1" /></label>
+                <label>Supervisor 2<input name="supervisor2" /></label>
+                <label>Engineer<input name="engineer" /></label>
+                <label>PAM Engineer<input name="pamEngineer" /></label>
+                <label>Geologist<input name="geologist" /></label>
+                <label>Total Personnel<input name="totalPersonnel" type="number" min="0" step="1" /></label>
+              </div>
+            </section>
+
             <section class="panel" id="well-control">
               <div class="panel-heading">
                 <h2 data-i18n="sectionWellControl">施工参数</h2>
@@ -167,7 +202,7 @@
                 <label>Next Casing Depth (ft)<input name="nextCasingDepth" type="number" min="0" step="0.01" inputmode="decimal" /></label>
                 <label>Formation Test Type<select name="formTestType"><option value="">-</option><option value="FIT">FIT</option><option value="LOT">LOT</option></select></label>
                 <label>Formation Test EMW (ppg)<input name="formTestEmw" type="number" min="0" step="0.01" inputmode="decimal" /></label>
-                <label>Last BOP Pressure Test Date<input name="lastBopPressTest" type="date" /></label>
+                <label>Last BOP Pressure Test Date<input name="lastBopPressTest" type="date" data-blank-date /></label>
                 <label>Pump Rate (gpm)<input name="pumpRate" type="number" min="0" step="0.1" /></label>
                 <label>Pump Press (psi)<input name="pumpPress" type="number" min="0" step="0.01" /></label>
                 <label>String Weight Up (kip)<input name="stringWeightUp" type="number" min="0" step="0.1" inputmode="decimal" /></label>
@@ -369,14 +404,20 @@
                   <label>Event<input name="event" required /></label>
                   <label>Date<input name="reportDate" type="date" required /></label>
                   <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
+                  <label>Completion No.<input name="completionNo" /></label>
                   <label>Wellbore<input name="wellbore" required /></label>
+                  <label>Wellbore No.<input name="wellboreNo" /></label>
                   <label>Rig<input name="rig" required /></label>
+                  <label>Rig Contract Name<input name="rigContractName" /></label>
                   <label>Primary Reason<input name="primaryReason" /></label>
                   <label>Description<input name="description" /></label>
                   <label>Operation Start<input name="operationStartDate" type="date" /></label>
                   <label>AFP Number<input name="afeNumber" /></label>
                   <label>AFP Cost (USD)<input name="afeCost" /></label>
                   <label>Ref Datum (ft)<input name="refDatum" /></label>
+                  <label>GLE (ft)<input name="groundElev" type="number" step="0.01" /></label>
+                  <label>DOL (day)<input name="dol" type="number" min="0" step="0.01" /></label>
+                  <label>DFS (day)<input name="dfs" type="number" min="0" step="0.01" /></label>
                   <label>Daily Cost (USD)<input name="dailyCost" /></label>
                   <label>Cumulative Cost (USD)<input name="cumulativeCost" /></label>
                   <label>Total Personnel<input name="totalPersonnel" type="number" min="0" step="0.01" /></label>
@@ -524,13 +565,18 @@
                   <label>Report No<input name="reportNo" type="number" min="1" step="1" required /></label>
                   <label>WO No<input name="workoverNo" /></label>
                   <label>Wellbore<input name="wellbore" required /></label>
+                  <label>Wellbore No.<input name="wellboreNo" /></label>
                   <label>Rig<input name="rig" required /></label>
+                  <label>Rig Contract Name<input name="rigContractName" /></label>
                   <label>Primary Reason<input name="primaryReason" /></label>
                   <label>Description<input name="description" /></label>
                   <label>Operation Start<input name="operationStartDate" type="date" /></label>
                   <label>AFP Number<input name="afeNumber" /></label>
                   <label>AFP Cost (USD)<input name="afeCost" /></label>
                   <label>Ref Datum (ft)<input name="refDatum" /></label>
+                  <label>GLE (ft)<input name="groundElev" type="number" step="0.01" /></label>
+                  <label>DOL (day)<input name="dol" type="number" min="0" step="0.01" /></label>
+                  <label>DFS (day)<input name="dfs" type="number" min="0" step="0.01" /></label>
                   <label>Daily Cost (USD)<input name="dailyCost" /></label>
                   <label>Cumulative Cost (USD)<input name="cumulativeCost" /></label>
                   <label>Total Personnel<input name="totalPersonnel" type="number" min="0" step="0.01" /></label>
@@ -794,11 +840,110 @@
           </section>
         </section>
 
+        <section id="drillingBasicMonthlyReportPage" class="module-page drilling-basic-monthly-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuMonthlyReport">月度报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuDrillingBasicMonthlyReport">钻井基础指标数据月报表</strong>
+              </nav>
+            </div>
+          </header>
+          <section class="drilling-basic-monthly-workspace">
+            <div class="panel drilling-basic-monthly-toolbar">
+              <div class="drilling-basic-monthly-filters">
+                <div class="monthly-month-picker" data-monthly-month-picker>
+                  <input type="hidden" data-drilling-basic-date />
+                  <button class="monthly-month-trigger" type="button" aria-label="填报月份" aria-haspopup="dialog" aria-expanded="false" data-monthly-month-trigger>
+                    <span data-monthly-month-display>请选择月份</span><img src="./icons/nav/calendar-stats.svg" alt="" />
+                  </button>
+                  <div class="monthly-month-popover" role="dialog" aria-label="选择填报月份" data-monthly-month-popover hidden></div>
+                </div>
+                <label><select aria-label="项目" data-drilling-basic-project><option value="">全部项目</option></select></label>
+                <label><select aria-label="队伍编号" data-drilling-basic-team><option value="">全部队伍</option></select></label>
+                <button class="button" type="button" data-drilling-basic-search>查询</button>
+                <button class="button secondary" type="button" data-drilling-basic-reset>重置</button>
+                <button class="button" type="button" data-drilling-basic-export>导出 Excel</button>
+              </div>
+            </div>
+            <section class="panel drilling-basic-monthly-report-panel">
+              <div class="drilling-basic-monthly-table-wrap" data-drilling-basic-monthly-table></div>
+            </section>
+          </section>
+        </section>
+
+        <section id="workoverBasicMonthlyReportPage" class="module-page drilling-basic-monthly-page workover-basic-monthly-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuMonthlyReport">月度报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuWorkoverBasicMonthlyReport">修井基础指标数据月报表</strong>
+              </nav>
+            </div>
+          </header>
+          <section class="drilling-basic-monthly-workspace">
+            <div class="panel drilling-basic-monthly-toolbar">
+              <div class="drilling-basic-monthly-filters">
+                <div class="monthly-month-picker" data-monthly-month-picker>
+                  <input type="hidden" data-workover-basic-date />
+                  <button class="monthly-month-trigger" type="button" aria-label="填报月份" aria-haspopup="dialog" aria-expanded="false" data-monthly-month-trigger>
+                    <span data-monthly-month-display>请选择月份</span><img src="./icons/nav/calendar-stats.svg" alt="" />
+                  </button>
+                  <div class="monthly-month-popover" role="dialog" aria-label="选择填报月份" data-monthly-month-popover hidden></div>
+                </div>
+                <label><select aria-label="项目" data-workover-basic-project><option value="">全部项目</option></select></label>
+                <label><select aria-label="队伍编号" data-workover-basic-team><option value="">全部队伍</option></select></label>
+                <button class="button" type="button" data-workover-basic-search>查询</button>
+                <button class="button secondary" type="button" data-workover-basic-reset>重置</button>
+                <button class="button" type="button" data-workover-basic-export>导出 Excel</button>
+              </div>
+            </div>
+            <section class="panel drilling-basic-monthly-report-panel">
+              <div class="drilling-basic-monthly-table-wrap" data-workover-basic-monthly-table></div>
+            </section>
+          </section>
+        </section>
+
+        <section id="drillingWorkoverEfficiencyMonthlyReportPage" class="module-page drilling-basic-monthly-page drilling-workover-efficiency-monthly-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuMonthlyReport">月度报表</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井基础时效数据月报</strong>
+              </nav>
+            </div>
+          </header>
+          <section class="drilling-basic-monthly-workspace">
+            <div class="panel drilling-basic-monthly-toolbar">
+              <div class="drilling-basic-monthly-filters">
+                <div class="monthly-month-picker" data-monthly-month-picker>
+                  <input type="hidden" data-drilling-workover-efficiency-date />
+                  <button class="monthly-month-trigger" type="button" aria-label="填报月份" aria-haspopup="dialog" aria-expanded="false" data-monthly-month-trigger>
+                    <span data-monthly-month-display>请选择月份</span><img src="./icons/nav/calendar-stats.svg" alt="" />
+                  </button>
+                  <div class="monthly-month-popover" role="dialog" aria-label="选择填报月份" data-monthly-month-popover hidden></div>
+                </div>
+                <label><select aria-label="项目" data-drilling-workover-efficiency-project><option value="">全部项目</option></select></label>
+                <label><select aria-label="队伍编号" data-drilling-workover-efficiency-team><option value="">全部队伍</option></select></label>
+                <button class="button" type="button" data-drilling-workover-efficiency-search>查询</button>
+                <button class="button secondary" type="button" data-drilling-workover-efficiency-reset>重置</button>
+                <button class="button" type="button" data-drilling-workover-efficiency-export>导出 Excel</button>
+              </div>
+            </div>
+            <section class="panel drilling-basic-monthly-report-panel">
+              <div class="drilling-basic-monthly-table-wrap" data-drilling-workover-efficiency-monthly-table></div>
+            </section>
+          </section>
+        </section>
+
         <section id="monthlyEfficiencyReportPage" class="module-page analytics-page monthly-efficiency-page" hidden>
           <header class="topbar placeholder-topbar">
             <div>
               <nav class="page-breadcrumb" aria-label="页面路径">
-                <span data-i18n="menuProductionReport">生产分析</span>
+                <span data-i18n="menuMonthlyReport">月度报表</span>
                 <span class="breadcrumb-separator">/</span>
                 <strong data-i18n="menuMonthlyEfficiencyReport">月度时效报表</strong>
               </nav>
@@ -1033,6 +1178,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./liquid-glass.js"></script>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=monthly-profile-source-v1"></script>
+    <script src="./app.js?v=monthly-data-rows-v1"></script>
   </body>
 </html>

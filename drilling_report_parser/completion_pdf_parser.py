@@ -26,6 +26,12 @@ def parse_completion_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> 
     page1_lines = [line for line in layout_pages[0].splitlines() if line.strip()] if layout_pages else []
 
     fields = _parse_report_fields(page1_lines, layout_text, plain_text)
+    service_header = _parse_service_header_from_pdf(payload_source)
+    if service_header.get("serviceNo"):
+        fields["completionNo"] = service_header.pop("serviceNo")
+    for key, value in service_header.items():
+        if value != "" or key not in fields:
+            fields[key] = value
     fields["safetyComments"] = _parse_safety_comments(layout_text)
     fields["otherRemarks"] = _parse_other_remarks(layout_text)
 
@@ -139,6 +145,61 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     fields["forecast24h"] = _collect_block(lines, "24-Hr Pronóstico:", ("Supervisor 1", "OPERACIONES"))
     fields.update(_parse_personnel(lines, layout_text, plain_text))
     return fields
+
+
+def _service_words_in_box(
+    words: list[dict[str, Any]],
+    *,
+    top_min: float,
+    top_max: float,
+    x_min: float,
+    x_max: float,
+) -> str:
+    selected = [
+        word for word in words
+        if top_min <= float(word["top"]) <= top_max
+        and x_min <= (float(word["x0"]) + float(word["x1"])) / 2 <= x_max
+    ]
+    return _clean(" ".join(str(word["text"]) for word in sorted(selected, key=lambda item: float(item["x0"]))))
+
+
+def _parse_service_header_from_pdf(source: str | Path | bytes) -> dict[str, str]:
+    """Parse completion/workover header cells that collapse in layout text."""
+    try:
+        with _pdfplumber_open(source) as pdf:
+            if not pdf.pages:
+                return {}
+            words = pdf.pages[0].extract_words(x_tolerance=1, y_tolerance=2) or []
+    except Exception:
+        return {}
+    event_row = next((float(word["top"]) for word in words if word.get("text") == "Evento:"), None)
+    well_row = next((float(word["top"]) for word in words if word.get("text") == "Wellbore:"), None)
+    if event_row is None or well_row is None:
+        return {}
+
+    def box(top_min: float, top_max: float, x_min: float, x_max: float) -> str:
+        return _service_words_in_box(
+            words,
+            top_min=top_min,
+            top_max=top_max,
+            x_min=x_min,
+            x_max=x_max,
+        )
+
+    return {
+        "serviceNo": box(event_row - 4, event_row + 4, 164, 220),
+        "wellboreNo": box(well_row - 3, well_row + 3, 49, 137),
+        "rig": box(well_row - 3, well_row + 3, 210, 330),
+        "groundElev": _num(box(well_row - 3, well_row + 3, 348, 441)),
+        "dol": _num(box(well_row - 3, well_row + 3, 459, 499)),
+        "dfs": _num(box(well_row - 3, well_row + 3, 516, 590)),
+        "afeNumber": box(well_row + 5, well_row + 12, 62, 137),
+        "rigContractName": box(well_row + 7, well_row + 17, 205, 306),
+        "refDatum": _ref_datum_number(box(well_row + 7, well_row + 17, 344, 441)),
+        "dailyCost": box(well_row + 5, well_row + 12, 484, 590),
+        "afeCost": box(well_row + 14, well_row + 20, 55, 138),
+        "cumulativeCost": box(well_row + 14, well_row + 20, 502, 590),
+    }
 
 
 def _parse_personnel(lines: list[str], layout_text: str, plain_text: str) -> dict[str, str]:

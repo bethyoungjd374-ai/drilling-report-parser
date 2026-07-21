@@ -4,7 +4,7 @@ import hashlib
 import json
 import threading
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -133,6 +133,7 @@ def initialize_database() -> None:
                 _retire_legacy_database_objects(cursor)
                 _migrate_replace_daily_cost_with_fluid_loss(cursor)
                 _ensure_database_quality_v2(cursor)
+                _migrate_move_reports_into_drilling(cursor)
                 _ensure_report_record_indexes(cursor)
                 _ensure_translation_content_indexes(cursor)
                 _ensure_database_comments(cursor)
@@ -254,6 +255,58 @@ def _migrate_replace_daily_cost_with_fluid_loss(cursor: Any) -> None:
     cursor.execute("DROP TABLE IF EXISTS fact_daily_cost")
 
 
+def _migrate_move_reports_into_drilling(cursor: Any) -> None:
+    """Merge the former move report type into drilling, preserving Event detail."""
+    if _table_exists(cursor, "dpr_move_report"):
+        transferable = [
+            column for column in (
+                "ground_elevation_ft",
+                "afe_design_depth_ft",
+                "afe_design_days",
+                "rig_move_progress_pct",
+                "rig_up_progress_pct",
+                "loads_moved_today",
+                "loads_moved_total",
+                "loads_planned_total",
+                "source_hash",
+                "version",
+                "created_at",
+                "created_by",
+                "updated_at",
+                "updated_by",
+            )
+            if _column_exists(cursor, "dpr_move_report", column)
+            and _column_exists(cursor, "dpr_drilling_report", column)
+        ]
+        insert_columns = ["daily_report_id", *transferable]
+        update_columns = [column for column in transferable if column not in {"created_at", "created_by"}]
+        update_clause = ",".join(f"{column}=VALUES({column})" for column in update_columns)
+        if not update_clause:
+            update_clause = "daily_report_id=VALUES(daily_report_id)"
+        cursor.execute(
+            f"INSERT INTO dpr_drilling_report ({','.join(insert_columns)}) "
+            f"SELECT {','.join(insert_columns)} FROM dpr_move_report "
+            f"ON DUPLICATE KEY UPDATE {update_clause}"
+        )
+
+    cursor.execute("UPDATE dpr_report_record SET report_type='drilling' WHERE report_type='move'")
+    cursor.execute("UPDATE dpr_report SET report_type='drilling' WHERE report_type='move'")
+    cursor.execute("UPDATE translation_memory SET report_type='drilling' WHERE report_type='move'")
+
+    cursor.execute(
+        "SELECT COUNT(*) AS count_value FROM information_schema.TABLE_CONSTRAINTS "
+        "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='dpr_report' "
+        "AND CONSTRAINT_NAME='ck_fact_daily_report_type' AND CONSTRAINT_TYPE='CHECK'"
+    )
+    if int((cursor.fetchone() or {}).get("count_value", 0) or 0):
+        cursor.execute("ALTER TABLE dpr_report DROP CHECK ck_fact_daily_report_type")
+    cursor.execute(
+        "ALTER TABLE dpr_report ADD CONSTRAINT ck_fact_daily_report_type "
+        "CHECK (report_type IN ('drilling','completion','workover'))"
+    )
+    cursor.execute("DROP TABLE IF EXISTS dpr_move_report")
+
+
 def _ensure_database_quality_v2(cursor: Any) -> None:
     """Apply the strong-type and integrity corrections from the schema audit."""
     additions = {
@@ -286,15 +339,16 @@ def _ensure_database_quality_v2(cursor: Any) -> None:
             ("incident_time", "TIME NULL COMMENT '事故时间；来源未提供时为NULL' AFTER incident_date"),
             ("time_precision_code", "VARCHAR(16) NOT NULL DEFAULT 'DATE' COMMENT '时间精度：DATE或DATETIME' AFTER incident_time"),
         ),
-        "dpr_move_report": (
+        "dpr_drilling_report": (
+            ("torque_off_bottom_ft_lbf", "DECIMAL(16,3) NULL COMMENT '离底扭矩，单位ft-lbf' AFTER string_weight_down_kip"),
+            ("ground_elevation_ft", "DECIMAL(14,3) NULL COMMENT '地面海拔，单位ft；搬迁Event适用' AFTER incident_comments"),
+            ("afe_design_depth_ft", "DECIMAL(14,3) NULL COMMENT 'AFE设计井深，单位ft；搬迁Event适用' AFTER ground_elevation_ft"),
+            ("afe_design_days", "DECIMAL(10,3) NULL COMMENT 'AFE设计周期，单位d；搬迁Event适用' AFTER afe_design_depth_ft"),
             ("rig_move_progress_pct", "DECIMAL(5,2) NULL COMMENT '搬迁进度，单位%' AFTER afe_design_days"),
             ("rig_up_progress_pct", "DECIMAL(5,2) NULL COMMENT '安装进度，单位%' AFTER rig_move_progress_pct"),
             ("loads_moved_today", "INT UNSIGNED NULL COMMENT '当日搬运载荷数量' AFTER rig_up_progress_pct"),
             ("loads_moved_total", "INT UNSIGNED NULL COMMENT '累计已搬运载荷数量' AFTER loads_moved_today"),
             ("loads_planned_total", "INT UNSIGNED NULL COMMENT '计划搬运载荷总数' AFTER loads_moved_total"),
-        ),
-        "dpr_drilling_report": (
-            ("torque_off_bottom_ft_lbf", "DECIMAL(16,3) NULL COMMENT '离底扭矩，单位ft-lbf' AFTER string_weight_down_kip"),
         ),
         "dpr_drilling_directional_survey": (
             ("east_west_ft", "DECIMAL(14,3) NULL COMMENT '东西位移，单位ft' AFTER north_south_ft"),
@@ -306,14 +360,6 @@ def _ensure_database_quality_v2(cursor: Any) -> None:
         for column, definition in columns:
             if column not in existing:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
-
-    move_columns = {"measured_depth_ft", "previous_measured_depth_ft", "daily_progress_ft", "rotary_hours"}
-    for column in move_columns:
-        if not _column_exists(cursor, "dpr_move_report", column):
-            continue
-        cursor.execute(f"SELECT COUNT(*) AS count_value FROM dpr_move_report WHERE {column} IS NOT NULL")
-        if int((cursor.fetchone() or {}).get("count_value", 0) or 0) == 0:
-            cursor.execute(f"ALTER TABLE dpr_move_report DROP COLUMN {column}")
 
     cursor.execute("ALTER TABLE dpr_operation MODIFY COLUMN hours DECIMAL(6,3) NULL COMMENT '来源作业时长，单位h；解析失败保留NULL'")
     cursor.execute("ALTER TABLE biz_job_event MODIFY COLUMN occurred_at DATETIME NULL COMMENT '仅来源明确到具体时间时填写'")
@@ -400,9 +446,11 @@ def _ensure_database_quality_v2(cursor: Any) -> None:
     )
     checks = {
         "ck_md_well_coordinates": ("md_well", "(surface_latitude IS NULL OR (surface_latitude>=-90 AND surface_latitude<=90)) AND (surface_longitude IS NULL OR (surface_longitude>=-180 AND surface_longitude<=180))"),
+        "ck_md_project_type": ("md_project", "project_type IN ('drilling','completion','workover')"),
+        "ck_md_project_npt_allowance": ("md_project", "npt_allowance_hours>=0"),
         "ck_rel_project_team_period": ("rel_project_team_assignment", "valid_to IS NULL OR valid_to>valid_from"),
         "ck_rel_job_rig_period": ("rel_job_rig_assignment", "valid_to IS NULL OR valid_to>valid_from"),
-        "ck_fact_daily_report_type": ("dpr_report", "report_type IN ('drilling','completion','workover','move')"),
+        "ck_fact_daily_report_type": ("dpr_report", "report_type IN ('drilling','completion','workover')"),
         "ck_fact_activity_hours": ("dpr_operation", "hours IS NULL OR (hours>=0 AND hours<=24)"),
         "ck_fact_activity_hours_source": ("dpr_operation", "hours_source IN ('DECLARED','CLOCK_DERIVED')"),
         "ck_fact_activity_timeline": ("dpr_operation", "started_at IS NULL OR ended_at IS NULL OR ended_at>started_at"),
@@ -413,8 +461,8 @@ def _ensure_database_quality_v2(cursor: Any) -> None:
         "ck_fact_bha_component_values": ("dpr_drilling_bha_component", "(outside_diameter_in IS NULL OR outside_diameter_in>=0) AND (inside_diameter_in IS NULL OR inside_diameter_in>=0) AND (joint_count IS NULL OR joint_count>=0) AND (component_length_ft IS NULL OR component_length_ft>=0) AND (outside_diameter_in IS NULL OR inside_diameter_in IS NULL OR outside_diameter_in>=inside_diameter_in)"),
         "ck_completion_perforation_interval_values": ("dpr_completion_perforation_interval", "(top_measured_depth_ft IS NULL OR base_measured_depth_ft IS NULL OR base_measured_depth_ft>=top_measured_depth_ft) AND (interval_length_ft IS NULL OR interval_length_ft>=0)"),
         "ck_workover_perforation_interval_values": ("dpr_workover_perforation_interval", "(top_measured_depth_ft IS NULL OR base_measured_depth_ft IS NULL OR base_measured_depth_ft>=top_measured_depth_ft) AND (interval_length_ft IS NULL OR interval_length_ft>=0)"),
-        "ck_fact_move_progress": ("dpr_move_report", "rig_move_progress_pct IS NULL OR (rig_move_progress_pct>=0 AND rig_move_progress_pct<=100)"),
-        "ck_fact_rig_up_progress": ("dpr_move_report", "rig_up_progress_pct IS NULL OR (rig_up_progress_pct>=0 AND rig_up_progress_pct<=100)"),
+        "ck_fact_drilling_move_progress": ("dpr_drilling_report", "rig_move_progress_pct IS NULL OR (rig_move_progress_pct>=0 AND rig_move_progress_pct<=100)"),
+        "ck_fact_drilling_rig_up_progress": ("dpr_drilling_report", "rig_up_progress_pct IS NULL OR (rig_up_progress_pct>=0 AND rig_up_progress_pct<=100)"),
         "ck_drilling_bulk_inventory_nonnegative": (
             "dpr_drilling_bulk_inventory",
             "(opening_quantity IS NULL OR opening_quantity>=0) AND (received_quantity IS NULL OR received_quantity>=0) "
@@ -572,6 +620,10 @@ def _ensure_master_data_v3_columns(cursor: Any) -> None:
         ),
         "md_team": (
             ("model_code", "VARCHAR(64) NOT NULL DEFAULT '' AFTER company_id"),
+        ),
+        "md_project": (
+            ("project_type", "VARCHAR(32) NOT NULL DEFAULT 'drilling' AFTER project_name"),
+            ("npt_allowance_hours", "DECIMAL(8,2) NOT NULL DEFAULT 5.00 AFTER project_type"),
         ),
         "md_rig": (
             ("team_id", "BIGINT UNSIGNED NULL AFTER rig_type"),
@@ -1012,7 +1064,7 @@ def _ensure_database_comments(cursor: Any) -> None:
 
     column_comments = {
         ("dpr_report_record", "record_id"): ("VARCHAR(191) NOT NULL", "稳定日报业务ID"),
-        ("dpr_report_record", "report_type"): ("VARCHAR(32) NOT NULL", "日报类型：drilling/completion/workover/move"),
+        ("dpr_report_record", "report_type"): ("VARCHAR(32) NOT NULL", "日报类型：drilling/completion/workover；搬迁由drilling的Event区分"),
         ("dpr_report_field", "fields_json"): ("JSON NOT NULL", "日报全部单值字段原始解析JSON"),
         ("dpr_report_row", "module_name"): ("VARCHAR(64) NOT NULL", "明细模块标准代码"),
         ("dpr_report_row", "row_no"): ("INT NOT NULL", "来源模块内行号，从1开始"),
@@ -2492,6 +2544,410 @@ def load_monthly_efficiency_report_rows(
         "available_date_from": available_date_from,
         "available_date_to": available_date_to,
         "rows": rows,
+    }
+
+
+def load_drilling_basic_monthly_report_rows(
+    database_path: str | Path | None = None,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    """Load Appendix 4 drilling rows from the normalized monthly source view."""
+    del database_path
+    initialize_database()
+    selected = date.fromisoformat(report_date)
+    month_start = selected.replace(day=1)
+    next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    month_end = next_month - timedelta(days=1)
+    year_start = selected.replace(month=1, day=1)
+    current_month_start = date.today().replace(day=1)
+    current_month_end = (current_month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT DATE_FORMAT(report_date, '%%Y-%%m') AS report_month
+                FROM dpr_report
+                WHERE report_type IN ('drilling','completion')
+                  AND report_date IS NOT NULL
+                  AND report_date <= %s
+                ORDER BY report_month DESC
+                """,
+                (current_month_end,),
+            )
+            available_months = [
+                _text(row.get("report_month"))
+                for row in (cursor.fetchall() or [])
+                if _text(row.get("report_month"))
+            ]
+            cursor.execute(
+                """
+                SELECT DISTINCT project_id,well_id,job_sequence_no
+                FROM vw_drilling_basic_monthly_source
+                WHERE report_type IN ('drilling','completion')
+                  AND report_date BETWEEN %s AND %s
+                ORDER BY project_id,well_id,job_sequence_no
+                """,
+                (month_start, month_end),
+            )
+            scope_keys = {
+                (int(row.get("project_id") or 0), int(row.get("well_id") or 0), int(row.get("job_sequence_no") or 1))
+                for row in (cursor.fetchall() or [])
+            }
+            if not scope_keys:
+                return {
+                    "report_date": report_date,
+                    "month_start": month_start.isoformat(),
+                    "month_end": month_end.isoformat(),
+                    "year_start": year_start.isoformat(),
+                    "available_months": available_months,
+                    "rows": [],
+                }
+            project_ids = sorted({scope[0] for scope in scope_keys})
+            placeholders = ",".join(["%s"] * len(project_ids))
+            cursor.execute(
+                f"""
+                SELECT *
+                FROM vw_drilling_basic_monthly_source
+                WHERE report_type IN ('drilling','completion')
+                  AND project_id IN ({placeholders})
+                ORDER BY project_id,well_id,job_sequence_no,report_type,report_date,report_no,daily_report_id
+                """,
+                project_ids,
+            )
+            source_rows = [dict(row) for row in (cursor.fetchall() or [])]
+    grouped: dict[tuple[int, int, int], dict[str, list[dict[str, Any]]]] = {}
+    for row in source_rows:
+        key = (int(row.get("project_id") or 0), int(row.get("well_id") or 0), int(row.get("job_sequence_no") or 1))
+        if key not in scope_keys:
+            continue
+        report_type = _text(row.get("report_type")).lower()
+        if report_type not in {"drilling", "completion"}:
+            continue
+        grouped.setdefault(key, {"drilling": [], "completion": []})[report_type].append(row)
+    result_rows = [
+        _drilling_basic_monthly_scope_row(
+            phases["drilling"],
+            phases["completion"],
+            month_start=month_start,
+            month_end=month_end,
+            year_start=year_start,
+        )
+        for phases in grouped.values()
+    ]
+    result_rows.sort(key=lambda row: (
+        _text(row.get("team_code")),
+        _text(row.get("well_name")),
+        int(row.get("job_id") or 0),
+    ))
+    return {
+        "report_date": report_date,
+        "month_start": month_start.isoformat(),
+        "month_end": month_end.isoformat(),
+        "year_start": year_start.isoformat(),
+        "available_months": available_months,
+        "rows": result_rows,
+    }
+
+
+def _drilling_basic_monthly_scope_row(
+    drilling_rows: list[dict[str, Any]],
+    completion_rows: list[dict[str, Any]],
+    *,
+    month_start: date,
+    month_end: date,
+    year_start: date,
+) -> dict[str, Any]:
+    ordered = sorted(drilling_rows, key=lambda row: (
+        _text(row.get("report_date"))[:10],
+        int(row.get("report_no") or 0),
+        int(row.get("daily_report_id") or 0),
+    ))
+    completion = sorted(completion_rows, key=lambda row: (
+        _text(row.get("report_date"))[:10],
+        int(row.get("report_no") or 0),
+        int(row.get("daily_report_id") or 0),
+    ))
+    all_rows = ordered + completion
+    if not all_rows:
+        raise ValueError("Monthly drilling scope requires at least one drilling or completion report")
+    base = ordered[-1] if ordered else completion[-1]
+    numbered = [row for row in ordered if row.get("report_no") is not None]
+    first_report = next((row for row in numbered if int(row.get("report_no") or 0) == 1), None)
+    last_report = max(numbered, key=lambda row: (int(row.get("report_no") or 0), _text(row.get("report_date")))) if numbered else None
+    month_progress = sum(
+        float(row.get("daily_progress_ft") or 0)
+        for row in ordered
+        if month_start.isoformat() <= _text(row.get("report_date"))[:10] <= month_end.isoformat()
+    )
+    year_progress = sum(
+        float(row.get("daily_progress_ft") or 0)
+        for row in ordered
+        if year_start.isoformat() <= _text(row.get("report_date"))[:10] <= month_end.isoformat()
+    )
+    current_depth_rows = [
+        row for row in ordered
+        if row.get("measured_depth_ft") is not None and _text(row.get("report_date"))[:10] <= month_end.isoformat()
+    ]
+    drilling_hours = sum(float(row.get("report_hours") or 0) for row in ordered)
+    completion_hours = sum(float(row.get("report_hours") or 0) for row in completion)
+    planned_start = ordered[-1].get("planned_start") if ordered else None
+    planned_end = ordered[-1].get("planned_end") if ordered else None
+    planned_drilling_days = None
+    if planned_start and planned_end:
+        planned_drilling_days = round((planned_end - planned_start).total_seconds() / 86400, 4)
+    completion_planned_start = next((row.get("planned_start") for row in completion if row.get("planned_start")), None)
+    completion_planned_end = next((row.get("planned_end") for row in reversed(completion) if row.get("planned_end")), None)
+    planned_completion_days = None
+    if completion_planned_start and completion_planned_end:
+        planned_completion_days = round((completion_planned_end - completion_planned_start).total_seconds() / 86400, 4)
+    return {
+        "job_id": int(base.get("job_id") or 0),
+        "project_id": int(base.get("project_id") or 0),
+        "project_name": _text(base.get("project_name")),
+        "team_id": int(base.get("team_id") or 0) if base.get("team_id") is not None else None,
+        "team_code": _text(base.get("team_name") or base.get("team_code")),
+        "country_region": _text(base.get("country_region")),
+        "team_company": _text(base.get("team_company")),
+        "block_name": _text(base.get("block_name") or base.get("block_code")),
+        "rig_model": _text(base.get("rig_model")),
+        "well_id": int(base.get("well_id") or 0),
+        "well_name": _text(base.get("well_name") or base.get("well_code")),
+        "well_profile": _text(base.get("well_profile_name") or base.get("well_profile_code")),
+        "drilling_start_date": _text(first_report.get("report_date") if first_report else "")[:10],
+        "drilling_end_date": _text(last_report.get("report_date") if last_report else "")[:10],
+        "completion_date": _text(max(completion, key=lambda row: (_text(row.get("report_date")), int(row.get("report_no") or 0))).get("report_date") if completion else "")[:10],
+        "design_depth_ft": round(float(base["design_depth_ft"]), 2) if base.get("design_depth_ft") is not None else None,
+        "current_depth_ft": round(float(current_depth_rows[-1]["measured_depth_ft"]), 2) if current_depth_rows else None,
+        "month_progress_ft": round(month_progress, 2),
+        "year_progress_ft": round(year_progress, 2),
+        "planned_drilling_cycle_days": planned_drilling_days,
+        "planned_completion_cycle_days": planned_completion_days,
+        "actual_drilling_cycle_days": round(drilling_hours / 24, 4) if ordered else None,
+        "actual_completion_cycle_days": round(completion_hours / 24, 4) if completion else None,
+        "well_control_incident": "",
+        "accident_waiting": "",
+        "remarks": "",
+        "drilling_report_count": len(ordered),
+        "completion_report_count": len(completion),
+    }
+
+
+def load_workover_basic_monthly_report_rows(
+    database_path: str | Path | None = None,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    """Load Appendix 5 workover rows from the normalized monthly source view."""
+    del database_path
+    initialize_database()
+    selected = date.fromisoformat(report_date)
+    month_start = selected.replace(day=1)
+    next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    month_end = next_month - timedelta(days=1)
+    current_month_start = date.today().replace(day=1)
+    current_month_end = (current_month_start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT DATE_FORMAT(report_date, '%%Y-%%m') AS report_month
+                FROM dpr_report
+                WHERE report_type = 'workover'
+                  AND report_date IS NOT NULL
+                  AND report_date <= %s
+                ORDER BY report_month DESC
+                """,
+                (current_month_end,),
+            )
+            available_months = [
+                _text(row.get("report_month"))
+                for row in (cursor.fetchall() or [])
+                if _text(row.get("report_month"))
+            ]
+            cursor.execute(
+                """
+                SELECT DISTINCT job_id
+                FROM vw_workover_basic_monthly_source
+                WHERE report_date BETWEEN %s AND %s
+                ORDER BY job_id
+                """,
+                (month_start, month_end),
+            )
+            job_ids = [int(row["job_id"]) for row in (cursor.fetchall() or []) if row.get("job_id") is not None]
+            if not job_ids:
+                return {
+                    "report_date": report_date,
+                    "month_start": month_start.isoformat(),
+                    "month_end": month_end.isoformat(),
+                    "available_months": available_months,
+                    "rows": [],
+                }
+            placeholders = ",".join(["%s"] * len(job_ids))
+            cursor.execute(
+                f"""
+                SELECT *
+                FROM vw_workover_basic_monthly_source
+                WHERE job_id IN ({placeholders})
+                ORDER BY job_id,report_date,report_no,daily_report_id
+                """,
+                job_ids,
+            )
+            source_rows = [dict(row) for row in (cursor.fetchall() or [])]
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for row in source_rows:
+        grouped.setdefault(int(row["job_id"]), []).append(row)
+    result_rows = [_workover_basic_monthly_job_row(rows) for rows in grouped.values()]
+    result_rows.sort(key=lambda row: (
+        _text(row.get("team_code")),
+        _text(row.get("well_name")),
+        int(row.get("job_id") or 0),
+    ))
+    return {
+        "report_date": report_date,
+        "month_start": month_start.isoformat(),
+        "month_end": month_end.isoformat(),
+        "available_months": available_months,
+        "rows": result_rows,
+    }
+
+
+def _workover_basic_monthly_job_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    ordered = sorted(rows, key=lambda row: (
+        _text(row.get("report_date"))[:10],
+        int(row.get("report_no") or 0),
+        int(row.get("daily_report_id") or 0),
+    ))
+    if not ordered:
+        raise ValueError("Monthly workover job requires at least one workover report")
+    base = ordered[-1]
+    numbered = [row for row in ordered if row.get("report_no") is not None]
+    first_report = next((row for row in numbered if int(row.get("report_no") or 0) == 1), None)
+    last_report = max(
+        numbered,
+        key=lambda row: (int(row.get("report_no") or 0), _text(row.get("report_date"))[:10]),
+    ) if numbered else None
+    translated_reason = next(
+        (_text(row.get("primary_reason_translated")) for row in reversed(ordered) if _text(row.get("primary_reason_translated"))),
+        "",
+    )
+    source_reason = next(
+        (_text(row.get("primary_reason_source")) for row in reversed(ordered) if _text(row.get("primary_reason_source"))),
+        "",
+    )
+    return {
+        "job_id": int(base.get("job_id") or 0),
+        "project_id": int(base.get("project_id") or 0),
+        "project_name": _text(base.get("project_name")),
+        "team_id": int(base.get("team_id") or 0) if base.get("team_id") is not None else None,
+        "team_code": _text(base.get("team_name") or base.get("team_code")),
+        "country_region": _text(base.get("country_region")),
+        "team_company": _text(base.get("team_company")),
+        "block_name": _text(base.get("block_name") or base.get("block_code")),
+        "rig_model": _text(base.get("rig_model")),
+        "well_id": int(base.get("well_id") or 0),
+        "well_name": _text(base.get("well_name") or base.get("well_code")),
+        "well_profile": _text(base.get("well_profile_name") or base.get("well_profile_code")),
+        "workover_start_date": _text(first_report.get("report_date") if first_report else "")[:10],
+        "workover_end_date": _text(last_report.get("report_date") if last_report else "")[:10],
+        "primary_operation": translated_reason,
+        "primary_operation_source": source_reason,
+        "primary_operation_zh": translated_reason,
+        "well_control_incident": "",
+        "accident_waiting": "",
+        "remarks": "",
+        "workover_report_count": len(ordered),
+    }
+
+
+def load_drilling_workover_efficiency_monthly_report_rows(
+    database_path: str | Path | None = None,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    """Load Appendix 6 monthly efficiency rows grouped by well and profession."""
+    del database_path
+    initialize_database()
+    selected = date.fromisoformat(report_date)
+    month_start = selected.replace(day=1)
+    next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    month_end = next_month - timedelta(days=1)
+    current_month_start = date.today().replace(day=1)
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT DATE_FORMAT(report_date, '%%Y-%%m') AS report_month
+                FROM dpr_report
+                WHERE report_type IN ('drilling','completion','workover')
+                  AND report_date IS NOT NULL
+                  AND report_date < DATE_ADD(%s, INTERVAL 1 MONTH)
+                ORDER BY report_month DESC
+                """,
+                (current_month_start,),
+            )
+            available_months = [
+                _text(row.get("report_month"))
+                for row in (cursor.fetchall() or [])
+                if _text(row.get("report_month"))
+            ]
+            cursor.execute(
+                """
+                SELECT *
+                FROM vw_drilling_workover_efficiency_monthly
+                WHERE month_start = %s
+                ORDER BY team_name,well_name,profession,project_id,well_id
+                """,
+                (month_start,),
+            )
+            source_rows = [dict(row) for row in (cursor.fetchall() or [])]
+    rows = [_drilling_workover_efficiency_monthly_row(source) for source in source_rows]
+    return {
+        "report_date": report_date,
+        "month_start": month_start.isoformat(),
+        "month_end": month_end.isoformat(),
+        "available_months": available_months,
+        "rows": rows,
+    }
+
+
+def _drilling_workover_efficiency_monthly_row(source: dict[str, Any]) -> dict[str, Any]:
+    production_hours = max(0.0, float(source.get("production_hours") or 0))
+    npt_hours = max(0.0, float(source.get("npt_hours") or 0))
+    allowance_hours = max(0.0, float(source.get("npt_allowance_hours") or 0))
+    paid_repair_hours = min(npt_hours, allowance_hours)
+    zero_rate_repair_hours = max(0.0, npt_hours - allowance_hours)
+    accident_complex_hours = 0.0
+    other_hours = 0.0
+    denominator = production_hours + paid_repair_hours + zero_rate_repair_hours + accident_complex_hours + other_hours
+    profession = _text(source.get("profession")).lower()
+    return {
+        "project_id": int(source.get("project_id") or 0),
+        "project_name": _text(source.get("project_name")),
+        "project_type": _text(source.get("project_type")),
+        "well_id": int(source.get("well_id") or 0),
+        "well_name": _text(source.get("well_name") or source.get("well_code")),
+        "profession": profession,
+        "profession_label": "修井" if profession == "workover" else "钻井",
+        "team_code": _text(source.get("team_name") or source.get("team_code")),
+        "country_region": _text(source.get("country_region")),
+        "team_company": _text(source.get("team_company")),
+        "block_name": _text(source.get("block_name")),
+        "rig_model": _text(source.get("rig_model")),
+        "move_hours": round(max(0.0, float(source.get("move_hours") or 0)), 1),
+        "production_hours": round(production_hours, 1),
+        "npt_allowance_hours": round(allowance_hours, 1),
+        "paid_repair_hours": round(paid_repair_hours, 1),
+        "zero_rate_repair_hours": round(zero_rate_repair_hours, 1),
+        "accident_complex_hours": accident_complex_hours,
+        "other_hours": other_hours,
+        "well_efficiency": round(production_hours / denominator, 6) if denominator else None,
+        "nonproductive_description": "",
+        "average_efficiency": None,
+        "remarks": "",
+        "report_count": int(source.get("report_count") or 0),
+        "operation_count": int(source.get("operation_count") or 0),
+        "npt_hours": round(npt_hours, 1),
     }
 
 

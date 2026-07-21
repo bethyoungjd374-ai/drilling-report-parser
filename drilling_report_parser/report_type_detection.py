@@ -62,9 +62,15 @@ def detect_report_type_from_event(value: object) -> str:
 
 
 def storage_report_type_for_event_type(event_type: str) -> str:
-    """Return the independently stored daily-report category for an Event."""
+    """Return the stored daily-report category for an Event.
 
-    return str(event_type or "").strip().lower()
+    Rig-move reports use the drilling PDF template and belong to the drilling
+    lifecycle.  ``move`` remains an Event classification only; it is not a
+    separate persisted report type.
+    """
+
+    normalized = str(event_type or "").strip().lower()
+    return "drilling" if normalized == "move" else normalized
 
 
 def storage_report_type_from_event(value: object) -> str:

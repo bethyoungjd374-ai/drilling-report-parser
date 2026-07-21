@@ -127,6 +127,45 @@ def load_monthly_efficiency_report_rows(
     return payload
 
 
+def load_drilling_basic_monthly_report_rows(
+    database_path: str | Path,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    payload = mysql_database.load_drilling_basic_monthly_report_rows(None, report_date=report_date)
+    _clear_mysql_failure()
+    return payload
+
+
+def load_workover_basic_monthly_report_rows(
+    database_path: str | Path,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    payload = mysql_database.load_workover_basic_monthly_report_rows(None, report_date=report_date)
+    _clear_mysql_failure()
+    return payload
+
+
+def load_drilling_workover_efficiency_monthly_report_rows(
+    database_path: str | Path,
+    *,
+    report_date: str,
+) -> dict[str, Any]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    payload = mysql_database.load_drilling_workover_efficiency_monthly_report_rows(None, report_date=report_date)
+    _clear_mysql_failure()
+    return payload
+
+
 def save_translation_content(database_path: str | Path, record_id: str, rows: list[dict[str, Any]]) -> None:
     _validate_mysql_label(database_path)
     from . import mysql_database

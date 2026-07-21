@@ -5,13 +5,22 @@ import pytest
 from drilling_report_parser.pdf_import_service import pdf_import_strategy
 
 
-@pytest.mark.parametrize("report_type", ["completion", "workover", "move"])
+@pytest.mark.parametrize("report_type", ["completion", "workover"])
 def test_each_pdf_category_has_an_independent_storage_strategy(report_type: str) -> None:
     strategy = pdf_import_strategy(report_type)
 
     assert strategy.import_type == report_type
     assert strategy.storage_report_type == report_type
     assert callable(strategy.parser)
+
+
+def test_legacy_move_import_uses_the_drilling_parser_and_storage() -> None:
+    drilling = pdf_import_strategy("drilling")
+    move = pdf_import_strategy("move")
+
+    assert move.import_type == "drilling"
+    assert move.storage_report_type == "drilling"
+    assert move.parser is drilling.parser
 
 
 def test_drilling_template_profiles_resolve_without_changing_storage_type() -> None:

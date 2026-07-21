@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 from drilling_report_parser.field_registry import (
@@ -10,6 +11,8 @@ from drilling_report_parser.field_registry import (
 )
 from drilling_report_parser.master_data_service import (
     ASSIGNMENT_ENTITIES,
+    _normalize_project_values,
+    _json_row,
     _relationship_period_overlaps,
     _relationship_scope_overlaps,
     delete_master_entity,
@@ -45,6 +48,38 @@ from scripts.migrate_master_data_v2 import _normalize_well_profile_code
 def test_rig_aliases_share_one_canonical_name() -> None:
     variants = ["SINOPEC-905", "SINOPEC 905", "SINOPEC905", "W905", "RIG905", "SP905", "905"]
     assert {normalize_alias("rig", value) for value in variants} == {"SINOPEC 905"}
+
+
+def test_project_npt_allowance_defaults_follow_project_type() -> None:
+    assert _normalize_project_values({"project_type": "drilling"}, is_new=True)["npt_allowance_hours"] == 5
+    assert _normalize_project_values({"project_type": "completion"}, is_new=True)["npt_allowance_hours"] == 5
+    assert _normalize_project_values({"project_type": "workover"}, is_new=True)["npt_allowance_hours"] == 12
+
+
+def test_project_npt_allowance_accepts_manual_override() -> None:
+    values = _normalize_project_values(
+        {"project_type": "workover", "npt_allowance_hours": "8.5", "valid_to": ""},
+        is_new=True,
+    )
+    assert values["npt_allowance_hours"] == 8.5
+    assert values["valid_to"] is None
+
+
+def test_master_data_decimal_values_are_json_serializable() -> None:
+    assert _json_row({"npt_allowance_hours": Decimal("12.50")}) == {"npt_allowance_hours": "12.50"}
+
+
+def test_project_configuration_rejects_unknown_type_and_negative_allowance() -> None:
+    for values in (
+        {"project_type": "move"},
+        {"project_type": "drilling", "npt_allowance_hours": "-0.25"},
+    ):
+        try:
+            _normalize_project_values(values, is_new=True)
+        except ValueError:
+            pass
+        else:  # pragma: no cover
+            raise AssertionError("invalid project configuration should be rejected")
 
 
 def test_suspected_well_typos_are_not_automatically_merged() -> None:

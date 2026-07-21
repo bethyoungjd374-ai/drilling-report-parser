@@ -4,11 +4,11 @@ const i18n = {
       appTitleShort: "NexoRig", appSubtitle: "钻完井管理平台", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
       systemAdmin: "系统后台",
       menuDailyParsing: "日报管理", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
-      menuProductionReport: "生产分析", menuRigProductionSummary: "时效分析", menuProductionDetailReport: "生产报表", menuMonthlyEfficiencyReport: "月度时效报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
+      menuProductionReport: "生产分析", menuRigProductionSummary: "时效分析", menuProductionDetailReport: "生产报表", menuMonthlyReport: "月度报表", menuDrillingBasicMonthlyReport: "钻井基础指标数据月报表", menuWorkoverBasicMonthlyReport: "修井基础指标数据月报表", menuDrillingWorkoverEfficiencyMonthlyReport: "钻修井基础时效数据月报", menuMonthlyEfficiencyReport: "月度时效报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
       menuHsse: "HSSE管理", menuHsseCollection: "HSSE填报", menuHsseDashboard: "安全驾驶舱", menuDailySafetySummary: "HSSE报表", menuPeriodSafetyReport: "HSSE报表",
       descDrillingDaily: "上传钻井日报 PDF，按原模板或独立兼容模板解析井基础信息及 Operation 内容。",
       descCompletionDaily: "上传完井日报 PDF，解析基础信息、Operation、库存和射孔区间，预览后可二次编辑。", descWorkoverDaily: "上传修井日报 PDF，解析 WO 信息、Operation、库存、安全备注和射孔区间，预览后可二次编辑。", descMoveDaily: "上传搬迁日报 PDF，解析 Operation、重型设备和载荷清单，预览后可二次编辑。",
-      descRigProductionSummary: "基于日报解析数据，按井队、日报类型和月份展示生产作业时效。", descProductionDetailReport: "按项目周期、井队和井号归属查询生产时效明细。", descMonthlyEfficiencyReport: "按月汇总钻、完、修井基础数据与时效，缺少明确来源的字段保持待定。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
+      descRigProductionSummary: "基于日报解析数据，按井队、日报类型和月份展示生产作业时效。", descProductionDetailReport: "按项目周期、井队和井号归属查询生产时效明细。", descDrillingBasicMonthlyReport: "严格按附表4格式展示并导出钻井基础指标数据月报表。", descWorkoverBasicMonthlyReport: "严格按附表5格式展示并导出修井基础指标数据月报表。", descDrillingWorkoverEfficiencyMonthlyReport: "严格按附表6格式展示并导出钻修井基础时效数据月报。", descMonthlyEfficiencyReport: "按月汇总钻、完、修井基础数据与时效，缺少明确来源的字段保持待定。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
       descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "施工参数", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "漏失与库存", navIncidents: "事故与备注",
@@ -22,7 +22,7 @@ const i18n = {
       allRigs: "全部井队", allProjects: "全部项目", allReportTypes: "全部类型", allReasons: "全部分类", scopeByRig: "按井队", scopeByProject: "按项目", productionNptCaption: "累计 NPT 时长（h）", nptHoursCaption: "NPT 时长（h）", nptDailyShareCaption: "日均 NPT 占比（%）", nptNotePlaceholder: "请输入备注内容（选填）", opCodeSub: "作业代码 / 子项", opCode: "作业代码", opSub: "作业子项", category: "分类", tableProject: "项目", tableContractProject: "合同(项目)", tableRig: "井队", tableWell: "井号", tableReportType: "日报类型", tableStartDate: "开工时间", tableEndDate: "完工时间", tableMoveDate: "搬迁日期", tableDrillingStartDate: "开钻日期", tableDrillingFinishDate: "完钻日期", tableCompletionDate: "完井日期", tableWorkoverDate: "修井日期", tableDrillingHours: "钻井(h)", tableCompletionHours: "完井(h)", tableWorkoverHours: "修井(h)", tableMoveHours: "搬迁(h)", tableNptHours: "NPT(h)", tableRemarks: "备注", tableDate: "日期", tableOperationDetails: "作业详情",
       sectionBasic: "基础信息", sectionSummary: "作业摘要", sectionWellControl: "施工参数", sectionSurvey: "测斜数据（最近 6 条）", sectionMud: "泥浆数据", sectionBitBha: "钻头与 BHA", sectionOperations: "作业明细", sectionFluidLossInventory: "漏失情况与库存", sectionInventory: "库存", sectionIncidents: "事故与备注", sectionPersonnel: "人员信息", sectionPerforationIntervals: "射孔区间",
       noteBasic: "对应 PDF 顶部日报抬头和井基本信息", noteSummary: "当前作业、24 小时总结、下一步计划", noteWellControl: "套管、井控试压、泵压、钻柱重量和扭矩", noteIncidents: "HSE 状态、同步作业和其他说明",
-      completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "对应搬迁 PDF 顶部日报抬头、AFE 和井队信息", moveNoteRemarks: "其他现场备注原文",
+      completionNoteBasic: "对应完井 PDF 顶部日报抬头、AFP 和井基本信息", completionNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", completionNoteRemarks: "安全备注、固控说明和其他现场备注", workoverNoteBasic: "对应修井 PDF 顶部日报抬头、AFP 和井基本信息", workoverNotePersonnel: "Supervisor、Engineer、Geologist 与现场总人数", workoverNoteRemarks: "安全备注、固控说明和其他现场备注", moveNoteBasic: "搬迁日报与钻井日报共用钻井模板和数据表，由 Event 区分阶段", moveNoteRemarks: "其他现场备注原文",
       rulesTitle: "基础条件限制规则", liveValidation: "实时校验",
       uploadedDays: "已上传", daysUnit: "天", missingDate: "缺失日期",
       prevMonth: "上一月", nextMonth: "下一月", savedWarnings: "保存时校验",
@@ -34,7 +34,7 @@ const i18n = {
       currentOps: "当前作业", summary24h: "24 小时总结", forecast24h: "未来 24 小时计划", lastCasing: "上一层套管", lastCasingSize: "上一层套管尺寸 (in)", lastCasingDepth: "上一层套管深度 (ft)", nextCasing: "下一层套管", nextCasingSize: "下一层套管尺寸 (in)", nextCasingDepth: "下一层套管深度 (ft)", formTestType: "地层测试类型", formTestEmw: "地层测试 EMW (ppg)", lastBopPressTest: "最近一次 BOP 试压日期", pumpRate: "泵排量 (gpm)", pumpPress: "泵压 (psi)", stringWeightUp: "钻柱上提重量 (kip)", stringWeightDown: "钻柱下放重量 (kip)", stringWeightUpDown: "钻柱上提/下放重量", torqueOffBottom: "离底扭矩 (ft-lbf)", torqueOnBottom: "井底扭矩 (ft-lbf)",
       mudEngineer: "泥浆工程师", sampleFrom: "取样位置", mudType: "泥浆类型", mudTimeMd: "时间 / MD", mudTime: "泥浆取样时间", mudMd: "泥浆取样 MD (ft)", mudDensity: "密度 (ppg)", mudTemperature: "泥浆温度 (°F)", rheologyTemp: "流变测试温度 (°F)", viscosity: "黏度 (sec/qt)", pvYp: "PV / YP", pv: "塑性黏度 PV (cP)", yp: "动切力 YP (lb/100ft²)", gels: "静切力 10s/10m/30m (lb/100ft²)", gel10s: "10 秒静切力 (lb/100ft²)", gel10m: "10 分钟静切力 (lb/100ft²)", gel30m: "30 分钟静切力 (lb/100ft²)", apiWl: "API 失水 (cc/30min)", oilWater: "油 / 水", oilPercent: "含油量 (%)", waterPercent: "含水量 (%)", sand: "含砂量 (%)", ecd: "当量循环密度 ECD (ppg)", mudComments: "泥浆备注",
       bitNo: "钻头序号", bitSize: "钻头尺寸 (in)", bitManufacturer: "制造商", bitSerial: "钻头序列号", bitWearIodl: "钻头磨损 I-O-D-L", bitWearBgor: "钻头磨损 B-G-O-R", bhaNo: "BHA 编号", bhaMdIn: "入井 MD (ft)", bhaMdOut: "出井 MD (ft)", bhaTotalLength: "总长度 (ft)", safetyIncident: "是否发生安全事故？", environmentIncident: "是否发生环境事故？", daysSinceRi: "距上次 RI 天数", daysSinceLta: "距上次 LTA 天数", incidentComments: "事故说明", otherRemarks: "其他备注",
-      description: "说明", operationStartDate: "作业开始日期", workoverNo: "修井编号", afeCost: "AFP 成本 (USD)", dailyCost: "当日成本 (USD)", cumulativeCost: "累计成本 (USD)", supervisor1: "监督 1", supervisor2: "监督 2", engineer: "工程师", pamEngineer: "PAM 工程师", geologist: "地质师", totalPersonnel: "现场总人数", safetyComments: "安全备注", groundElev: "地面海拔 (ft)", afeMdDays: "AFE 设计井深/天数 (ft/d)"
+      description: "说明", operationStartDate: "作业开始日期", completionNo: "完井作业编号", workoverNo: "修井编号", wellboreNo: "井眼编号", rigContractName: "合同钻机名称", dfs: "DFS", dol: "DOL (天)", avgRopSlide: "平均滑动机械钻速 (ft/h)", avgRopRot: "平均旋转机械钻速 (ft/h)", afeCost: "AFP 成本 (USD)", dailyCost: "当日成本 (USD)", cumulativeCost: "累计成本 (USD)", supervisor1: "监督 1", supervisor2: "监督 2", engineer: "工程师", pamEngineer: "PAM 工程师", geologist: "地质师", totalPersonnel: "现场总人数", safetyComments: "安全备注", groundElev: "地面海拔 / GLE (ft)", afeMdDays: "AFE 设计井深/天数 (ft/d)"
     },
     rules: [
       "<strong>必填：</strong>Date、Report No、Wellbore、Rig、Current Ops、24-Hr Summary、Mud Type、Today's MD。",
@@ -79,11 +79,11 @@ const i18n = {
       appTitleShort: "NexoRig", appSubtitle: "Drilling Intelligence", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
       systemAdmin: "System Admin",
       menuDailyParsing: "Daily Reports", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
-      menuProductionReport: "Production Analysis", menuRigProductionSummary: "Time Analysis", menuProductionDetailReport: "Production Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
+      menuProductionReport: "Production Analysis", menuRigProductionSummary: "Time Analysis", menuProductionDetailReport: "Production Report", menuMonthlyReport: "Monthly Reports", menuDrillingBasicMonthlyReport: "Drilling Basic Indicators Monthly Report", menuWorkoverBasicMonthlyReport: "Workover Basic Indicators Monthly Report", menuDrillingWorkoverEfficiencyMonthlyReport: "Drilling & Workover Basic Efficiency Monthly Report", menuMonthlyEfficiencyReport: "Monthly Efficiency Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
       menuHsse: "HSSE Management", menuHsseCollection: "HSSE Entry", menuHsseDashboard: "Safety Cockpit", menuDailySafetySummary: "HSSE Reports", menuPeriodSafetyReport: "HSSE Reports",
       descDrillingDaily: "Upload drilling daily PDFs and parse well basics and Operation content with the original or compatible template strategy.",
-      descCompletionDaily: "Upload completion daily PDFs, parse basics, operations, bulks, and perforated intervals, then preview and edit.", descWorkoverDaily: "Upload workover daily PDFs, parse WO information, operations, bulks, safety comments, and perforated intervals, then preview and edit.", descMoveDaily: "Upload rig move daily PDFs and store operations, heavy equipment, and load records under the independent move report type.",
-      descRigProductionSummary: "Show production time by rig, report type, and month from parsed daily reports.", descProductionDetailReport: "Query production time details by project period, rig, and well assignment.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
+      descCompletionDaily: "Upload completion daily PDFs, parse basics, operations, bulks, and perforated intervals, then preview and edit.", descWorkoverDaily: "Upload workover daily PDFs, parse WO information, operations, bulks, safety comments, and perforated intervals, then preview and edit.", descMoveDaily: "Rig-move reports share the drilling parser and data tables; Event distinguishes the lifecycle stage.",
+      descRigProductionSummary: "Show production time by rig, report type, and month from parsed daily reports.", descProductionDetailReport: "Query production time details by project period, rig, and well assignment.", descDrillingBasicMonthlyReport: "Display and export the drilling basic indicators report in the exact Appendix 4 format.", descWorkoverBasicMonthlyReport: "Display and export the workover basic indicators report in the exact Appendix 5 format.", descDrillingWorkoverEfficiencyMonthlyReport: "Display and export the drilling and workover efficiency report in the exact Appendix 6 format.", descMonthlyEfficiencyReport: "Summarize drilling, completion, and workover data and efficiency by month.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
       descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Operational Parameters", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Fluid Loss & Inventory", navIncidents: "Incidents & Remarks",
@@ -109,7 +109,7 @@ const i18n = {
       currentOps: "Current Operations", summary24h: "24-Hour Summary", forecast24h: "24-Hour Forecast", lastCasing: "Last Casing", lastCasingSize: "Last Casing Size (in)", lastCasingDepth: "Last Casing Depth (ft)", nextCasing: "Next Casing", nextCasingSize: "Next Casing Size (in)", nextCasingDepth: "Next Casing Depth (ft)", formTestType: "Formation Test Type", formTestEmw: "Formation Test EMW (ppg)", lastBopPressTest: "Last BOP Pressure Test Date", pumpRate: "Pump Rate (gpm)", pumpPress: "Pump Pressure (psi)", stringWeightUp: "String Weight Up (kip)", stringWeightDown: "String Weight Down (kip)", stringWeightUpDown: "String Weight Up/Down", torqueOffBottom: "Torque Off Bottom (ft-lbf)", torqueOnBottom: "Torque On Bottom (ft-lbf)",
       mudEngineer: "Mud Engineer", sampleFrom: "Sample From", mudType: "Mud Type", mudTimeMd: "Time / MD", mudTime: "Mud Time", mudMd: "Mud MD (ft)", mudDensity: "Density (ppg)", mudTemperature: "Mud Temp (°F)", rheologyTemp: "Rheology Temp (°F)", viscosity: "Viscosity (sec/qt)", pvYp: "PV / YP", pv: "PV (cP)", yp: "YP (lb/100ft²)", gels: "Gels 10s/10m/30m (lb/100ft²)", gel10s: "Gel 10s (lb/100ft²)", gel10m: "Gel 10m (lb/100ft²)", gel30m: "Gel 30m (lb/100ft²)", apiWl: "API WL (cc/30min)", oilWater: "Oil / Water", oilPercent: "Oil (%)", waterPercent: "Water (%)", sand: "Sand (%)", ecd: "ECD (ppg)", mudComments: "Mud Comments",
       bitNo: "Bit Sequence No", bitSize: "Bit Size (in)", bitManufacturer: "Manufacturer", bitSerial: "Bit Serial No", bitWearIodl: "Bit Wear I-O-D-L", bitWearBgor: "Bit Wear B-G-O-R", bhaNo: "BHA No", bhaMdIn: "MD In (ft)", bhaMdOut: "MD Out (ft)", bhaTotalLength: "Total Length (ft)", safetyIncident: "Safety Incident?", environmentIncident: "Environmental Incident?", daysSinceRi: "Days since Last RI", daysSinceLta: "Days since Last LTA", incidentComments: "Incident Comments", otherRemarks: "Other Remarks",
-      description: "Description", operationStartDate: "Operation Start", workoverNo: "WO No", afeCost: "AFP Cost (USD)", dailyCost: "Daily Cost (USD)", cumulativeCost: "Cumulative Cost (USD)", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Engineer", pamEngineer: "PAM Engineer", geologist: "Geologist", totalPersonnel: "Total Personnel", safetyComments: "Safety Comments", groundElev: "Ground Elev (ft)", afeMdDays: "AFE MD/Days (ft/d)"
+      description: "Description", operationStartDate: "Operation Start", completionNo: "Completion No", workoverNo: "WO No", wellboreNo: "Wellbore No", rigContractName: "Rig Contract Name", dfs: "DFS", dol: "DOL (day)", avgRopSlide: "Avg ROP Slide (ft/h)", avgRopRot: "Avg ROP Rot (ft/h)", afeCost: "AFP Cost (USD)", dailyCost: "Daily Cost (USD)", cumulativeCost: "Cumulative Cost (USD)", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Engineer", pamEngineer: "PAM Engineer", geologist: "Geologist", totalPersonnel: "Total Personnel", safetyComments: "Safety Comments", groundElev: "Ground Elev / GLE (ft)", afeMdDays: "AFE MD/Days (ft/d)"
     },
     rules: [
       "<strong>Required:</strong> Date, Report No, Wellbore, Rig, Current Operations, 24-Hour Summary, Mud Type, and Today's MD.",
@@ -154,11 +154,11 @@ const i18n = {
       appTitleShort: "NexoRig", appSubtitle: "Inteligencia de Perforación", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
       systemAdmin: "Administración",
       menuDailyParsing: "Reportes Diarios", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
-      menuProductionReport: "Análisis de Producción", menuRigProductionSummary: "Análisis de Tiempos", menuProductionDetailReport: "Reporte de Producción", menuMonthlyEfficiencyReport: "Reporte Mensual de Eficiencia", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
+      menuProductionReport: "Análisis de Producción", menuRigProductionSummary: "Análisis de Tiempos", menuProductionDetailReport: "Reporte de Producción", menuMonthlyReport: "Reportes Mensuales", menuDrillingBasicMonthlyReport: "Reporte Mensual de Indicadores Básicos de Perforación", menuWorkoverBasicMonthlyReport: "Reporte Mensual de Indicadores Básicos de Workover", menuDrillingWorkoverEfficiencyMonthlyReport: "Reporte Mensual de Eficiencia Básica de Perforación y Workover", menuMonthlyEfficiencyReport: "Reporte Mensual de Eficiencia", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
       menuHsse: "Gestión HSSE", menuHsseCollection: "Registro HSSE", menuHsseDashboard: "Cabina de Seguridad", menuDailySafetySummary: "Reportes HSSE", menuPeriodSafetyReport: "Reportes HSSE",
       descDrillingDaily: "Carga reportes diarios PDF de perforación o movilización, extrae datos básicos y operaciones, y permite editar el reporte diario de perforación.",
       descCompletionDaily: "Carga PDFs diarios de completación, extrae datos básicos, operaciones, inventarios e intervalos cañoneados, y permite revisar y editar.", descWorkoverDaily: "Carga PDFs diarios de workover, extrae información WO, operaciones, inventarios, comentarios de seguridad e intervalos cañoneados, y permite revisar y editar.", descMoveDaily: "Entrada reservada para análisis PDF y captura estructurada de reportes diarios de movilización.",
-      descRigProductionSummary: "Muestra tiempos de producción por equipo, tipo de reporte y mes desde reportes diarios procesados.", descProductionDetailReport: "Consulta detalles de producción por periodo de proyecto, equipo y asignación de pozo.", descMonthlyEfficiencyReport: "Resume por mes datos y eficiencia de perforación, completación y workover; los campos sin fuente quedan pendientes.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
+      descRigProductionSummary: "Muestra tiempos de producción por equipo, tipo de reporte y mes desde reportes diarios procesados.", descProductionDetailReport: "Consulta detalles de producción por periodo de proyecto, equipo y asignación de pozo.", descDrillingBasicMonthlyReport: "Muestra y exporta el reporte con el formato exacto del Anexo 4.", descWorkoverBasicMonthlyReport: "Muestra y exporta el reporte con el formato exacto del Anexo 5.", descDrillingWorkoverEfficiencyMonthlyReport: "Muestra y exporta el reporte con el formato exacto del Anexo 6.", descMonthlyEfficiencyReport: "Resume por mes datos y eficiencia de perforación, completación y workover; los campos sin fuente quedan pendientes.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
       descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Parámetros Operacionales", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Pérdida de Fluido e Inventario", navIncidents: "Incidentes y Observaciones",
@@ -184,7 +184,7 @@ const i18n = {
       currentOps: "Operación Actual", summary24h: "Resumen 24 h", forecast24h: "Pronóstico 24 h", lastCasing: "Último Casing", lastCasingSize: "Tamaño Último Casing (in)", lastCasingDepth: "Profundidad Último Casing (ft)", nextCasing: "Próximo Casing", nextCasingSize: "Tamaño Próximo Casing (in)", nextCasingDepth: "Profundidad Próximo Casing (ft)", formTestType: "Tipo de Prueba de Formación", formTestEmw: "EMW de Prueba de Formación (ppg)", lastBopPressTest: "Fecha de Última Prueba BOP", pumpRate: "Caudal Bomba (gpm)", pumpPress: "Presión Bomba (psi)", stringWeightUp: "Peso de Sarta Arriba (kip)", stringWeightDown: "Peso de Sarta Abajo (kip)", stringWeightUpDown: "Peso Sarta Arriba/Abajo", torqueOffBottom: "Torque Fuera de Fondo (ft-lbf)", torqueOnBottom: "Torque en Fondo (ft-lbf)",
       mudEngineer: "Ingeniero de Lodo", sampleFrom: "Muestra de", mudType: "Tipo de Lodo", mudTimeMd: "Hora / MD", mudTime: "Hora Lodo", mudMd: "MD Lodo (ft)", mudDensity: "Densidad (ppg)", mudTemperature: "Temp. Lodo (°F)", rheologyTemp: "Temp. Reología (°F)", viscosity: "Viscosidad (sec/qt)", pvYp: "PV / YP", pv: "PV (cP)", yp: "YP (lb/100ft²)", gels: "Geles 10s/10m/30m (lb/100ft²)", gel10s: "Gel 10s (lb/100ft²)", gel10m: "Gel 10m (lb/100ft²)", gel30m: "Gel 30m (lb/100ft²)", apiWl: "API WL (cc/30min)", oilWater: "Aceite / Agua", oilPercent: "Aceite (%)", waterPercent: "Agua (%)", sand: "Arena (%)", ecd: "ECD (ppg)", mudComments: "Comentarios de Lodo",
       bitNo: "Secuencia de Broca", bitSize: "Tamaño Broca (in)", bitManufacturer: "Fabricante", bitSerial: "Serie de Broca", bitWearIodl: "Desgaste I-O-D-L", bitWearBgor: "Desgaste B-G-O-R", bhaNo: "No. BHA", bhaMdIn: "MD Entrada (ft)", bhaMdOut: "MD Salida (ft)", bhaTotalLength: "Longitud Total (ft)", safetyIncident: "¿Incidente de Seguridad?", environmentIncident: "¿Incidente Ambiental?", daysSinceRi: "Días desde Último RI", daysSinceLta: "Días desde Último LTA", incidentComments: "Comentarios de Incidente", otherRemarks: "Otras Observaciones",
-      description: "Descripción", operationStartDate: "Inicio OPR", workoverNo: "No. WO", afeCost: "Costo AFP (USD)", dailyCost: "Costo Diario (USD)", cumulativeCost: "Costo Acumulado (USD)", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Ingeniero", pamEngineer: "Ingeniero PAM", geologist: "Geólogo", totalPersonnel: "Total Personal", safetyComments: "Comentarios de Seguridad", groundElev: "Elevación Terreno (ft)", afeMdDays: "AFE MD/Días (ft/d)"
+      description: "Descripción", operationStartDate: "Inicio OPR", completionNo: "No. Completación", workoverNo: "No. WO", wellboreNo: "No. Wellbore", rigContractName: "Nombre de Taladro (contrato)", dfs: "DFS", dol: "DOL (día)", avgRopSlide: "ROP Prom. Slide (ft/h)", avgRopRot: "ROP Prom. Rot (ft/h)", afeCost: "Costo AFP (USD)", dailyCost: "Costo Diario (USD)", cumulativeCost: "Costo Acumulado (USD)", supervisor1: "Supervisor 1", supervisor2: "Supervisor 2", engineer: "Ingeniero", pamEngineer: "Ingeniero PAM", geologist: "Geólogo", totalPersonnel: "Total Personal", safetyComments: "Comentarios de Seguridad", groundElev: "Elevación Terreno / GLE (ft)", afeMdDays: "AFE MD/Días (ft/d)"
     },
     rules: [
       "<strong>Obligatorio:</strong> Fecha, No. de Reporte, Pozo, Taladro, Operación Actual, Resumen 24 h, Tipo de Lodo y MD de Hoy.",
@@ -304,8 +304,13 @@ const workoverIssuesEl = document.querySelector("#workoverIssues");
 const moveIssuesEl = document.querySelector("#moveIssues");
 const toast = document.querySelector("#toast");
 const storedLanguage = localStorage.getItem("drillingReportLanguage") || "zh";
-let currentLanguage = ["zh", "es"].includes(storedLanguage) ? storedLanguage : "zh";
-let reportContentLanguageMode = "original";
+const REPORT_CONTENT_LANGUAGE_STORAGE_KEY = "drillingReportContentLanguage";
+const storedReportContentLanguage = localStorage.getItem(REPORT_CONTENT_LANGUAGE_STORAGE_KEY)
+  || (storedLanguage === "es" ? "es" : "original");
+let globalReportContentLanguage = ["original", "zh", "es"].includes(storedReportContentLanguage)
+  ? storedReportContentLanguage
+  : "original";
+let currentLanguage = globalReportContentLanguage === "es" ? "es" : "zh";
 let activeMenuTarget = "drilling-daily";
 let drillingSourceFileName = "";
 let reportTranslationBusy = { reportType: "", language: "" };
@@ -315,10 +320,10 @@ const currentRecordIds = { drilling: "", completion: "", workover: "", move: "" 
 const savedReportSignatures = { drilling: "", completion: "", workover: "", move: "" };
 const lockedRecordIds = new Set();
 const reportContentState = {
-  drilling: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" },
-  completion: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" },
-  workover: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" },
-  move: { mode: "original", selectedLanguage: currentLanguage === "es" ? "es" : "original", original: null, cache: {}, targetLanguage: "" }
+  drilling: { mode: "original", selectedLanguage: globalReportContentLanguage, original: null, cache: {}, targetLanguage: "" },
+  completion: { mode: "original", selectedLanguage: globalReportContentLanguage, original: null, cache: {}, targetLanguage: "" },
+  workover: { mode: "original", selectedLanguage: globalReportContentLanguage, original: null, cache: {}, targetLanguage: "" },
+  move: { mode: "original", selectedLanguage: globalReportContentLanguage, original: null, cache: {}, targetLanguage: "" }
 };
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -369,6 +374,9 @@ const analyticsState = {
     keywordQuery: ""
   }
 };
+const drillingBasicMonthlyState = { payload: null, loading: false };
+const workoverBasicMonthlyState = { payload: null, loading: false };
+const drillingWorkoverEfficiencyMonthlyState = { payload: null, loading: false };
 const REPORT_HOME_TARGETS = {
   drilling: "drilling-daily",
   completion: "completion-daily",
@@ -603,8 +611,452 @@ function isCurrentReportLocked(reportType) {
   return recordState[reportType]?.records?.some((record) => record.record_id === recordId && truthy(record.locked));
 }
 
+const drillingBasicMonthlyHeaders = [
+  "序号", "队伍编号", "施工国家和地区", "隶属地区公司", "施工区块", "钻机规格型号", "井号", "井型",
+  "开钻日期", "完钻日期", "完井日期", "设计井深（英尺）", "当前井深（英尺）", "月进尺（英尺）",
+  "本年累计进尺（英尺）", "计划钻井周期（天-时）", "计划完井周期（天-时）", "实际钻井周期（天-时）",
+  "实际完井周期（天-时）", "是否有溢流、井涌或井喷", "事故及停待情况", "备注",
+];
+
+function drillingBasicMonthlyFillTime() {
+  return monthlyReportFillTime(document.querySelector("[data-drilling-basic-date]")?.value || "");
+}
+
+function formatDrillingBasicMetric(value, digits = 2) {
+  if (value === null || value === undefined || value === "") return "";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return escapeHtml(value);
+  return number.toLocaleString("zh-CN", { maximumFractionDigits: digits });
+}
+
+function formatDrillingBasicCycle(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return escapeHtml(value);
+  return number.toLocaleString("zh-CN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function renderDrillingBasicMonthlyTable(payload = drillingBasicMonthlyState.payload || {}) {
+  const host = document.querySelector("[data-drilling-basic-monthly-table]");
+  if (!host) return;
+  const highlighted = new Set([7, 11, 15, 16]);
+  const widths = [44, 72, 92, 92, 82, 94, 112, 76, 96, 96, 96, 102, 102, 102, 112, 108, 108, 108, 108, 124, 124, 360];
+  const cells = (values, tag = "td") => values.map((value, index) => `<${tag}${highlighted.has(index) ? ' class="template-highlight"' : ""}>${value ?? ""}</${tag}>`).join("");
+  const sourceRows = Array.isArray(payload.rows) ? payload.rows : [];
+  const dataValues = sourceRows.map((row) => [
+    row.sequence,
+    escapeHtml(row.team_code),
+    escapeHtml(row.country_region),
+    escapeHtml(row.team_company),
+    escapeHtml(row.block_name),
+    escapeHtml(row.rig_model),
+    escapeHtml(row.well_name),
+    escapeHtml(row.well_profile),
+    escapeHtml(row.drilling_start_date),
+    escapeHtml(row.drilling_end_date),
+    escapeHtml(row.completion_date),
+    formatDrillingBasicMetric(row.design_depth_ft),
+    formatDrillingBasicMetric(row.current_depth_ft),
+    formatDrillingBasicMetric(row.month_progress_ft),
+    formatDrillingBasicMetric(row.year_progress_ft),
+    formatDrillingBasicCycle(row.planned_drilling_cycle_days),
+    formatDrillingBasicCycle(row.planned_completion_cycle_days),
+    formatDrillingBasicCycle(row.actual_drilling_cycle_days),
+    formatDrillingBasicCycle(row.actual_completion_cycle_days),
+    "",
+    "",
+    "",
+  ]);
+  const renderedRows = dataValues
+    .map((values) => `<tr class="template-data-row">${cells(values)}</tr>`)
+    .join("");
+  const summary = payload.summary || {};
+  host.innerHTML = `
+    <table class="drilling-basic-monthly-table" aria-label="钻井基础指标数据月报表">
+      <colgroup>${widths.map((width) => `<col style="width:${width}px" />`).join("")}</colgroup>
+      <thead>
+        <tr class="template-title-row"><th colspan="22">附表4.钻井基础指标数据月报表</th></tr>
+        <tr class="template-meta-row"><th colspan="22"><div><span>填报单位：厄瓜多尔子公司</span><span class="template-fill-time">填报时间：<b data-drilling-basic-fill-time>${drillingBasicMonthlyFillTime()}</b></span></div></th></tr>
+        <tr class="template-header-row">${cells(drillingBasicMonthlyHeaders, "th")}</tr>
+      </thead>
+      <tbody>
+        ${renderedRows}
+        <tr class="template-summary-row">${cells(["", "", "", "", "", "", "", "开钻井数", summary.drilling_start_count || 0, "交井数", summary.completion_count || 0, "", "", formatDrillingBasicMetric(summary.month_progress_ft), formatDrillingBasicMetric(summary.year_progress_ft), "", "", "", "", "", "", ""])}</tr>
+        <tr class="template-summary-row">${cells(["", "", "", "", "", "", "", "", "", "", "", "", "进尺（米）", formatDrillingBasicMetric(Number(summary.month_progress_ft || 0) * 0.3048), formatDrillingBasicMetric(Number(summary.year_progress_ft || 0) * 0.3048), "", "", "", "", "", "", ""])}</tr>
+        <tr class="template-note-title"><td colspan="22">填报说明：</td></tr>
+        <tr class="template-note-row"><td colspan="22">1.设备目前状态，如停待、整改、入库封存、回迁等以及钻井施工中需特别说明的情况，请在备注栏中填写。</td></tr>
+        <tr class="template-note-row"><td colspan="22">2.侧钻井项目视为钻井项目，在该表中填写相关数据。</td></tr>
+        <tr class="template-note-row"><td colspan="22">3.开钻日期、完钻日期、完井日期填写格式：YYYY-MM-DD</td></tr>
+      </tbody>
+    </table>`;
+}
+
+function localIsoDate() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function localIsoMonth() {
+  return localIsoDate().slice(0, 7);
+}
+
+function monthlyReportFillDate(reportMonth) {
+  if (!/^\d{4}-\d{2}$/.test(reportMonth || "")) return "";
+  if (reportMonth === localIsoMonth()) return localIsoDate();
+  const [year, month] = reportMonth.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${reportMonth}-${String(lastDay).padStart(2, "0")}`;
+}
+
+function monthlyReportFillTime(reportMonth) {
+  const fillDate = monthlyReportFillDate(reportMonth);
+  if (!fillDate) return "____年__月__日";
+  const [year, month, day] = fillDate.split("-");
+  return `${year}年${Number(month)}月${Number(day)}日`;
+}
+
+function initializeMonthlyReportSelect(select) {
+  if (!select) return localIsoMonth();
+  if (!select.value) select.value = localIsoMonth();
+  syncMonthlyMonthPicker(select);
+  return select.value;
+}
+
+function setMonthlyReportOptions(select, values = [], selectedMonth = "") {
+  if (!select) return;
+  const availableMonths = [...new Set(values
+    .map((item) => String(item?.value || ""))
+    .filter((value) => /^\d{4}-\d{2}$/.test(value) && value <= localIsoMonth()))]
+    .sort()
+    .reverse();
+  select.dataset.availableMonths = availableMonths.join(",");
+  if (!availableMonths.length) {
+    select.value = "";
+    select.disabled = true;
+    syncMonthlyMonthPicker(select);
+    return;
+  }
+  select.disabled = false;
+  select.value = availableMonths.includes(selectedMonth) ? selectedMonth : availableMonths[0];
+  select.dataset.lastValidMonth = select.value;
+  select.dataset.viewYear = select.value.slice(0, 4);
+  syncMonthlyMonthPicker(select);
+}
+
+function monthlyReportAvailableMonths(select) {
+  return String(select?.dataset.availableMonths || "").split(",").filter(Boolean);
+}
+
+function enforceMonthlyReportSelection(select) {
+  if (!select || select.disabled) return false;
+  const availableMonths = monthlyReportAvailableMonths(select);
+  if (availableMonths.includes(select.value) && select.value <= localIsoMonth()) {
+    select.dataset.lastValidMonth = select.value;
+    return true;
+  }
+  select.value = availableMonths.includes(select.dataset.lastValidMonth)
+    ? select.dataset.lastValidMonth
+    : (availableMonths[0] || "");
+  showToast("所选月份没有对应日报，请选择其他月份");
+  return false;
+}
+
+function monthlyMonthPicker(select) {
+  return select?.closest?.("[data-monthly-month-picker]") || null;
+}
+
+function monthlyMonthLabel(value) {
+  if (!/^\d{4}-\d{2}$/.test(value || "")) return "请选择月份";
+  const [year, month] = value.split("-");
+  return `${year}年${month}月`;
+}
+
+function syncMonthlyMonthPicker(select) {
+  const picker = monthlyMonthPicker(select);
+  if (!picker) return;
+  const trigger = picker.querySelector("[data-monthly-month-trigger]");
+  const display = picker.querySelector("[data-monthly-month-display]");
+  if (display) display.textContent = monthlyMonthLabel(select.value);
+  if (trigger) {
+    trigger.disabled = Boolean(select.disabled);
+    trigger.title = select.disabled ? "暂无可用日报月份" : "选择填报月份";
+  }
+  const popover = picker.querySelector("[data-monthly-month-popover]");
+  if (select.disabled && popover) {
+    popover.hidden = true;
+    trigger?.setAttribute("aria-expanded", "false");
+  }
+}
+
+function closeMonthlyMonthPickers(except = null) {
+  document.querySelectorAll("[data-monthly-month-picker]").forEach((picker) => {
+    if (picker === except) return;
+    const popover = picker.querySelector("[data-monthly-month-popover]");
+    const trigger = picker.querySelector("[data-monthly-month-trigger]");
+    if (popover) popover.hidden = true;
+    trigger?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function renderMonthlyMonthPicker(select) {
+  const picker = monthlyMonthPicker(select);
+  const popover = picker?.querySelector("[data-monthly-month-popover]");
+  if (!picker || !popover) return;
+  const availableMonths = monthlyReportAvailableMonths(select);
+  const currentYear = Number(localIsoMonth().slice(0, 4));
+  const earliestYear = availableMonths.length
+    ? Math.min(...availableMonths.map((value) => Number(value.slice(0, 4))))
+    : currentYear;
+  const selectedYear = Number((select.value || localIsoMonth()).slice(0, 4));
+  const requestedYear = Number(select.dataset.viewYear || selectedYear);
+  const viewYear = Math.max(earliestYear, Math.min(currentYear, requestedYear));
+  select.dataset.viewYear = String(viewYear);
+  const monthButtons = Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    const value = `${viewYear}-${month}`;
+    const disabled = !availableMonths.includes(value) || value > localIsoMonth();
+    const selected = value === select.value;
+    return `<button class="monthly-month-option${selected ? " selected" : ""}" type="button" data-monthly-picker-value="${value}"${disabled ? " disabled" : ""}${selected ? ' aria-current="date"' : ""}>${index + 1}月</button>`;
+  }).join("");
+  const chevrons = '<img src="./icons/nav/chevron-down.svg" alt="" /><img src="./icons/nav/chevron-down.svg" alt="" />';
+  popover.innerHTML = `
+    <div class="monthly-month-picker-header">
+      <button class="monthly-month-year-nav previous" type="button" aria-label="上一年" data-monthly-picker-year-step="-1"${viewYear <= earliestYear ? " disabled" : ""}>${chevrons}</button>
+      <strong>${viewYear}年</strong>
+      <button class="monthly-month-year-nav next" type="button" aria-label="下一年" data-monthly-picker-year-step="1"${viewYear >= currentYear ? " disabled" : ""}>${chevrons}</button>
+    </div>
+    <div class="monthly-month-grid">${monthButtons}</div>`;
+}
+
+function toggleMonthlyMonthPicker(select) {
+  const picker = monthlyMonthPicker(select);
+  const popover = picker?.querySelector("[data-monthly-month-popover]");
+  const trigger = picker?.querySelector("[data-monthly-month-trigger]");
+  if (!picker || !popover || !trigger || select.disabled) return;
+  const willOpen = popover.hidden;
+  closeMonthlyMonthPickers(picker);
+  if (willOpen) {
+    select.dataset.viewYear = (select.value || localIsoMonth()).slice(0, 4);
+    renderMonthlyMonthPicker(select);
+  }
+  popover.hidden = !willOpen;
+  trigger.setAttribute("aria-expanded", String(willOpen));
+}
+
+function resetMonthlyReportSelect(select) {
+  if (!select || select.disabled) return;
+  const availableMonths = monthlyReportAvailableMonths(select);
+  const currentMonth = localIsoMonth();
+  select.value = availableMonths.includes(currentMonth)
+    ? currentMonth
+    : (availableMonths[0] || "");
+  select.dataset.lastValidMonth = select.value;
+  select.dataset.viewYear = select.value.slice(0, 4);
+  syncMonthlyMonthPicker(select);
+}
+
+async function loadDrillingBasicMonthlyReport() {
+  if (drillingBasicMonthlyState.loading) return;
+  const monthSelect = document.querySelector("[data-drilling-basic-date]");
+  const params = new URLSearchParams({ report_month: initializeMonthlyReportSelect(monthSelect) });
+  const project = document.querySelector("[data-drilling-basic-project]")?.value || "";
+  const team = document.querySelector("[data-drilling-basic-team]")?.value || "";
+  if (project) params.set("project", project);
+  if (team) params.set("team", team);
+  drillingBasicMonthlyState.loading = true;
+  try {
+    const response = await fetch(`/api/monthly-drilling-basic-report?${params.toString()}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "钻井基础指标数据加载失败");
+    drillingBasicMonthlyState.payload = payload;
+    setMonthlyReportOptions(monthSelect, payload.filters?.available_months || [], payload.report_month);
+    setSelectOptions(document.querySelector("[data-drilling-basic-project]"), (payload.filters?.projects || []).map((item) => [item.value, item.label]), "全部项目");
+    setSelectOptions(document.querySelector("[data-drilling-basic-team]"), (payload.filters?.teams || []).map((item) => [item.value, item.label]), "全部队伍");
+    renderDrillingBasicMonthlyTable(payload);
+    const note = document.querySelector("[data-drilling-basic-status-note]");
+    if (note) note.textContent = `已加载 ${payload.rows?.length || 0} 条钻井作业；井控、事故停待和备注按确认口径暂留空。`;
+  } catch (error) {
+    showToast(error.message || "钻井基础指标数据加载失败");
+  } finally {
+    drillingBasicMonthlyState.loading = false;
+  }
+}
+
+const workoverBasicMonthlyHeaders = [
+  "序号", "队伍编号", "施工国家和地区", "隶属地区公司", "施工区块", "钻机规格型号", "井号", "井型",
+  "开工日期", "完工日期", "作业主要内容", "是否有溢流、井涌或井喷", "事故及停待情况", "备注",
+];
+
+function workoverBasicMonthlyFillTime() {
+  return monthlyReportFillTime(document.querySelector("[data-workover-basic-date]")?.value || "");
+}
+
+function renderWorkoverBasicMonthlyTable(payload = workoverBasicMonthlyState.payload || {}) {
+  const host = document.querySelector("[data-workover-basic-monthly-table]");
+  if (!host) return;
+  const highlighted = new Set([10]);
+  const widths = [44, 86, 105, 100, 112, 100, 116, 80, 100, 100, 170, 150, 150, 360];
+  const cells = (values, tag = "td") => values.map((value, index) => `<${tag}${highlighted.has(index) ? ' class="template-highlight"' : ""}>${value ?? ""}</${tag}>`).join("");
+  const sourceRows = Array.isArray(payload.rows) ? payload.rows : [];
+  const dataValues = sourceRows.map((row) => [
+    row.sequence,
+    escapeHtml(row.team_code),
+    escapeHtml(row.country_region),
+    escapeHtml(row.team_company),
+    escapeHtml(row.block_name),
+    escapeHtml(row.rig_model),
+    escapeHtml(row.well_name),
+    escapeHtml(row.well_profile),
+    escapeHtml(row.workover_start_date),
+    escapeHtml(row.workover_end_date),
+    escapeHtml(globalReportContentLanguage === "zh"
+      ? row.primary_operation_zh || row.primary_operation
+      : row.primary_operation_source || row.primary_operation),
+    "",
+    "",
+    "",
+  ]);
+  const renderedRows = dataValues.map((values) => `<tr class="template-data-row">${cells(values)}</tr>`).join("");
+  const summary = payload.summary || {};
+  host.innerHTML = `
+    <table class="drilling-basic-monthly-table workover-basic-monthly-table" aria-label="修井基础指标数据月报表">
+      <colgroup>${widths.map((width) => `<col style="width:${width}px" />`).join("")}</colgroup>
+      <thead>
+        <tr class="template-title-row"><th colspan="14">附表5.修井基础指标数据月报</th></tr>
+        <tr class="template-meta-row"><th colspan="14"><div><span>填报单位：厄瓜多尔子公司</span><span class="template-fill-time">填报时间：<b data-workover-basic-fill-time>${workoverBasicMonthlyFillTime()}</b></span></div></th></tr>
+        <tr class="template-header-row">${cells(workoverBasicMonthlyHeaders, "th")}</tr>
+      </thead>
+      <tbody>
+        ${renderedRows}
+        <tr class="template-summary-row">${cells(["", "", "", "", "", "", "", "", "修井完工口数", summary.completion_count || 0, "", "", "", ""])}</tr>
+        <tr class="template-note-title"><td colspan="14">填报说明：</td></tr>
+        <tr class="template-note-row"><td colspan="14">1.设备目前状态，如停待、整改、入库封存、回迁等以及钻井施工中需特别说明的情况，请在备注栏中填写。</td></tr>
+        <tr class="template-note-row"><td colspan="14">2.开工日期、完工日期填写格式：YYYY-MM-DD</td></tr>
+      </tbody>
+    </table>`;
+}
+
+async function loadWorkoverBasicMonthlyReport() {
+  if (workoverBasicMonthlyState.loading) return;
+  const monthSelect = document.querySelector("[data-workover-basic-date]");
+  const params = new URLSearchParams({ report_month: initializeMonthlyReportSelect(monthSelect) });
+  const project = document.querySelector("[data-workover-basic-project]")?.value || "";
+  const team = document.querySelector("[data-workover-basic-team]")?.value || "";
+  if (project) params.set("project", project);
+  if (team) params.set("team", team);
+  workoverBasicMonthlyState.loading = true;
+  try {
+    const response = await fetch(`/api/monthly-workover-basic-report?${params.toString()}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "修井基础指标数据加载失败");
+    workoverBasicMonthlyState.payload = payload;
+    setMonthlyReportOptions(monthSelect, payload.filters?.available_months || [], payload.report_month);
+    setSelectOptions(document.querySelector("[data-workover-basic-project]"), (payload.filters?.projects || []).map((item) => [item.value, item.label]), "全部项目");
+    setSelectOptions(document.querySelector("[data-workover-basic-team]"), (payload.filters?.teams || []).map((item) => [item.value, item.label]), "全部队伍");
+    renderWorkoverBasicMonthlyTable(payload);
+  } catch (error) {
+    showToast(error.message || "修井基础指标数据加载失败");
+  } finally {
+    workoverBasicMonthlyState.loading = false;
+  }
+}
+
+function drillingWorkoverEfficiencyMonthlyFillTime() {
+  return monthlyReportFillTime(document.querySelector("[data-drilling-workover-efficiency-date]")?.value || "");
+}
+
+function formatEfficiencyMonthlyHours(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(1) : escapeHtml(value);
+}
+
+function formatEfficiencyMonthlyRatio(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(3) : escapeHtml(value);
+}
+
+function renderDrillingWorkoverEfficiencyMonthlyTable(payload = drillingWorkoverEfficiencyMonthlyState.payload || {}) {
+  const host = document.querySelector("[data-drilling-workover-efficiency-monthly-table]");
+  if (!host) return;
+  const widths = [44, 86, 104, 84, 92, 105, 112, 82, 88, 92, 112, 126, 104, 86, 96, 390, 106, 330];
+  const cells = (values) => values.map((value) => `<td>${value ?? ""}</td>`).join("");
+  const sourceRows = Array.isArray(payload.rows) ? payload.rows : [];
+  const dataValues = sourceRows.map((row) => [
+    row.sequence,
+    escapeHtml(row.team_code),
+    escapeHtml(row.well_name),
+    escapeHtml(row.profession_label),
+    escapeHtml(row.country_region),
+    escapeHtml(row.team_company),
+    escapeHtml(row.block_name),
+    escapeHtml(row.rig_model),
+    formatEfficiencyMonthlyHours(row.move_hours),
+    formatEfficiencyMonthlyHours(row.production_hours),
+    formatEfficiencyMonthlyHours(row.paid_repair_hours),
+    formatEfficiencyMonthlyHours(row.zero_rate_repair_hours),
+    formatEfficiencyMonthlyHours(row.accident_complex_hours),
+    formatEfficiencyMonthlyHours(row.other_hours),
+    formatEfficiencyMonthlyRatio(row.well_efficiency),
+    "",
+    formatEfficiencyMonthlyRatio(row.average_efficiency),
+    "",
+  ]);
+  const renderedRows = dataValues
+    .map((values) => `<tr class="template-data-row">${cells(values)}</tr>`)
+    .join("");
+  host.innerHTML = `
+    <table class="drilling-basic-monthly-table drilling-workover-efficiency-monthly-table" aria-label="钻修井基础时效数据月报">
+      <colgroup>${widths.map((width) => `<col style="width:${width}px" />`).join("")}</colgroup>
+      <thead>
+        <tr class="template-title-row"><th colspan="18">附表6.钻修井基础时效数据月报</th></tr>
+        <tr class="template-meta-row"><th colspan="18"><div><span>填报单位：厄瓜多尔子公司</span><span class="template-fill-time">填报时间：<b data-drilling-workover-efficiency-fill-time>${drillingWorkoverEfficiencyMonthlyFillTime()}</b></span></div></th></tr>
+        <tr class="template-header-row efficiency-template-header-row">
+          <th rowspan="2">序号</th><th rowspan="2">队伍编号</th><th rowspan="2">施工井号</th><th rowspan="2">专业<br>（钻井或修井）</th>
+          <th rowspan="2">施工国家和地区</th><th rowspan="2">隶属地区公司</th><th rowspan="2">施工区块</th><th rowspan="2">钻机规格型号</th>
+          <th rowspan="2">搬安时间<br>（小时）</th><th rowspan="2">生产时间<br>（小时）</th><th colspan="4">非生产时间（小时）</th>
+          <th rowspan="2">单井生产时效</th><th rowspan="2">非生产时间原因描述</th><th rowspan="2">平均生产时效</th><th rowspan="2">备注</th>
+        </tr>
+        <tr class="template-header-row efficiency-template-subheader-row">
+          <th>修理时间<br>（有日费）</th><th>修理时间<br>（零日费）</th><th>事故、复杂情况时间</th><th>其他</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${renderedRows}
+        <tr class="template-note-title"><td colspan="18">填报说明：</td></tr>
+        <tr class="template-note-row"><td colspan="18">1. 单井生产时效=单井生产时间/（单井生产时间+单井非生产时间）</td></tr>
+      </tbody>
+    </table>`;
+}
+
+async function loadDrillingWorkoverEfficiencyMonthlyReport() {
+  if (drillingWorkoverEfficiencyMonthlyState.loading) return;
+  const monthSelect = document.querySelector("[data-drilling-workover-efficiency-date]");
+  const params = new URLSearchParams({ report_month: initializeMonthlyReportSelect(monthSelect) });
+  const project = document.querySelector("[data-drilling-workover-efficiency-project]")?.value || "";
+  const team = document.querySelector("[data-drilling-workover-efficiency-team]")?.value || "";
+  if (project) params.set("project", project);
+  if (team) params.set("team", team);
+  drillingWorkoverEfficiencyMonthlyState.loading = true;
+  try {
+    const response = await fetch(`/api/monthly-drilling-workover-efficiency-report?${params.toString()}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "钻修井基础时效数据加载失败");
+    drillingWorkoverEfficiencyMonthlyState.payload = payload;
+    setMonthlyReportOptions(monthSelect, payload.filters?.available_months || [], payload.report_month);
+    setSelectOptions(document.querySelector("[data-drilling-workover-efficiency-project]"), (payload.filters?.projects || []).map((item) => [item.value, item.label]), "全部项目");
+    setSelectOptions(document.querySelector("[data-drilling-workover-efficiency-team]"), (payload.filters?.teams || []).map((item) => [item.value, item.label]), "全部队伍");
+    renderDrillingWorkoverEfficiencyMonthlyTable(payload);
+  } catch (error) {
+    showToast(error.message || "钻修井基础时效数据加载失败");
+  } finally {
+    drillingWorkoverEfficiencyMonthlyState.loading = false;
+  }
+}
+
 function renderModulePlaceholder(link = activeMenuLink()) {
-  if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "production-report" || activeMenuTarget === "monthly-efficiency-report" || activeMenuTarget === "well-npt-confirm" || activeMenuTarget === "rig-npt-ranking") return;
+  if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "production-report" || activeMenuTarget === "drilling-basic-monthly-report" || activeMenuTarget === "workover-basic-monthly-report" || activeMenuTarget === "drilling-workover-efficiency-monthly-report" || activeMenuTarget === "monthly-efficiency-report" || activeMenuTarget === "well-npt-confirm" || activeMenuTarget === "rig-npt-ranking") return;
   const parentKey = link.closest(".menu-group")?.querySelector(".menu-group-toggle span[data-i18n]")?.dataset.i18n || "moduleStatusPlanned";
   const parentLabel = document.querySelector("#placeholderModule");
   if (parentLabel) {
@@ -626,6 +1078,9 @@ function setActiveMenu(target) {
   const isMoveDaily = target === "move-daily";
   const isProductionSummary = target === "rig-production-summary";
   const isProductionReport = target === "production-report";
+  const isDrillingBasicMonthly = target === "drilling-basic-monthly-report";
+  const isWorkoverBasicMonthly = target === "workover-basic-monthly-report";
+  const isDrillingWorkoverEfficiencyMonthly = target === "drilling-workover-efficiency-monthly-report";
   const isMonthlyEfficiency = target === "monthly-efficiency-report";
   const isNptStats = target === "well-npt-confirm";
   const isNptConfirm = target === "rig-npt-ranking";
@@ -641,13 +1096,19 @@ function setActiveMenu(target) {
   document.querySelector("#productionSummaryPage").classList.toggle("active", isProductionSummary);
   document.querySelector("#productionReportPage").hidden = !isProductionReport;
   document.querySelector("#productionReportPage").classList.toggle("active", isProductionReport);
+  document.querySelector("#drillingBasicMonthlyReportPage").hidden = !isDrillingBasicMonthly;
+  document.querySelector("#drillingBasicMonthlyReportPage").classList.toggle("active", isDrillingBasicMonthly);
+  document.querySelector("#workoverBasicMonthlyReportPage").hidden = !isWorkoverBasicMonthly;
+  document.querySelector("#workoverBasicMonthlyReportPage").classList.toggle("active", isWorkoverBasicMonthly);
+  document.querySelector("#drillingWorkoverEfficiencyMonthlyReportPage").hidden = !isDrillingWorkoverEfficiencyMonthly;
+  document.querySelector("#drillingWorkoverEfficiencyMonthlyReportPage").classList.toggle("active", isDrillingWorkoverEfficiencyMonthly);
   document.querySelector("#monthlyEfficiencyReportPage").hidden = !isMonthlyEfficiency;
   document.querySelector("#monthlyEfficiencyReportPage").classList.toggle("active", isMonthlyEfficiency);
   document.querySelector("#nptStatsPage").hidden = !isNptStats;
   document.querySelector("#nptStatsPage").classList.toggle("active", isNptStats);
   document.querySelector("#nptConfirmPage").hidden = !isNptConfirm;
   document.querySelector("#nptConfirmPage").classList.toggle("active", isNptConfirm);
-  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily && !isProductionSummary && !isProductionReport && !isMonthlyEfficiency && !isNptStats && !isNptConfirm;
+  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily && !isProductionSummary && !isProductionReport && !isDrillingBasicMonthly && !isWorkoverBasicMonthly && !isDrillingWorkoverEfficiencyMonthly && !isMonthlyEfficiency && !isNptStats && !isNptConfirm;
   document.querySelector("#modulePlaceholder").hidden = !showPlaceholder;
   document.querySelector("#modulePlaceholder").classList.toggle("active", showPlaceholder);
   if (showPlaceholder) renderModulePlaceholder();
@@ -657,6 +1118,9 @@ function setActiveMenu(target) {
   if (isMoveDaily) showReportRecords("move");
   if (isProductionSummary) loadAnalytics("production");
   if (isProductionReport) loadAnalytics("productionReport");
+  if (isDrillingBasicMonthly) loadDrillingBasicMonthlyReport();
+  if (isWorkoverBasicMonthly) loadWorkoverBasicMonthlyReport();
+  if (isDrillingWorkoverEfficiencyMonthly) loadDrillingWorkoverEfficiencyMonthlyReport();
   if (isMonthlyEfficiency) loadAnalytics("monthlyEfficiency");
   if (isNptStats) loadAnalytics("npt");
   if (isNptConfirm) loadNptConfirmations();
@@ -712,6 +1176,7 @@ function applyLanguage(language) {
   }
   if (analyticsState.productionReport.payload) renderProductionReportAnalytics(analyticsState.productionReport.payload);
   if (analyticsState.monthlyEfficiency.payload) renderMonthlyEfficiencyAnalytics(analyticsState.monthlyEfficiency.payload);
+  if (workoverBasicMonthlyState.payload) renderWorkoverBasicMonthlyTable(workoverBasicMonthlyState.payload);
   syncMonthlyDateRangeControl();
   if (analyticsState.npt.payload) renderNptAnalytics(analyticsState.npt.payload);
   renderModulePlaceholder();
@@ -727,32 +1192,34 @@ function syncLanguageButtons() {
   document.querySelectorAll(".language-switch [data-lang]").forEach((button) => {
     const reportType = activeReportType(button);
     const language = button.dataset.lang;
-    const selectedLanguage = reportType
-      ? reportContentState[reportType]?.selectedLanguage || "original"
-      : currentLanguage === "es" ? "es" : reportContentLanguageMode === "translated" ? "zh" : "original";
+    const selectedLanguage = globalReportContentLanguage;
     const isLoading = reportTranslationBusy.language
       && language === reportTranslationBusy.language
       && (!reportTranslationBusy.reportType || reportType === reportTranslationBusy.reportType);
-    const needsReportTranslation = language === "zh" && reportType;
-    const disabledForTranslation = needsReportTranslation && !canSwitchReportTranslation(reportType);
     button.textContent = isLoading ? ui("translationRunningShort") : languageButtonLabel(language);
     button.classList.toggle("active", language === selectedLanguage);
     button.setAttribute("aria-pressed", language === selectedLanguage ? "true" : "false");
     button.classList.toggle("is-loading", Boolean(isLoading));
-    button.disabled = Boolean(reportTranslationBusy.language) || disabledForTranslation;
-    button.title = disabledForTranslation ? ui("translationNotReady") : "";
+    button.disabled = Boolean(reportTranslationBusy.language);
+    button.title = "";
     button.setAttribute("aria-busy", isLoading ? "true" : "false");
   });
+}
+
+function setGlobalReportContentLanguage(language) {
+  if (!["original", "zh", "es"].includes(language)) return;
+  globalReportContentLanguage = language;
+  localStorage.setItem(REPORT_CONTENT_LANGUAGE_STORAGE_KEY, language);
+  Object.values(reportContentState).forEach((state) => { state.selectedLanguage = language; });
 }
 
 async function handleLanguageChoice(language, sourceButton = null) {
   if (reportTranslationBusy.language) return;
   const reportType = activeReportType(sourceButton);
   if (language === "original") {
-    if (reportType) restoreReportOriginal(reportType);
+    setGlobalReportContentLanguage("original");
+    if (reportType && isReportDetailVisible(reportType)) restoreReportOriginal(reportType);
     else restoreActiveReportOriginal();
-    reportContentLanguageMode = "original";
-    if (reportType) reportContentState[reportType].selectedLanguage = "original";
     applyLanguage("zh");
     renderLocalizedOperationDescriptions();
     syncLanguageButtons();
@@ -760,38 +1227,30 @@ async function handleLanguageChoice(language, sourceButton = null) {
   }
   if (!["zh", "es"].includes(language)) return;
   if (language === "es") {
-    if (reportType) restoreReportOriginal(reportType);
-    else reportContentLanguageMode = "original";
-    if (reportType) reportContentState[reportType].selectedLanguage = "es";
+    setGlobalReportContentLanguage("es");
+    if (reportType && isReportDetailVisible(reportType)) restoreReportOriginal(reportType);
     applyLanguage("es");
-    if (!reportType) renderLocalizedOperationDescriptions();
+    renderLocalizedOperationDescriptions();
     syncLanguageButtons();
     return;
   }
-  if (!reportType) {
-    reportContentLanguageMode = "translated";
-    applyLanguage(language);
-    renderLocalizedOperationDescriptions();
+  setGlobalReportContentLanguage("zh");
+  applyLanguage("zh");
+  renderLocalizedOperationDescriptions();
+  if (!reportType || !isReportDetailVisible(reportType)) {
     syncLanguageButtons();
     return;
   }
   if (reportType && !canSwitchReportTranslation(reportType)) {
     showToast(ui("translationNotReady"));
+    restoreReportOriginal(reportType);
+    syncLanguageButtons();
     return;
   }
-  const previousLanguage = currentLanguage;
-  const previousSelection = reportContentState[reportType]?.selectedLanguage || "original";
   setReportTranslationBusy(reportType, language);
   try {
-    applyLanguage(language);
     const translated = await translateVisibleReportContent(language, reportType);
-    if (translated) {
-      reportContentLanguageMode = language;
-      reportContentState[reportType].selectedLanguage = language;
-    } else {
-      reportContentState[reportType].selectedLanguage = previousSelection;
-      applyLanguage(previousLanguage);
-    }
+    if (!translated) restoreReportOriginal(reportType);
   } finally {
     clearReportTranslationBusy();
   }
@@ -873,12 +1332,11 @@ function setReportOriginalPayload(reportType, payload) {
   if (!reportContentState[reportType]) return;
   reportContentState[reportType] = {
     mode: "original",
-    selectedLanguage: currentLanguage === "es" ? "es" : "original",
+    selectedLanguage: globalReportContentLanguage,
     original: clonePayload(payload),
     cache: {},
     targetLanguage: "",
   };
-  reportContentLanguageMode = "original";
   syncLanguageButtons();
   applyTranslationPreviewState(reportType);
 }
@@ -957,6 +1415,28 @@ async function translateVisibleReportContent(targetLanguage, explicitReportType 
     const detail = error?.message ? `：${error.message}` : "";
     showToast(`${ui("translationFailed")}${detail}`);
     return false;
+  }
+}
+
+async function applyGlobalLanguageToReportDetail(reportType) {
+  if (!reportType || !isReportDetailVisible(reportType)) return;
+  reportContentState[reportType].selectedLanguage = globalReportContentLanguage;
+  if (globalReportContentLanguage !== "zh") {
+    restoreReportOriginal(reportType);
+    syncLanguageButtons();
+    return;
+  }
+  if (!canSwitchReportTranslation(reportType) || reportTranslationBusy.language) {
+    restoreReportOriginal(reportType);
+    syncLanguageButtons();
+    return;
+  }
+  setReportTranslationBusy(reportType, "zh");
+  try {
+    const translated = await translateVisibleReportContent("zh", reportType);
+    if (!translated) restoreReportOriginal(reportType);
+  } finally {
+    clearReportTranslationBusy();
   }
 }
 
@@ -2561,7 +3041,7 @@ function renderMonthlyEfficiencyTable(rows) {
   ].join("");
   const body = pageRows.map((row) => {
     const rowAttrs = row.record_id ? ` data-open-record="${escapeHtml(row.record_id)}" data-report-type="${escapeHtml(row.report_type || row.job_type)}"` : "";
-    const nonproductiveDescription = currentLanguage === "zh"
+    const nonproductiveDescription = globalReportContentLanguage === "zh"
       ? row.nonproductive_description_zh || row.nonproductive_description
       : row.nonproductive_description;
     return `<tr${rowAttrs}>
@@ -3479,7 +3959,7 @@ function nptClassificationEditorRow(row, index, locked) {
 }
 
 function usesTranslatedOperationDescriptions() {
-  return currentLanguage === "zh" && reportContentLanguageMode === "translated";
+  return globalReportContentLanguage === "zh";
 }
 
 function localizedOperationDescription(row = {}) {
@@ -3778,6 +4258,11 @@ function dateInputValue(value) {
   return match ? `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}` : "";
 }
 
+function syncBlankDateDisplay(input) {
+  if (!input?.matches?.('input[type="date"][data-blank-date]')) return;
+  input.classList.toggle("blank-date-value", !input.value);
+}
+
 function applyReportFields(fields = {}, targetForm = form) {
   const expanded = expandLegacyFields(fields);
   targetForm.querySelectorAll("[name]").forEach((control) => {
@@ -3790,6 +4275,7 @@ function applyReportFields(fields = {}, targetForm = form) {
     else if (name === "lastBopPressTest") targetForm.elements[name].value = dateInputValue(value);
     else targetForm.elements[name].value = value ?? "";
   });
+  targetForm.querySelectorAll('input[type="date"][data-blank-date]').forEach(syncBlankDateDisplay);
 }
 
 function formData(targetForm = form) {
@@ -4129,6 +4615,7 @@ function applyImportedPayload(payload) {
   showReportDetail("drilling");
   markReportSaved("drilling");
   window.scrollTo({ top: 0, behavior: "smooth" });
+  void applyGlobalLanguageToReportDetail("drilling");
 }
 
 function applyImportedCompletionPayload(payload) {
@@ -4138,6 +4625,7 @@ function applyImportedCompletionPayload(payload) {
   setActiveMenu("completion-daily");
   showReportDetail("completion");
   markReportSaved("completion");
+  void applyGlobalLanguageToReportDetail("completion");
 }
 
 function applyImportedWorkoverPayload(payload) {
@@ -4147,6 +4635,7 @@ function applyImportedWorkoverPayload(payload) {
   setActiveMenu("workover-daily");
   showReportDetail("workover");
   markReportSaved("workover");
+  void applyGlobalLanguageToReportDetail("workover");
 }
 
 function applyImportedMovePayload(payload) {
@@ -4156,6 +4645,7 @@ function applyImportedMovePayload(payload) {
   setActiveMenu("move-daily");
   showReportDetail("move");
   markReportSaved("move");
+  void applyGlobalLanguageToReportDetail("move");
 }
 
 function importEndpoint(reportType) {
@@ -4480,6 +4970,38 @@ document.querySelectorAll("[data-back-records]").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const monthPicker = event.target.closest("[data-monthly-month-picker]");
+  if (!monthPicker) closeMonthlyMonthPickers();
+  const monthPickerTrigger = event.target.closest("[data-monthly-month-trigger]");
+  if (monthPickerTrigger) {
+    const field = monthPickerTrigger.closest("[data-monthly-month-picker]");
+    toggleMonthlyMonthPicker(field?.querySelector('input[type="hidden"]'));
+    return;
+  }
+  const monthYearStep = event.target.closest("[data-monthly-picker-year-step]");
+  if (monthYearStep) {
+    const field = monthYearStep.closest("[data-monthly-month-picker]");
+    const select = field?.querySelector('input[type="hidden"]');
+    if (select) {
+      select.dataset.viewYear = String(Number(select.dataset.viewYear || localIsoMonth().slice(0, 4)) + Number(monthYearStep.dataset.monthlyPickerYearStep || 0));
+      renderMonthlyMonthPicker(select);
+    }
+    return;
+  }
+  const monthOption = event.target.closest("[data-monthly-picker-value]");
+  if (monthOption && !monthOption.disabled) {
+    const field = monthOption.closest("[data-monthly-month-picker]");
+    const select = field?.querySelector('input[type="hidden"]');
+    if (select && monthlyReportAvailableMonths(select).includes(monthOption.dataset.monthlyPickerValue)) {
+      select.value = monthOption.dataset.monthlyPickerValue;
+      select.dataset.lastValidMonth = select.value;
+      select.dataset.viewYear = select.value.slice(0, 4);
+      syncMonthlyMonthPicker(select);
+      closeMonthlyMonthPickers();
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    return;
+  }
   const dateRangeField = event.target.closest("[data-monthly-date-range]");
   if (!dateRangeField) document.querySelectorAll("[data-monthly-date-range]").forEach((field) => closeMonthlyDateRange(field));
   const dateRangeToggle = event.target.closest("[data-monthly-date-range-toggle]");
@@ -5005,6 +5527,7 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeMonthlyMonthPickers();
   if (event.key === "Enter" && event.target.matches("[data-record-page-jump]")) {
     event.preventDefault();
     return commitRecordPageJump(event.target);
@@ -5057,6 +5580,93 @@ document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {
   });
 });
 
+document.querySelector("[data-drilling-basic-date]")?.addEventListener("change", (event) => {
+  if (!enforceMonthlyReportSelection(event.currentTarget)) return;
+  const label = document.querySelector("[data-drilling-basic-fill-time]");
+  if (label) label.textContent = drillingBasicMonthlyFillTime();
+});
+document.querySelector("[data-drilling-basic-search]")?.addEventListener("click", () => loadDrillingBasicMonthlyReport());
+document.querySelector("[data-drilling-basic-reset]")?.addEventListener("click", () => {
+  resetMonthlyReportSelect(document.querySelector("[data-drilling-basic-date]"));
+  const project = document.querySelector("[data-drilling-basic-project]");
+  const team = document.querySelector("[data-drilling-basic-team]");
+  if (project) project.value = "";
+  if (team) team.value = "";
+  loadDrillingBasicMonthlyReport();
+});
+document.querySelector("[data-drilling-basic-export]")?.addEventListener("click", () => {
+  if (!frontCan("export")) return showToast("当前账号没有导出权限");
+  const params = new URLSearchParams({ report_month: document.querySelector("[data-drilling-basic-date]")?.value || localIsoMonth() });
+  const project = document.querySelector("[data-drilling-basic-project]")?.value || "";
+  const team = document.querySelector("[data-drilling-basic-team]")?.value || "";
+  if (project) params.set("project", project);
+  if (team) params.set("team", team);
+  const link = document.createElement("a");
+  link.href = `/api/monthly-drilling-basic-template-export?${params.toString()}`;
+  link.download = "钻井基础指标数据月报表-空模板.xlsx";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
+
+document.querySelector("[data-workover-basic-date]")?.addEventListener("change", (event) => {
+  if (!enforceMonthlyReportSelection(event.currentTarget)) return;
+  const label = document.querySelector("[data-workover-basic-fill-time]");
+  if (label) label.textContent = workoverBasicMonthlyFillTime();
+});
+document.querySelector("[data-workover-basic-search]")?.addEventListener("click", () => loadWorkoverBasicMonthlyReport());
+document.querySelector("[data-workover-basic-reset]")?.addEventListener("click", () => {
+  resetMonthlyReportSelect(document.querySelector("[data-workover-basic-date]"));
+  const project = document.querySelector("[data-workover-basic-project]");
+  const team = document.querySelector("[data-workover-basic-team]");
+  if (project) project.value = "";
+  if (team) team.value = "";
+  loadWorkoverBasicMonthlyReport();
+});
+document.querySelector("[data-workover-basic-export]")?.addEventListener("click", () => {
+  if (!frontCan("export")) return showToast("当前账号没有导出权限");
+  const params = new URLSearchParams({ report_month: document.querySelector("[data-workover-basic-date]")?.value || localIsoMonth() });
+  const project = document.querySelector("[data-workover-basic-project]")?.value || "";
+  const team = document.querySelector("[data-workover-basic-team]")?.value || "";
+  if (project) params.set("project", project);
+  if (team) params.set("team", team);
+  const link = document.createElement("a");
+  link.href = `/api/monthly-workover-basic-template-export?${params.toString()}`;
+  link.download = "修井基础指标数据月报表.xlsx";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
+
+document.querySelector("[data-drilling-workover-efficiency-date]")?.addEventListener("change", (event) => {
+  if (!enforceMonthlyReportSelection(event.currentTarget)) return;
+  const label = document.querySelector("[data-drilling-workover-efficiency-fill-time]");
+  if (label) label.textContent = drillingWorkoverEfficiencyMonthlyFillTime();
+});
+document.querySelector("[data-drilling-workover-efficiency-search]")?.addEventListener("click", () => loadDrillingWorkoverEfficiencyMonthlyReport());
+document.querySelector("[data-drilling-workover-efficiency-reset]")?.addEventListener("click", () => {
+  resetMonthlyReportSelect(document.querySelector("[data-drilling-workover-efficiency-date]"));
+  const project = document.querySelector("[data-drilling-workover-efficiency-project]");
+  const team = document.querySelector("[data-drilling-workover-efficiency-team]");
+  if (project) project.value = "";
+  if (team) team.value = "";
+  loadDrillingWorkoverEfficiencyMonthlyReport();
+});
+document.querySelector("[data-drilling-workover-efficiency-export]")?.addEventListener("click", () => {
+  if (!frontCan("export")) return showToast("当前账号没有导出权限");
+  const params = new URLSearchParams({ report_month: document.querySelector("[data-drilling-workover-efficiency-date]")?.value || localIsoMonth() });
+  const project = document.querySelector("[data-drilling-workover-efficiency-project]")?.value || "";
+  const team = document.querySelector("[data-drilling-workover-efficiency-team]")?.value || "";
+  if (project) params.set("project", project);
+  if (team) params.set("team", team);
+  const link = document.createElement("a");
+  link.href = `/api/monthly-drilling-workover-efficiency-template-export?${params.toString()}`;
+  link.download = "钻修井基础时效数据月报.xlsx";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
+
 document.querySelector("#importPdf").addEventListener("click", () => {
   if (!frontCan("import")) return showToast("当前账号没有导入权限");
   const input = document.querySelector("#pdfInput");
@@ -5101,6 +5711,12 @@ workoverForm.addEventListener("input", () => { markReportOriginalEdited("workove
 workoverForm.addEventListener("change", () => { markReportOriginalEdited("workover"); validateWorkover(); updateSaveButton("workover"); });
 moveForm.addEventListener("input", () => { markReportOriginalEdited("move"); validateMove(); updateSaveButton("move"); });
 moveForm.addEventListener("change", () => { markReportOriginalEdited("move"); validateMove(); updateSaveButton("move"); });
+
+document.querySelectorAll('input[type="date"][data-blank-date]').forEach((input) => {
+  syncBlankDateDisplay(input);
+  input.addEventListener("input", () => syncBlankDateDisplay(input));
+  input.addEventListener("change", () => syncBlankDateDisplay(input));
+});
 
 loadRows();
 loadRows({}, completionTableIds);

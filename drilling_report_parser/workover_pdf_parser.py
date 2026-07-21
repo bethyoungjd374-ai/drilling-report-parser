@@ -12,6 +12,7 @@ from .completion_pdf_parser import (
     _parse_bulks,
     _parse_mud_products,
     _parse_operations_from_pdf,
+    _parse_service_header_from_pdf,
     _ref_datum_number,
     _value_between,
 )
@@ -31,6 +32,12 @@ def parse_workover_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> di
     page1_lines = [line for line in layout_pages[0].splitlines() if line.strip()] if layout_pages else []
 
     fields = _parse_report_fields(page1_lines, layout_text, plain_text)
+    service_header = _parse_service_header_from_pdf(payload_source)
+    if service_header.get("serviceNo"):
+        fields["workoverNo"] = service_header.pop("serviceNo")
+    for key, value in service_header.items():
+        if value != "" or key not in fields:
+            fields[key] = value
     fields["safetyComments"] = _parse_safety_comments(layout_pages)
     fields["otherRemarks"] = _parse_other_remarks(layout_text)
 

@@ -7,17 +7,29 @@ import os
 import tempfile
 import threading
 import unittest
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock, patch
 
 from pypdf import PdfReader, PdfWriter
+from openpyxl import load_workbook
 
 from drilling_report_parser import excel_database, form_server
 from drilling_report_parser.excel_database import load_report_payload
 from tests.test_pdf_report_parser import sample_pdf
+
+
+def _yellow_filled_cells(worksheet) -> list[str]:
+    matches: list[str] = []
+    for row in worksheet.iter_rows():
+        for cell in row:
+            color = str(getattr(cell.fill.fgColor, "rgb", "") or "").upper()
+            indexed = getattr(cell.fill.fgColor, "indexed", None)
+            if color.endswith("FFFF00") or indexed == 6:
+                matches.append(cell.coordinate)
+    return matches
 
 
 def test_operational_parameter_values_are_normalized_without_units() -> None:
@@ -39,6 +51,444 @@ def test_operational_parameter_values_are_normalized_without_units() -> None:
     assert fields["stringWeightUp"] == "325"
     assert fields["stringWeightDown"] == "230"
     assert fields["torqueOnBottom"] == "27000"
+
+
+def test_admin_project_form_exposes_type_and_editable_npt_allowance() -> None:
+    source = Path(__file__).parents[1].joinpath("web_form", "admin.js").read_text(encoding="utf-8")
+
+    assert '["project_type", "项目类型", "project-type"]' in source
+    assert '["npt_allowance_hours", "允许 NPT（h）", "number"]' in source
+    assert "{ drilling: 5, completion: 5, workover: 12 }" in source
+    assert "data-admin-new-project" in source
+
+
+def test_daily_report_forms_expose_all_pdf_basic_information_fields() -> None:
+    html = Path(__file__).parents[1].joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    drilling = html.split('<form id="reportForm"', 1)[1].split("</form>", 1)[0]
+    completion = html.split('<form id="completionReportForm"', 1)[1].split("</form>", 1)[0]
+    workover = html.split('<form id="workoverReportForm"', 1)[1].split("</form>", 1)[0]
+
+    for name in (
+        "wellboreNo", "dfs", "groundElev", "afeMdDays", "dailyCost", "cumulativeCost",
+        "afeCost", "avgRopSlide", "avgRopRot", "supervisor1", "supervisor2", "engineer",
+        "pamEngineer", "geologist", "totalPersonnel",
+    ):
+        assert f'name="{name}"' in drilling
+    for name in (
+        "completionNo", "wellboreNo", "rigContractName", "groundElev", "dol", "dfs",
+        "dailyCost", "cumulativeCost", "afeCost", "supervisor1", "supervisor2", "engineer",
+        "pamEngineer", "geologist", "totalPersonnel",
+    ):
+        assert f'name="{name}"' in completion
+    for name in (
+        "workoverNo", "wellboreNo", "rigContractName", "groundElev", "dol", "dfs",
+        "dailyCost", "cumulativeCost", "afeCost", "supervisor1", "supervisor2", "engineer",
+        "pamEngineer", "geologist", "totalPersonnel",
+    ):
+        assert f'name="{name}"' in workover
+
+
+def test_blank_bop_test_date_does_not_render_native_date_placeholder() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+    styles = root.joinpath("web_form", "styles.css").read_text(encoding="utf-8")
+
+    assert 'name="lastBopPressTest" type="date" data-blank-date' in html
+    assert 'function syncBlankDateDisplay(input)' in script
+    assert 'input.classList.toggle("blank-date-value", !input.value)' in script
+    assert '.blank-date-value::-webkit-datetime-edit' in styles
+
+
+def test_report_content_language_is_global_and_persistent_across_modules() -> None:
+    script = Path(__file__).parents[1].joinpath("web_form", "app.js").read_text(encoding="utf-8")
+
+    assert 'const REPORT_CONTENT_LANGUAGE_STORAGE_KEY = "drillingReportContentLanguage"' in script
+    assert 'localStorage.setItem(REPORT_CONTENT_LANGUAGE_STORAGE_KEY, language)' in script
+    assert 'const selectedLanguage = globalReportContentLanguage' in script
+    assert 'selectedLanguage: globalReportContentLanguage' in script
+    assert 'void applyGlobalLanguageToReportDetail("drilling")' in script
+    assert 'void applyGlobalLanguageToReportDetail("completion")' in script
+    assert 'void applyGlobalLanguageToReportDetail("workover")' in script
+    assert 'return globalReportContentLanguage === "zh"' in script
+
+
+def test_drilling_basic_monthly_report_page_matches_appendix_4_structure() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+    styles = root.joinpath("web_form", "styles.css").read_text(encoding="utf-8")
+
+    monthly_group = html.index('data-i18n="menuMonthlyReport"')
+    basic_item = html.index('data-menu-target="drilling-basic-monthly-report"', monthly_group)
+    efficiency_item = html.index('data-menu-target="drilling-workover-efficiency-monthly-report"', monthly_group)
+    assert basic_item < efficiency_item
+    assert 'id="drillingBasicMonthlyReportPage"' in html
+    assert 'data-drilling-basic-monthly-table' in html
+    assert 'data-drilling-basic-export' in html
+    assert '<span>填报日期</span><input type="date" data-drilling-basic-date' not in html
+    assert '<span>项目</span><select data-drilling-basic-project' not in html
+    assert '<span>队伍编号</span><select data-drilling-basic-team' not in html
+    assert 'class="monthly-month-picker" data-monthly-month-picker' in html
+    assert '<input type="hidden" data-drilling-basic-date' in html
+    assert 'class="monthly-month-trigger" type="button" aria-label="填报月份"' in html
+    assert 'new URLSearchParams({ report_month:' in script
+    assert 'function monthlyReportFillDate(reportMonth)' in script
+    assert 'function renderMonthlyMonthPicker(select)' in script
+    assert 'data-monthly-picker-year-step="-1"' in script
+    assert 'data-monthly-picker-value=' in script
+    assert '.monthly-month-grid {' in styles
+    assert 'name="report_date" data-drilling-basic-date' not in html
+    assert 'data-drilling-basic-status-note' not in html
+    assert 'minimumFractionDigits: 1, maximumFractionDigits: 1' in script
+    assert ".template-highlight {\n  background: #fff;" in styles
+    assert ".template-fill-time {\n  margin-left: 64px;" in styles
+    assert ".drilling-basic-monthly-workspace {\n  display: grid;\n  gap: 14px;\n  padding: 14px 0 28px;" in styles
+    for header in (
+        "序号", "队伍编号", "施工国家和地区", "隶属地区公司", "施工区块", "钻机规格型号", "井号", "井型",
+        "开钻日期", "完钻日期", "完井日期", "设计井深（英尺）", "当前井深（英尺）", "月进尺（英尺）",
+        "本年累计进尺（英尺）", "计划钻井周期（天-时）", "计划完井周期（天-时）", "实际钻井周期（天-时）",
+        "实际完井周期（天-时）", "是否有溢流、井涌或井喷", "事故及停待情况", "备注",
+    ):
+        assert f'"{header}"' in script
+
+
+def test_drilling_basic_monthly_template_export_populates_exact_static_workbook() -> None:
+    template = form_server.MONTHLY_DRILLING_BASIC_TEMPLATE
+    assert template.exists()
+    assert template.read_bytes().startswith(b"PK")
+    handler = object.__new__(form_server.FormHandler)
+    handler.send_response = Mock()
+    handler.send_header = Mock()
+    handler.end_headers = Mock()
+    handler.wfile = BytesIO()
+
+    payload = {
+        "report_date": "2026-07-20",
+        "rows": [{
+            "sequence": 1, "team_code": "SINOPEC 248钻井队", "country_region": "厄瓜多尔", "team_company": "西南工程",
+            "block_name": "PUCUNA", "rig_model": "ZJ70D", "well_name": "PCNA-001", "well_profile": "定向井",
+            "drilling_start_date": "2026-07-01", "drilling_end_date": "2026-07-10", "completion_date": "2026-07-12",
+            "design_depth_ft": 10000, "current_depth_ft": 10000, "month_progress_ft": 10000, "year_progress_ft": 10000,
+            "actual_drilling_cycle_days": 9.5, "actual_completion_cycle_days": 2,
+            "well_control_incident": "", "accident_waiting": "", "remarks": "",
+        }],
+    }
+    with patch.object(form_server, "_monthly_drilling_basic_report_payload", return_value=payload):
+        handler._monthly_drilling_basic_template_export("report_date=2026-07-20")
+
+    handler.send_response.assert_called_once_with(200)
+    workbook = load_workbook(BytesIO(handler.wfile.getvalue()), data_only=False)
+    worksheet = workbook["表4钻井基础指标数据月报"]
+    assert "2026年7月20日" in worksheet["A2"].value
+    assert worksheet["B4"].value == "SINOPEC 248钻井队"
+    assert worksheet["B4"].alignment.wrap_text is not True
+    assert worksheet["A1"].font.name == worksheet["A3"].font.name == worksheet["B4"].font.name == "宋体"
+    assert worksheet["A1"].font.sz == 20
+    assert worksheet["A3"].font.sz == 11
+    assert worksheet["B4"].font.sz == 10
+    assert worksheet.column_dimensions["B"].width == 16
+    assert _yellow_filled_cells(worksheet) == []
+    assert worksheet["G4"].value == "PCNA-001"
+    assert worksheet["I4"].value.strftime("%Y-%m-%d") == "2026-07-01"
+    assert worksheet["T4"].value is None
+    assert worksheet["U4"].value is None
+    assert worksheet["V4"].value is None
+    assert worksheet["H5"].value == "开钻井数"
+    assert worksheet["I5"].value == "=COUNT(I4:I4)"
+    assert worksheet["J5"].value == "交井数"
+    assert worksheet["K5"].value == "=COUNT(K4:K4)"
+    assert worksheet["N5"].value == "=SUM(N4:N4)"
+    assert worksheet["O5"].value == "=SUM(O4:O4)"
+    assert worksheet["M6"].value == "进尺（米）"
+    assert worksheet["N6"].value == "=N5*0.3048"
+    assert worksheet["A7"].value == "填报说明："
+    assert worksheet["A10"].value.startswith("3.开钻日期")
+    assert worksheet["H53"].value is None
+    assert worksheet["P4"].number_format == "0.0"
+    assert worksheet["R4"].number_format == "0.0"
+    assert worksheet["S4"].number_format == "0.0"
+
+
+def test_drilling_basic_monthly_export_places_zero_totals_after_header() -> None:
+    workbook_bytes = form_server._monthly_drilling_basic_workbook_bytes({
+        "report_date": "2026-07-20",
+        "rows": [],
+    })
+    workbook = load_workbook(BytesIO(workbook_bytes), data_only=False)
+    worksheet = workbook["表4钻井基础指标数据月报"]
+
+    assert worksheet["H4"].value == "开钻井数"
+    assert worksheet["I4"].value == "=0"
+    assert worksheet["J4"].value == "交井数"
+    assert worksheet["K4"].value == "=0"
+    assert worksheet["N4"].value == "=0"
+    assert worksheet["O4"].value == "=0"
+    assert worksheet["M5"].value == "进尺（米）"
+    assert worksheet["N5"].value == "=N4*0.3048"
+    assert worksheet["A6"].value == "填报说明："
+
+
+def test_drilling_basic_monthly_payload_filters_rows_and_keeps_ai_fields_blank() -> None:
+    source = {
+        "month_start": "2026-07-01", "month_end": "2026-07-31", "year_start": "2026-01-01",
+        "rows": [
+            {"job_id": 1, "project_id": 10, "project_name": "A", "team_code": "248", "drilling_start_date": "2026-07-01", "completion_date": "", "month_progress_ft": 100, "year_progress_ft": 100, "well_control_incident": "", "accident_waiting": "", "remarks": ""},
+            {"job_id": 2, "project_id": 20, "project_name": "B", "team_code": "168", "drilling_start_date": "2026-07-02", "completion_date": "2026-07-10", "month_progress_ft": 200, "year_progress_ft": 300, "well_control_incident": "", "accident_waiting": "", "remarks": ""},
+        ],
+    }
+    with patch.object(form_server, "load_drilling_basic_monthly_report_rows", return_value=source):
+        payload = form_server._monthly_drilling_basic_report_payload(
+            Path("mysql"), {"report_date": ["2026-07-20"], "project": ["20"]}
+        )
+
+    assert payload["report_month"] == "2026-07"
+    assert payload["report_date"] == form_server._monthly_report_fill_date("2026-07")
+    assert [row["job_id"] for row in payload["rows"]] == [2]
+    assert payload["rows"][0]["sequence"] == 1
+    assert payload["summary"] == {
+        "drilling_start_count": 1,
+        "completion_count": 1,
+        "month_progress_ft": 200.0,
+        "year_progress_ft": 300.0,
+    }
+
+
+def test_monthly_report_fill_date_uses_today_for_current_month_and_month_end_for_history() -> None:
+    today = date(2026, 7, 21)
+
+    assert form_server._monthly_report_fill_date("2026-07", today=today) == "2026-07-21"
+    assert form_server._monthly_report_fill_date("2026-06", today=today) == "2026-06-30"
+    assert form_server._monthly_report_fill_date("2024-02", today=today) == "2024-02-29"
+
+
+def test_monthly_report_falls_back_to_latest_available_month() -> None:
+    class FixedDate(date):
+        @classmethod
+        def today(cls) -> "FixedDate":
+            return cls(2026, 7, 21)
+
+    sources = [
+        {"available_months": ["2026-06", "2026-05"], "rows": []},
+        {"available_months": ["2026-06", "2026-05"], "rows": [{"project_id": 1}]},
+    ]
+    loader = Mock(side_effect=sources)
+
+    with patch.object(form_server, "date", FixedDate):
+        selected_month, selected_date, source, options = form_server._monthly_selected_source(
+            Path("mysql"), {"report_month": ["2099-12"]}, loader,
+        )
+
+    assert selected_month == "2026-06"
+    assert selected_date == "2026-06-30"
+    assert source["rows"] == [{"project_id": 1}]
+    assert options == [
+        {"value": "2026-06", "label": "2026年6月"},
+        {"value": "2026-05", "label": "2026年5月"},
+    ]
+
+
+def test_workover_basic_monthly_report_page_matches_appendix_5_structure() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+
+    monthly_group = html.index('data-i18n="menuMonthlyReport"')
+    drilling_item = html.index('data-menu-target="drilling-basic-monthly-report"', monthly_group)
+    workover_item = html.index('data-menu-target="workover-basic-monthly-report"', monthly_group)
+    efficiency_item = html.index('data-menu-target="drilling-workover-efficiency-monthly-report"', monthly_group)
+    assert drilling_item < workover_item < efficiency_item
+    assert 'id="workoverBasicMonthlyReportPage"' in html
+    assert 'data-workover-basic-monthly-table' in html
+    assert 'data-workover-basic-export' in html
+    assert '<span>填报日期</span><input type="date" data-workover-basic-date' not in html
+    assert '<span>项目</span><select data-workover-basic-project' not in html
+    assert '<span>队伍编号</span><select data-workover-basic-team' not in html
+    assert '<input type="hidden" data-workover-basic-date' in html
+    for header in (
+        "序号", "队伍编号", "施工国家和地区", "隶属地区公司", "施工区块", "钻机规格型号", "井号", "井型",
+        "开工日期", "完工日期", "作业主要内容", "是否有溢流、井涌或井喷", "事故及停待情况", "备注",
+    ):
+        assert f'"{header}"' in script
+
+
+def test_workover_basic_monthly_template_export_populates_exact_static_workbook() -> None:
+    template = form_server.MONTHLY_WORKOVER_BASIC_TEMPLATE
+    assert template.exists()
+    assert template.read_bytes().startswith(b"PK")
+    handler = object.__new__(form_server.FormHandler)
+    handler.send_response = Mock()
+    handler.send_header = Mock()
+    handler.end_headers = Mock()
+    handler.wfile = BytesIO()
+
+    payload = {
+        "report_date": "2026-07-20",
+        "rows": [{
+            "sequence": 1, "team_code": "SINOPEC 932修井队", "country_region": "厄瓜多尔", "team_company": "华东工程",
+            "block_name": "AUCA", "rig_model": "XJ650", "well_name": "CNOA-047", "well_profile": "油井",
+            "workover_start_date": "2026-07-01", "workover_end_date": "2026-07-10", "primary_operation": "检泵",
+            "well_control_incident": "", "accident_waiting": "", "remarks": "",
+        }],
+    }
+    with patch.object(form_server, "_monthly_workover_basic_report_payload", return_value=payload):
+        handler._monthly_workover_basic_template_export("report_date=2026-07-20")
+
+    handler.send_response.assert_called_once_with(200)
+    workbook = load_workbook(BytesIO(handler.wfile.getvalue()), data_only=False)
+    worksheet = workbook["表5 修井基础指标数据月报"]
+    assert worksheet["A2"].value == "填报单位：厄瓜多尔子公司"
+    assert worksheet["K2"].value == "填报时间：2026年7月20日"
+    assert worksheet["B4"].value == "SINOPEC 932修井队"
+    assert worksheet["A1"].font.name == worksheet["A3"].font.name == worksheet["B4"].font.name == "宋体"
+    assert worksheet["A1"].font.sz == 20
+    assert worksheet["A3"].font.sz == 11
+    assert worksheet["B4"].font.sz == 10
+    assert worksheet.column_dimensions["B"].width == 16
+    assert _yellow_filled_cells(worksheet) == []
+    assert worksheet["I4"].value.strftime("%Y-%m-%d") == "2026-07-01"
+    assert worksheet["K4"].value == "检泵"
+    assert worksheet["L4"].value is None
+    assert worksheet["M4"].value is None
+    assert worksheet["N4"].value is None
+    assert worksheet["I5"].value == "修井完工口数"
+    assert worksheet["J5"].value == "=COUNT(J4:J4)"
+    assert worksheet["A6"].value == "填报说明："
+    assert worksheet["A7"].value.startswith("1.设备目前状态")
+    assert worksheet["A8"].value.startswith("2.开工日期")
+    assert worksheet["I75"].value is None
+
+
+def test_workover_basic_monthly_export_places_zero_total_after_header() -> None:
+    workbook_bytes = form_server._monthly_workover_basic_workbook_bytes({
+        "report_date": "2026-07-20",
+        "rows": [],
+    })
+    workbook = load_workbook(BytesIO(workbook_bytes), data_only=False)
+    worksheet = workbook["表5 修井基础指标数据月报"]
+
+    assert worksheet["I4"].value == "修井完工口数"
+    assert worksheet["J4"].value == "=0"
+    assert worksheet["A5"].value == "填报说明："
+    assert worksheet["A6"].value.startswith("1.设备目前状态")
+    assert worksheet["A7"].value.startswith("2.开工日期")
+
+
+def test_workover_basic_monthly_payload_filters_rows_and_keeps_ai_fields_blank() -> None:
+    source = {
+        "month_start": "2026-07-01", "month_end": "2026-07-31",
+        "rows": [
+            {"job_id": 1, "project_id": 10, "project_name": "A", "team_code": "SINOPEC 932", "workover_end_date": "", "primary_operation": "", "well_control_incident": "", "accident_waiting": "", "remarks": ""},
+            {"job_id": 2, "project_id": 20, "project_name": "B", "team_code": "SINOPEC 976", "workover_end_date": "2026-07-10", "primary_operation": "检泵", "well_control_incident": "", "accident_waiting": "", "remarks": ""},
+        ],
+    }
+    with patch.object(form_server, "load_workover_basic_monthly_report_rows", return_value=source):
+        payload = form_server._monthly_workover_basic_report_payload(
+            Path("mysql"), {"report_date": ["2026-07-20"], "project": ["20"]}
+        )
+
+    assert payload["report_month"] == "2026-07"
+    assert payload["report_date"] == form_server._monthly_report_fill_date("2026-07")
+    assert [row["job_id"] for row in payload["rows"]] == [2]
+    assert payload["rows"][0]["sequence"] == 1
+    assert payload["summary"] == {"completion_count": 1}
+
+
+def test_drilling_workover_efficiency_monthly_page_matches_appendix_6_structure() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+
+    monthly_group = html.index('data-i18n="menuMonthlyReport"')
+    drilling_item = html.index('data-menu-target="drilling-basic-monthly-report"', monthly_group)
+    workover_item = html.index('data-menu-target="workover-basic-monthly-report"', monthly_group)
+    efficiency_item = html.index('data-menu-target="drilling-workover-efficiency-monthly-report"', monthly_group)
+    assert drilling_item < workover_item < efficiency_item
+    assert 'id="drillingWorkoverEfficiencyMonthlyReportPage"' in html
+    assert 'data-drilling-workover-efficiency-monthly-table' in html
+    assert 'data-drilling-workover-efficiency-export' in html
+    assert '<span>填报日期</span><input type="date" data-drilling-workover-efficiency-date' not in html
+    assert '<span>项目</span><select data-drilling-workover-efficiency-project' not in html
+    assert '<span>队伍编号</span><select data-drilling-workover-efficiency-team' not in html
+    assert '<input type="hidden" data-drilling-workover-efficiency-date' in html
+    for header in (
+        "序号", "队伍编号", "施工井号", "专业", "施工国家和地区", "隶属地区公司", "施工区块", "钻机规格型号",
+        "搬安时间", "生产时间", "非生产时间", "修理时间", "事故、复杂情况时间", "单井生产时效",
+        "非生产时间原因描述", "平均生产时效", "备注",
+    ):
+        assert header in script
+    assert "reservedRowCount" not in script
+    assert "reservedRowCount - dataValues.length" not in script
+
+
+def test_drilling_workover_efficiency_monthly_template_export_uses_exact_appendix_6_workbook() -> None:
+    template = form_server.MONTHLY_DRILLING_WORKOVER_EFFICIENCY_TEMPLATE
+    assert template.exists()
+    assert template.read_bytes().startswith(b"PK")
+    handler = object.__new__(form_server.FormHandler)
+    handler.send_response = Mock()
+    handler.send_header = Mock()
+    handler.end_headers = Mock()
+    handler.wfile = BytesIO()
+    payload = {
+        "report_date": "2026-07-21",
+        "rows": [{
+            "sequence": 1, "team_code": "SINOPEC 933修井队", "well_name": "YLBD-043HS1", "profession_label": "修井",
+            "country_region": "厄瓜多尔", "team_company": "华东工程", "block_name": "SHUSHUFINDI", "rig_model": "ZJ30",
+            "move_hours": 12.25, "production_hours": 100.04, "paid_repair_hours": 12, "zero_rate_repair_hours": 3.5,
+            "accident_complex_hours": 0, "other_hours": 0, "well_efficiency": 0.8654,
+            "nonproductive_description": "", "average_efficiency": None, "remarks": "",
+        }],
+    }
+    with patch.object(form_server, "_monthly_drilling_workover_efficiency_report_payload", return_value=payload):
+        handler._monthly_drilling_workover_efficiency_template_export("report_date=2026-07-21")
+
+    handler.send_response.assert_called_once_with(200)
+    workbook = load_workbook(BytesIO(handler.wfile.getvalue()), data_only=False)
+    worksheet = workbook["表6钻修井基础时效数据月报 "]
+    assert "2026年7月21日" in worksheet["A2"].value
+    assert worksheet["B6"].value == "SINOPEC 933修井队"
+    assert worksheet["B6"].alignment.wrap_text is not True
+    assert worksheet["A1"].font.name == worksheet["A3"].font.name == worksheet["B6"].font.name == "宋体"
+    assert worksheet["A1"].font.sz == 20
+    assert worksheet["A3"].font.sz == 11
+    assert worksheet["B6"].font.sz == 10
+    assert worksheet.column_dimensions["B"].width == 16
+    assert _yellow_filled_cells(worksheet) == []
+    assert worksheet["C6"].value == "YLBD-043HS1"
+    assert worksheet["D6"].value == "修井"
+    assert worksheet["I6"].value == 12.25
+    assert worksheet["I6"].number_format == "0.0"
+    assert worksheet["K6"].value == 12
+    assert worksheet["L6"].value == 3.5
+    assert worksheet["M6"].value == 0
+    assert worksheet["N6"].value == 0
+    assert worksheet["O6"].value == '=IF(J6+SUM(K6:N6)=0,"",J6/(J6+SUM(K6:N6)))'
+    assert worksheet["P6"].value is None
+    assert worksheet["Q6"].value is None
+    assert worksheet["R6"].value is None
+    assert worksheet["A7"].value == "填报说明："
+    assert worksheet["A8"].value == "1. 单井生产时效=单井生产时间/（单井生产时间+单井非生产时间）"
+    assert worksheet.max_row == 9
+
+
+def test_drilling_workover_efficiency_monthly_payload_filters_rows() -> None:
+    source = {
+        "month_start": "2026-07-01", "month_end": "2026-07-31",
+        "rows": [
+            {"project_id": 10, "project_name": "A", "team_code": "SINOPEC 168", "well_name": "W-1"},
+            {"project_id": 20, "project_name": "B", "team_code": "SINOPEC 933", "well_name": "W-2"},
+        ],
+    }
+    with patch.object(form_server, "load_drilling_workover_efficiency_monthly_report_rows", return_value=source):
+        payload = form_server._monthly_drilling_workover_efficiency_report_payload(
+            Path("mysql"), {"report_date": ["2026-07-21"], "project": ["20"]}
+        )
+
+    assert payload["report_month"] == "2026-07"
+    assert payload["report_date"] == form_server._monthly_report_fill_date("2026-07")
+    assert [row["well_name"] for row in payload["rows"]] == ["W-2"]
+    assert payload["rows"][0]["sequence"] == 1
 
 
 def test_completeness_is_not_inferred_without_an_explicit_period() -> None:
@@ -181,7 +631,7 @@ class FormServerImportTest(unittest.TestCase):
                 "drilling",
                 "completion",
                 "workover",
-                "move",
+                "drilling",
             ],
         )
 
@@ -297,7 +747,7 @@ class FormServerImportTest(unittest.TestCase):
         self.assertIn("当前上传入口是完井日报", error_payload["error"])
         self.assertEqual(handler._send_json.call_args.kwargs["status"], 400)
 
-    def test_rig_move_event_is_accepted_and_stored_as_move(self) -> None:
+    def test_rig_move_event_is_accepted_from_drilling_and_stored_as_drilling(self) -> None:
         writer = PdfWriter()
         writer.add_blank_page(width=101, height=300)
         output = BytesIO()
@@ -323,15 +773,15 @@ class FormServerImportTest(unittest.TestCase):
         handler._store_source_pdf = Mock()
         handler._send_json = Mock()
 
-        strategy = Mock(storage_report_type="move", parser=Mock(return_value=payload))
+        strategy = Mock(storage_report_type="drilling", parser=Mock(return_value=payload))
         with patch.object(form_server, "pdf_import_strategy", return_value=strategy):
-            handler._import_report_pdf("move")
+            handler._import_report_pdf("drilling")
 
         handler._store_payload.assert_called_once()
-        self.assertEqual(handler._store_payload.call_args.args[1], "move")
+        self.assertEqual(handler._store_payload.call_args.args[1], "drilling")
         stored_payload = handler._store_payload.call_args.args[0]
         self.assertEqual(stored_payload["metadata"]["detected_event_type"], "move")
-        self.assertEqual(stored_payload["metadata"]["detected_report_type"], "move")
+        self.assertEqual(stored_payload["metadata"]["detected_report_type"], "drilling")
 
     def test_multi_report_type_mismatch_rejects_the_whole_batch(self) -> None:
         writer = PdfWriter()

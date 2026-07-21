@@ -27,6 +27,10 @@ def parse_pdf_daily_report(source: str | Path | bytes | BinaryIO) -> dict[str, A
     page1_lines = [line for line in layout_pages[0].splitlines() if line.strip()] if layout_pages else []
 
     fields = _parse_report_fields(page1_lines, layout_text, plain_text)
+    for key, value in _parse_drilling_header_from_pdf(payload_source).items():
+        if value != "" or key not in fields:
+            fields[key] = value
+    fields.update(_parse_drilling_personnel(page1_lines))
     survey = _parse_survey(page1_lines)
     bha_components = _parse_bha_components(page1_lines)
     fields.update(_parse_bha_fields(page1_lines, bha_components, payload_source))
@@ -160,11 +164,13 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
     today_line = _first_line(lines, "Today's MD:")
     fields["todayMd"] = _num(_value_between(today_line, "Today's MD:", "Progress:"))
     fields["progress"] = _num(_value_between(today_line, "Progress:", "Ground Elev:"))
+    fields["groundElev"] = _value_between(today_line, "Ground Elev:")
 
     prev_line = _first_line(lines, "Prev MD:")
     fields["prevMd"] = _num(_value_between(prev_line, "Prev MD:", "Rot Hrs Today"))
     rot = _num(_value_between(prev_line, "Rot Hrs Today", "AFE MD/Days:"))
     fields["rotHrsToday"] = rot
+    fields["afeMdDays"] = _value_between(prev_line, "AFE MD/Days:", "Cum Cost:")
     if not fields.get("progress"):
         today_md = _float(fields.get("todayMd"))
         prev_md = _float(fields.get("prevMd"))
@@ -208,6 +214,85 @@ def _parse_report_fields(lines: list[str], layout_text: str, plain_text: str) ->
         if match:
             fields["wellbore"] = _clean(match.group(1))
     return fields
+
+
+def _words_in_box(
+    words: list[dict[str, Any]],
+    *,
+    top_min: float,
+    top_max: float,
+    x_min: float,
+    x_max: float,
+) -> str:
+    selected = [
+        word for word in words
+        if top_min <= float(word["top"]) <= top_max
+        and x_min <= (float(word["x0"]) + float(word["x1"])) / 2 <= x_max
+    ]
+    return _clean(" ".join(str(word["text"]) for word in sorted(selected, key=lambda item: float(item["x0"]))))
+
+
+def _parse_drilling_header_from_pdf(source: str | Path | bytes) -> dict[str, str]:
+    """Parse the compact top-right/header values by their stable template cells."""
+    try:
+        with _pdfplumber_open(source) as pdf:
+            if not pdf.pages:
+                return {}
+            words = pdf.pages[0].extract_words(x_tolerance=1, y_tolerance=2) or []
+    except Exception:
+        return {}
+    well_row = next((float(word["top"]) for word in words if word.get("text") == "Wellbore:"), None)
+    today_row = next((float(word["top"]) for word in words if word.get("text") == "Today's"), None)
+    prev_row = next((float(word["top"]) for word in words if word.get("text") == "Prev"), None)
+    avg_row = next((float(word["top"]) for word in words if word.get("text") == "Slide"), None)
+    if well_row is None:
+        return {}
+
+    def row_value(row_top: float | None, x_min: float, x_max: float) -> str:
+        if row_top is None:
+            return ""
+        return _words_in_box(
+            words,
+            top_min=row_top - 3,
+            top_max=row_top + 3,
+            x_min=x_min,
+            x_max=x_max,
+        )
+
+    return {
+        "wellboreNo": row_value(well_row, 54, 154),
+        "rig": _clean_rig(row_value(well_row, 170, 292)),
+        "refDatum": _num(row_value(well_row, 330, 458)),
+        "dfs": _num(row_value(well_row, 475, 590)),
+        "groundElev": _num(row_value(today_row, 338, 458)),
+        "dailyCost": row_value(today_row, 495, 590),
+        "cumulativeCost": row_value(prev_row, 494, 590),
+        "avgRopSlide": _num(row_value(avg_row, 89, 155)),
+        "avgRopRot": _num(row_value(avg_row, 217, 293)),
+        "afeNumber": row_value(avg_row, 338, 458),
+        "afeCost": row_value(avg_row, 493, 590),
+    }
+
+
+def _parse_drilling_personnel(lines: list[str]) -> dict[str, str]:
+    def value_after(label: str, *, allow_numeric: bool = False) -> str:
+        line = _first_line(lines, label)
+        if label not in line:
+            return ""
+        tail = line.split(label, 1)[1].lstrip(" :")
+        value = _clean(re.split(r"\s{2,}", tail, maxsplit=1)[0])
+        if not allow_numeric and re.match(r"^[-+]?\d", value):
+            return ""
+        return value
+
+    return {
+        "supervisor1": value_after("Supervisor 1:"),
+        "supervisor2": value_after("Supervisor 2:"),
+        "engineer": value_after("Engineer:"),
+        "geologist": value_after("Geologist:"),
+        "pamEngineer": value_after("Engineer PAM"),
+        "totalPersonnel": _num(value_after("Total on Site", allow_numeric=True)),
+    }
 
 
 def _collect_block(lines: list[str], start: str, stops: tuple[str, ...]) -> str:

@@ -17,8 +17,8 @@ def test_event_values_detect_all_daily_report_types() -> None:
     assert detect_report_type_from_event("MAJOR RIG MOVE") == "move"
 
 
-def test_rig_move_event_uses_independent_move_storage_type() -> None:
-    assert storage_report_type_from_event("MAJOR RIG MOVE") == "move"
+def test_rig_move_event_is_stored_with_drilling_and_keeps_event_classification() -> None:
+    assert storage_report_type_from_event("MAJOR RIG MOVE") == "drilling"
     assert storage_report_type_from_event("DEV DRILLING") == "drilling"
     assert storage_report_type_from_event("DEV COMPLETION") == "completion"
     assert storage_report_type_from_event("WORKOVER") == "workover"

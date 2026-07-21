@@ -5,7 +5,15 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from typing import Any
+
+
+PROJECT_NPT_DEFAULT_HOURS = {
+    "drilling": Decimal("5.00"),
+    "completion": Decimal("5.00"),
+    "workover": Decimal("12.00"),
+}
 
 
 MASTER_ENTITIES: dict[str, dict[str, object]] = {
@@ -79,7 +87,7 @@ MASTER_ENTITIES: dict[str, dict[str, object]] = {
         "table": "md_project",
         "code": "project_code",
         "name": "project_name",
-        "fields": ("project_code", "project_name", "contract_id", "service_scope", "valid_from", "valid_to", "status", "change_reason"),
+        "fields": ("project_code", "project_name", "project_type", "npt_allowance_hours", "contract_id", "service_scope", "valid_from", "valid_to", "status", "change_reason"),
     },
     "aliases": {
         "table": "md_alias",
@@ -220,6 +228,7 @@ def list_reporting_projects() -> list[dict[str, str]]:
             cursor.execute(
                 """
                 SELECT project.id,project.project_code,project.project_name,
+                       project.project_type,project.npt_allowance_hours,
                        contract.contract_no,project.valid_from,project.valid_to
                 FROM md_project project
                 LEFT JOIN md_contract contract ON contract.id=project.contract_id
@@ -231,6 +240,8 @@ def list_reporting_projects() -> list[dict[str, str]]:
     return [{
         "value": str(row.get("id") or ""),
         "label": str(row.get("project_name") or row.get("project_code") or row.get("id") or ""),
+        "project_type": str(row.get("project_type") or "drilling"),
+        "npt_allowance_hours": str(row.get("npt_allowance_hours") or "0"),
         "contract_no": str(row.get("contract_no") or ""),
         "start_date": str(row.get("valid_from") or "")[:10],
         "end_date": str(row.get("valid_to") or "")[:10],
@@ -243,6 +254,9 @@ def save_master_entity(entity: str, payload: dict[str, Any], *, actor: str) -> d
     allowed = tuple(str(field) for field in config["fields"])
     values = {field: payload.get(field) for field in allowed if field in payload}
     values.update(config.get("fixed", {}))
+    entity_id = int(payload.get("id", 0) or 0)
+    if entity == "projects":
+        values = _normalize_project_values(values, is_new=not entity_id)
     if not str(payload.get("change_reason", "") or "").strip():
         raise ValueError("新增或修改主数据必须填写变更原因。")
     if entity == "aliases" and values.get("alias_value") and not values.get("normalized_alias"):
@@ -257,7 +271,6 @@ def save_master_entity(entity: str, payload: dict[str, Any], *, actor: str) -> d
         values["specification_json"] = json.dumps(values["specification_json"], ensure_ascii=False)
     values.setdefault("status", "active")
     values.setdefault("change_reason", "")
-    entity_id = int(payload.get("id", 0) or 0)
     expected_version = int(payload.get("version", 0) or 0)
     with _db_connection() as connection:
         try:
@@ -290,6 +303,42 @@ def save_master_entity(entity: str, payload: dict[str, Any], *, actor: str) -> d
                 raise ValueError("编码或别名已存在，不能重复新增。") from exc
             raise
     return _json_row(row or {})
+
+
+def _normalize_project_values(values: dict[str, Any], *, is_new: bool) -> dict[str, Any]:
+    """Validate project configuration and apply type-specific NPT defaults."""
+
+    normalized = dict(values)
+    for field in ("valid_from", "valid_to"):
+        if field in normalized and not str(normalized[field] or "").strip():
+            normalized[field] = None
+    project_type = str(normalized.get("project_type", "") or "").strip().lower()
+    if not project_type and is_new:
+        project_type = "drilling"
+    if project_type:
+        if project_type not in PROJECT_NPT_DEFAULT_HOURS:
+            raise ValueError("项目类型必须是钻井、完井或修井。")
+        normalized["project_type"] = project_type
+
+    allowance_supplied = "npt_allowance_hours" in normalized
+    raw_allowance = normalized.get("npt_allowance_hours")
+    if is_new and not allowance_supplied:
+        raw_allowance = PROJECT_NPT_DEFAULT_HOURS[project_type]
+        allowance_supplied = True
+    elif allowance_supplied and not str(raw_allowance or "").strip():
+        if not project_type:
+            raise ValueError("设置允许 NPT 时长前必须选择项目类型。")
+        raw_allowance = PROJECT_NPT_DEFAULT_HOURS[project_type]
+
+    if allowance_supplied:
+        try:
+            allowance = Decimal(str(raw_allowance)).quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError) as exc:
+            raise ValueError("允许 NPT 时长必须是有效小时数。") from exc
+        if not allowance.is_finite() or allowance < 0 or allowance > Decimal("999999.99"):
+            raise ValueError("允许 NPT 时长必须在 0 到 999999.99 小时之间。")
+        normalized["npt_allowance_hours"] = allowance
+    return normalized
 
 
 def delete_master_entity(entity: str, payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
@@ -772,6 +821,8 @@ def _json_row(row: dict[str, Any]) -> dict[str, Any]:
     for key, value in row.items():
         if isinstance(value, datetime):
             result[key] = value.isoformat(sep=" ", timespec="seconds")
+        elif isinstance(value, Decimal):
+            result[key] = str(value)
         elif hasattr(value, "isoformat"):
             result[key] = value.isoformat()
         elif isinstance(value, bytes):

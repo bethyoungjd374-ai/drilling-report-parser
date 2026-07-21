@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from calendar import monthrange
 import hashlib
 import hmac
 import json
@@ -11,6 +12,7 @@ import secrets
 import threading
 import time
 import uuid
+from copy import copy
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -41,6 +43,9 @@ from .storage import (
     list_records,
     list_translation_queue_records,
     load_analytics_view_rows,
+    load_drilling_basic_monthly_report_rows,
+    load_drilling_workover_efficiency_monthly_report_rows,
+    load_workover_basic_monthly_report_rows,
     load_monthly_efficiency_report_rows,
     load_npt_confirmation_detail,
     load_operation_translations,
@@ -133,6 +138,13 @@ from .time_classification_service import (
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = ROOT / "web_form"
+MONTHLY_DRILLING_BASIC_TEMPLATE = WEB_ROOT / "templates" / "drilling-basic-indicators-monthly.xlsx"
+MONTHLY_WORKOVER_BASIC_TEMPLATE = WEB_ROOT / "templates" / "workover-basic-indicators-monthly.xlsx"
+MONTHLY_DRILLING_WORKOVER_EFFICIENCY_TEMPLATE = WEB_ROOT / "templates" / "drilling-workover-efficiency-monthly.xlsx"
+MONTHLY_REPORT_FONT_NAME = "宋体"
+MONTHLY_REPORT_TITLE_FONT_SIZE = 20
+MONTHLY_REPORT_HEADER_FONT_SIZE = 11
+MONTHLY_REPORT_BODY_FONT_SIZE = 10
 DATABASE_PATH = Path("mysql")
 SOURCE_PDF_DIR = ROOT / "outputs" / "source_pdfs"
 CONFIG_PATH = ROOT / "outputs" / "system_config.json"
@@ -276,10 +288,40 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._monthly_efficiency_report(parsed.query)
             return
+        if parsed.path == "/api/monthly-drilling-basic-report":
+            if not self._require_permission("view"):
+                return
+            self._monthly_drilling_basic_report(parsed.query)
+            return
+        if parsed.path == "/api/monthly-workover-basic-report":
+            if not self._require_permission("view"):
+                return
+            self._monthly_workover_basic_report(parsed.query)
+            return
+        if parsed.path == "/api/monthly-drilling-workover-efficiency-report":
+            if not self._require_permission("view"):
+                return
+            self._monthly_drilling_workover_efficiency_report(parsed.query)
+            return
         if parsed.path == "/api/monthly-efficiency-report-export":
             if not self._require_permission("export"):
                 return
             self._monthly_efficiency_report_export(parsed.query)
+            return
+        if parsed.path == "/api/monthly-drilling-basic-template-export":
+            if not self._require_permission("export"):
+                return
+            self._monthly_drilling_basic_template_export(parsed.query)
+            return
+        if parsed.path == "/api/monthly-workover-basic-template-export":
+            if not self._require_permission("export"):
+                return
+            self._monthly_workover_basic_template_export(parsed.query)
+            return
+        if parsed.path == "/api/monthly-drilling-workover-efficiency-template-export":
+            if not self._require_permission("export"):
+                return
+            self._monthly_drilling_workover_efficiency_template_export(parsed.query)
             return
         if parsed.path == "/api/npt-stats":
             if not self._require_permission("view"):
@@ -1652,7 +1694,9 @@ class FormHandler(BaseHTTPRequestHandler):
         self._import_report_pdf("workover")
 
     def _import_move_pdf(self) -> None:
-        self._import_report_pdf("move")
+        # Backward-compatible endpoint: rig-move PDFs now share the drilling
+        # parser, storage type and front-end record list.
+        self._import_report_pdf("drilling")
 
     def _import_report_pdf(
         self,
@@ -1879,6 +1923,15 @@ class FormHandler(BaseHTTPRequestHandler):
     def _monthly_efficiency_report(self, query: str) -> None:
         self._send_json(_monthly_efficiency_report_payload(DATABASE_PATH, parse_qs(query)))
 
+    def _monthly_drilling_basic_report(self, query: str) -> None:
+        self._send_json(_monthly_drilling_basic_report_payload(DATABASE_PATH, parse_qs(query)))
+
+    def _monthly_workover_basic_report(self, query: str) -> None:
+        self._send_json(_monthly_workover_basic_report_payload(DATABASE_PATH, parse_qs(query)))
+
+    def _monthly_drilling_workover_efficiency_report(self, query: str) -> None:
+        self._send_json(_monthly_drilling_workover_efficiency_report_payload(DATABASE_PATH, parse_qs(query)))
+
     def _monthly_efficiency_report_export(self, query: str) -> None:
         params = parse_qs(query)
         payload = _monthly_efficiency_report_payload(DATABASE_PATH, params)
@@ -1904,6 +1957,57 @@ class FormHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Content-Disposition", f"attachment; filename=\"monthly-efficiency-report.xlsx\"; filename*=UTF-8''{quote(filename)}")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _monthly_drilling_basic_template_export(self, query: str = "") -> None:
+        if not MONTHLY_DRILLING_BASIC_TEMPLATE.exists():
+            self._send_json({"error": "钻井基础指标数据月报表模板不存在"}, status=404)
+            return
+        payload = _monthly_drilling_basic_report_payload(DATABASE_PATH, parse_qs(query))
+        data = _monthly_drilling_basic_workbook_bytes(payload)
+        filename = f"钻井基础指标数据月报表-空模板-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header(
+            "Content-Disposition",
+            f"attachment; filename=\"drilling-basic-indicators-monthly.xlsx\"; filename*=UTF-8''{quote(filename)}",
+        )
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _monthly_workover_basic_template_export(self, query: str = "") -> None:
+        if not MONTHLY_WORKOVER_BASIC_TEMPLATE.exists():
+            self._send_json({"error": "修井基础指标数据月报表模板不存在"}, status=404)
+            return
+        payload = _monthly_workover_basic_report_payload(DATABASE_PATH, parse_qs(query))
+        data = _monthly_workover_basic_workbook_bytes(payload)
+        filename = f"修井基础指标数据月报表-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header(
+            "Content-Disposition",
+            f"attachment; filename=\"workover-basic-indicators-monthly.xlsx\"; filename*=UTF-8''{quote(filename)}",
+        )
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _monthly_drilling_workover_efficiency_template_export(self, query: str = "") -> None:
+        if not MONTHLY_DRILLING_WORKOVER_EFFICIENCY_TEMPLATE.exists():
+            self._send_json({"error": "钻修井基础时效数据月报模板不存在"}, status=404)
+            return
+        payload = _monthly_drilling_workover_efficiency_report_payload(DATABASE_PATH, parse_qs(query))
+        data = _monthly_drilling_workover_efficiency_workbook_bytes(payload)
+        filename = f"钻修井基础时效数据月报-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header(
+            "Content-Disposition",
+            f"attachment; filename=\"drilling-workover-efficiency-monthly.xlsx\"; filename*=UTF-8''{quote(filename)}",
+        )
         self.end_headers()
         self.wfile.write(data)
 
@@ -3203,7 +3307,7 @@ def _scope_rule(report_type: str, section: str, field_name: str, *, enabled: boo
 def _translation_scope_defaults() -> list[dict[str, object]]:
     defaults = []
     for report_type in REPORT_TYPE_ORDER:
-        for field_name in ("currentOps", "summary24h", "forecast24h", "otherRemarks"):
+        for field_name in ("event", "primaryReason", "currentOps", "summary24h", "forecast24h", "otherRemarks"):
             if field_name in TRANSLATION_SCOPE_FIELDS[report_type].get("report_fields", []):
                 defaults.append(_scope_rule(report_type, "report_fields", field_name))
         defaults.append(_scope_rule(report_type, "operations", "operation_details"))
@@ -5588,6 +5692,439 @@ def _monthly_efficiency_report_payload(database_path: Path, params: dict[str, li
         "scope_note_es": "Solo se muestran instancias de perforación, completación y reacondicionamiento con datos maestros vinculados y reportes estándar dentro del rango; sin fechas no hay límite. Eficiencia=P/(P+NPT); SC se muestra por separado.",
         "pending_note": "无明确来源或口径尚未确认的字段显示“待定”，不按0处理，也不参与汇总。",
     }
+
+
+def _monthly_request_month(params: dict[str, list[str]], *, today: date | None = None) -> str:
+    current_date = today or date.today()
+    current_month = current_date.strftime("%Y-%m")
+    requested = _param(params, "report_month") or _param(params, "report_date")[:7]
+    if not re.fullmatch(r"\d{4}-\d{2}", requested):
+        return current_month
+    try:
+        date.fromisoformat(f"{requested}-01")
+    except ValueError:
+        return current_month
+    return min(requested, current_month)
+
+
+def _monthly_report_fill_date(report_month: str, *, today: date | None = None) -> str:
+    current_date = today or date.today()
+    current_month = current_date.strftime("%Y-%m")
+    if report_month == current_month:
+        return current_date.isoformat()
+    year, month = (int(part) for part in report_month.split("-"))
+    return date(year, month, monthrange(year, month)[1]).isoformat()
+
+
+def _monthly_available_month_options(source: dict[str, object]) -> list[dict[str, str]]:
+    raw_months = source.get("available_months", [])
+    if not isinstance(raw_months, list):
+        return []
+    current_month = date.today().strftime("%Y-%m")
+    months = sorted({
+        str(value or "")
+        for value in raw_months
+        if re.fullmatch(r"\d{4}-\d{2}", str(value or "")) and str(value or "") <= current_month
+    }, reverse=True)
+    return [
+        {"value": value, "label": f"{int(value[:4])}年{int(value[5:7])}月"}
+        for value in months
+    ]
+
+
+def _monthly_selected_source(
+    database_path: Path,
+    params: dict[str, list[str]],
+    loader: Any,
+) -> tuple[str, str, dict[str, object], list[dict[str, str]]]:
+    selected_month = _monthly_request_month(params)
+    selected_date = _monthly_report_fill_date(selected_month)
+    source = loader(database_path, report_date=selected_date)
+    available_options = _monthly_available_month_options(source)
+    available_months = [item["value"] for item in available_options]
+    if available_months and selected_month not in available_months:
+        current_month = date.today().strftime("%Y-%m")
+        selected_month = current_month if current_month in available_months else available_months[0]
+        selected_date = _monthly_report_fill_date(selected_month)
+        source = loader(database_path, report_date=selected_date)
+        available_options = _monthly_available_month_options(source)
+    return selected_month, selected_date, source, available_options
+
+
+def _monthly_drilling_basic_report_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    selected_month, selected_date, source, available_months = _monthly_selected_source(
+        database_path, params, load_drilling_basic_monthly_report_rows,
+    )
+    source_rows = source.get("rows", [])
+    all_rows = [dict(row) for row in source_rows if isinstance(row, dict)] if isinstance(source_rows, list) else []
+    project_ids = set(_param_values(params, "project"))
+    team_codes = set(_param_values(params, "team"))
+    rows = [
+        row for row in all_rows
+        if (not project_ids or str(row.get("project_id", "")) in project_ids)
+        and (not team_codes or str(row.get("team_code", "")) in team_codes)
+    ]
+    for index, row in enumerate(rows, start=1):
+        row["sequence"] = index
+    return {
+        "report_month": selected_month,
+        "report_date": selected_date,
+        "month_start": str(source.get("month_start", "") or ""),
+        "month_end": str(source.get("month_end", "") or ""),
+        "year_start": str(source.get("year_start", "") or ""),
+        "filters": {
+            "available_months": available_months,
+            "projects": _monthly_filter_options(all_rows, "project_id", "project_name"),
+            "teams": _monthly_filter_options(all_rows, "team_code", "team_code"),
+        },
+        "summary": {
+            "drilling_start_count": sum(1 for row in rows if row.get("drilling_start_date")),
+            "completion_count": sum(1 for row in rows if row.get("completion_date")),
+            "month_progress_ft": round(sum(_safe_float(row.get("month_progress_ft")) for row in rows), 2),
+            "year_progress_ft": round(sum(_safe_float(row.get("year_progress_ft")) for row in rows), 2),
+        },
+        "rows": rows,
+        "grain": "selected natural month + project/well/job sequence",
+        "scope_note": "选定自然月内出现钻井或完井日报的井均纳入；开钻日期取钻井日报Report No.=1，完钻日期取钻井日报最大Report No.日期；月/年进尺按钻井日报自然月和自然年累计；钻井、完井周期分别按对应日报小时合计除以24。",
+    }
+
+
+def _monthly_drilling_basic_workbook_bytes(payload: dict[str, object]) -> bytes:
+    workbook = load_workbook(MONTHLY_DRILLING_BASIC_TEMPLATE)
+    worksheet = workbook["表4钻井基础指标数据月报"]
+    rows = payload.get("rows", [])
+    data_rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+    if len(data_rows) > 49:
+        raise ValueError("钻井基础指标数据月报表单页最多支持49条数据")
+    selected_date = str(payload.get("report_date", "") or "")
+    try:
+        fill_date = date.fromisoformat(selected_date)
+        fill_date_label = f"{fill_date.year}年{fill_date.month}月{fill_date.day}日"
+    except ValueError:
+        fill_date_label = "____年__月__日"
+    worksheet["A2"] = f"填报单位：厄瓜多尔子公司                                                                                                      填报时间：{fill_date_label}"
+    template_rows: dict[int, dict[str, object]] = {}
+    for source_row in range(53, 59):
+        template_rows[source_row] = {
+            "values": [worksheet.cell(row=source_row, column=column_index).value for column_index in range(1, 23)],
+            "styles": [copy(worksheet.cell(row=source_row, column=column_index)._style) for column_index in range(1, 23)],
+            "height": worksheet.row_dimensions[source_row].height,
+        }
+    for merged_range in list(worksheet.merged_cells.ranges):
+        if 55 <= merged_range.min_row <= merged_range.max_row <= 58:
+            worksheet.unmerge_cells(str(merged_range))
+    for row_index in range(4, 59):
+        for column_index in range(1, 23):
+            worksheet.cell(row=row_index, column=column_index).value = None
+    keys = [
+        "sequence", "team_code", "country_region", "team_company", "block_name", "rig_model", "well_name", "well_profile",
+        "drilling_start_date", "drilling_end_date", "completion_date", "design_depth_ft", "current_depth_ft", "month_progress_ft",
+        "year_progress_ft", "planned_drilling_cycle_days", "planned_completion_cycle_days", "actual_drilling_cycle_days",
+        "actual_completion_cycle_days", "well_control_incident", "accident_waiting", "remarks",
+    ]
+    date_columns = {9, 10, 11}
+    for row_index, row in enumerate(data_rows, start=4):
+        for column_index, key in enumerate(keys, start=1):
+            value = row.get(key)
+            if column_index in date_columns and value:
+                try:
+                    value = date.fromisoformat(str(value)[:10])
+                except ValueError:
+                    value = str(value)[:10]
+            cell = worksheet.cell(row=row_index, column=column_index, value=value if value not in (None, "") else None)
+            if column_index in date_columns:
+                cell.number_format = "yyyy-mm-dd"
+            elif 16 <= column_index <= 19:
+                cell.number_format = "0.0"
+            if column_index == 2 and value:
+                team_alignment = copy(cell.alignment)
+                team_alignment.wrapText = False
+                cell.alignment = team_alignment
+    total_row = 4 + len(data_rows)
+    for offset, source_row in enumerate(range(53, 59)):
+        target_row = total_row + offset
+        row_template = template_rows[source_row]
+        values = row_template["values"]
+        styles = row_template["styles"]
+        for column_index in range(1, 23):
+            cell = worksheet.cell(row=target_row, column=column_index)
+            cell._style = copy(styles[column_index - 1])
+            cell.value = values[column_index - 1]
+        worksheet.row_dimensions[target_row].height = row_template["height"]
+    for note_row in range(total_row + 2, total_row + 6):
+        worksheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=22)
+    last_data_row = total_row - 1
+    worksheet.cell(row=total_row, column=8, value="开钻井数")
+    worksheet.cell(
+        row=total_row,
+        column=9,
+        value=f"=COUNT(I4:I{last_data_row})" if data_rows else "=0",
+    )
+    worksheet.cell(row=total_row, column=10, value="交井数")
+    worksheet.cell(
+        row=total_row,
+        column=11,
+        value=f"=COUNT(K4:K{last_data_row})" if data_rows else "=0",
+    )
+    worksheet.cell(
+        row=total_row,
+        column=14,
+        value=f"=SUM(N4:N{last_data_row})" if data_rows else "=0",
+    )
+    worksheet.cell(
+        row=total_row,
+        column=15,
+        value=f"=SUM(O4:O{last_data_row})" if data_rows else "=0",
+    )
+    worksheet.cell(row=total_row + 1, column=13, value="进尺（米）")
+    worksheet.cell(row=total_row + 1, column=14, value=f"=N{total_row}*0.3048")
+    worksheet.cell(row=total_row + 1, column=15, value=f"=O{total_row}*0.3048")
+    _normalize_monthly_workbook_style(worksheet, header_end_row=3, body_start_row=4)
+    if getattr(workbook, "calculation", None) is not None:
+        workbook.calculation.calcMode = "auto"
+        workbook.calculation.fullCalcOnLoad = True
+        workbook.calculation.forceFullCalc = True
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def _monthly_workover_basic_report_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    selected_month, selected_date, source, available_months = _monthly_selected_source(
+        database_path, params, load_workover_basic_monthly_report_rows,
+    )
+    source_rows = source.get("rows", [])
+    all_rows = [dict(row) for row in source_rows if isinstance(row, dict)] if isinstance(source_rows, list) else []
+    project_ids = set(_param_values(params, "project"))
+    team_codes = set(_param_values(params, "team"))
+    rows = [
+        row for row in all_rows
+        if (not project_ids or str(row.get("project_id", "")) in project_ids)
+        and (not team_codes or str(row.get("team_code", "")) in team_codes)
+    ]
+    for index, row in enumerate(rows, start=1):
+        row["sequence"] = index
+    return {
+        "report_month": selected_month,
+        "report_date": selected_date,
+        "month_start": str(source.get("month_start", "") or ""),
+        "month_end": str(source.get("month_end", "") or ""),
+        "filters": {
+            "available_months": available_months,
+            "projects": _monthly_filter_options(all_rows, "project_id", "project_name"),
+            "teams": _monthly_filter_options(all_rows, "team_code", "team_code"),
+        },
+        "summary": {
+            "completion_count": sum(1 for row in rows if row.get("workover_end_date")),
+        },
+        "rows": rows,
+        "grain": "selected natural month + workover job",
+        "scope_note": "选定自然月内存在修井日报的作业均纳入；开工日期取修井日报Report No.=1，完工日期取该修井作业最大Report No.日期；作业主要内容仅使用Razón Prim字段的中文译文，暂无译文时留空。",
+    }
+
+
+def _monthly_workover_basic_workbook_bytes(payload: dict[str, object]) -> bytes:
+    workbook = load_workbook(MONTHLY_WORKOVER_BASIC_TEMPLATE)
+    worksheet = workbook["表5 修井基础指标数据月报"]
+    rows = payload.get("rows", [])
+    data_rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+    if len(data_rows) > 71:
+        raise ValueError("修井基础指标数据月报表单页最多支持71条数据")
+    selected_date = str(payload.get("report_date", "") or "")
+    try:
+        fill_date = date.fromisoformat(selected_date)
+        fill_date_label = f"{fill_date.year}年{fill_date.month}月{fill_date.day}日"
+    except ValueError:
+        fill_date_label = "____年__月__日"
+    worksheet["A2"] = "填报单位：厄瓜多尔子公司"
+    worksheet["K2"] = f"填报时间：{fill_date_label}"
+    template_rows: dict[int, dict[str, object]] = {}
+    for source_row in range(75, 79):
+        template_rows[source_row] = {
+            "values": [worksheet.cell(row=source_row, column=column_index).value for column_index in range(1, 15)],
+            "styles": [copy(worksheet.cell(row=source_row, column=column_index)._style) for column_index in range(1, 15)],
+            "height": worksheet.row_dimensions[source_row].height,
+        }
+    for merged_range in list(worksheet.merged_cells.ranges):
+        if 76 <= merged_range.min_row <= merged_range.max_row <= 78:
+            worksheet.unmerge_cells(str(merged_range))
+    for row_index in range(4, 79):
+        for column_index in range(1, 21):
+            worksheet.cell(row=row_index, column=column_index).value = None
+    keys = [
+        "sequence", "team_code", "country_region", "team_company", "block_name", "rig_model", "well_name", "well_profile",
+        "workover_start_date", "workover_end_date", "primary_operation", "well_control_incident", "accident_waiting", "remarks",
+    ]
+    date_columns = {9, 10}
+    for row_index, row in enumerate(data_rows, start=4):
+        for column_index, key in enumerate(keys, start=1):
+            value = row.get(key)
+            if column_index in date_columns and value:
+                try:
+                    value = date.fromisoformat(str(value)[:10])
+                except ValueError:
+                    value = str(value)[:10]
+            cell = worksheet.cell(row=row_index, column=column_index, value=value if value not in (None, "") else None)
+            if column_index in date_columns:
+                cell.number_format = "yyyy-mm-dd"
+            if column_index == 2 and value:
+                team_alignment = copy(cell.alignment)
+                team_alignment.wrapText = False
+                cell.alignment = team_alignment
+    total_row = 4 + len(data_rows)
+    for offset, source_row in enumerate(range(75, 79)):
+        target_row = total_row + offset
+        row_template = template_rows[source_row]
+        values = row_template["values"]
+        styles = row_template["styles"]
+        for column_index in range(1, 15):
+            cell = worksheet.cell(row=target_row, column=column_index)
+            cell._style = copy(styles[column_index - 1])
+            cell.value = values[column_index - 1]
+        worksheet.row_dimensions[target_row].height = row_template["height"]
+    for note_row in range(total_row + 1, total_row + 4):
+        worksheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=14)
+    worksheet.cell(row=total_row, column=9, value="修井完工口数")
+    worksheet.cell(
+        row=total_row,
+        column=10,
+        value=f"=COUNT(J4:J{total_row - 1})" if data_rows else "=0",
+    )
+    _normalize_monthly_workbook_style(worksheet, header_end_row=3, body_start_row=4)
+    if getattr(workbook, "calculation", None) is not None:
+        workbook.calculation.calcMode = "auto"
+        workbook.calculation.fullCalcOnLoad = True
+        workbook.calculation.forceFullCalc = True
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def _monthly_drilling_workover_efficiency_report_payload(database_path: Path, params: dict[str, list[str]]) -> dict[str, object]:
+    selected_month, selected_date, source, available_months = _monthly_selected_source(
+        database_path, params, load_drilling_workover_efficiency_monthly_report_rows,
+    )
+    source_rows = source.get("rows", [])
+    all_rows = [dict(row) for row in source_rows if isinstance(row, dict)] if isinstance(source_rows, list) else []
+    project_ids = set(_param_values(params, "project"))
+    team_codes = set(_param_values(params, "team"))
+    rows = [
+        row for row in all_rows
+        if (not project_ids or str(row.get("project_id", "")) in project_ids)
+        and (not team_codes or str(row.get("team_code", "")) in team_codes)
+    ]
+    for index, row in enumerate(rows, start=1):
+        row["sequence"] = index
+    return {
+        "report_month": selected_month,
+        "report_date": selected_date,
+        "month_start": str(source.get("month_start", "") or ""),
+        "month_end": str(source.get("month_end", "") or ""),
+        "filters": {
+            "available_months": available_months,
+            "projects": _monthly_filter_options(all_rows, "project_id", "project_name"),
+            "teams": _monthly_filter_options(all_rows, "team_code", "team_code"),
+        },
+        "rows": rows,
+        "grain": "selected natural month + project + well + profession",
+        "scope_note": "按选定自然月、项目、井号和专业汇总；钻井专业合并钻井及完井日报，修井专业单独统计。搬安时间取搬迁Event日报的Operation小时；生产时间为非搬迁日报P+SC；NPT按项目允许NPT拆分有日费和零日费。",
+    }
+
+
+def _monthly_drilling_workover_efficiency_workbook_bytes(payload: dict[str, object]) -> bytes:
+    workbook = load_workbook(MONTHLY_DRILLING_WORKOVER_EFFICIENCY_TEMPLATE)
+    worksheet = workbook["表6钻修井基础时效数据月报 "]
+    rows = payload.get("rows", [])
+    data_rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+    if len(data_rows) > 120:
+        raise ValueError("钻修井基础时效数据月报单页最多支持120条数据")
+    selected_date = str(payload.get("report_date", "") or "")
+    try:
+        fill_date = date.fromisoformat(selected_date)
+        fill_date_label = f"{fill_date.year}年{fill_date.month}月{fill_date.day}日"
+    except ValueError:
+        fill_date_label = "____年__月__日"
+    worksheet["A2"] = f"填报单位：厄瓜多尔子公司                                                                                                填报时间：{fill_date_label}"
+    for row_index in range(6, 126):
+        for column_index in range(1, 19):
+            worksheet.cell(row=row_index, column=column_index).value = None
+    keys = [
+        "sequence", "team_code", "well_name", "profession_label", "country_region", "team_company", "block_name", "rig_model",
+        "move_hours", "production_hours", "paid_repair_hours", "zero_rate_repair_hours", "accident_complex_hours", "other_hours",
+        "well_efficiency", "nonproductive_description", "average_efficiency", "remarks",
+    ]
+    hour_columns = {9, 10, 11, 12, 13, 14}
+    for row_index, row in enumerate(data_rows, start=6):
+        for column_index, key in enumerate(keys, start=1):
+            value = row.get(key)
+            if column_index == 15:
+                value = f'=IF(J{row_index}+SUM(K{row_index}:N{row_index})=0,"",J{row_index}/(J{row_index}+SUM(K{row_index}:N{row_index})))'
+            cell = worksheet.cell(row=row_index, column=column_index, value=value if value not in (None, "") else None)
+            if column_index in hour_columns:
+                cell.number_format = "0.0"
+            elif column_index in {15, 17}:
+                cell.number_format = "0.000_ "
+            if column_index == 2 and value:
+                team_alignment = copy(cell.alignment)
+                team_alignment.wrapText = False
+                cell.alignment = team_alignment
+    note_merged_ranges = [
+        str(merged_range)
+        for merged_range in worksheet.merged_cells.ranges
+        if merged_range.min_row >= 127
+    ]
+    for merged_range in note_merged_ranges:
+        worksheet.unmerge_cells(merged_range)
+    first_unused_row = 6 + len(data_rows)
+    worksheet.delete_rows(first_unused_row, 127 - first_unused_row)
+    note_row = first_unused_row
+    worksheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=18)
+    worksheet.merge_cells(start_row=note_row + 1, start_column=1, end_row=note_row + 1, end_column=18)
+    worksheet.merge_cells(start_row=note_row + 2, start_column=1, end_row=note_row + 2, end_column=18)
+    _normalize_monthly_workbook_style(worksheet, header_end_row=5, body_start_row=6)
+    if getattr(workbook, "calculation", None) is not None:
+        workbook.calculation.calcMode = "auto"
+        workbook.calculation.fullCalcOnLoad = True
+        workbook.calculation.forceFullCalc = True
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def _normalize_monthly_workbook_style(
+    worksheet: object,
+    *,
+    header_end_row: int,
+    body_start_row: int,
+) -> None:
+    """Apply one typography system and remove legacy yellow highlights."""
+
+    max_row = int(getattr(worksheet, "max_row", body_start_row) or body_start_row)
+    max_column = int(getattr(worksheet, "max_column", 1) or 1)
+    worksheet.column_dimensions["B"].width = 16
+    for row in range(1, max_row + 1):
+        for column in range(1, max_column + 1):
+            cell = worksheet.cell(row=row, column=column)
+            font = copy(cell.font)
+            font.name = MONTHLY_REPORT_FONT_NAME
+            if row == 1:
+                font.sz = MONTHLY_REPORT_TITLE_FONT_SIZE
+                font.bold = True
+            elif row <= header_end_row:
+                font.sz = MONTHLY_REPORT_HEADER_FONT_SIZE
+                font.bold = True
+            elif row >= body_start_row:
+                font.sz = MONTHLY_REPORT_BODY_FONT_SIZE
+            cell.font = font
+
+            fill = cell.fill
+            color_type = str(getattr(fill.fgColor, "type", "") or "").lower()
+            color_value = str(getattr(fill.fgColor, "rgb", "") or "").upper()
+            indexed_value = getattr(fill.fgColor, "indexed", None)
+            if (
+                color_type == "rgb" and color_value.endswith("FFFF00")
+            ) or indexed_value == 6:
+                cell.fill = PatternFill(fill_type=None)
 
 
 def _valid_iso_date(value: str) -> bool:
