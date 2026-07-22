@@ -1393,10 +1393,15 @@ function aiQueueStatusTone(status = "") {
 
 function aiExtractionRuleRow(rule = {}) {
   const catalog = adminState.aiExtraction.catalog || {};
+  const reportTypes = aiExtractionRuleReportTypes(rule);
+  const grainLabel = aiExtractionCatalogLabel(catalog.grains, rule.grain || "record");
+  const sources = aiExtractionRuleSources(rule);
+  const sourceModules = [...new Set(sources.map((item) => item.section))];
+  const sourceSummary = `${sources.length} 个字段 / ${sourceModules.length} 个模块`;
   return `<tr class="${rule.id === adminState.selectedAiExtractionRuleId ? "selected-row" : ""}">
     <td><strong>${escapeHtml(rule.name)}</strong></td>
-    <td>${escapeHtml(aiExtractionReportLabel(rule.report_type))}</td>
-    <td><code>${escapeHtml(`${rule.source_section}.${rule.source_field}`)}</code></td>
+    <td>${escapeHtml(reportTypes.map((item) => aiExtractionReportLabel(item)).join(" / "))}<small class="table-subtext">${escapeHtml(grainLabel)}</small></td>
+    <td><strong>${escapeHtml(sourceSummary)}</strong><small class="table-subtext">${escapeHtml(sources.slice(0, 3).map((item) => `${item.section}.${item.field}`).join("、"))}${sources.length > 3 ? "…" : ""}</small></td>
     <td>${escapeHtml(aiExtractionCatalogLabel(catalog.target_fields, rule.target_field))}</td>
     <td>${escapeHtml(aiExtractionCatalogLabel(catalog.output_formats, rule.output_format))}</td>
     <td><span class="status-pill ${rule.enabled !== false ? "uploaded" : "failed"}">${rule.enabled !== false ? "启用" : "停用"}</span></td>
@@ -1404,18 +1409,124 @@ function aiExtractionRuleRow(rule = {}) {
   </tr>`;
 }
 
+function aiExtractionRuleSources(rule = {}) {
+  const sources = Array.isArray(rule.source_fields) && rule.source_fields.length
+    ? rule.source_fields
+    : [{ section: rule.source_section || "report_fields", field: rule.source_field || "currentOps" }];
+  const ruleReportTypes = aiExtractionRuleReportTypes(rule);
+  const merged = new Map();
+  sources.forEach((item) => {
+    const section = String(item.section || item.source_section || "");
+    const field = String(item.field || item.source_field || "");
+    if (!section || !field) return;
+    const key = `${section}.${field}`;
+    const reportTypes = Array.isArray(item.report_types) && item.report_types.length
+      ? item.report_types.filter((reportType) => ruleReportTypes.includes(reportType))
+      : ruleReportTypes;
+    if (!reportTypes.length) return;
+    const current = merged.get(key) || { section, field, report_types: [] };
+    reportTypes.forEach((reportType) => {
+      if (!current.report_types.includes(reportType)) current.report_types.push(reportType);
+    });
+    merged.set(key, current);
+  });
+  return [...merged.values()];
+}
+
+function aiExtractionReportOptions() {
+  return (adminState.aiExtraction.catalog?.report_types || []).filter((item) => item.value !== "all");
+}
+
+function aiExtractionRuleReportTypes(rule = {}) {
+  const options = aiExtractionReportOptions();
+  const allowed = new Set(options.map((item) => item.value));
+  const raw = Array.isArray(rule.report_types) && rule.report_types.length
+    ? rule.report_types
+    : rule.report_type === "all" ? options.map((item) => item.value) : [rule.report_type || "drilling"];
+  const selected = new Set(raw.map((item) => String(item || "")));
+  const values = options.map((item) => item.value).filter((item) => allowed.has(item) && selected.has(item));
+  return values.length ? values : [options[0]?.value || "drilling"];
+}
+
+function aiExtractionReportTypePicker(rule = {}) {
+  const options = aiExtractionReportOptions();
+  const selected = new Set(aiExtractionRuleReportTypes(rule));
+  const allSelected = options.length > 0 && selected.size === options.length;
+  const preview = allSelected ? "全部日报类型" : options.filter((item) => selected.has(item.value)).map((item) => item.label).join("、");
+  return `<div class="ai-extraction-report-picker">
+    <div class="ai-extraction-source-picker-heading"><strong>日报类型（可多选）</strong></div>
+    <details class="ai-extraction-source-dropdown ai-extraction-report-dropdown" data-ai-extraction-report-dropdown>
+      <summary><span>${escapeHtml(preview || "请选择日报类型")}</span><em>${selected.size} 项</em></summary>
+      <div class="ai-extraction-source-dropdown-panel"><div class="ai-extraction-report-options">${options.map((item) => `<label><input type="checkbox" name="aiExtractionReportType" value="${escapeHtml(item.value)}" ${selected.has(item.value) ? "checked" : ""} /><span>${escapeHtml(item.label)}</span></label>`).join("")}</div></div>
+    </details>
+  </div>`;
+}
+
+function aiExtractionSourceFieldPicker(rule = {}) {
+  const selected = new Set(aiExtractionRuleSources(rule).flatMap((item) =>
+    item.report_types.map((reportType) => `${reportType}|${item.section}.${item.field}`)
+  ));
+  const selectedLabels = [];
+  const reportGroups = aiExtractionRuleReportTypes(rule).map((reportType) => {
+    const report = (adminState.aiExtraction.catalog?.report_types || []).find((item) => item.value === reportType) || { sections: [] };
+    const reportSelectedCount = (report.sections || []).reduce((count, section) => count + (section.fields || []).filter((field) => selected.has(`${reportType}|${section.value}.${field.value}`)).length, 0);
+    const modules = (report.sections || []).map((section) => {
+      const fields = section.fields || [];
+      const selectedCount = fields.filter((field) => selected.has(`${reportType}|${section.value}.${field.value}`)).length;
+      return `<details class="ai-extraction-source-module" data-ai-extraction-source-group="${escapeHtml(`${reportType}|${section.value}`)}">
+        <summary><span>${escapeHtml(section.label)}</span><em>${selectedCount}/${fields.length}</em></summary>
+        <div class="ai-extraction-source-module-actions"><label><input type="checkbox" data-ai-extraction-section-toggle="${escapeHtml(section.value)}" data-source-report-type="${escapeHtml(reportType)}" ${selectedCount === fields.length && fields.length ? "checked" : ""} /><span>选择本模块全部字段</span></label></div>
+        <div class="ai-extraction-source-fields">${fields.map((field) => {
+          const selectionKey = `${reportType}|${section.value}.${field.value}`;
+          if (selected.has(selectionKey)) selectedLabels.push(`${report.label} / ${field.label}`);
+          return `<label><input type="checkbox" name="aiExtractionSourceField" value="${escapeHtml(selectionKey)}" data-source-report-type="${escapeHtml(reportType)}" data-source-section="${escapeHtml(section.value)}" data-source-field="${escapeHtml(field.value)}" data-source-label="${escapeHtml(`${report.label} / ${field.label}`)}" ${selected.has(selectionKey) ? "checked" : ""} />
+            <span>${escapeHtml(field.label)}<code>${escapeHtml(field.value)}</code></span></label>`;
+        }).join("")}</div>
+      </details>`;
+    }).join("");
+    return `<details class="ai-extraction-source-report" data-ai-extraction-source-report="${escapeHtml(reportType)}">
+      <summary><strong>${escapeHtml(report.label)}</strong><em>${reportSelectedCount} 个字段</em></summary>
+      <div class="ai-extraction-source-modules">${modules}</div>
+    </details>`;
+  }).join("");
+  const selectedPreview = selectedLabels.length ? selectedLabels.slice(0, 2).join("、") + (selectedLabels.length > 2 ? "…" : "") : "请选择来源字段";
+  return `<div class="ai-extraction-source-picker">
+    <div class="ai-extraction-source-picker-heading"><strong>来源字段（按模块多选）</strong></div>
+    <details class="ai-extraction-source-dropdown">
+      <summary><span data-ai-extraction-source-preview>${escapeHtml(selectedPreview)}</span><em data-ai-extraction-source-count>${selected.size} 个字段</em></summary>
+      <div class="ai-extraction-source-dropdown-panel"><div class="ai-extraction-source-reports">${reportGroups}</div></div>
+    </details>
+  </div>`;
+}
+
 function aiExtractionRuleForm(rule = {}) {
   const catalog = adminState.aiExtraction.catalog || {};
-  const report = (catalog.report_types || []).find((item) => item.value === rule.report_type) || catalog.report_types?.[0] || { sections: [] };
-  const section = (report.sections || []).find((item) => item.value === rule.source_section) || report.sections?.[0] || { fields: [] };
-  const field = (section.fields || []).find((item) => item.value === rule.source_field) || section.fields?.[0] || {};
+  const grain = rule.grain || "report";
+  const targetFields = (catalog.target_fields || []).filter((item) => (item.grain || item.allowed_grains?.[0] || "report") === grain);
+  const target = targetFields.find((item) => item.value === rule.target_field);
+  const customTarget = !target && Boolean(rule.target_field);
+  const scopeHint = ({
+    detail_row: "每条作业明细独立保存：日报 + 模块 + 行号",
+    report: "每份日报保存一条结果：record_id",
+    well: "综合该井全部日报：well_id + ALL",
+    well_job: "综合单井同一作业周期全部日报：project_id + well_id + job_sequence",
+    well_month: "每口井每月一条：project_id + well_id + 专业 + 月份",
+    team_month: "每个井队每月一条：team_id + 专业 + 月份",
+  })[grain] || "按所选粒度保存提炼结果";
   return `<div class="ai-extraction-form">
     <input type="hidden" name="aiExtractionRuleId" value="${escapeHtml(rule.id || "")}" />
     <label class="wide">规则名称<input name="aiExtractionRuleName" value="${escapeHtml(rule.name || "")}" placeholder="例如：NPT责任方识别" /></label>
-    <label>日报类型<select name="aiExtractionReportType">${(catalog.report_types || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === report.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
-    <label>来源模块<select name="aiExtractionSourceSection">${(report.sections || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === section.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
-    <label>来源字段<select name="aiExtractionSourceField">${(section.fields || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === field.value ? "selected" : ""}>${escapeHtml(item.label)} (${escapeHtml(item.value)})</option>`).join("")}</select></label>
-    <label>目标生产报表字段<select name="aiExtractionTargetField">${(catalog.target_fields || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === rule.target_field ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    <label>提炼粒度<select name="aiExtractionGrain">${(catalog.grains || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === grain ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
+    ${aiExtractionReportTypePicker(rule)}
+    ${aiExtractionSourceFieldPicker(rule)}
+    <label>目标结果字段<div class="ai-extraction-target-picker"><select name="aiExtractionTargetField">${targetFields.map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === rule.target_field ? "selected" : ""}>${escapeHtml(item.label)} (${escapeHtml(item.value)})</option>`).join("")}${customTarget ? `<option value="${escapeHtml(rule.target_field)}" selected>${escapeHtml(rule.target_field_label || rule.target_field)} (${escapeHtml(rule.target_field)})</option>` : ""}</select><button class="button secondary small" type="button" data-ai-extraction-new-target>新增字段</button></div></label>
+    <div class="ai-extraction-scope-preview"><strong>存储规则</strong><span>${escapeHtml(scopeHint)}</span></div>
+    <input type="hidden" name="aiExtractionCustomTargetActive" value="${customTarget ? "true" : "false"}" />
+    <div class="wide ai-extraction-custom-target" data-ai-extraction-custom-target ${customTarget ? "" : "hidden"}>
+      <label>字段编码<input name="aiExtractionCustomTargetCode" value="${customTarget ? escapeHtml(rule.target_field) : ""}" placeholder="例如 monthly_incident_summary" /></label>
+      <label>显示名称<input name="aiExtractionCustomTargetLabel" value="${customTarget ? escapeHtml(rule.target_field_label || rule.target_field) : ""}" placeholder="例如 月度事故摘要" /></label>
+      <small>字段编码使用英文字母、数字和下划线；保存后会注册为当前提炼粒度的专属存储字段。</small>
+    </div>
     <label>输出格式<select name="aiExtractionOutputFormat">${(catalog.output_formats || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === rule.output_format ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
     <label>使用模型<select name="aiExtractionModelId"><option value="">默认模型</option>${(adminState.aiModels.models || []).filter((item) => item.enabled !== false).map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === rule.model_id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}</select></label>
     <label>状态<select name="aiExtractionEnabled"><option value="true" ${rule.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${rule.enabled === false ? "selected" : ""}>停用</option></select></label>
@@ -1427,7 +1538,8 @@ function aiExtractionRuleForm(rule = {}) {
 
 function aiExtractionTestMarkup() {
   const selectedRule = (adminState.aiExtraction.rules || []).find((item) => item.id === adminState.selectedAiExtractionRuleId) || {};
-  const matchingRecords = (adminState.records || []).filter((record) => !selectedRule.report_type || selectedRule.report_type === "all" || record.report_type === selectedRule.report_type);
+  const selectedReportTypes = new Set(aiExtractionRuleReportTypes(selectedRule));
+  const matchingRecords = (adminState.records || []).filter((record) => selectedReportTypes.has(record.report_type));
   if (!matchingRecords.some((record) => record.record_id === adminState.aiExtractionTestRecordId)) {
     adminState.aiExtractionTestRecordId = matchingRecords[0]?.record_id || "";
   }
@@ -1449,7 +1561,7 @@ function aiExtractionCatalogLabel(items = [], value = "") {
 }
 
 function emptyAiExtractionRule() {
-  return { id: newClientId(), name: "新提炼规则", report_type: "drilling", source_section: "report_fields", source_field: "currentOps", condition: "", instruction: "", target_field: "remarks", output_format: "text", model_id: "", enabled: false };
+  return { id: newClientId(), name: "新提炼规则", grain: "report", report_type: "drilling", report_types: ["drilling"], source_section: "report_fields", source_field: "currentOps", source_fields: [{ section: "report_fields", field: "currentOps" }], condition: "", instruction: "", target_field: "remarks", target_field_label: "备注", output_format: "text", model_id: "", enabled: false };
 }
 
 function renderAdminProjects() {
@@ -2150,8 +2262,18 @@ function switchAdminTab(tab) {
   if (tab === "teams") tab = "projects";
   adminState.tab = tab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => button.classList.toggle("active", button.dataset.adminTab === tab));
+  syncResponsiveAdminNavigation();
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => panel.hidden = panel.dataset.adminPanel !== tab);
   scheduleAdminQueuePoll(0);
+}
+
+function syncResponsiveAdminNavigation() {
+  if (!window.matchMedia("(max-width: 900px)").matches) return;
+  document.querySelectorAll(".system-nav .menu-group").forEach((group) => {
+    const shouldOpen = Boolean(group.querySelector(".menu-link.active"));
+    group.classList.toggle("open", shouldOpen);
+    group.querySelector(".menu-group-toggle")?.setAttribute("aria-expanded", String(shouldOpen));
+  });
 }
 
 function roleLabel(value) {
@@ -2732,15 +2854,44 @@ async function saveTranslationTuning() {
 function captureAiExtractionRuleForm() {
   const host = document.querySelector('[data-admin-panel="aiExtraction"]');
   if (!host) return null;
+  const reportTypes = [...host.querySelectorAll('[name="aiExtractionReportType"]:checked')].map((input) => input.value);
+  const normalizedReportTypes = reportTypes.length ? reportTypes : [aiExtractionReportOptions()[0]?.value || "drilling"];
+  const allReportTypes = aiExtractionReportOptions().map((item) => item.value);
+  const sourceFieldMap = new Map();
+  [...host.querySelectorAll('[name="aiExtractionSourceField"]:checked')].forEach((input) => {
+    const reportType = input.dataset.sourceReportType || "";
+    const section = input.dataset.sourceSection || "";
+    const field = input.dataset.sourceField || "";
+    if (!normalizedReportTypes.includes(reportType) || !section || !field) return;
+    const key = `${section}.${field}`;
+    const item = sourceFieldMap.get(key) || { section, field, report_types: [] };
+    if (!item.report_types.includes(reportType)) item.report_types.push(reportType);
+    sourceFieldMap.set(key, item);
+  });
+  const sourceFields = [...sourceFieldMap.values()];
+  const firstSource = sourceFields[0] || { section: "report_fields", field: "currentOps" };
+  const targetSelect = host.querySelector('[name="aiExtractionTargetField"]');
+  const customTarget = host.querySelector('[name="aiExtractionCustomTargetActive"]')?.value === "true";
+  const targetField = customTarget
+    ? host.querySelector('[name="aiExtractionCustomTargetCode"]')?.value.trim() || ""
+    : targetSelect?.value || "remarks";
+  const targetCatalog = adminState.aiExtraction.catalog?.target_fields || [];
+  const targetLabel = customTarget
+    ? host.querySelector('[name="aiExtractionCustomTargetLabel"]')?.value.trim() || targetField
+    : aiExtractionCatalogLabel(targetCatalog, targetField);
   return {
     id: host.querySelector('[name="aiExtractionRuleId"]')?.value || newClientId(),
     name: host.querySelector('[name="aiExtractionRuleName"]')?.value.trim() || "未命名提炼规则",
-    report_type: host.querySelector('[name="aiExtractionReportType"]')?.value || "drilling",
-    source_section: host.querySelector('[name="aiExtractionSourceSection"]')?.value || "report_fields",
-    source_field: host.querySelector('[name="aiExtractionSourceField"]')?.value || "currentOps",
+    grain: host.querySelector('[name="aiExtractionGrain"]')?.value || "report",
+    report_type: normalizedReportTypes.length === allReportTypes.length ? "all" : normalizedReportTypes[0],
+    report_types: normalizedReportTypes,
+    source_section: firstSource.section,
+    source_field: firstSource.field,
+    source_fields: sourceFields,
     condition: host.querySelector('[name="aiExtractionCondition"]')?.value.trim() || "",
     instruction: host.querySelector('[name="aiExtractionInstruction"]')?.value.trim() || "",
-    target_field: host.querySelector('[name="aiExtractionTargetField"]')?.value || "remarks",
+    target_field: targetField,
+    target_field_label: targetLabel,
     output_format: host.querySelector('[name="aiExtractionOutputFormat"]')?.value || "text",
     model_id: host.querySelector('[name="aiExtractionModelId"]')?.value || "",
     enabled: host.querySelector('[name="aiExtractionEnabled"]')?.value === "true",
@@ -2762,6 +2913,10 @@ function updateAiExtractionDraft() {
 async function saveAiExtractionRules() {
   const rule = updateAiExtractionDraft();
   if (!rule?.instruction) return showToast("请填写提炼要求");
+  if (!rule.source_fields?.length) return showToast("请至少选择一个来源字段");
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(rule.target_field || "")) return showToast("新增目标字段编码必须以英文字母开头，且只能包含字母、数字和下划线");
+  const target = (adminState.aiExtraction.catalog?.target_fields || []).find((item) => item.value === rule.target_field);
+  if (target && (target.grain || target.allowed_grains?.[0] || "report") !== rule.grain) return showToast("该目标字段不属于当前提炼粒度");
   try {
     const autoExecute = document.querySelector('[name="aiExtractionAutoExecute"]')?.checked ?? adminState.aiExtraction.auto_execute !== false;
     const response = await adminRequest("/api/admin/ai-extraction-rules", { method: "POST", body: JSON.stringify({ rules: adminState.aiExtraction.rules, auto_execute: autoExecute }) });
@@ -2820,18 +2975,86 @@ function deleteAiExtractionRule() {
 function refreshAiExtractionSource(changedName) {
   const rule = updateAiExtractionDraft();
   if (!rule) return;
-  const catalog = adminState.aiExtraction.catalog || {};
-  const report = (catalog.report_types || []).find((item) => item.value === rule.report_type) || catalog.report_types?.[0];
   if (changedName === "aiExtractionReportType") {
-    rule.source_section = report?.sections?.[0]?.value || "report_fields";
-    rule.source_field = report?.sections?.[0]?.fields?.[0]?.value || "event";
-  } else if (changedName === "aiExtractionSourceSection") {
-    const section = report?.sections?.find((item) => item.value === rule.source_section) || report?.sections?.[0];
-    rule.source_field = section?.fields?.[0]?.value || "event";
+    rule.source_fields = aiExtractionRuleSources(rule);
+    const firstSource = rule.source_fields[0] || { section: "report_fields", field: "currentOps" };
+    rule.source_section = firstSource.section;
+    rule.source_field = firstSource.field;
   }
   const index = adminState.aiExtraction.rules.findIndex((item) => item.id === rule.id);
   if (index >= 0) adminState.aiExtraction.rules[index] = rule;
   renderAdminAiExtraction();
+  document.querySelector("[data-ai-extraction-report-dropdown]")?.setAttribute("open", "");
+}
+
+function refreshAiExtractionGrain() {
+  const rule = updateAiExtractionDraft();
+  if (!rule) return;
+  const targets = (adminState.aiExtraction.catalog?.target_fields || []).filter((item) => (item.grain || item.allowed_grains?.[0] || "report") === rule.grain);
+  if (!targets.some((item) => item.value === rule.target_field)) {
+    rule.target_field = targets[0]?.value || "remarks";
+    rule.target_field_label = targets[0]?.label || "备注";
+  }
+  const index = adminState.aiExtraction.rules.findIndex((item) => item.id === rule.id);
+  if (index >= 0) adminState.aiExtraction.rules[index] = rule;
+  renderAdminAiExtraction();
+}
+
+function syncAiExtractionSourcePicker() {
+  const host = document.querySelector('[data-admin-panel="aiExtraction"]');
+  if (!host) return;
+  const selected = host.querySelectorAll('[name="aiExtractionSourceField"]:checked').length;
+  const counter = host.querySelector("[data-ai-extraction-source-count]");
+  if (counter) counter.textContent = `${selected} 个字段`;
+  const selectedInputs = [...host.querySelectorAll('[name="aiExtractionSourceField"]:checked')];
+  const selectedLabels = selectedInputs.map((input) => input.dataset.sourceLabel || input.value);
+  const preview = host.querySelector("[data-ai-extraction-source-preview]");
+  if (preview) preview.textContent = selectedLabels.length
+    ? selectedLabels.slice(0, 3).join("、") + (selectedLabels.length > 3 ? "…" : "")
+    : "请选择来源字段";
+  host.querySelectorAll("[data-ai-extraction-source-group]").forEach((group) => {
+    const fields = [...group.querySelectorAll('[name="aiExtractionSourceField"]')];
+    const checked = fields.filter((input) => input.checked).length;
+    const toggle = group.querySelector("[data-ai-extraction-section-toggle]");
+    if (toggle) {
+      toggle.checked = Boolean(fields.length && checked === fields.length);
+      toggle.indeterminate = checked > 0 && checked < fields.length;
+    }
+    const count = group.querySelector(":scope > summary em");
+    if (count) count.textContent = `${checked}/${fields.length}`;
+  });
+  host.querySelectorAll("[data-ai-extraction-source-report]").forEach((report) => {
+    const checked = report.querySelectorAll('[name="aiExtractionSourceField"]:checked').length;
+    const count = report.querySelector(":scope > summary em");
+    if (count) count.textContent = `${checked} 个字段`;
+  });
+}
+
+function syncAiExtractionDropdownBounds(details) {
+  if (!details?.open) return;
+  const panel = details.querySelector(":scope > .ai-extraction-source-dropdown-panel");
+  if (!panel) return;
+  const rect = details.getBoundingClientRect();
+  const below = Math.max(0, window.innerHeight - rect.bottom - 12);
+  const above = Math.max(0, rect.top - 12);
+  const opensUpward = below < 220 && above > below;
+  panel.classList.toggle("opens-upward", opensUpward);
+  panel.style.maxHeight = `${Math.max(160, Math.min(420, opensUpward ? above : below))}px`;
+}
+
+function syncOpenAiExtractionDropdownBounds() {
+  document.querySelectorAll(".ai-extraction-source-dropdown[open]").forEach(syncAiExtractionDropdownBounds);
+}
+
+function toggleAiExtractionCustomTarget(forceOpen = false) {
+  const host = document.querySelector('[data-admin-panel="aiExtraction"]');
+  const select = host?.querySelector('[name="aiExtractionTargetField"]');
+  const active = host?.querySelector('[name="aiExtractionCustomTargetActive"]');
+  const custom = host?.querySelector("[data-ai-extraction-custom-target]");
+  if (!select || !active || !custom) return;
+  active.value = forceOpen ? "true" : "false";
+  custom.hidden = active.value !== "true";
+  if (!custom.hidden && forceOpen) custom.querySelector('[name="aiExtractionCustomTargetCode"]')?.focus();
 }
 
 async function runAiExtractionTest() {
@@ -3161,6 +3384,7 @@ document.addEventListener("click", (event) => {
   const jumpAiQueue = event.target.closest("[data-admin-jump-ai-queue]");
   if (jumpAiQueue) return jumpToAiJobQueue(jumpAiQueue.dataset.adminJumpAiQueue);
   if (event.target.closest("[data-admin-new-extraction-rule]")) return newAiExtractionRule();
+  if (event.target.closest("[data-ai-extraction-new-target]")) return toggleAiExtractionCustomTarget(true);
   const editExtraction = event.target.closest("[data-admin-edit-extraction-rule]");
   if (editExtraction) return editAiExtractionRule(editExtraction.dataset.adminEditExtractionRule);
   if (event.target.closest("[data-admin-save-extraction-rules]")) return saveAiExtractionRules();
@@ -3284,8 +3508,24 @@ document.addEventListener("change", (event) => {
   if (event.target.matches('[name="translationScopeReportType"], [name="translationScopeSection"], [name="translationScopeField"]')) {
     return refreshTranslationScopeBuilder(event.target.name);
   }
-  if (event.target.matches('[name="aiExtractionReportType"], [name="aiExtractionSourceSection"]')) {
+  if (event.target.matches('[name="aiExtractionReportType"]')) {
     return refreshAiExtractionSource(event.target.name);
+  }
+  if (event.target.matches('[name="aiExtractionGrain"]')) {
+    return refreshAiExtractionGrain();
+  }
+  if (event.target.matches('[name="aiExtractionSourceField"]')) {
+    updateAiExtractionDraft();
+    return syncAiExtractionSourcePicker();
+  }
+  if (event.target.matches("[data-ai-extraction-section-toggle]")) {
+    const group = event.target.closest("[data-ai-extraction-source-group]");
+    group?.querySelectorAll('[name="aiExtractionSourceField"]').forEach((input) => { input.checked = event.target.checked; });
+    updateAiExtractionDraft();
+    return syncAiExtractionSourcePicker();
+  }
+  if (event.target.matches('[name="aiExtractionTargetField"]')) {
+    return toggleAiExtractionCustomTarget();
   }
   if (event.target.matches('[name="aiExtractionTestRecord"]')) {
     adminState.aiExtractionTestRecordId = event.target.value || "";
@@ -3331,5 +3571,19 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) scheduleAdminQueuePoll(0);
 });
+
+document.addEventListener("toggle", (event) => {
+  if (event.target.matches?.(".ai-extraction-source-dropdown")) {
+    requestAnimationFrame(() => syncAiExtractionDropdownBounds(event.target));
+  }
+}, true);
+
+let aiExtractionDropdownBoundsFrame = 0;
+function scheduleAiExtractionDropdownBoundsSync() {
+  cancelAnimationFrame(aiExtractionDropdownBoundsFrame);
+  aiExtractionDropdownBoundsFrame = requestAnimationFrame(syncOpenAiExtractionDropdownBounds);
+}
+window.addEventListener("resize", scheduleAiExtractionDropdownBoundsSync);
+window.addEventListener("scroll", scheduleAiExtractionDropdownBoundsSync, true);
 
 loadAdminSession();

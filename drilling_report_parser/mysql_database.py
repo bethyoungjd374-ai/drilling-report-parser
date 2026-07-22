@@ -126,6 +126,7 @@ def initialize_database() -> None:
                     cursor.execute(statement)
                 _migrate_report_type_children(cursor)
                 _ensure_report_record_columns(cursor)
+                _ensure_ai_extraction_storage_columns(cursor)
                 _ensure_project_relationship_columns(cursor)
                 _ensure_master_data_v3_columns(cursor)
                 _migrate_remove_wellbore_master(cursor)
@@ -590,6 +591,39 @@ def _ensure_report_record_columns(cursor: Any) -> None:
             continue
         cursor.execute(f"ALTER TABLE dpr_report_record ADD COLUMN {column} {definition}")
         columns.add(column)
+
+
+def _ensure_ai_extraction_storage_columns(cursor: Any) -> None:
+    migrations = {
+        "ai_extraction_target_field": (
+            ("grain", "VARCHAR(32) NOT NULL DEFAULT 'report' AFTER output_format"),
+            ("allowed_grains", "JSON NULL AFTER grain"),
+            ("field_description", "VARCHAR(512) NOT NULL DEFAULT '' AFTER allowed_grains"),
+        ),
+        "ai_extraction_aggregate_result": (
+            ("record_id", "VARCHAR(191) NULL AFTER grain"),
+            ("project_id", "BIGINT UNSIGNED NULL AFTER record_id"),
+            ("job_id", "BIGINT UNSIGNED NULL AFTER project_id"),
+            ("job_sequence_no", "INT UNSIGNED NULL AFTER job_id"),
+            ("well_id", "BIGINT UNSIGNED NULL AFTER job_sequence_no"),
+            ("profession", "VARCHAR(32) NOT NULL DEFAULT '' AFTER team_id"),
+            ("output_format", "VARCHAR(32) NOT NULL DEFAULT 'text' AFTER target_field"),
+            ("result_number", "DECIMAL(24,6) NULL AFTER result_text"),
+            ("result_date", "DATE NULL AFTER result_number"),
+            ("result_json", "JSON NULL AFTER result_date"),
+        ),
+    }
+    for table, definitions in migrations.items():
+        cursor.execute(f"SHOW COLUMNS FROM {table}")
+        columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
+        for column, definition in definitions:
+            if column not in columns:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+    cursor.execute("ALTER TABLE ai_extraction_aggregate_result MODIFY COLUMN team_id BIGINT UNSIGNED NULL")
+    cursor.execute("ALTER TABLE ai_extraction_aggregate_result MODIFY COLUMN period_start DATE NULL")
+    cursor.execute("ALTER TABLE ai_extraction_aggregate_result MODIFY COLUMN period_end DATE NULL")
+    _add_index_if_missing(cursor, "ai_extraction_target_field", "idx_ai_extraction_target_grain", "grain,enabled,field_label")
+    _add_index_if_missing(cursor, "ai_extraction_aggregate_result", "idx_ai_aggregate_well", "well_id,period_start")
 
 
 def _ensure_project_relationship_columns(cursor: Any) -> None:
@@ -2002,6 +2036,321 @@ def load_extraction_results(database_path: str | Path | None, record_id: str = "
     return [{key: (_text(value) if key != "source_row_no" and key != "attempt_count" else int(value or 0)) for key, value in row.items() if key != "mysql_updated_at"} for row in rows]
 
 
+def save_aggregate_extraction_results(database_path: str | Path | None, rows: list[dict[str, Any]]) -> None:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            for row in rows:
+                source_record_ids = row.get("source_record_ids") if isinstance(row.get("source_record_ids"), list) else []
+                result_json = row.get("result_json")
+                if isinstance(result_json, (dict, list)):
+                    result_json = json.dumps(result_json, ensure_ascii=False)
+                cursor.execute(
+                    """INSERT INTO ai_extraction_aggregate_result
+                    (scope_key,rule_id,grain,record_id,project_id,job_id,job_sequence_no,well_id,team_id,
+                     profession,period_start,period_end,target_field,output_format,source_hash,
+                     source_record_count,source_record_ids,result_text,result_number,result_date,result_json,
+                     extraction_status,error_message,model_config_id,rule_version,attempt_count,completed_at,updated_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON DUPLICATE KEY UPDATE grain=VALUES(grain),record_id=VALUES(record_id),
+                    project_id=VALUES(project_id),job_id=VALUES(job_id),job_sequence_no=VALUES(job_sequence_no),
+                    well_id=VALUES(well_id),team_id=VALUES(team_id),profession=VALUES(profession),
+                    period_start=VALUES(period_start),period_end=VALUES(period_end),
+                    output_format=VALUES(output_format),source_hash=VALUES(source_hash),source_record_count=VALUES(source_record_count),
+                    source_record_ids=VALUES(source_record_ids),result_text=VALUES(result_text),
+                    result_number=VALUES(result_number),result_date=VALUES(result_date),result_json=VALUES(result_json),
+                    extraction_status=VALUES(extraction_status),error_message=VALUES(error_message),
+                    model_config_id=VALUES(model_config_id),rule_version=VALUES(rule_version),
+                    attempt_count=VALUES(attempt_count),completed_at=VALUES(completed_at),updated_at=VALUES(updated_at)""",
+                    (
+                        _text(row.get("scope_key")), _text(row.get("rule_id")), _text(row.get("grain")),
+                        _text(row.get("record_id")) or None, int(row.get("project_id") or 0) or None,
+                        int(row.get("job_id") or 0) or None, int(row.get("job_sequence_no") or 0) or None,
+                        int(row.get("well_id") or 0) or None, int(row.get("team_id") or 0) or None,
+                        _text(row.get("profession")), _text(row.get("period_start")) or None, _text(row.get("period_end")) or None,
+                        _text(row.get("target_field")), _text(row.get("output_format") or "text"), _text(row.get("source_hash")),
+                        int(row.get("source_record_count") or len(source_record_ids)),
+                        json.dumps(source_record_ids, ensure_ascii=False), _text(row.get("result_text")),
+                        row.get("result_number"), _text(row.get("result_date")) or None, result_json,
+                        _text(row.get("extraction_status")), _text(row.get("error_message"))[:500],
+                        _text(row.get("model_config_id")), _text(row.get("rule_version")),
+                        int(row.get("attempt_count") or 0), _text(row.get("completed_at")), _text(row.get("updated_at")),
+                    ),
+                )
+        connection.commit()
+
+
+def load_aggregate_extraction_results(
+    database_path: str | Path | None,
+    *,
+    rule_id: str = "",
+    target_field: str = "",
+    period_start: str = "",
+    team_ids: list[int] | None = None,
+    well_ids: list[int] | None = None,
+    scope_keys: list[str] | None = None,
+    grain: str = "",
+) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    conditions: list[str] = []
+    args: list[object] = []
+    if rule_id:
+        conditions.append("rule_id=%s")
+        args.append(rule_id)
+    if target_field:
+        conditions.append("target_field=%s")
+        args.append(target_field)
+    if period_start:
+        conditions.append("period_start=%s")
+        args.append(period_start)
+    if grain:
+        conditions.append("grain=%s")
+        args.append(grain)
+    normalized_team_ids = [int(value) for value in (team_ids or []) if int(value) > 0]
+    if normalized_team_ids:
+        conditions.append(f"team_id IN ({','.join(['%s'] * len(normalized_team_ids))})")
+        args.extend(normalized_team_ids)
+    normalized_well_ids = [int(value) for value in (well_ids or []) if int(value) > 0]
+    if normalized_well_ids:
+        conditions.append(f"well_id IN ({','.join(['%s'] * len(normalized_well_ids))})")
+        args.extend(normalized_well_ids)
+    normalized_scope_keys = [str(value or "").strip() for value in (scope_keys or []) if str(value or "").strip()]
+    if normalized_scope_keys:
+        conditions.append(f"scope_key IN ({','.join(['%s'] * len(normalized_scope_keys))})")
+        args.extend(normalized_scope_keys)
+    sql = "SELECT * FROM ai_extraction_aggregate_result"
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, args)
+            rows = cursor.fetchall()
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        item = {key: value for key, value in row.items() if key != "mysql_updated_at"}
+        for key in ("project_id", "job_id", "job_sequence_no", "well_id", "team_id"):
+            item[key] = int(item.get(key) or 0)
+        item["source_record_count"] = int(item.get("source_record_count") or 0)
+        item["attempt_count"] = int(item.get("attempt_count") or 0)
+        item["period_start"] = _text(item.get("period_start"))[:10]
+        item["period_end"] = _text(item.get("period_end"))[:10]
+        raw_ids = item.get("source_record_ids")
+        item["source_record_ids"] = _json_loads(raw_ids, []) if not isinstance(raw_ids, list) else raw_ids
+        raw_json = item.get("result_json")
+        item["result_json"] = _json_loads(raw_json, None) if not isinstance(raw_json, (dict, list)) else raw_json
+        for key in ("scope_key", "rule_id", "grain", "record_id", "profession", "target_field", "output_format", "source_hash", "result_text", "result_date", "extraction_status", "error_message", "model_config_id", "rule_version", "completed_at", "updated_at"):
+            item[key] = _text(item.get(key))
+        result.append(item)
+    return result
+
+
+def save_extraction_result_sources(database_path: str | Path | None, rows: list[dict[str, Any]]) -> None:
+    del database_path
+    if not rows:
+        return
+    initialize_database()
+    groups = sorted({
+        (_text(row.get("scope_key")), _text(row.get("rule_id")), _text(row.get("target_field")))
+        for row in rows
+    })
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            for scope_key, rule_id, target_field in groups:
+                cursor.execute(
+                    "DELETE FROM ai_extraction_result_source WHERE scope_key=%s AND rule_id=%s AND target_field=%s",
+                    (scope_key, rule_id, target_field),
+                )
+            for row in rows:
+                cursor.execute(
+                    """INSERT INTO ai_extraction_result_source
+                    (lineage_key,scope_key,rule_id,target_field,record_id,source_section,source_row_no,source_field,source_hash,created_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (
+                        hashlib.sha256("|".join((
+                            _text(row.get("scope_key")), _text(row.get("rule_id")), _text(row.get("target_field")),
+                            _text(row.get("record_id")), _text(row.get("source_section")),
+                            str(int(row.get("source_row_no") or 0)), _text(row.get("source_field")),
+                        )).encode("utf-8")).hexdigest(),
+                        _text(row.get("scope_key")), _text(row.get("rule_id")), _text(row.get("target_field")),
+                        _text(row.get("record_id")), _text(row.get("source_section")),
+                        int(row.get("source_row_no") or 0), _text(row.get("source_field")),
+                        _text(row.get("source_hash")), _text(row.get("created_at") or _now()),
+                    ),
+                )
+        connection.commit()
+
+
+def list_aggregate_scope_report_records(
+    database_path: str | Path | None,
+    *,
+    scope: dict[str, Any],
+    report_types: list[str] | tuple[str, ...],
+) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    normalized_types = [value for value in report_types if value in REPORT_TABLES]
+    profession = _text(scope.get("profession")).lower()
+    if profession == "workover":
+        normalized_types = [value for value in normalized_types if value == "workover"]
+    elif profession == "drilling":
+        normalized_types = [value for value in normalized_types if value in {"drilling", "completion"}]
+    if not normalized_types:
+        return []
+    conditions = [f"report.report_type IN ({','.join(['%s'] * len(normalized_types))})"]
+    args: list[object] = [*normalized_types]
+    for key, column in (("project_id", "report.project_id"), ("well_id", "report.well_id"), ("team_id", "rig.team_id")):
+        value = int(scope.get(key) or 0)
+        if value:
+            conditions.append(f"{column}=%s")
+            args.append(value)
+    sequence = int(scope.get("job_sequence_no") or 0)
+    if sequence:
+        conditions.append("job.sequence_no=%s")
+        args.append(sequence)
+    period_start = _text(scope.get("period_start"))[:10]
+    period_end = _text(scope.get("period_end"))[:10]
+    if period_start and period_end:
+        conditions.append("report.report_date BETWEEN %s AND %s")
+        args.extend([period_start, period_end])
+    sql = f"""
+        SELECT report.record_id,report.report_type,DATE_FORMAT(report.report_date,'%%Y-%%m-%%d') AS report_date,
+               report.project_id,report.job_id,job.sequence_no AS job_sequence_no,report.well_id,
+               COALESCE(well.well_name,raw_record.wellbore) AS well_name,
+               rig.team_id,team.team_name
+        FROM dpr_report report
+        JOIN dpr_report_record raw_record ON raw_record.record_id=report.record_id
+        LEFT JOIN biz_job job ON job.id=report.job_id
+        LEFT JOIN md_well well ON well.id=report.well_id
+        LEFT JOIN md_rig rig ON rig.id=report.rig_id
+        LEFT JOIN md_team team ON team.id=rig.team_id
+        WHERE {' AND '.join(conditions)}
+        ORDER BY report.report_date,report.report_type,report.record_id
+    """
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, args)
+            rows = cursor.fetchall() or []
+    return [{
+        "record_id": _text(row.get("record_id")), "report_type": _text(row.get("report_type")),
+        "report_date": _text(row.get("report_date"))[:10], "project_id": int(row.get("project_id") or 0),
+        "job_id": int(row.get("job_id") or 0), "job_sequence_no": int(row.get("job_sequence_no") or 0),
+        "well_id": int(row.get("well_id") or 0), "well_name": _text(row.get("well_name")),
+        "team_id": int(row.get("team_id") or 0), "team_name": _text(row.get("team_name")),
+    } for row in rows]
+
+
+def list_team_month_report_records(
+    database_path: str | Path | None,
+    *,
+    period_start: str,
+    period_end: str,
+    report_types: list[str] | tuple[str, ...] = ("drilling", "completion"),
+    team_ids: list[int] | None = None,
+) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    normalized_types = [value for value in report_types if value in REPORT_TABLES]
+    if not normalized_types:
+        return []
+    conditions = ["report.report_date BETWEEN %s AND %s", f"report.report_type IN ({','.join(['%s'] * len(normalized_types))})", "rig.team_id IS NOT NULL"]
+    args: list[object] = [period_start, period_end, *normalized_types]
+    normalized_team_ids = [int(value) for value in (team_ids or []) if int(value) > 0]
+    if normalized_team_ids:
+        conditions.append(f"rig.team_id IN ({','.join(['%s'] * len(normalized_team_ids))})")
+        args.extend(normalized_team_ids)
+    sql = f"""
+        SELECT report.record_id,report.report_type,DATE_FORMAT(report.report_date,'%%Y-%%m-%%d') AS report_date,
+               report.well_id,COALESCE(well.well_name,raw_record.wellbore) AS well_name,
+               rig.team_id,team.team_name
+        FROM dpr_report report
+        JOIN dpr_report_record raw_record ON raw_record.record_id=report.record_id
+        LEFT JOIN md_well well ON well.id=report.well_id
+        LEFT JOIN md_rig rig ON rig.id=report.rig_id
+        LEFT JOIN md_team team ON team.id=rig.team_id
+        WHERE {' AND '.join(conditions)}
+        ORDER BY rig.team_id,report.report_date,report.report_type,report.record_id
+    """
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, args)
+            rows = cursor.fetchall()
+    return [{
+        "record_id": _text(row.get("record_id")),
+        "report_type": _text(row.get("report_type")),
+        "report_date": _text(row.get("report_date"))[:10],
+        "well_id": int(row.get("well_id") or 0),
+        "well_name": _text(row.get("well_name")),
+        "team_id": int(row.get("team_id") or 0),
+        "team_name": _text(row.get("team_name")),
+    } for row in rows]
+
+
+def save_ai_extraction_target_fields(
+    database_path: str | Path | None,
+    fields: list[dict[str, Any]],
+    *,
+    actor: str = "system",
+) -> None:
+    del database_path
+    if not fields:
+        return
+    initialize_database()
+    now = _now()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            for field in fields:
+                cursor.execute(
+                    """INSERT INTO ai_extraction_target_field
+                    (field_code,field_label,output_format,grain,allowed_grains,field_description,is_system,enabled,created_by,created_at,updated_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON DUPLICATE KEY UPDATE field_label=VALUES(field_label),
+                    output_format=VALUES(output_format),grain=VALUES(grain),allowed_grains=VALUES(allowed_grains),
+                    field_description=VALUES(field_description),is_system=VALUES(is_system),
+                    enabled=VALUES(enabled),updated_at=VALUES(updated_at)""",
+                    (
+                        _text(field.get("value"))[:128],
+                        _text(field.get("label") or field.get("value"))[:128],
+                        _text(field.get("output_format") or "text")[:32],
+                        _text(field.get("grain") or "report")[:32],
+                        json.dumps([_text(field.get("grain") or "report")[:32]], ensure_ascii=False),
+                        _text(field.get("description"))[:512],
+                        1 if field.get("is_system") else 0,
+                        0 if field.get("enabled") is False else 1,
+                        _text(actor)[:128],
+                        now,
+                        now,
+                    ),
+                )
+        connection.commit()
+
+
+def list_ai_extraction_target_fields(database_path: str | Path | None = None) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT field_code,field_label,output_format,grain,allowed_grains,field_description,is_system,enabled,created_by,created_at,updated_at "
+                "FROM ai_extraction_target_field WHERE enabled=1 ORDER BY is_system DESC,field_label,field_code"
+            )
+            rows = cursor.fetchall() or []
+    return [{
+        "value": _text(row.get("field_code")),
+        "label": _text(row.get("field_label")),
+        "output_format": _text(row.get("output_format") or "text"),
+        "grain": _text(row.get("grain") or "report"),
+        "allowed_grains": [_text(row.get("grain") or "report")],
+        "description": _text(row.get("field_description")),
+        "is_system": bool(row.get("is_system")),
+        "enabled": bool(row.get("enabled")),
+        "created_by": _text(row.get("created_by")),
+        "created_at": _text(row.get("created_at")),
+        "updated_at": _text(row.get("updated_at")),
+    } for row in rows]
+
+
 def clear_extraction_results(database_path: str | Path | None, record_ids: list[str]) -> None:
     del database_path
     if not record_ids:
@@ -2703,6 +3052,7 @@ def _drilling_basic_monthly_scope_row(
         planned_completion_days = round((completion_planned_end - completion_planned_start).total_seconds() / 86400, 4)
     return {
         "job_id": int(base.get("job_id") or 0),
+        "job_sequence_no": int(base.get("job_sequence_no") or 0),
         "project_id": int(base.get("project_id") or 0),
         "project_name": _text(base.get("project_name")),
         "team_id": int(base.get("team_id") or 0) if base.get("team_id") is not None else None,
@@ -2837,6 +3187,7 @@ def _workover_basic_monthly_job_row(rows: list[dict[str, Any]]) -> dict[str, Any
     )
     return {
         "job_id": int(base.get("job_id") or 0),
+        "job_sequence_no": int(base.get("job_sequence_no") or 0),
         "project_id": int(base.get("project_id") or 0),
         "project_name": _text(base.get("project_name")),
         "team_id": int(base.get("team_id") or 0) if base.get("team_id") is not None else None,
@@ -2926,6 +3277,7 @@ def _drilling_workover_efficiency_monthly_row(source: dict[str, Any]) -> dict[st
         "project_name": _text(source.get("project_name")),
         "project_type": _text(source.get("project_type")),
         "well_id": int(source.get("well_id") or 0),
+        "team_id": int(source.get("team_id") or 0),
         "well_name": _text(source.get("well_name") or source.get("well_code")),
         "profession": profession,
         "profession_label": "修井" if profession == "workover" else "钻井",
@@ -3023,6 +3375,7 @@ def _monthly_team_workload_row(source: dict[str, Any]) -> dict[str, Any]:
         "project_id": int(source.get("project_id") or 0),
         "project_name": _text(source.get("project_name")),
         "profession": profession,
+        "team_id": int(source.get("team_id") or 0),
         "profession_label": "修井" if profession == "workover" else "钻井",
         "category_label": "修井" if profession == "workover" else "钻机",
         "team_code": team_name,

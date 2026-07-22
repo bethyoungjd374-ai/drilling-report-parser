@@ -177,6 +177,78 @@ CREATE TABLE IF NOT EXISTS ai_extraction_result (
   CONSTRAINT fk_ai_extraction_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS ai_extraction_target_field (
+  field_code VARCHAR(128) NOT NULL,
+  field_label VARCHAR(128) NOT NULL,
+  output_format VARCHAR(32) NOT NULL DEFAULT 'text',
+  grain VARCHAR(32) NOT NULL DEFAULT 'report',
+  allowed_grains JSON NULL,
+  field_description VARCHAR(512) NOT NULL DEFAULT '',
+  is_system TINYINT(1) NOT NULL DEFAULT 0,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  created_by VARCHAR(128) NOT NULL DEFAULT '',
+  created_at VARCHAR(64) NOT NULL DEFAULT '',
+  updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (field_code),
+  KEY idx_ai_extraction_target_enabled (enabled, field_label),
+  KEY idx_ai_extraction_target_grain (grain, enabled, field_label)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_extraction_aggregate_result (
+  scope_key VARCHAR(191) NOT NULL,
+  rule_id VARCHAR(80) NOT NULL,
+  grain VARCHAR(32) NOT NULL,
+  record_id VARCHAR(191) NULL,
+  project_id BIGINT UNSIGNED NULL,
+  job_id BIGINT UNSIGNED NULL,
+  job_sequence_no INT UNSIGNED NULL,
+  well_id BIGINT UNSIGNED NULL,
+  team_id BIGINT UNSIGNED NULL,
+  profession VARCHAR(32) NOT NULL DEFAULT '',
+  period_start DATE NULL,
+  period_end DATE NULL,
+  target_field VARCHAR(128) NOT NULL,
+  output_format VARCHAR(32) NOT NULL DEFAULT 'text',
+  source_hash VARCHAR(64) NOT NULL DEFAULT '',
+  source_record_count INT UNSIGNED NOT NULL DEFAULT 0,
+  source_record_ids JSON NULL,
+  result_text TEXT NULL,
+  result_number DECIMAL(24,6) NULL,
+  result_date DATE NULL,
+  result_json JSON NULL,
+  extraction_status VARCHAR(64) NOT NULL DEFAULT '',
+  error_message TEXT NULL,
+  model_config_id VARCHAR(128) NOT NULL DEFAULT '',
+  rule_version VARCHAR(64) NOT NULL DEFAULT '',
+  attempt_count INT UNSIGNED NOT NULL DEFAULT 0,
+  completed_at VARCHAR(64) NOT NULL DEFAULT '',
+  updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (scope_key, rule_id, target_field),
+  KEY idx_ai_aggregate_period (grain, period_start, period_end),
+  KEY idx_ai_aggregate_well (well_id, period_start),
+  KEY idx_ai_aggregate_team (team_id, period_start),
+  KEY idx_ai_aggregate_status (extraction_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_extraction_result_source (
+  lineage_key CHAR(64) NOT NULL,
+  scope_key VARCHAR(191) NOT NULL,
+  rule_id VARCHAR(80) NOT NULL,
+  target_field VARCHAR(128) NOT NULL,
+  record_id VARCHAR(191) NOT NULL,
+  source_section VARCHAR(64) NOT NULL DEFAULT '',
+  source_row_no INT NOT NULL DEFAULT 0,
+  source_field VARCHAR(128) NOT NULL DEFAULT '',
+  source_hash VARCHAR(64) NOT NULL DEFAULT '',
+  created_at VARCHAR(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (lineage_key),
+  KEY idx_ai_result_source_scope (scope_key, rule_id, target_field),
+  KEY idx_ai_result_source_record (record_id),
+  CONSTRAINT fk_ai_result_source_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS md_geo_region (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   region_code VARCHAR(64) NOT NULL,
@@ -1583,6 +1655,7 @@ SELECT
   report.well_id,
   MAX(well.well_code) AS well_code,
   MAX(well.well_name) AS well_name,
+  team.id AS team_id,
   CASE
     WHEN report.report_type = 'workover' OR project.project_type = 'workover' OR project.project_name LIKE '%修井%' THEN 'workover'
     ELSE 'drilling'
@@ -1634,6 +1707,7 @@ GROUP BY
   CAST(DATE_FORMAT(report.report_date, '%Y-%m-01') AS DATE),
   report.project_id,
   report.well_id,
+  team.id,
   CASE
     WHEN report.report_type = 'workover' OR project.project_type = 'workover' OR project.project_name LIKE '%修井%' THEN 'workover'
     ELSE 'drilling'
@@ -1646,6 +1720,7 @@ SELECT
   MAX(project_code) AS project_code,
   MAX(project_name) AS project_name,
   profession,
+  team_id,
   COALESCE(NULLIF(team_name,''), NULLIF(team_code,''), '未匹配队伍') AS team_name,
   COALESCE(NULLIF(team_code,''), NULLIF(team_name,''), '未匹配队伍') AS team_code,
   ROUND(SUM(production_hours + LEAST(npt_hours, npt_allowance_hours)), 3) AS operation_hours,
@@ -1667,6 +1742,7 @@ GROUP BY
   month_start,
   project_id,
   profession,
+  team_id,
   COALESCE(NULLIF(team_name,''), NULLIF(team_code,''), '未匹配队伍'),
   COALESCE(NULLIF(team_code,''), NULLIF(team_name,''), '未匹配队伍');
 

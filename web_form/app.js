@@ -4,7 +4,7 @@ const i18n = {
       appTitleShort: "NexoRig", appSubtitle: "钻完井管理平台", pageTitle: "钻井日报填报工作台", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "完井日报填报工作台", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "修井日报填报工作台", workoverPageKicker: "WORKOVER DAILY REPORT", movePageTitle: "搬迁日报填报工作台", movePageKicker: "RIG MOVE DAILY REPORT",
       systemAdmin: "系统后台",
       menuDailyParsing: "日报管理", menuDrillingDaily: "钻井日报", menuCompletionDaily: "完井日报", menuWorkoverDaily: "修井日报", menuMoveDaily: "搬迁日报",
-      menuProductionReport: "生产分析", menuRigProductionSummary: "时效分析", menuProductionDetailReport: "生产报表", menuMonthlyReport: "月度报表", menuDrillingBasicMonthlyReport: "钻井基础指标数据月报表", menuWorkoverBasicMonthlyReport: "修井基础指标数据月报表", menuDrillingWorkoverEfficiencyMonthlyReport: "钻修井基础时效数据月报", menuMonthlyTeamWorkloadReport: "月度工作量统计表", menuMonthlyEfficiencyReport: "月度时效报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
+      menuProductionReport: "生产分析", menuRigProductionSummary: "时效分析", menuProductionDetailReport: "生产报表", menuMonthlyReport: "月度报表", menuDrillingBasicMonthlyReport: "钻井月报", menuWorkoverBasicMonthlyReport: "修井月报", menuDrillingWorkoverEfficiencyMonthlyReport: "钻修井月报", menuMonthlyTeamWorkloadReport: "月度工作量统计", menuMonthlyEfficiencyReport: "月度时效报表", menuWellNptConfirm: "NPT统计", menuRigNptRanking: "NPT确认",
       menuHsse: "HSSE管理", menuHsseCollection: "HSSE填报", menuHsseDashboard: "安全驾驶舱", menuDailySafetySummary: "HSSE报表", menuPeriodSafetyReport: "HSSE报表",
       descDrillingDaily: "上传钻井日报 PDF，按原模板或独立兼容模板解析井基础信息及 Operation 内容。",
       descCompletionDaily: "上传完井日报 PDF，解析基础信息、Operation、库存和射孔区间，预览后可二次编辑。", descWorkoverDaily: "上传修井日报 PDF，解析 WO 信息、Operation、库存、安全备注和射孔区间，预览后可二次编辑。", descMoveDaily: "上传搬迁日报 PDF，解析 Operation、重型设备和载荷清单，预览后可二次编辑。",
@@ -79,7 +79,7 @@ const i18n = {
       appTitleShort: "NexoRig", appSubtitle: "Drilling Intelligence", pageTitle: "Drilling Daily Report Workspace", drillingPageKicker: "DRILLING DAILY REPORT", completionPageTitle: "Completion Daily Report Workspace", completionPageKicker: "COMPLETION DAILY REPORT", workoverPageTitle: "Workover Daily Report Workspace", workoverPageKicker: "WORKOVER DAILY REPORT",
       systemAdmin: "System Admin",
       menuDailyParsing: "Daily Reports", menuDrillingDaily: "Drilling Daily", menuCompletionDaily: "Completion Daily", menuWorkoverDaily: "Workover Daily", menuMoveDaily: "Move Daily",
-      menuProductionReport: "Production Analysis", menuRigProductionSummary: "Time Analysis", menuProductionDetailReport: "Production Report", menuMonthlyReport: "Monthly Reports", menuDrillingBasicMonthlyReport: "Drilling Basic Indicators Monthly Report", menuWorkoverBasicMonthlyReport: "Workover Basic Indicators Monthly Report", menuDrillingWorkoverEfficiencyMonthlyReport: "Drilling & Workover Basic Efficiency Monthly Report", menuMonthlyTeamWorkloadReport: "Monthly Workload Statistics", menuMonthlyEfficiencyReport: "Monthly Efficiency Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
+      menuProductionReport: "Production Analysis", menuRigProductionSummary: "Time Analysis", menuProductionDetailReport: "Production Report", menuMonthlyReport: "Monthly Reports", menuDrillingBasicMonthlyReport: "Drilling Monthly Report", menuWorkoverBasicMonthlyReport: "Workover Monthly Report", menuDrillingWorkoverEfficiencyMonthlyReport: "Drilling & Workover Monthly Report", menuMonthlyTeamWorkloadReport: "Monthly Workload Statistics", menuMonthlyEfficiencyReport: "Monthly Efficiency Report", menuWellNptConfirm: "NPT Stats", menuRigNptRanking: "NPT Confirmation",
       menuHsse: "HSSE Management", menuHsseCollection: "HSSE Entry", menuHsseDashboard: "Safety Cockpit", menuDailySafetySummary: "HSSE Reports", menuPeriodSafetyReport: "HSSE Reports",
       descDrillingDaily: "Upload drilling daily PDFs and parse well basics and Operation content with the original or compatible template strategy.",
       descCompletionDaily: "Upload completion daily PDFs, parse basics, operations, bulks, and perforated intervals, then preview and edit.", descWorkoverDaily: "Upload workover daily PDFs, parse WO information, operations, bulks, safety comments, and perforated intervals, then preview and edit.", descMoveDaily: "Rig-move reports share the drilling parser and data tables; Event distinguishes the lifecycle stage.",
@@ -154,7 +154,7 @@ const i18n = {
       appTitleShort: "NexoRig", appSubtitle: "Inteligencia de Perforación", pageTitle: "Mesa de Registro del Reporte Diario", drillingPageKicker: "REPORTE DIARIO DE PERFORACIÓN", completionPageTitle: "Mesa del Reporte Diario de Completación", completionPageKicker: "REPORTE DIARIO DE COMPLETACIÓN", workoverPageTitle: "Mesa del Reporte Diario de Workover", workoverPageKicker: "REPORTE DIARIO DE WORKOVER",
       systemAdmin: "Administración",
       menuDailyParsing: "Reportes Diarios", menuDrillingDaily: "Reporte Diario de Perforación", menuCompletionDaily: "Reporte Diario de Completación", menuWorkoverDaily: "Reporte Diario de Workover", menuMoveDaily: "Reporte Diario de Movilización",
-      menuProductionReport: "Análisis de Producción", menuRigProductionSummary: "Análisis de Tiempos", menuProductionDetailReport: "Reporte de Producción", menuMonthlyReport: "Reportes Mensuales", menuDrillingBasicMonthlyReport: "Reporte Mensual de Indicadores Básicos de Perforación", menuWorkoverBasicMonthlyReport: "Reporte Mensual de Indicadores Básicos de Workover", menuDrillingWorkoverEfficiencyMonthlyReport: "Reporte Mensual de Eficiencia Básica de Perforación y Workover", menuMonthlyTeamWorkloadReport: "Estadística Mensual de Carga de Trabajo", menuMonthlyEfficiencyReport: "Reporte Mensual de Eficiencia", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
+      menuProductionReport: "Análisis de Producción", menuRigProductionSummary: "Análisis de Tiempos", menuProductionDetailReport: "Reporte de Producción", menuMonthlyReport: "Reportes Mensuales", menuDrillingBasicMonthlyReport: "Reporte Mensual de Perforación", menuWorkoverBasicMonthlyReport: "Reporte Mensual de Workover", menuDrillingWorkoverEfficiencyMonthlyReport: "Reporte Mensual de Perforación y Workover", menuMonthlyTeamWorkloadReport: "Estadística Mensual de Carga de Trabajo", menuMonthlyEfficiencyReport: "Reporte Mensual de Eficiencia", menuWellNptConfirm: "Estadística NPT", menuRigNptRanking: "Confirmación NPT",
       menuHsse: "Gestión HSSE", menuHsseCollection: "Registro HSSE", menuHsseDashboard: "Cabina de Seguridad", menuDailySafetySummary: "Reportes HSSE", menuPeriodSafetyReport: "Reportes HSSE",
       descDrillingDaily: "Carga reportes diarios PDF de perforación o movilización, extrae datos básicos y operaciones, y permite editar el reporte diario de perforación.",
       descCompletionDaily: "Carga PDFs diarios de completación, extrae datos básicos, operaciones, inventarios e intervalos cañoneados, y permite revisar y editar.", descWorkoverDaily: "Carga PDFs diarios de workover, extrae información WO, operaciones, inventarios, comentarios de seguridad e intervalos cañoneados, y permite revisar y editar.", descMoveDaily: "Entrada reservada para análisis PDF y captura estructurada de reportes diarios de movilización.",
@@ -664,9 +664,9 @@ function renderDrillingBasicMonthlyTable(payload = drillingBasicMonthlyState.pay
     formatDrillingBasicCycle(row.planned_completion_cycle_days),
     formatDrillingBasicCycle(row.actual_drilling_cycle_days),
     formatDrillingBasicCycle(row.actual_completion_cycle_days),
-    "",
-    "",
-    "",
+    escapeHtml(row.well_control_incident),
+    escapeHtml(row.accident_waiting),
+    escapeHtml(row.remarks),
   ]);
   const renderedRows = dataValues
     .map((values) => `<tr class="template-data-row">${cells(values)}</tr>`)
@@ -875,7 +875,7 @@ async function loadDrillingBasicMonthlyReport() {
     setSelectOptions(document.querySelector("[data-drilling-basic-team]"), (payload.filters?.teams || []).map((item) => [item.value, item.label]), "全部队伍");
     renderDrillingBasicMonthlyTable(payload);
     const note = document.querySelector("[data-drilling-basic-status-note]");
-    if (note) note.textContent = `已加载 ${payload.rows?.length || 0} 条钻井作业；井控、事故停待和备注按确认口径暂留空。`;
+    if (note) note.textContent = `已加载 ${payload.rows?.length || 0} 条钻井作业；井控异常按井队汇总当月钻井、完井日报，事故停待和备注暂留空。`;
   } catch (error) {
     showToast(error.message || "钻井基础指标数据加载失败");
   } finally {
@@ -913,9 +913,9 @@ function renderWorkoverBasicMonthlyTable(payload = workoverBasicMonthlyState.pay
     escapeHtml(globalReportContentLanguage === "zh"
       ? row.primary_operation_zh || row.primary_operation
       : row.primary_operation_source || row.primary_operation),
-    "",
-    "",
-    "",
+    escapeHtml(row.well_control_incident),
+    escapeHtml(row.accident_waiting),
+    escapeHtml(row.remarks),
   ]);
   const renderedRows = dataValues.map((values) => `<tr class="template-data-row">${cells(values)}</tr>`).join("");
   const summary = payload.summary || {};
@@ -1000,9 +1000,9 @@ function renderDrillingWorkoverEfficiencyMonthlyTable(payload = drillingWorkover
     formatEfficiencyMonthlyHours(row.accident_complex_hours),
     formatEfficiencyMonthlyHours(row.other_hours),
     formatEfficiencyMonthlyRatio(row.well_efficiency),
-    "",
+    escapeHtml(row.nonproductive_description),
     formatEfficiencyMonthlyRatio(row.average_efficiency),
-    "",
+    escapeHtml(row.remarks),
   ]);
   const renderedRows = dataValues
     .map((values) => `<tr class="template-data-row">${cells(values)}</tr>`)
@@ -1144,68 +1144,61 @@ function renderModulePlaceholder(link = activeMenuLink()) {
   document.querySelector("#placeholderDescription").textContent = ui(link.dataset.descI18n);
 }
 
+const FRONT_PAGE_BY_TARGET = Object.freeze({
+  "drilling-daily": "drillingDailyPage",
+  "completion-daily": "completionDailyPage",
+  "workover-daily": "workoverDailyPage",
+  "move-daily": "moveDailyPage",
+  "rig-production-summary": "productionSummaryPage",
+  "production-report": "productionReportPage",
+  "drilling-basic-monthly-report": "drillingBasicMonthlyReportPage",
+  "workover-basic-monthly-report": "workoverBasicMonthlyReportPage",
+  "drilling-workover-efficiency-monthly-report": "drillingWorkoverEfficiencyMonthlyReportPage",
+  "monthly-team-workload-report": "monthlyTeamWorkloadReportPage",
+  "monthly-efficiency-report": "monthlyEfficiencyReportPage",
+  "well-npt-confirm": "nptStatsPage",
+  "rig-npt-ranking": "nptConfirmPage",
+});
+
 function setActiveMenu(target) {
   activeMenuTarget = target;
   document.querySelectorAll(".menu-link[data-menu-target]").forEach((link) => {
     link.classList.toggle("active", link.dataset.menuTarget === target);
   });
-  const isDrillingDaily = target === "drilling-daily";
-  const isCompletionDaily = target === "completion-daily";
-  const isWorkoverDaily = target === "workover-daily";
-  const isMoveDaily = target === "move-daily";
-  const isProductionSummary = target === "rig-production-summary";
-  const isProductionReport = target === "production-report";
-  const isDrillingBasicMonthly = target === "drilling-basic-monthly-report";
-  const isWorkoverBasicMonthly = target === "workover-basic-monthly-report";
-  const isDrillingWorkoverEfficiencyMonthly = target === "drilling-workover-efficiency-monthly-report";
-  const isMonthlyTeamWorkload = target === "monthly-team-workload-report";
-  const isMonthlyEfficiency = target === "monthly-efficiency-report";
-  const isNptStats = target === "well-npt-confirm";
-  const isNptConfirm = target === "rig-npt-ranking";
-  document.querySelector("#drillingDailyPage").hidden = !isDrillingDaily;
-  document.querySelector("#drillingDailyPage").classList.toggle("active", isDrillingDaily);
-  document.querySelector("#completionDailyPage").hidden = !isCompletionDaily;
-  document.querySelector("#completionDailyPage").classList.toggle("active", isCompletionDaily);
-  document.querySelector("#workoverDailyPage").hidden = !isWorkoverDaily;
-  document.querySelector("#workoverDailyPage").classList.toggle("active", isWorkoverDaily);
-  document.querySelector("#moveDailyPage").hidden = !isMoveDaily;
-  document.querySelector("#moveDailyPage").classList.toggle("active", isMoveDaily);
-  document.querySelector("#productionSummaryPage").hidden = !isProductionSummary;
-  document.querySelector("#productionSummaryPage").classList.toggle("active", isProductionSummary);
-  document.querySelector("#productionReportPage").hidden = !isProductionReport;
-  document.querySelector("#productionReportPage").classList.toggle("active", isProductionReport);
-  document.querySelector("#drillingBasicMonthlyReportPage").hidden = !isDrillingBasicMonthly;
-  document.querySelector("#drillingBasicMonthlyReportPage").classList.toggle("active", isDrillingBasicMonthly);
-  document.querySelector("#workoverBasicMonthlyReportPage").hidden = !isWorkoverBasicMonthly;
-  document.querySelector("#workoverBasicMonthlyReportPage").classList.toggle("active", isWorkoverBasicMonthly);
-  document.querySelector("#drillingWorkoverEfficiencyMonthlyReportPage").hidden = !isDrillingWorkoverEfficiencyMonthly;
-  document.querySelector("#drillingWorkoverEfficiencyMonthlyReportPage").classList.toggle("active", isDrillingWorkoverEfficiencyMonthly);
-  document.querySelector("#monthlyTeamWorkloadReportPage").hidden = !isMonthlyTeamWorkload;
-  document.querySelector("#monthlyTeamWorkloadReportPage").classList.toggle("active", isMonthlyTeamWorkload);
-  document.querySelector("#monthlyEfficiencyReportPage").hidden = !isMonthlyEfficiency;
-  document.querySelector("#monthlyEfficiencyReportPage").classList.toggle("active", isMonthlyEfficiency);
-  document.querySelector("#nptStatsPage").hidden = !isNptStats;
-  document.querySelector("#nptStatsPage").classList.toggle("active", isNptStats);
-  document.querySelector("#nptConfirmPage").hidden = !isNptConfirm;
-  document.querySelector("#nptConfirmPage").classList.toggle("active", isNptConfirm);
-  const showPlaceholder = !isDrillingDaily && !isCompletionDaily && !isWorkoverDaily && !isMoveDaily && !isProductionSummary && !isProductionReport && !isDrillingBasicMonthly && !isWorkoverBasicMonthly && !isDrillingWorkoverEfficiencyMonthly && !isMonthlyTeamWorkload && !isMonthlyEfficiency && !isNptStats && !isNptConfirm;
-  document.querySelector("#modulePlaceholder").hidden = !showPlaceholder;
-  document.querySelector("#modulePlaceholder").classList.toggle("active", showPlaceholder);
-  if (showPlaceholder) renderModulePlaceholder();
-  if (isDrillingDaily) showReportRecords("drilling");
-  if (isCompletionDaily) showReportRecords("completion");
-  if (isWorkoverDaily) showReportRecords("workover");
-  if (isMoveDaily) showReportRecords("move");
-  if (isProductionSummary) loadAnalytics("production");
-  if (isProductionReport) loadAnalytics("productionReport");
-  if (isDrillingBasicMonthly) loadDrillingBasicMonthlyReport();
-  if (isWorkoverBasicMonthly) loadWorkoverBasicMonthlyReport();
-  if (isDrillingWorkoverEfficiencyMonthly) loadDrillingWorkoverEfficiencyMonthlyReport();
-  if (isMonthlyTeamWorkload) loadMonthlyTeamWorkloadReport();
-  if (isMonthlyEfficiency) loadAnalytics("monthlyEfficiency");
-  if (isNptStats) loadAnalytics("npt");
-  if (isNptConfirm) loadNptConfirmations();
+  syncResponsiveNavigation();
+  const activePageId = FRONT_PAGE_BY_TARGET[target] || "modulePlaceholder";
+  document.querySelectorAll(".module-page").forEach((page) => {
+    const active = page.id === activePageId;
+    page.hidden = !active;
+    page.classList.toggle("active", active);
+  });
+  if (activePageId === "modulePlaceholder") renderModulePlaceholder();
+  switch (target) {
+    case "drilling-daily": showReportRecords("drilling"); break;
+    case "completion-daily": showReportRecords("completion"); break;
+    case "workover-daily": showReportRecords("workover"); break;
+    case "move-daily": showReportRecords("move"); break;
+    case "rig-production-summary": loadAnalytics("production"); break;
+    case "production-report": loadAnalytics("productionReport"); break;
+    case "drilling-basic-monthly-report": loadDrillingBasicMonthlyReport(); break;
+    case "workover-basic-monthly-report": loadWorkoverBasicMonthlyReport(); break;
+    case "drilling-workover-efficiency-monthly-report": loadDrillingWorkoverEfficiencyMonthlyReport(); break;
+    case "monthly-team-workload-report": loadMonthlyTeamWorkloadReport(); break;
+    case "monthly-efficiency-report": loadAnalytics("monthlyEfficiency"); break;
+    case "well-npt-confirm": loadAnalytics("npt"); break;
+    case "rig-npt-ranking": loadNptConfirmations(); break;
+    default: break;
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function syncResponsiveNavigation() {
+  if (!window.matchMedia("(max-width: 900px)").matches) return;
+  document.querySelectorAll(".system-nav .menu-group").forEach((group) => {
+    const shouldOpen = Boolean(group.querySelector(".menu-link.active"));
+    group.classList.toggle("open", shouldOpen);
+    group.querySelector(".menu-group-toggle")?.setAttribute("aria-expanded", String(shouldOpen));
+  });
 }
 
 function setLeadingLabelText(label, text) {

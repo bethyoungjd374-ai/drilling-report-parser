@@ -3,20 +3,512 @@
     {
       "id": "npt-service-line",
       "name": "NPT责任方识别",
+      "grain": "detail_row",
       "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
       "source_section": "operations",
       "source_field": "operation_details",
+      "source_fields": [
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
       "condition": "处理所有日报类型中作业类型为 NPT 的明细；按明确归责、故障归属、服务品牌证据的优先级识别，缺少有效证据时返回空值。",
       "instruction": "提取造成该段NPT的责任公司或Service Line。第一优先级：A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE、RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO等明确归责表达。第二优先级：描述明确指出某公司的设备、工具或服务发生FALLA、ANOMALIA、PERDIDA、CAIDA、FAULT、FAILURE、LOSS等故障，并由该公司处置。第三优先级：故障对象与唯一服务品牌存在明确归属，例如HAL/HALLIBURTON/SPERRY、SLB/SCHLUMBERGER/SLB-RPS、CNLC-WIRELINE。仅出现iCruise、MWD、LWD、BHA或公司参与后续处置，不足以判定责任；故障若明确位于钻杆、套管等其他对象，也不得归责给同段出现的定向服务商。不得仅根据井队上下文猜测，不得把无关的协助或后续作业公司当成责任方。只返回一个责任方名称；没有充分证据返回空字符串。如果责任公司与井队公司一致，输出完整井队名称。",
       "target_field": "service_line",
-      "output_format": "company",
+      "target_field_label": "责任方/服务线",
+      "output_format": "text",
       "model_id": "b613f4e8-033b-4433-b9ff-9fc515a982fe",
       "enabled": true,
-      "updated_at": "2026-07-12T09:03:59"
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "team-month-well-control-incident",
+      "name": "井队月度井控异常提炼",
+      "grain": "team_month",
+      "report_type": "drilling",
+      "report_types": [
+        "drilling",
+        "completion"
+      ],
+      "source_section": "report_fields",
+      "source_field": "currentOps",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "currentOps",
+          "report_types": [
+            "drilling",
+            "completion"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "incidentComments",
+          "report_types": [
+            "drilling"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyIncident",
+          "report_types": [
+            "drilling"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyComments",
+          "report_types": [
+            "completion"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion"
+          ]
+        }
+      ],
+      "condition": "按井队、钻井专业和自然月综合该井队当月全部钻井、完井日报；仅认定实际发生的溢流、井涌或井喷，排除演练、流程检查、设备名称及正常流动描述。",
+      "instruction": "判断该井队本月是否实际发生溢流、井涌或井喷。没有实际事件时只返回“无”。存在事件时，用一句简短中文汇总涉及井及发生次数，例如“W-2井发生井涌1次”；同一事件跨日报连续记录不得重复计数。不要把井控演练、Kick Out设备测试、Flow Line/Niple de Flujo、正常流量或常规井控检查判定为事件。",
+      "target_field": "team_month_well_control_incident",
+      "target_field_label": "井队月度是否有溢流、井涌或井喷",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "monthly-team-well-control-incident",
+      "name": "钻修井月报单井井控异常提炼",
+      "grain": "well_job",
+      "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
+      "source_section": "report_fields",
+      "source_field": "currentOps",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "currentOps",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "incidentComments",
+          "report_types": [
+            "drilling"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyIncident",
+          "report_types": [
+            "drilling"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyComments",
+          "report_types": [
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
+      "condition": "按项目、井和作业序列综合该井全部钻井、完井或修井日报；仅认定实际发生的溢流、井涌或井喷，排除演练、流程检查、设备名称及正常流动描述。",
+      "instruction": "判断该井本作业周期是否实际发生溢流、井涌或井喷。没有实际事件时只返回“无”。存在事件时，用一句简短中文汇总发生了什么及次数，例如“发生井涌2次”；相同事件跨日报连续记录不得重复计数。不要把井控演练、Kick Out设备测试、Flow Line/Niple de Flujo、正常流量或常规井控检查判定为事件。",
+      "target_field": "well_control_incident",
+      "target_field_label": "是否有溢流、井涌或井喷",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "monthly-well-job-accident-waiting",
+      "name": "钻修井月报事故复杂及停待提炼",
+      "grain": "well_job",
+      "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
+      "source_section": "report_fields",
+      "source_field": "currentOps",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "currentOps",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "incidentComments",
+          "report_types": [
+            "drilling"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyIncident",
+          "report_types": [
+            "drilling"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyComments",
+          "report_types": [
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
+      "condition": "按项目、井和作业序列综合该井全部相关日报，只汇总实际发生的事故、复杂情况、设备故障、停工或等待事项。",
+      "instruction": "提炼本作业周期实际发生的事故、复杂情况及停待事项，写明事件、原因及影响时长（原文有时长时）。同一事件跨日报连续记录只汇总一次；常规作业、计划内等待及未实际发生的风险提示不计入。没有相关事项时只返回“无”；有事项时用精炼中文分号分隔，限180字。",
+      "target_field": "accident_waiting",
+      "target_field_label": "事故、复杂及停待情况",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "monthly-well-job-basic-remarks",
+      "name": "钻修井月报综合备注提炼",
+      "grain": "well_job",
+      "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
+      "source_section": "report_fields",
+      "source_field": "currentOps",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "currentOps",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "primaryReason",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
+      "condition": "按项目、井和作业序列综合全部相关日报，提炼月报需要说明但不能由结构化数值直接表达的信息。",
+      "instruction": "提炼设备当前状态及需要特别说明的事项，例如停待、整改、入库封存、回迁、关键作业状态或资料异常。不要重复井控异常和事故停待栏已表达的内容，不要罗列日常作业流水。没有需要特别说明的内容时只返回“无”；有内容时用一句精炼中文，限160字。",
+      "target_field": "basic_monthly_remarks",
+      "target_field_label": "钻修井月报综合备注",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "monthly-well-npt-description",
+      "name": "钻修井月报非生产原因提炼",
+      "grain": "well_month",
+      "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
+      "source_section": "report_fields",
+      "source_field": "summary24h",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
+      "condition": "按项目、井、专业和自然月综合当月日报，只提炼NPT、维修、事故复杂及其他非生产时间的原因。",
+      "instruction": "按影响程度提炼本井本月非生产时间原因，优先说明NPT、零日费维修、事故复杂及等待的具体对象、原因和累计时长；同一事件跨日报连续记录不得重复。不要写生产作业内容。没有非生产时间时只返回“无”；有内容时用精炼中文分号分隔，限220字。",
+      "target_field": "nonproductive_description",
+      "target_field_label": "非生产时间原因描述",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "monthly-well-efficiency-remarks",
+      "name": "钻修井月报时效备注提炼",
+      "grain": "well_month",
+      "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
+      "source_section": "report_fields",
+      "source_field": "currentOps",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "currentOps",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
+      "condition": "按项目、井、专业和自然月综合当月日报，补充影响时效理解的特殊说明。",
+      "instruction": "提炼影响本井月度时效解读的特殊情况，例如跨月作业、作业阶段转换、数据缺失、异常停复工或统计口径需要说明的事项。不要重复非生产原因描述，不要复述数值。没有特别说明时只返回“无”；有内容时用一句精炼中文，限160字。",
+      "target_field": "efficiency_monthly_remarks",
+      "target_field_label": "钻修井月报备注",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
+    },
+    {
+      "id": "monthly-team-workload-remarks",
+      "name": "月度工作量统计备注提炼",
+      "grain": "team_month",
+      "report_type": "all",
+      "report_types": [
+        "drilling",
+        "completion",
+        "workover"
+      ],
+      "source_section": "report_fields",
+      "source_field": "currentOps",
+      "source_fields": [
+        {
+          "section": "report_fields",
+          "field": "currentOps",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "summary24h",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "report_fields",
+          "field": "otherRemarks",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        },
+        {
+          "section": "operations",
+          "field": "operation_details",
+          "report_types": [
+            "drilling",
+            "completion",
+            "workover"
+          ]
+        }
+      ],
+      "condition": "按井队、专业和自然月综合该队当月全部相关日报，提炼工作量统计需要补充说明的异常或状态。",
+      "instruction": "提炼该井队本月工作量需要备注的事项，例如主要作业阶段、跨井转换、长时间搬迁、待工、维修、停工或设备状态。不要复述表中小时数，不要罗列每日作业。没有特别说明时只返回“无”；有内容时用一句精炼中文，限180字。",
+      "target_field": "workload_monthly_remarks",
+      "target_field_label": "月度工作量统计备注",
+      "output_format": "text",
+      "model_id": "",
+      "enabled": true,
+      "updated_at": "2026-07-21T23:16:07"
     }
   ],
+  "custom_target_fields": [],
   "auto_execute": true,
-  "version": "ai-extraction-d1bfbd13349c",
+  "version": "ai-extraction-73b8d3e6f165",
   "catalog": {
     "report_types": [
       {
@@ -29,52 +521,801 @@
             "fields": [
               {
                 "value": "event",
-                "label": "作业事件"
+                "label": "作业事件",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "reportDate",
-                "label": "reportDate"
+                "label": "报告日期",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "reportNo",
-                "label": "reportNo"
+                "label": "报告编号",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "wellbore",
-                "label": "wellbore"
+                "label": "井筒",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "rig",
-                "label": "rig"
+                "label": "井队/钻机",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "primaryReason",
-                "label": "主要原因"
+                "label": "主要原因",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "afeNumber",
-                "label": "afeNumber"
+                "label": "AFE编号",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "refDatum",
-                "label": "refDatum"
+                "label": "参考基准",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "currentOps",
-                "label": "当前作业"
+                "label": "当前作业",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "summary24h",
-                "label": "24小时作业总结"
+                "label": "24小时作业总结",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "forecast24h",
-                "label": "未来24小时计划"
+                "label": "未来24小时计划",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "otherRemarks",
-                "label": "其他备注"
+                "label": "其他备注",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "wellboreNo",
+                "label": "井筒编号",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "dfs",
+                "label": "开钻后天数",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "todayMd",
+                "label": "今日测深",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "prevMd",
+                "label": "上日测深",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "progress",
+                "label": "日进尺",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "rotHrsToday",
+                "label": "今日旋转钻进小时",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "avgRopSlide",
+                "label": "平均滑动机械钻速",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "avgRopRot",
+                "label": "平均旋转机械钻速",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "dailyCost",
+                "label": "当日成本",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "cumulativeCost",
+                "label": "累计成本",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "afeCost",
+                "label": "AFE预算成本",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "supervisor1",
+                "label": "主管1",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "supervisor2",
+                "label": "主管2",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "engineer",
+                "label": "工程师",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "pamEngineer",
+                "label": "PAM工程师",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "geologist",
+                "label": "地质师",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "totalPersonnel",
+                "label": "现场总人数",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "lastCasing",
+                "label": "上层套管",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "lastCasingSize",
+                "label": "上层套管尺寸",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "lastCasingDepth",
+                "label": "上层套管深度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "nextCasing",
+                "label": "下层套管",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "nextCasingSize",
+                "label": "下层套管尺寸",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "nextCasingDepth",
+                "label": "下层套管深度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "formTestType",
+                "label": "地层测试类型",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "formTestEmw",
+                "label": "地层测试等效泥浆密度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "lastBopPressTest",
+                "label": "最近防喷器试压",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "pumpRate",
+                "label": "泵排量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "pumpPress",
+                "label": "泵压",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "stringWeightUp",
+                "label": "上提钻柱重量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "stringWeightDown",
+                "label": "下放钻柱重量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "stringWeightUpDown",
+                "label": "钻柱上下活动重量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "torqueOffBottom",
+                "label": "离底扭矩",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "torqueOnBottom",
+                "label": "井底扭矩",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudEngineer",
+                "label": "泥浆工程师",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "sampleFrom",
+                "label": "泥浆取样位置",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudType",
+                "label": "泥浆类型",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudTime",
+                "label": "泥浆取样时间",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudMd",
+                "label": "泥浆取样测深",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudDensity",
+                "label": "泥浆密度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudTemperature",
+                "label": "泥浆温度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "rheologyTemp",
+                "label": "流变测试温度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "viscosity",
+                "label": "漏斗黏度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "pv",
+                "label": "塑性黏度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "yp",
+                "label": "动切力",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "gel10s",
+                "label": "10秒静切力",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "gel10m",
+                "label": "10分钟静切力",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "gel30m",
+                "label": "30分钟静切力",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "apiWl",
+                "label": "API滤失量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "oilPercent",
+                "label": "含油量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "waterPercent",
+                "label": "含水量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "sand",
+                "label": "含砂量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "ecd",
+                "label": "等效循环密度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "mudComments",
+                "label": "泥浆备注",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bitNo",
+                "label": "钻头序号",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bitSize",
+                "label": "钻头尺寸",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bitManufacturer",
+                "label": "钻头制造商",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bitSerial",
+                "label": "钻头序列号",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bitWearIodl",
+                "label": "钻头磨损内外径分级",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bitWearBgor",
+                "label": "钻头磨损特征分级",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bhaNo",
+                "label": "钻具组合编号",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bhaMdIn",
+                "label": "钻具组合入井测深",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bhaMdOut",
+                "label": "钻具组合出井测深",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "bhaTotalLength",
+                "label": "钻具组合总长",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "safetyIncident",
+                "label": "安全事故",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "environmentIncident",
+                "label": "环境事故",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "daysSinceRi",
+                "label": "距上次可记录事故天数",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "daysSinceLta",
+                "label": "距上次损失工时事故天数",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "incidentComments",
+                "label": "事故备注",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "groundElev",
+                "label": "地面海拔",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "afeMdDays",
+                "label": "AFE计划井深/天数",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "completionNo",
+                "label": "完井编号",
+                "report_types": [
+                  "completion"
+                ]
+              },
+              {
+                "value": "dol",
+                "label": "现场作业天数",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "rigContractName",
+                "label": "钻机合同名称",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "description",
+                "label": "作业描述",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "operationStartDate",
+                "label": "作业开始日期",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "safetyComments",
+                "label": "安全备注",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "workoverNo",
+                "label": "修井编号",
+                "report_types": [
+                  "workover"
+                ]
               }
+            ],
+            "report_types": [
+              "drilling",
+              "completion",
+              "workover"
+            ]
+          },
+          {
+            "value": "survey_data",
+            "label": "测斜数据",
+            "fields": [
+              {
+                "value": "md",
+                "label": "测量深度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "incl",
+                "label": "井斜角",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "azi",
+                "label": "方位角",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "tvd",
+                "label": "垂直深度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "vse",
+                "label": "垂直剖面位移",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "ns",
+                "label": "南北位移",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "ew",
+                "label": "东西位移",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "dls",
+                "label": "狗腿度",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "build",
+                "label": "造斜率",
+                "report_types": [
+                  "drilling"
+                ]
+              }
+            ],
+            "report_types": [
+              "drilling"
+            ]
+          },
+          {
+            "value": "bha_components",
+            "label": "BHA 组件",
+            "fields": [
+              {
+                "value": "component",
+                "label": "组件名称",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "od",
+                "label": "外径",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "id",
+                "label": "内径",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "joints",
+                "label": "单根数量",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "length",
+                "label": "长度",
+                "report_types": [
+                  "drilling"
+                ]
+              }
+            ],
+            "report_types": [
+              "drilling"
             ]
           },
           {
@@ -83,40 +1324,324 @@
             "fields": [
               {
                 "value": "from",
-                "label": "from"
+                "label": "开始时间",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "to",
-                "label": "to"
+                "label": "结束时间",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "hours",
-                "label": "hours"
+                "label": "作业小时数",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "op_code",
-                "label": "op_code"
+                "label": "作业代码",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "op_sub",
-                "label": "作业子类"
+                "label": "作业子类",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "op_type",
-                "label": "op_type"
+                "label": "作业类型",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "operation_details",
-                "label": "作业明细"
+                "label": "作业明细",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "system_op_type",
-                "label": "system_op_type"
+                "label": "系统判定作业类型",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               },
               {
                 "value": "confirmed_op_type",
-                "label": "confirmed_op_type"
+                "label": "确认作业类型",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
               }
+            ],
+            "report_types": [
+              "drilling",
+              "completion",
+              "workover"
+            ]
+          },
+          {
+            "value": "fluid_losses",
+            "label": "漏失情况",
+            "fields": [
+              {
+                "value": "injected_volume_bbl",
+                "label": "注入体积",
+                "report_types": [
+                  "drilling"
+                ]
+              },
+              {
+                "value": "returned_volume_bbl",
+                "label": "返出体积",
+                "report_types": [
+                  "drilling"
+                ]
+              }
+            ],
+            "report_types": [
+              "drilling"
+            ]
+          },
+          {
+            "value": "bulks",
+            "label": "批量物料",
+            "fields": [
+              {
+                "value": "bulk",
+                "label": "物料名称",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "qty_start",
+                "label": "期初数量",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "qty_used",
+                "label": "使用数量",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "qty_end",
+                "label": "期末数量",
+                "report_types": [
+                  "drilling",
+                  "completion",
+                  "workover"
+                ]
+              }
+            ],
+            "report_types": [
+              "drilling",
+              "completion",
+              "workover"
+            ]
+          },
+          {
+            "value": "mud_products",
+            "label": "泥浆产品",
+            "fields": [
+              {
+                "value": "product",
+                "label": "产品名称",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "unit",
+                "label": "单位",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "received",
+                "label": "接收数量",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "used",
+                "label": "使用数量",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "returned",
+                "label": "退回数量",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "ending",
+                "label": "期末数量",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              }
+            ],
+            "report_types": [
+              "completion",
+              "workover"
+            ]
+          },
+          {
+            "value": "perforation_intervals",
+            "label": "射孔井段",
+            "fields": [
+              {
+                "value": "formation",
+                "label": "地层",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "top_md",
+                "label": "顶部测深",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "base_md",
+                "label": "底部测深",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "length",
+                "label": "长度",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "density",
+                "label": "射孔密度",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "charges",
+                "label": "射孔弹",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "phase",
+                "label": "相位角",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "penetration",
+                "label": "穿透深度",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "diameter",
+                "label": "孔径",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "date",
+                "label": "日期",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "status",
+                "label": "状态说明",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              },
+              {
+                "value": "comments",
+                "label": "明细备注",
+                "report_types": [
+                  "completion",
+                  "workover"
+                ]
+              }
+            ],
+            "report_types": [
+              "completion",
+              "workover"
             ]
           }
         ]
@@ -135,19 +1660,19 @@
               },
               {
                 "value": "reportDate",
-                "label": "reportDate"
+                "label": "报告日期"
               },
               {
                 "value": "reportNo",
-                "label": "reportNo"
+                "label": "报告编号"
               },
               {
                 "value": "wellbore",
-                "label": "wellbore"
+                "label": "井筒"
               },
               {
                 "value": "rig",
-                "label": "rig"
+                "label": "井队/钻机"
               },
               {
                 "value": "primaryReason",
@@ -155,11 +1680,11 @@
               },
               {
                 "value": "afeNumber",
-                "label": "afeNumber"
+                "label": "AFE编号"
               },
               {
                 "value": "refDatum",
-                "label": "refDatum"
+                "label": "参考基准"
               },
               {
                 "value": "currentOps",
@@ -178,20 +1703,72 @@
                 "label": "其他备注"
               },
               {
+                "value": "wellboreNo",
+                "label": "井筒编号"
+              },
+              {
+                "value": "dfs",
+                "label": "开钻后天数"
+              },
+              {
                 "value": "todayMd",
-                "label": "todayMd"
+                "label": "今日测深"
               },
               {
                 "value": "prevMd",
-                "label": "prevMd"
+                "label": "上日测深"
               },
               {
                 "value": "progress",
-                "label": "progress"
+                "label": "日进尺"
               },
               {
                 "value": "rotHrsToday",
-                "label": "rotHrsToday"
+                "label": "今日旋转钻进小时"
+              },
+              {
+                "value": "avgRopSlide",
+                "label": "平均滑动机械钻速"
+              },
+              {
+                "value": "avgRopRot",
+                "label": "平均旋转机械钻速"
+              },
+              {
+                "value": "dailyCost",
+                "label": "当日成本"
+              },
+              {
+                "value": "cumulativeCost",
+                "label": "累计成本"
+              },
+              {
+                "value": "afeCost",
+                "label": "AFE预算成本"
+              },
+              {
+                "value": "supervisor1",
+                "label": "主管1"
+              },
+              {
+                "value": "supervisor2",
+                "label": "主管2"
+              },
+              {
+                "value": "engineer",
+                "label": "工程师"
+              },
+              {
+                "value": "pamEngineer",
+                "label": "PAM工程师"
+              },
+              {
+                "value": "geologist",
+                "label": "地质师"
+              },
+              {
+                "value": "totalPersonnel",
+                "label": "现场总人数"
               },
               {
                 "value": "lastCasing",
@@ -199,11 +1776,11 @@
               },
               {
                 "value": "lastCasingSize",
-                "label": "lastCasingSize"
+                "label": "上层套管尺寸"
               },
               {
                 "value": "lastCasingDepth",
-                "label": "lastCasingDepth"
+                "label": "上层套管深度"
               },
               {
                 "value": "nextCasing",
@@ -211,35 +1788,51 @@
               },
               {
                 "value": "nextCasingSize",
-                "label": "nextCasingSize"
+                "label": "下层套管尺寸"
               },
               {
                 "value": "nextCasingDepth",
-                "label": "nextCasingDepth"
+                "label": "下层套管深度"
+              },
+              {
+                "value": "formTestType",
+                "label": "地层测试类型"
               },
               {
                 "value": "formTestEmw",
-                "label": "formTestEmw"
+                "label": "地层测试等效泥浆密度"
               },
               {
                 "value": "lastBopPressTest",
-                "label": "lastBopPressTest"
+                "label": "最近防喷器试压"
               },
               {
                 "value": "pumpRate",
-                "label": "pumpRate"
+                "label": "泵排量"
               },
               {
                 "value": "pumpPress",
-                "label": "pumpPress"
+                "label": "泵压"
+              },
+              {
+                "value": "stringWeightUp",
+                "label": "上提钻柱重量"
+              },
+              {
+                "value": "stringWeightDown",
+                "label": "下放钻柱重量"
               },
               {
                 "value": "stringWeightUpDown",
-                "label": "stringWeightUpDown"
+                "label": "钻柱上下活动重量"
+              },
+              {
+                "value": "torqueOffBottom",
+                "label": "离底扭矩"
               },
               {
                 "value": "torqueOnBottom",
-                "label": "torqueOnBottom"
+                "label": "井底扭矩"
               },
               {
                 "value": "mudEngineer",
@@ -247,7 +1840,7 @@
               },
               {
                 "value": "sampleFrom",
-                "label": "sampleFrom"
+                "label": "泥浆取样位置"
               },
               {
                 "value": "mudType",
@@ -255,67 +1848,67 @@
               },
               {
                 "value": "mudTime",
-                "label": "mudTime"
+                "label": "泥浆取样时间"
               },
               {
                 "value": "mudMd",
-                "label": "mudMd"
+                "label": "泥浆取样测深"
               },
               {
                 "value": "mudDensity",
-                "label": "mudDensity"
+                "label": "泥浆密度"
               },
               {
                 "value": "mudTemperature",
-                "label": "mudTemperature"
+                "label": "泥浆温度"
               },
               {
                 "value": "rheologyTemp",
-                "label": "rheologyTemp"
+                "label": "流变测试温度"
               },
               {
                 "value": "viscosity",
-                "label": "viscosity"
+                "label": "漏斗黏度"
               },
               {
                 "value": "pv",
-                "label": "pv"
+                "label": "塑性黏度"
               },
               {
                 "value": "yp",
-                "label": "yp"
+                "label": "动切力"
               },
               {
                 "value": "gel10s",
-                "label": "gel10s"
+                "label": "10秒静切力"
               },
               {
                 "value": "gel10m",
-                "label": "gel10m"
+                "label": "10分钟静切力"
               },
               {
                 "value": "gel30m",
-                "label": "gel30m"
+                "label": "30分钟静切力"
               },
               {
                 "value": "apiWl",
-                "label": "apiWl"
+                "label": "API滤失量"
               },
               {
                 "value": "oilPercent",
-                "label": "oilPercent"
+                "label": "含油量"
               },
               {
                 "value": "waterPercent",
-                "label": "waterPercent"
+                "label": "含水量"
               },
               {
                 "value": "sand",
-                "label": "sand"
+                "label": "含砂量"
               },
               {
                 "value": "ecd",
-                "label": "ecd"
+                "label": "等效循环密度"
               },
               {
                 "value": "mudComments",
@@ -323,11 +1916,11 @@
               },
               {
                 "value": "bitNo",
-                "label": "bitNo"
+                "label": "钻头序号"
               },
               {
                 "value": "bitSize",
-                "label": "bitSize"
+                "label": "钻头尺寸"
               },
               {
                 "value": "bitManufacturer",
@@ -335,81 +1928,101 @@
               },
               {
                 "value": "bitSerial",
-                "label": "bitSerial"
+                "label": "钻头序列号"
+              },
+              {
+                "value": "bitWearIodl",
+                "label": "钻头磨损内外径分级"
+              },
+              {
+                "value": "bitWearBgor",
+                "label": "钻头磨损特征分级"
               },
               {
                 "value": "bhaNo",
-                "label": "bhaNo"
+                "label": "钻具组合编号"
               },
               {
                 "value": "bhaMdIn",
-                "label": "bhaMdIn"
+                "label": "钻具组合入井测深"
               },
               {
                 "value": "bhaMdOut",
-                "label": "bhaMdOut"
+                "label": "钻具组合出井测深"
               },
               {
                 "value": "bhaTotalLength",
-                "label": "bhaTotalLength"
+                "label": "钻具组合总长"
               },
               {
                 "value": "safetyIncident",
-                "label": "safetyIncident"
+                "label": "安全事故"
               },
               {
                 "value": "environmentIncident",
-                "label": "environmentIncident"
+                "label": "环境事故"
               },
               {
                 "value": "daysSinceRi",
-                "label": "daysSinceRi"
+                "label": "距上次可记录事故天数"
               },
               {
                 "value": "daysSinceLta",
-                "label": "daysSinceLta"
+                "label": "距上次损失工时事故天数"
               },
               {
                 "value": "incidentComments",
                 "label": "事故备注"
+              },
+              {
+                "value": "groundElev",
+                "label": "地面海拔"
+              },
+              {
+                "value": "afeMdDays",
+                "label": "AFE计划井深/天数"
               }
             ]
           },
           {
             "value": "survey_data",
-            "label": "survey_data",
+            "label": "测斜数据",
             "fields": [
               {
                 "value": "md",
-                "label": "md"
+                "label": "测量深度"
               },
               {
                 "value": "incl",
-                "label": "incl"
+                "label": "井斜角"
               },
               {
                 "value": "azi",
-                "label": "azi"
+                "label": "方位角"
               },
               {
                 "value": "tvd",
-                "label": "tvd"
+                "label": "垂直深度"
               },
               {
                 "value": "vse",
-                "label": "vse"
+                "label": "垂直剖面位移"
               },
               {
                 "value": "ns",
-                "label": "ns"
+                "label": "南北位移"
+              },
+              {
+                "value": "ew",
+                "label": "东西位移"
               },
               {
                 "value": "dls",
-                "label": "dls"
+                "label": "狗腿度"
               },
               {
                 "value": "build",
-                "label": "build"
+                "label": "造斜率"
               }
             ]
           },
@@ -423,19 +2036,19 @@
               },
               {
                 "value": "od",
-                "label": "od"
+                "label": "外径"
               },
               {
                 "value": "id",
-                "label": "id"
+                "label": "内径"
               },
               {
                 "value": "joints",
-                "label": "joints"
+                "label": "单根数量"
               },
               {
                 "value": "length",
-                "label": "length"
+                "label": "长度"
               }
             ]
           },
@@ -445,19 +2058,19 @@
             "fields": [
               {
                 "value": "from",
-                "label": "from"
+                "label": "开始时间"
               },
               {
                 "value": "to",
-                "label": "to"
+                "label": "结束时间"
               },
               {
                 "value": "hours",
-                "label": "hours"
+                "label": "作业小时数"
               },
               {
                 "value": "op_code",
-                "label": "op_code"
+                "label": "作业代码"
               },
               {
                 "value": "op_sub",
@@ -465,7 +2078,7 @@
               },
               {
                 "value": "op_type",
-                "label": "op_type"
+                "label": "作业类型"
               },
               {
                 "value": "operation_details",
@@ -473,29 +2086,25 @@
               },
               {
                 "value": "system_op_type",
-                "label": "system_op_type"
+                "label": "系统判定作业类型"
               },
               {
                 "value": "confirmed_op_type",
-                "label": "confirmed_op_type"
+                "label": "确认作业类型"
               }
             ]
           },
           {
-            "value": "daily_costs",
-            "label": "日费用",
+            "value": "fluid_losses",
+            "label": "漏失情况",
             "fields": [
               {
-                "value": "cost_description",
-                "label": "费用描述"
+                "value": "injected_volume_bbl",
+                "label": "注入体积"
               },
               {
-                "value": "vendor",
-                "label": "供应商"
-              },
-              {
-                "value": "amount",
-                "label": "amount"
+                "value": "returned_volume_bbl",
+                "label": "返出体积"
               }
             ]
           },
@@ -509,15 +2118,15 @@
               },
               {
                 "value": "qty_start",
-                "label": "qty_start"
+                "label": "期初数量"
               },
               {
                 "value": "qty_used",
-                "label": "qty_used"
+                "label": "使用数量"
               },
               {
                 "value": "qty_end",
-                "label": "qty_end"
+                "label": "期末数量"
               }
             ]
           }
@@ -537,19 +2146,19 @@
               },
               {
                 "value": "reportDate",
-                "label": "reportDate"
+                "label": "报告日期"
               },
               {
                 "value": "reportNo",
-                "label": "reportNo"
+                "label": "报告编号"
               },
               {
                 "value": "wellbore",
-                "label": "wellbore"
+                "label": "井筒"
               },
               {
                 "value": "rig",
-                "label": "rig"
+                "label": "井队/钻机"
               },
               {
                 "value": "primaryReason",
@@ -557,11 +2166,11 @@
               },
               {
                 "value": "afeNumber",
-                "label": "afeNumber"
+                "label": "AFE编号"
               },
               {
                 "value": "refDatum",
-                "label": "refDatum"
+                "label": "参考基准"
               },
               {
                 "value": "currentOps",
@@ -580,32 +2189,56 @@
                 "label": "其他备注"
               },
               {
+                "value": "completionNo",
+                "label": "完井编号"
+              },
+              {
+                "value": "wellboreNo",
+                "label": "井筒编号"
+              },
+              {
+                "value": "groundElev",
+                "label": "地面海拔"
+              },
+              {
+                "value": "dol",
+                "label": "现场作业天数"
+              },
+              {
+                "value": "dfs",
+                "label": "开钻后天数"
+              },
+              {
+                "value": "rigContractName",
+                "label": "钻机合同名称"
+              },
+              {
                 "value": "description",
                 "label": "作业描述"
               },
               {
                 "value": "operationStartDate",
-                "label": "operationStartDate"
+                "label": "作业开始日期"
               },
               {
                 "value": "afeCost",
-                "label": "afeCost"
+                "label": "AFE预算成本"
               },
               {
                 "value": "dailyCost",
-                "label": "dailyCost"
+                "label": "当日成本"
               },
               {
                 "value": "cumulativeCost",
-                "label": "cumulativeCost"
+                "label": "累计成本"
               },
               {
                 "value": "supervisor1",
-                "label": "主管 1"
+                "label": "主管1"
               },
               {
                 "value": "supervisor2",
-                "label": "主管 2"
+                "label": "主管2"
               },
               {
                 "value": "engineer",
@@ -613,7 +2246,7 @@
               },
               {
                 "value": "pamEngineer",
-                "label": "PAM 工程师"
+                "label": "PAM工程师"
               },
               {
                 "value": "geologist",
@@ -621,7 +2254,7 @@
               },
               {
                 "value": "totalPersonnel",
-                "label": "totalPersonnel"
+                "label": "现场总人数"
               },
               {
                 "value": "safetyComments",
@@ -635,19 +2268,19 @@
             "fields": [
               {
                 "value": "from",
-                "label": "from"
+                "label": "开始时间"
               },
               {
                 "value": "to",
-                "label": "to"
+                "label": "结束时间"
               },
               {
                 "value": "hours",
-                "label": "hours"
+                "label": "作业小时数"
               },
               {
                 "value": "op_code",
-                "label": "op_code"
+                "label": "作业代码"
               },
               {
                 "value": "op_sub",
@@ -655,7 +2288,7 @@
               },
               {
                 "value": "op_type",
-                "label": "op_type"
+                "label": "作业类型"
               },
               {
                 "value": "operation_details",
@@ -663,11 +2296,11 @@
               },
               {
                 "value": "system_op_type",
-                "label": "system_op_type"
+                "label": "系统判定作业类型"
               },
               {
                 "value": "confirmed_op_type",
-                "label": "confirmed_op_type"
+                "label": "确认作业类型"
               }
             ]
           },
@@ -681,33 +2314,15 @@
               },
               {
                 "value": "qty_start",
-                "label": "qty_start"
+                "label": "期初数量"
               },
               {
                 "value": "qty_used",
-                "label": "qty_used"
+                "label": "使用数量"
               },
               {
                 "value": "qty_end",
-                "label": "qty_end"
-              }
-            ]
-          },
-          {
-            "value": "daily_costs",
-            "label": "日费用",
-            "fields": [
-              {
-                "value": "cost_description",
-                "label": "费用描述"
-              },
-              {
-                "value": "vendor",
-                "label": "供应商"
-              },
-              {
-                "value": "amount",
-                "label": "amount"
+                "label": "期末数量"
               }
             ]
           },
@@ -721,23 +2336,23 @@
               },
               {
                 "value": "unit",
-                "label": "unit"
+                "label": "单位"
               },
               {
                 "value": "received",
-                "label": "received"
+                "label": "接收数量"
               },
               {
                 "value": "used",
-                "label": "used"
+                "label": "使用数量"
               },
               {
                 "value": "returned",
-                "label": "returned"
+                "label": "退回数量"
               },
               {
                 "value": "ending",
-                "label": "ending"
+                "label": "期末数量"
               }
             ]
           },
@@ -751,19 +2366,19 @@
               },
               {
                 "value": "top_md",
-                "label": "top_md"
+                "label": "顶部测深"
               },
               {
                 "value": "base_md",
-                "label": "base_md"
+                "label": "底部测深"
               },
               {
                 "value": "length",
-                "label": "length"
+                "label": "长度"
               },
               {
                 "value": "density",
-                "label": "density"
+                "label": "射孔密度"
               },
               {
                 "value": "charges",
@@ -771,19 +2386,19 @@
               },
               {
                 "value": "phase",
-                "label": "phase"
+                "label": "相位角"
               },
               {
                 "value": "penetration",
-                "label": "penetration"
+                "label": "穿透深度"
               },
               {
                 "value": "diameter",
-                "label": "diameter"
+                "label": "孔径"
               },
               {
                 "value": "date",
-                "label": "date"
+                "label": "日期"
               },
               {
                 "value": "status",
@@ -811,19 +2426,19 @@
               },
               {
                 "value": "reportDate",
-                "label": "reportDate"
+                "label": "报告日期"
               },
               {
                 "value": "reportNo",
-                "label": "reportNo"
+                "label": "报告编号"
               },
               {
                 "value": "wellbore",
-                "label": "wellbore"
+                "label": "井筒"
               },
               {
                 "value": "rig",
-                "label": "rig"
+                "label": "井队/钻机"
               },
               {
                 "value": "primaryReason",
@@ -831,11 +2446,11 @@
               },
               {
                 "value": "afeNumber",
-                "label": "afeNumber"
+                "label": "AFE编号"
               },
               {
                 "value": "refDatum",
-                "label": "refDatum"
+                "label": "参考基准"
               },
               {
                 "value": "currentOps",
@@ -855,7 +2470,27 @@
               },
               {
                 "value": "workoverNo",
-                "label": "workoverNo"
+                "label": "修井编号"
+              },
+              {
+                "value": "wellboreNo",
+                "label": "井筒编号"
+              },
+              {
+                "value": "groundElev",
+                "label": "地面海拔"
+              },
+              {
+                "value": "dol",
+                "label": "现场作业天数"
+              },
+              {
+                "value": "dfs",
+                "label": "开钻后天数"
+              },
+              {
+                "value": "rigContractName",
+                "label": "钻机合同名称"
               },
               {
                 "value": "description",
@@ -863,27 +2498,27 @@
               },
               {
                 "value": "operationStartDate",
-                "label": "operationStartDate"
+                "label": "作业开始日期"
               },
               {
                 "value": "afeCost",
-                "label": "afeCost"
+                "label": "AFE预算成本"
               },
               {
                 "value": "dailyCost",
-                "label": "dailyCost"
+                "label": "当日成本"
               },
               {
                 "value": "cumulativeCost",
-                "label": "cumulativeCost"
+                "label": "累计成本"
               },
               {
                 "value": "supervisor1",
-                "label": "主管 1"
+                "label": "主管1"
               },
               {
                 "value": "supervisor2",
-                "label": "主管 2"
+                "label": "主管2"
               },
               {
                 "value": "engineer",
@@ -891,7 +2526,7 @@
               },
               {
                 "value": "pamEngineer",
-                "label": "PAM 工程师"
+                "label": "PAM工程师"
               },
               {
                 "value": "geologist",
@@ -899,7 +2534,7 @@
               },
               {
                 "value": "totalPersonnel",
-                "label": "totalPersonnel"
+                "label": "现场总人数"
               },
               {
                 "value": "safetyComments",
@@ -913,19 +2548,19 @@
             "fields": [
               {
                 "value": "from",
-                "label": "from"
+                "label": "开始时间"
               },
               {
                 "value": "to",
-                "label": "to"
+                "label": "结束时间"
               },
               {
                 "value": "hours",
-                "label": "hours"
+                "label": "作业小时数"
               },
               {
                 "value": "op_code",
-                "label": "op_code"
+                "label": "作业代码"
               },
               {
                 "value": "op_sub",
@@ -933,7 +2568,7 @@
               },
               {
                 "value": "op_type",
-                "label": "op_type"
+                "label": "作业类型"
               },
               {
                 "value": "operation_details",
@@ -941,11 +2576,11 @@
               },
               {
                 "value": "system_op_type",
-                "label": "system_op_type"
+                "label": "系统判定作业类型"
               },
               {
                 "value": "confirmed_op_type",
-                "label": "confirmed_op_type"
+                "label": "确认作业类型"
               }
             ]
           },
@@ -959,33 +2594,15 @@
               },
               {
                 "value": "qty_start",
-                "label": "qty_start"
+                "label": "期初数量"
               },
               {
                 "value": "qty_used",
-                "label": "qty_used"
+                "label": "使用数量"
               },
               {
                 "value": "qty_end",
-                "label": "qty_end"
-              }
-            ]
-          },
-          {
-            "value": "daily_costs",
-            "label": "日费用",
-            "fields": [
-              {
-                "value": "cost_description",
-                "label": "费用描述"
-              },
-              {
-                "value": "vendor",
-                "label": "供应商"
-              },
-              {
-                "value": "amount",
-                "label": "amount"
+                "label": "期末数量"
               }
             ]
           },
@@ -999,23 +2616,23 @@
               },
               {
                 "value": "unit",
-                "label": "unit"
+                "label": "单位"
               },
               {
                 "value": "received",
-                "label": "received"
+                "label": "接收数量"
               },
               {
                 "value": "used",
-                "label": "used"
+                "label": "使用数量"
               },
               {
                 "value": "returned",
-                "label": "returned"
+                "label": "退回数量"
               },
               {
                 "value": "ending",
-                "label": "ending"
+                "label": "期末数量"
               }
             ]
           },
@@ -1029,19 +2646,19 @@
               },
               {
                 "value": "top_md",
-                "label": "top_md"
+                "label": "顶部测深"
               },
               {
                 "value": "base_md",
-                "label": "base_md"
+                "label": "底部测深"
               },
               {
                 "value": "length",
-                "label": "length"
+                "label": "长度"
               },
               {
                 "value": "density",
-                "label": "density"
+                "label": "射孔密度"
               },
               {
                 "value": "charges",
@@ -1049,19 +2666,19 @@
               },
               {
                 "value": "phase",
-                "label": "phase"
+                "label": "相位角"
               },
               {
                 "value": "penetration",
-                "label": "penetration"
+                "label": "穿透深度"
               },
               {
                 "value": "diameter",
-                "label": "diameter"
+                "label": "孔径"
               },
               {
                 "value": "date",
-                "label": "date"
+                "label": "日期"
               },
               {
                 "value": "status",
@@ -1074,162 +2691,198 @@
             ]
           }
         ]
-      },
-      {
-        "value": "move",
-        "label": "搬迁日报",
-        "sections": [
-          {
-            "value": "report_fields",
-            "label": "日报基础信息",
-            "fields": [
-              {
-                "value": "event",
-                "label": "作业事件"
-              },
-              {
-                "value": "reportDate",
-                "label": "reportDate"
-              },
-              {
-                "value": "reportNo",
-                "label": "reportNo"
-              },
-              {
-                "value": "wellbore",
-                "label": "wellbore"
-              },
-              {
-                "value": "rig",
-                "label": "rig"
-              },
-              {
-                "value": "primaryReason",
-                "label": "主要原因"
-              },
-              {
-                "value": "afeNumber",
-                "label": "afeNumber"
-              },
-              {
-                "value": "refDatum",
-                "label": "refDatum"
-              },
-              {
-                "value": "currentOps",
-                "label": "当前作业"
-              },
-              {
-                "value": "summary24h",
-                "label": "24小时作业总结"
-              },
-              {
-                "value": "forecast24h",
-                "label": "未来24小时计划"
-              },
-              {
-                "value": "otherRemarks",
-                "label": "其他备注"
-              },
-              {
-                "value": "todayMd",
-                "label": "todayMd"
-              },
-              {
-                "value": "prevMd",
-                "label": "prevMd"
-              },
-              {
-                "value": "progress",
-                "label": "progress"
-              },
-              {
-                "value": "rotHrsToday",
-                "label": "rotHrsToday"
-              },
-              {
-                "value": "groundElev",
-                "label": "groundElev"
-              },
-              {
-                "value": "afeMdDays",
-                "label": "afeMdDays"
-              },
-              {
-                "value": "wellborePrefix",
-                "label": "wellborePrefix"
-              }
-            ]
-          },
-          {
-            "value": "operations",
-            "label": "作业明细",
-            "fields": [
-              {
-                "value": "from",
-                "label": "from"
-              },
-              {
-                "value": "to",
-                "label": "to"
-              },
-              {
-                "value": "hours",
-                "label": "hours"
-              },
-              {
-                "value": "op_code",
-                "label": "op_code"
-              },
-              {
-                "value": "op_sub",
-                "label": "作业子类"
-              },
-              {
-                "value": "op_type",
-                "label": "op_type"
-              },
-              {
-                "value": "operation_details",
-                "label": "作业明细"
-              },
-              {
-                "value": "system_op_type",
-                "label": "system_op_type"
-              },
-              {
-                "value": "confirmed_op_type",
-                "label": "confirmed_op_type"
-              }
-            ]
-          }
-        ]
       }
     ],
     "target_fields": [
       {
         "value": "remarks",
-        "label": "备注"
+        "label": "备注",
+        "output_format": "text",
+        "grain": "report",
+        "allowed_grains": [
+          "report"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "well_control_incident",
+        "label": "是否有溢流、井涌或井喷",
+        "output_format": "text",
+        "grain": "well_job",
+        "allowed_grains": [
+          "well_job"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "accident_waiting",
+        "label": "事故、复杂及停待情况",
+        "output_format": "text",
+        "grain": "well_job",
+        "allowed_grains": [
+          "well_job"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "basic_monthly_remarks",
+        "label": "钻修井月报综合备注",
+        "output_format": "text",
+        "grain": "well_job",
+        "allowed_grains": [
+          "well_job"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "nonproductive_description",
+        "label": "非生产原因说明",
+        "output_format": "text",
+        "grain": "well_month",
+        "allowed_grains": [
+          "well_month"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "efficiency_monthly_remarks",
+        "label": "钻修井时效月报备注",
+        "output_format": "text",
+        "grain": "well_month",
+        "allowed_grains": [
+          "well_month"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "workload_monthly_remarks",
+        "label": "月度工作量统计备注",
+        "output_format": "text",
+        "grain": "team_month",
+        "allowed_grains": [
+          "team_month"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "team_month_well_control_incident",
+        "label": "井队月度是否有溢流、井涌或井喷",
+        "output_format": "text",
+        "grain": "team_month",
+        "allowed_grains": [
+          "team_month"
+        ],
+        "is_system": true
       },
       {
         "value": "service_line",
-        "label": "责任方 Service Line"
+        "label": "责任方/服务线",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "productive_flag_candidate",
+        "label": "生产属性候选（需人工确认）",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "op_type_candidate",
+        "label": "P/SC/NPT候选（需人工确认）",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "work_bucket_candidate",
+        "label": "工作量分类候选（需人工确认）",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "billing_status_candidate",
+        "label": "计费状态候选（需人工确认）",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "responsibility_candidate",
+        "label": "责任方类别候选（需人工确认）",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
+      },
+      {
+        "value": "cause_code_candidate",
+        "label": "原因编码候选（需人工确认）",
+        "output_format": "text",
+        "grain": "detail_row",
+        "allowed_grains": [
+          "detail_row"
+        ],
+        "is_system": true
       },
       {
         "value": "key_progress",
-        "label": "关键进展"
+        "label": "关键进展",
+        "output_format": "text",
+        "grain": "report",
+        "allowed_grains": [
+          "report"
+        ],
+        "is_system": true
       },
       {
         "value": "risk_summary",
-        "label": "风险摘要"
+        "label": "风险摘要",
+        "output_format": "text",
+        "grain": "well",
+        "allowed_grains": [
+          "well"
+        ],
+        "is_system": true
       },
       {
         "value": "next_milestone",
-        "label": "下一里程碑"
+        "label": "下一里程碑",
+        "output_format": "text",
+        "grain": "well_job",
+        "allowed_grains": [
+          "well_job"
+        ],
+        "is_system": true
       },
       {
         "value": "exception_summary",
-        "label": "异常摘要"
+        "label": "异常摘要",
+        "output_format": "text",
+        "grain": "well_month",
+        "allowed_grains": [
+          "well_month"
+        ],
+        "is_system": true
       }
     ],
     "output_formats": [
@@ -1244,12 +2897,34 @@
       {
         "value": "date",
         "label": "日期"
+      }
+    ],
+    "grains": [
+      {
+        "value": "detail_row",
+        "label": "作业明细"
       },
       {
-        "value": "company",
-        "label": "公司 / 责任方"
+        "value": "report",
+        "label": "单份日报"
+      },
+      {
+        "value": "well",
+        "label": "单井全部日报"
+      },
+      {
+        "value": "well_job",
+        "label": "单井作业周期"
+      },
+      {
+        "value": "well_month",
+        "label": "单井月度"
+      },
+      {
+        "value": "team_month",
+        "label": "井队月度"
       }
     ]
   },
-  "updated_at": "2026-07-12T09:03:59"
+  "updated_at": "2026-07-21T23:16:07"
 }

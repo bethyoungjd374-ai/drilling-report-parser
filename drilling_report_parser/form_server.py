@@ -44,6 +44,9 @@ from .storage import (
     initialize_database,
     list_npt_confirmation_wells,
     list_ai_job_status,
+    list_ai_extraction_target_fields,
+    list_aggregate_scope_report_records,
+    list_team_month_report_records,
     list_records,
     list_translation_queue_records,
     load_analytics_view_rows,
@@ -56,7 +59,9 @@ from .storage import (
     load_operation_translations,
     load_production_report_remarks,
     load_report_payload,
+    load_report_payloads,
     load_extraction_results,
+    load_aggregate_extraction_results,
     load_translation_content,
     load_translation_memory,
     list_translation_memory,
@@ -66,6 +71,9 @@ from .storage import (
     save_production_report_remark,
     save_report_payload,
     save_extraction_results,
+    save_aggregate_extraction_results,
+    save_extraction_result_sources,
+    save_ai_extraction_target_fields,
     save_translation_content,
     save_translation_memory_entry,
     delete_translation_memory_entry,
@@ -99,7 +107,7 @@ from .report_normalization_service import (
     refresh_report_master_matches,
     resolve_quality_issue,
 )
-from .report_schema import REPORT_TABLES, REPORT_TYPE_ORDER, ROW_COLUMNS, TRANSLATION_SCOPE_FIELDS
+from .report_schema import FIELD_LABELS_ZH, REPORT_TABLES, REPORT_TYPE_ORDER, ROW_COLUMNS, TRANSLATION_SCOPE_FIELDS
 from .runtime_files import (
     append_jsonl,
     atomic_write_json as _runtime_atomic_write_json,
@@ -161,7 +169,7 @@ TRANSLATION_TERMS_PATH = ROOT / "outputs" / "translation_terms.json"
 TRANSLATION_TUNING_PATH = ROOT / "outputs" / "translation_tuning.json"
 AI_MODELS_PATH = ROOT / "outputs" / "ai_model_configs.json"
 AI_EXTRACTION_RULES_PATH = ROOT / "outputs" / "ai_extraction_rules.json"
-AI_EXTRACTION_PIPELINE_VERSION = "bilingual-evidence-v1"
+AI_EXTRACTION_PIPELINE_VERSION = "monthly-narrative-zh-v5"
 DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation" / "drilling_terms.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 TRANSLATION_METRICS_PATH = ROOT / "outputs" / "runtime" / "translation_metrics.jsonl"
@@ -1426,7 +1434,7 @@ class FormHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "数据提炼任务正在运行，请先停止提炼再修改规则或切换规则模型。", "active_jobs": active}, status=409)
             return
         config = _normalize_ai_extraction_config(self._read_json_body())
-        _save_ai_extraction_config(config)
+        _save_ai_extraction_config(config, actor=str(user.get("username", "") or "system"))
         stale = 0
         for record in list_records(DATABASE_PATH):
             record_id = str(record.get("record_id", "") or "")
@@ -3289,6 +3297,7 @@ TRANSLATION_REPORT_TYPE_LABELS = {
 TRANSLATION_SECTION_LABELS = {
     "report_fields": "日报基础信息",
     "operations": "作业明细",
+    "survey_data": "测斜数据",
     "bha_components": "BHA 组件",
     "fluid_losses": "漏失情况",
     "bulks": "批量物料",
@@ -3842,7 +3851,14 @@ def _needs_qwen_no_think_prefill(model: dict[str, object]) -> bool:
 
 AI_EXTRACTION_TARGET_FIELDS = (
     ("remarks", "备注"),
-    ("service_line", "责任方 Service Line"),
+    ("well_control_incident", "是否有溢流、井涌或井喷"),
+    ("accident_waiting", "事故、复杂及停待情况"),
+    ("basic_monthly_remarks", "钻修井月报综合备注"),
+    ("nonproductive_description", "非生产原因说明"),
+    ("efficiency_monthly_remarks", "钻修井时效月报备注"),
+    ("workload_monthly_remarks", "月度工作量统计备注"),
+    ("team_month_well_control_incident", "井队月度是否有溢流、井涌或井喷"),
+    ("service_line", "责任方/服务线"),
     ("productive_flag_candidate", "生产属性候选（需人工确认）"),
     ("op_type_candidate", "P/SC/NPT候选（需人工确认）"),
     ("work_bucket_candidate", "工作量分类候选（需人工确认）"),
@@ -3855,8 +3871,371 @@ AI_EXTRACTION_TARGET_FIELDS = (
     ("exception_summary", "异常摘要"),
 )
 
+AI_EXTRACTION_OUTPUT_FORMATS = (
+    ("text", "文本"),
+    ("number", "数值"),
+    ("date", "日期"),
+)
 
-def _ai_extraction_catalog() -> dict[str, object]:
+AI_EXTRACTION_ROW_TARGET_FIELDS = {
+    "service_line",
+    "productive_flag_candidate",
+    "op_type_candidate",
+    "work_bucket_candidate",
+    "billing_status_candidate",
+    "responsibility_candidate",
+    "cause_code_candidate",
+}
+
+AI_EXTRACTION_GRAINS = (
+    ("detail_row", "作业明细"),
+    ("report", "单份日报"),
+    ("well", "单井全部日报"),
+    ("well_job", "单井作业周期"),
+    ("well_month", "单井月度"),
+    ("team_month", "井队月度"),
+)
+
+AI_EXTRACTION_AGGREGATE_GRAINS = {"well", "well_job", "well_month", "team_month"}
+
+AI_EXTRACTION_TARGET_GRAIN = {
+    "service_line": "detail_row",
+    "productive_flag_candidate": "detail_row",
+    "op_type_candidate": "detail_row",
+    "work_bucket_candidate": "detail_row",
+    "billing_status_candidate": "detail_row",
+    "responsibility_candidate": "detail_row",
+    "cause_code_candidate": "detail_row",
+    "remarks": "report",
+    "key_progress": "report",
+    "risk_summary": "well",
+    "well_control_incident": "well_job",
+    "accident_waiting": "well_job",
+    "basic_monthly_remarks": "well_job",
+    "next_milestone": "well_job",
+    "nonproductive_description": "well_month",
+    "efficiency_monthly_remarks": "well_month",
+    "exception_summary": "well_month",
+    "workload_monthly_remarks": "team_month",
+    "team_month_well_control_incident": "team_month",
+}
+
+WELL_CONTROL_MONTHLY_RULE_ID = "monthly-team-well-control-incident"
+TEAM_MONTH_WELL_CONTROL_RULE_ID = "team-month-well-control-incident"
+MONTHLY_ACCIDENT_WAITING_RULE_ID = "monthly-well-job-accident-waiting"
+MONTHLY_BASIC_REMARKS_RULE_ID = "monthly-well-job-basic-remarks"
+MONTHLY_NPT_DESCRIPTION_RULE_ID = "monthly-well-npt-description"
+MONTHLY_EFFICIENCY_REMARKS_RULE_ID = "monthly-well-efficiency-remarks"
+MONTHLY_WORKLOAD_REMARKS_RULE_ID = "monthly-team-workload-remarks"
+
+
+def _monthly_well_control_rule() -> dict[str, object]:
+    return {
+        "id": WELL_CONTROL_MONTHLY_RULE_ID,
+        "name": "钻修井月报单井井控异常提炼",
+        "grain": "well_job",
+        "report_types": ["drilling", "completion", "workover"],
+        "source_fields": [
+            {"section": "report_fields", "field": "currentOps", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "incidentComments", "report_types": ["drilling"]},
+            {"section": "report_fields", "field": "safetyIncident", "report_types": ["drilling"]},
+            {"section": "report_fields", "field": "safetyComments", "report_types": ["completion", "workover"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+        ],
+        "condition": "按项目、井和作业序列综合该井全部钻井、完井或修井日报；仅认定实际发生的溢流、井涌或井喷，排除演练、流程检查、设备名称及正常流动描述。",
+        "instruction": "判断该井本作业周期是否实际发生溢流、井涌或井喷。没有实际事件时只返回“无”。存在事件时，用一句简短中文汇总发生了什么及次数，例如“发生井涌2次”；相同事件跨日报连续记录不得重复计数。不要把井控演练、Kick Out设备测试、Flow Line/Niple de Flujo、正常流量或常规井控检查判定为事件。",
+        "target_field": "well_control_incident",
+        "target_field_label": "是否有溢流、井涌或井喷",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _team_month_well_control_rule() -> dict[str, object]:
+    return {
+        "id": TEAM_MONTH_WELL_CONTROL_RULE_ID,
+        "name": "井队月度井控异常提炼",
+        "grain": "team_month",
+        "report_types": ["drilling", "completion"],
+        "source_fields": [
+            {"section": "report_fields", "field": "currentOps", "report_types": ["drilling", "completion"]},
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion"]},
+            {"section": "report_fields", "field": "incidentComments", "report_types": ["drilling"]},
+            {"section": "report_fields", "field": "safetyIncident", "report_types": ["drilling"]},
+            {"section": "report_fields", "field": "safetyComments", "report_types": ["completion"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion"]},
+        ],
+        "condition": "按井队、钻井专业和自然月综合该井队当月全部钻井、完井日报；仅认定实际发生的溢流、井涌或井喷，排除演练、流程检查、设备名称及正常流动描述。",
+        "instruction": "判断该井队本月是否实际发生溢流、井涌或井喷。没有实际事件时只返回“无”。存在事件时，用一句简短中文汇总涉及井及发生次数，例如“W-2井发生井涌1次”；同一事件跨日报连续记录不得重复计数。不要把井控演练、Kick Out设备测试、Flow Line/Niple de Flujo、正常流量或常规井控检查判定为事件。",
+        "target_field": "team_month_well_control_incident",
+        "target_field_label": "井队月度是否有溢流、井涌或井喷",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _monthly_accident_waiting_rule() -> dict[str, object]:
+    return {
+        "id": MONTHLY_ACCIDENT_WAITING_RULE_ID,
+        "name": "钻修井月报事故复杂及停待提炼",
+        "grain": "well_job",
+        "report_types": ["drilling", "completion", "workover"],
+        "source_fields": [
+            {"section": "report_fields", "field": "currentOps", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "incidentComments", "report_types": ["drilling"]},
+            {"section": "report_fields", "field": "safetyIncident", "report_types": ["drilling"]},
+            {"section": "report_fields", "field": "safetyComments", "report_types": ["completion", "workover"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+        ],
+        "condition": "按项目、井和作业序列综合该井全部相关日报，只汇总实际发生的事故、复杂情况、设备故障、停工或等待事项。",
+        "instruction": "提炼本作业周期实际发生的事故、复杂情况及停待事项，写明事件、原因及影响时长（原文有时长时）。同一事件跨日报连续记录只汇总一次；常规作业、计划内等待及未实际发生的风险提示不计入。没有相关事项时只返回“无”；有事项时用精炼中文分号分隔，限180字。",
+        "target_field": "accident_waiting",
+        "target_field_label": "事故、复杂及停待情况",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _monthly_basic_remarks_rule() -> dict[str, object]:
+    return {
+        "id": MONTHLY_BASIC_REMARKS_RULE_ID,
+        "name": "钻修井月报综合备注提炼",
+        "grain": "well_job",
+        "report_types": ["drilling", "completion", "workover"],
+        "source_fields": [
+            {"section": "report_fields", "field": "currentOps", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "primaryReason", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+        ],
+        "condition": "按项目、井和作业序列综合全部相关日报，提炼月报需要说明但不能由结构化数值直接表达的信息。",
+        "instruction": "提炼设备当前状态及需要特别说明的事项，例如停待、整改、入库封存、回迁、关键作业状态或资料异常。不要重复井控异常和事故停待栏已表达的内容，不要罗列日常作业流水。没有需要特别说明的内容时只返回“无”；有内容时用一句精炼中文，限160字。",
+        "target_field": "basic_monthly_remarks",
+        "target_field_label": "钻修井月报综合备注",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _monthly_npt_description_rule() -> dict[str, object]:
+    return {
+        "id": MONTHLY_NPT_DESCRIPTION_RULE_ID,
+        "name": "钻修井月报非生产原因提炼",
+        "grain": "well_month",
+        "report_types": ["drilling", "completion", "workover"],
+        "source_fields": [
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+        ],
+        "condition": "按项目、井、专业和自然月综合当月日报，只提炼NPT、维修、事故复杂及其他非生产时间的原因。",
+        "instruction": "按影响程度提炼本井本月非生产时间原因，优先说明NPT、零日费维修、事故复杂及等待的具体对象、原因和累计时长；同一事件跨日报连续记录不得重复。不要写生产作业内容。没有非生产时间时只返回“无”；有内容时用精炼中文分号分隔，限220字。",
+        "target_field": "nonproductive_description",
+        "target_field_label": "非生产时间原因描述",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _monthly_efficiency_remarks_rule() -> dict[str, object]:
+    return {
+        "id": MONTHLY_EFFICIENCY_REMARKS_RULE_ID,
+        "name": "钻修井月报时效备注提炼",
+        "grain": "well_month",
+        "report_types": ["drilling", "completion", "workover"],
+        "source_fields": [
+            {"section": "report_fields", "field": "currentOps", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+        ],
+        "condition": "按项目、井、专业和自然月综合当月日报，补充影响时效理解的特殊说明。",
+        "instruction": "提炼影响本井月度时效解读的特殊情况，例如跨月作业、作业阶段转换、数据缺失、异常停复工或统计口径需要说明的事项。不要重复非生产原因描述，不要复述数值。没有特别说明时只返回“无”；有内容时用一句精炼中文，限160字。",
+        "target_field": "efficiency_monthly_remarks",
+        "target_field_label": "钻修井月报备注",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _monthly_workload_remarks_rule() -> dict[str, object]:
+    return {
+        "id": MONTHLY_WORKLOAD_REMARKS_RULE_ID,
+        "name": "月度工作量统计备注提炼",
+        "grain": "team_month",
+        "report_types": ["drilling", "completion", "workover"],
+        "source_fields": [
+            {"section": "report_fields", "field": "currentOps", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+            {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+        ],
+        "condition": "按井队、专业和自然月综合该队当月全部相关日报，提炼工作量统计需要补充说明的异常或状态。",
+        "instruction": "提炼该井队本月工作量需要备注的事项，例如主要作业阶段、跨井转换、长时间搬迁、待工、维修、停工或设备状态。不要复述表中小时数，不要罗列每日作业。没有特别说明时只返回“无”；有内容时用一句精炼中文，限180字。",
+        "target_field": "workload_monthly_remarks",
+        "target_field_label": "月度工作量统计备注",
+        "output_format": "text",
+        "model_id": "",
+        "enabled": True,
+    }
+
+
+def _canonical_monthly_extraction_rules() -> tuple[dict[str, object], ...]:
+    return (
+        _monthly_well_control_rule(),
+        _team_month_well_control_rule(),
+        _monthly_accident_waiting_rule(),
+        _monthly_basic_remarks_rule(),
+        _monthly_npt_description_rule(),
+        _monthly_efficiency_remarks_rule(),
+        _monthly_workload_remarks_rule(),
+    )
+
+
+def _normalize_ai_extraction_output_format(value: object) -> str:
+    output_format = str(value or "text").strip().lower()
+    # `company` was an old responsibility-specific semantic type. Responsibility
+    # normalization is driven by target_field=service_line, so it is safely
+    # migrated to the actual serialized format: text.
+    if output_format == "company":
+        return "text"
+    valid_formats = {item[0] for item in AI_EXTRACTION_OUTPUT_FORMATS}
+    return output_format if output_format in valid_formats else "text"
+
+
+def _ai_extraction_section_fields(report_type: str, section: str) -> list[str]:
+    schema = REPORT_TABLES.get(report_type, {})
+    if section == "report_fields":
+        return [field for field in schema.get("field_columns", []) if field != "record_id"]
+    if section not in schema.get("multi", {}):
+        return []
+    return list(ROW_COLUMNS.get(section, []))
+
+
+def _ai_extraction_source_is_valid(report_type: str, section: str, field: str) -> bool:
+    report_types = REPORT_TYPE_ORDER if report_type == "all" else (report_type,)
+    return any(field in _ai_extraction_section_fields(item, section) for item in report_types)
+
+
+def _normalize_ai_extraction_report_types(raw: dict[str, object]) -> list[str]:
+    candidates = raw.get("report_types") if isinstance(raw.get("report_types"), list) else []
+    if not candidates:
+        legacy = str(raw.get("report_type", "") or "").strip().lower()
+        candidates = list(REPORT_TYPE_ORDER) if legacy == "all" else [legacy]
+    selected = {str(item or "").strip().lower() for item in candidates}
+    return [item for item in REPORT_TYPE_ORDER if item in selected]
+
+
+def _ai_extraction_rule_applies(rule: dict[str, object], report_type: str) -> bool:
+    selected = _normalize_ai_extraction_report_types(rule)
+    return report_type in selected
+
+
+def _normalize_ai_extraction_sources(raw: dict[str, object], report_types: list[str]) -> list[dict[str, str]]:
+    candidates: list[object] = raw.get("source_fields") if isinstance(raw.get("source_fields"), list) else []
+    if not candidates:
+        candidates = [{
+            "section": raw.get("source_section", ""),
+            "field": raw.get("source_field", ""),
+        }]
+    sources: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for candidate in candidates[:80]:
+        if isinstance(candidate, str) and "." in candidate:
+            section, field = candidate.split(".", 1)
+            candidate_report_types: list[str] = []
+        elif isinstance(candidate, dict):
+            section = str(candidate.get("section", candidate.get("source_section", "")) or "")
+            field = str(candidate.get("field", candidate.get("source_field", "")) or "")
+            raw_candidate_types = candidate.get("report_types") if isinstance(candidate.get("report_types"), list) else []
+            if not raw_candidate_types and candidate.get("report_type"):
+                raw_candidate_types = [candidate.get("report_type")]
+            candidate_report_types = [str(item or "").strip().lower() for item in raw_candidate_types]
+        else:
+            continue
+        section = section.strip()
+        field = field.strip()
+        key = (section, field)
+        applicable_types = [
+            report_type for report_type in report_types
+            if _ai_extraction_source_is_valid(report_type, section, field)
+            and (not candidate_report_types or report_type in candidate_report_types)
+        ]
+        if field == "record_id" or not applicable_types:
+            continue
+        if key in seen:
+            existing = next((item for item in sources if (item["section"], item["field"]) == key), None)
+            if existing:
+                existing_types = existing.get("report_types") if isinstance(existing.get("report_types"), list) else []
+                existing["report_types"] = [
+                    report_type for report_type in report_types
+                    if report_type in {*existing_types, *applicable_types}
+                ]
+            continue
+        seen.add(key)
+        sources.append({"section": section, "field": field, "report_types": applicable_types})
+    return sources
+
+
+def _ai_extraction_reserved_target_fields() -> set[str]:
+    reserved = {"record_id", "metadata", "translation_content"}
+    for report_type in REPORT_TYPE_ORDER:
+        reserved.update(REPORT_TABLES[report_type]["field_columns"])
+    for fields in ROW_COLUMNS.values():
+        reserved.update(fields)
+    return reserved
+
+
+def _normalize_ai_extraction_custom_targets(raw: object) -> list[dict[str, object]]:
+    items = raw if isinstance(raw, list) else []
+    builtins = {value for value, _ in AI_EXTRACTION_TARGET_FIELDS}
+    reserved = _ai_extraction_reserved_target_fields()
+    result: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        value = str(item.get("value", item.get("field_code", "")) or "").strip()
+        if (
+            not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,127}", value)
+            or value in builtins
+            or value in reserved
+            or value in seen
+        ):
+            continue
+        output_format = _normalize_ai_extraction_output_format(item.get("output_format", "text"))
+        valid_grains = {value for value, _ in AI_EXTRACTION_GRAINS}
+        grain = str(item.get("grain", "") or "").strip().lower()
+        if grain not in valid_grains:
+            raw_grains = item.get("allowed_grains") if isinstance(item.get("allowed_grains"), list) else []
+            grain = next((candidate for candidate in raw_grains if candidate in valid_grains), "report")
+        seen.add(value)
+        result.append({
+            "value": value,
+            "label": str(item.get("label", item.get("field_label", value)) or value).strip()[:128],
+            "output_format": output_format,
+            "grain": grain,
+            "allowed_grains": [grain],
+            "description": str(item.get("description", "") or "").strip()[:512],
+            "is_system": False,
+            "enabled": item.get("enabled") is not False,
+        })
+    return result
+
+
+def _ai_extraction_catalog(custom_target_fields: object = None) -> dict[str, object]:
     report_types: list[dict[str, object]] = []
     for report_type in REPORT_TYPE_ORDER:
         schema = REPORT_TABLES[report_type]
@@ -3864,7 +4243,7 @@ def _ai_extraction_catalog() -> dict[str, object]:
             "value": "report_fields",
             "label": "日报基础信息",
             "fields": [
-                {"value": field, "label": TRANSLATION_FIELD_LABELS.get(field, field)}
+                {"value": field, "label": FIELD_LABELS_ZH.get(field, field)}
                 for field in schema["field_columns"] if field != "record_id"
             ],
         }]
@@ -3873,7 +4252,7 @@ def _ai_extraction_catalog() -> dict[str, object]:
                 "value": section,
                 "label": TRANSLATION_SECTION_LABELS.get(section, section),
                 "fields": [
-                    {"value": field, "label": TRANSLATION_FIELD_LABELS.get(field, field)}
+                    {"value": field, "label": FIELD_LABELS_ZH.get(field, field)}
                     for field in ROW_COLUMNS.get(section, [])
                 ],
             })
@@ -3883,37 +4262,55 @@ def _ai_extraction_catalog() -> dict[str, object]:
             "sections": sections,
         })
     common_sections: list[dict[str, object]] = []
-    section_names = ["report_fields", *REPORT_TABLES[REPORT_TYPE_ORDER[0]]["multi"]]
+    section_names: list[str] = ["report_fields"]
+    for report_type in REPORT_TYPE_ORDER:
+        for section in REPORT_TABLES[report_type]["multi"]:
+            if section not in section_names:
+                section_names.append(section)
     for section in section_names:
-        if section != "report_fields" and not all(section in REPORT_TABLES[item]["multi"] for item in REPORT_TYPE_ORDER):
-            continue
-        field_sets = []
+        reference: list[str] = []
         for report_type in REPORT_TYPE_ORDER:
-            schema = REPORT_TABLES[report_type]
-            fields = schema["field_columns"] if section == "report_fields" else ROW_COLUMNS.get(section, [])
-            field_sets.append({field for field in fields if field != "record_id"})
-        common = set.intersection(*field_sets) if field_sets else set()
-        reference = REPORT_TABLES[REPORT_TYPE_ORDER[0]]["field_columns"] if section == "report_fields" else ROW_COLUMNS.get(section, [])
+            for field in _ai_extraction_section_fields(report_type, section):
+                if field not in reference:
+                    reference.append(field)
         fields = [
-            {"value": field, "label": TRANSLATION_FIELD_LABELS.get(field, field)}
-            for field in reference if field in common
+            {
+                "value": field,
+                "label": FIELD_LABELS_ZH.get(field, field),
+                "report_types": [
+                    item for item in REPORT_TYPE_ORDER
+                    if field in _ai_extraction_section_fields(item, section)
+                ],
+            }
+            for field in reference
         ]
         if fields:
             common_sections.append({
                 "value": section,
                 "label": "日报基础信息" if section == "report_fields" else TRANSLATION_SECTION_LABELS.get(section, section),
                 "fields": fields,
+                "report_types": [item for item in REPORT_TYPE_ORDER if _ai_extraction_section_fields(item, section)],
             })
     report_types.insert(0, {"value": "all", "label": "所有日报类型", "sections": common_sections})
+    custom_targets = _normalize_ai_extraction_custom_targets(custom_target_fields)
     return {
         "report_types": report_types,
-        "target_fields": [{"value": value, "label": label} for value, label in AI_EXTRACTION_TARGET_FIELDS],
+        "target_fields": [
+            {
+                "value": value,
+                "label": label,
+                "output_format": "text",
+                "grain": AI_EXTRACTION_TARGET_GRAIN.get(value, "report"),
+                "allowed_grains": [AI_EXTRACTION_TARGET_GRAIN.get(value, "report")],
+                "is_system": True,
+            }
+            for value, label in AI_EXTRACTION_TARGET_FIELDS
+        ] + custom_targets,
         "output_formats": [
-            {"value": "text", "label": "文本"},
-            {"value": "number", "label": "数值"},
-            {"value": "date", "label": "日期"},
-            {"value": "company", "label": "公司 / 责任方"},
+            {"value": value, "label": label}
+            for value, label in AI_EXTRACTION_OUTPUT_FORMATS
         ],
+        "grains": [{"value": value, "label": label} for value, label in AI_EXTRACTION_GRAINS],
     }
 
 
@@ -3929,46 +4326,56 @@ def _default_ai_extraction_config() -> dict[str, object]:
             "condition": "处理所有日报类型中作业类型为 NPT 的明细；按明确归责、故障归属、服务品牌证据的优先级识别，缺少有效证据时返回空值。",
             "instruction": "提取造成该段NPT的责任公司或Service Line。第一优先级：A CARGO DE、RESPONSABLE、RESPONSABILIDAD DE、RESPONSIBLE PARTY、ACCOUNTABLE TO、NPT DUE TO等明确归责表达。第二优先级：描述明确指出某公司的设备、工具或服务发生FALLA、ANOMALIA、PERDIDA、CAIDA、FAULT、FAILURE、LOSS等故障，并由该公司处置。第三优先级：故障对象与唯一服务品牌存在明确归属，例如HAL/HALLIBURTON/SPERRY、SLB/SCHLUMBERGER/SLB-RPS、CNLC-WIRELINE。仅出现iCruise、MWD、LWD、BHA或公司参与后续处置，不足以判定责任；故障若明确位于钻杆、套管等其他对象，也不得归责给同段出现的定向服务商。不得仅根据井队上下文猜测，不得把无关的协助或后续作业公司当成责任方。只返回一个责任方名称；没有充分证据返回空字符串。如果责任公司与井队公司一致，输出完整井队名称。",
             "target_field": "service_line",
-            "output_format": "company",
+            "output_format": "text",
             "model_id": "",
             "enabled": False,
-        }],
+        }, *_canonical_monthly_extraction_rules()],
     })
 
 
 def _normalize_ai_extraction_rule(raw: object, index: int) -> dict[str, object] | None:
     if not isinstance(raw, dict):
         return None
-    report_type = str(raw.get("report_type", "") or "").strip().lower()
-    if report_type not in {*REPORT_TABLES, "all"}:
+    report_types = _normalize_ai_extraction_report_types(raw)
+    if not report_types:
         return None
-    source_section = str(raw.get("source_section", "") or "").strip()
-    source_field = str(raw.get("source_field", "") or "").strip()
-    schemas = [REPORT_TABLES[item] for item in REPORT_TYPE_ORDER] if report_type == "all" else [REPORT_TABLES[report_type]]
-    field_sets: list[set[str]] = []
-    for schema in schemas:
-        fields = schema["field_columns"] if source_section == "report_fields" else ROW_COLUMNS.get(source_section, []) if source_section in schema["multi"] else []
-        field_sets.append(set(fields))
-    valid_fields = set.intersection(*field_sets) if field_sets else set()
-    if source_field not in valid_fields or source_field == "record_id":
+    report_type = "all" if len(report_types) == len(REPORT_TYPE_ORDER) else report_types[0]
+    source_fields = _normalize_ai_extraction_sources(raw, report_types)
+    if not source_fields:
         return None
+    source_section = source_fields[0]["section"]
+    source_field = source_fields[0]["field"]
     target_values = {value for value, _ in AI_EXTRACTION_TARGET_FIELDS}
+    reserved_targets = _ai_extraction_reserved_target_fields()
     target_field = str(raw.get("target_field", "") or "").strip()
-    if target_field not in target_values:
+    custom_target = target_field not in target_values
+    if custom_target and (
+        not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,127}", target_field)
+        or target_field in reserved_targets
+    ):
         return None
-    output_format = str(raw.get("output_format", "text") or "text").strip()
-    if output_format not in {"text", "number", "date", "company"}:
-        output_format = "text"
+    output_format = _normalize_ai_extraction_output_format(raw.get("output_format", "text"))
     rule_id = re.sub(r"[^a-zA-Z0-9_-]+", "-", str(raw.get("id", "") or "").strip()).strip("-")
+    grain = str(raw.get("grain", "record") or "record").strip().lower()
+    if grain == "record":
+        grain = "detail_row" if target_field in AI_EXTRACTION_ROW_TARGET_FIELDS else "report"
+    if str(raw.get("id", "") or "") == WELL_CONTROL_MONTHLY_RULE_ID and grain == "team_month":
+        grain = "well_job"
+    if grain not in {value for value, _ in AI_EXTRACTION_GRAINS}:
+        grain = "report"
     return {
         "id": rule_id[:80] or f"extraction-rule-{index + 1}-{uuid.uuid4().hex[:8]}",
         "name": str(raw.get("name", "") or f"提炼规则 {index + 1}").strip()[:80],
+        "grain": grain,
         "report_type": report_type,
+        "report_types": report_types,
         "source_section": source_section,
         "source_field": source_field,
+        "source_fields": source_fields,
         "condition": str(raw.get("condition", "") or "").strip()[:1200],
         "instruction": str(raw.get("instruction", "") or "").strip()[:2400],
         "target_field": target_field,
+        "target_field_label": str(raw.get("target_field_label", target_field) or target_field).strip()[:128],
         "output_format": output_format,
         "model_id": str(raw.get("model_id", "") or "").strip()[:80],
         "enabled": _truthy(raw.get("enabled", True)),
@@ -3978,6 +4385,7 @@ def _normalize_ai_extraction_rule(raw: object, index: int) -> dict[str, object] 
 
 def _normalize_ai_extraction_config(raw: object) -> dict[str, object]:
     source = raw if isinstance(raw, dict) else {}
+    declared_custom_targets = _normalize_ai_extraction_custom_targets(source.get("custom_target_fields"))
     rules: list[dict[str, object]] = []
     seen: set[str] = set()
     raw_rules = source.get("rules") if isinstance(source.get("rules"), list) else []
@@ -3987,6 +4395,21 @@ def _normalize_ai_extraction_config(raw: object) -> dict[str, object]:
             continue
         seen.add(str(rule["id"]))
         rules.append(rule)
+    builtin_targets = {value for value, _ in AI_EXTRACTION_TARGET_FIELDS}
+    custom_by_value = {str(item["value"]): item for item in declared_custom_targets}
+    for rule in rules:
+        target_field = str(rule.get("target_field", "") or "")
+        if target_field and target_field not in builtin_targets:
+            custom_by_value[target_field] = {
+                "value": target_field,
+                "label": str(rule.get("target_field_label", target_field) or target_field),
+                "output_format": str(rule.get("output_format", "text") or "text"),
+                "grain": str(rule.get("grain", "report") or "report"),
+                "allowed_grains": [str(rule.get("grain", "report") or "report")],
+                "is_system": False,
+                "enabled": True,
+            }
+    custom_targets = list(custom_by_value.values())
     auto_execute = _truthy(source.get("auto_execute", True))
     fingerprint_source = {
         # Keep the historical `true` slot so toggling scheduling alone does not
@@ -3994,15 +4417,17 @@ def _normalize_ai_extraction_config(raw: object) -> dict[str, object]:
         "auto_execute": True,
         "pipeline": AI_EXTRACTION_PIPELINE_VERSION,
         "rules": [{key: value for key, value in rule.items() if key != "updated_at"} for rule in rules],
+        "custom_target_fields": custom_targets,
     }
     fingerprint = hashlib.sha256(
         json.dumps(fingerprint_source, ensure_ascii=False, sort_keys=True).encode("utf-8")
     ).hexdigest()[:12]
     return {
         "rules": rules,
+        "custom_target_fields": custom_targets,
         "auto_execute": auto_execute,
         "version": f"ai-extraction-{fingerprint}",
-        "catalog": _ai_extraction_catalog(),
+        "catalog": _ai_extraction_catalog(custom_targets),
         "updated_at": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -4015,21 +4440,71 @@ def _load_ai_extraction_config() -> dict[str, object]:
         data = json.loads(AI_EXTRACTION_RULES_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         data = {}
+    try:
+        registered = list_ai_extraction_target_fields(DATABASE_PATH)
+    except Exception:
+        registered = []
+    if registered:
+        data = dict(data) if isinstance(data, dict) else {}
+        existing = data.get("custom_target_fields") if isinstance(data.get("custom_target_fields"), list) else []
+        data["custom_target_fields"] = [*existing, *registered]
+    data = dict(data) if isinstance(data, dict) else {}
+    raw_rules = data.get("rules") if isinstance(data.get("rules"), list) else []
+    migrated_rules: list[object] = []
+    canonical_rules = {
+        str(rule["id"]): rule
+        for rule in _canonical_monthly_extraction_rules()
+    }
+    found_rule_ids: set[str] = set()
+    for rule in raw_rules:
+        rule_id = str(rule.get("id", "") or "") if isinstance(rule, dict) else ""
+        if isinstance(rule, dict) and rule_id in canonical_rules:
+            canonical = canonical_rules[rule_id]
+            migrated_rules.append({
+                **rule,
+                **canonical,
+                "model_id": rule.get("model_id", canonical.get("model_id", "")),
+                "enabled": rule.get("enabled", canonical.get("enabled", True)),
+            })
+            found_rule_ids.add(rule_id)
+        else:
+            migrated_rules.append(rule)
+    for rule_id, canonical in canonical_rules.items():
+        if rule_id not in found_rule_ids:
+            migrated_rules.append(canonical)
+    data["rules"] = migrated_rules
     return _normalize_ai_extraction_config(data)
 
 
-def _save_ai_extraction_config(config: dict[str, object]) -> None:
+def _save_ai_extraction_config(config: dict[str, object], *, actor: str = "system") -> None:
     _ensure_parent(AI_EXTRACTION_RULES_PATH)
-    _atomic_write_json(AI_EXTRACTION_RULES_PATH, _normalize_ai_extraction_config(config))
+    normalized = _normalize_ai_extraction_config(config)
+    _atomic_write_json(AI_EXTRACTION_RULES_PATH, normalized)
     AI_EXTRACTION_RULES_PATH.chmod(0o600)
+    catalog = normalized.get("catalog") if isinstance(normalized.get("catalog"), dict) else {}
+    target_fields = catalog.get("target_fields") if isinstance(catalog.get("target_fields"), list) else []
+    if target_fields:
+        save_ai_extraction_target_fields(DATABASE_PATH, target_fields, actor=actor)
 
 
 def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], source_text: str) -> dict[str, object]:
-    system_prompt = (
-        "你是钻完井生产数据提炼助手。严格按证据优先级提取一个字段值，不翻译、不解释、不输出分析过程。"
-        "输入可能同时包含作业原文和中文参考译文；原文是最终证据，二者冲突时必须以原文为准，"
-        "不得根据译文补充原文不存在的责任关系。无法确定时返回空字符串。"
-    )
+    monthly_narrative_targets = {
+        "well_control_incident", "team_month_well_control_incident", "accident_waiting",
+        "basic_monthly_remarks", "nonproductive_description", "efficiency_monthly_remarks",
+        "workload_monthly_remarks",
+    }
+    if str(rule.get("target_field", "") or "") in monthly_narrative_targets:
+        system_prompt = (
+            "你是钻完井生产月报数据提炼助手。严格依据原文证据归纳一个字段值，必须使用简体中文输出，"
+            "可将西班牙语或英语证据准确翻译成中文，但不得增加原文不存在的事实，不解释、不输出分析过程。"
+            "输入可能包含中文参考译文；原文是最终证据，二者冲突时以原文为准。"
+        )
+    else:
+        system_prompt = (
+            "你是钻完井生产数据提炼助手。严格按证据优先级提取一个字段值，不翻译、不解释、不输出分析过程。"
+            "输入可能同时包含作业原文和中文参考译文；原文是最终证据，二者冲突时必须以原文为准，"
+            "不得根据译文补充原文不存在的责任关系。无法确定时返回空字符串。"
+        )
     user_prompt = (
         f"规则名称：{rule.get('name', '')}\n"
         f"适用条件：{rule.get('condition', '') or '无额外条件'}\n"
@@ -4066,6 +4541,268 @@ def _run_ai_extraction_test(model: dict[str, object], rule: dict[str, object], s
         message = first.get("message") if isinstance(first, dict) else {}
         content = str(message.get("content", "") if isinstance(message, dict) else "")
     return {"result": content.strip().strip('"'), "target_field": rule.get("target_field", ""), "prompt_preview": user_prompt[:1200]}
+
+
+WELL_CONTROL_SIGNAL_VERSION = "well-control-signals-v1"
+WELL_CONTROL_SIGNAL_PATTERN = re.compile(
+    r"溢流|井涌|井喷|\bkick(?:ed)?\b|\binflux\b|\bblowout\b|\bwell\s*control\b|"
+    r"\bpit\s*gain\b|\bflowing\s+well\b|\barremetida\b|\binflujo\b|\bamago\b|"
+    r"\brevent[oó]n\b|\bbrote\b|control\s+de\s+pozo|pozo\s+(?:con\s+)?flujo|"
+    r"pozo\s+fluyendo|ganancia\s+(?:de\s+)?(?:tanque|piscina)",
+    flags=re.IGNORECASE,
+)
+
+
+def _normalize_monthly_well_control_result(value: object) -> str:
+    text = re.sub(r"\s+", " ", str(value or "").strip().strip('"')).strip("。；; ")
+    if not text or text.lower() in {"none", "null", "n/a", "no", "无", "未发生", "没有"}:
+        return "无"
+    if re.fullmatch(r"(?:本月|该月|本期)?(?:未|无|没有)(?:发现|发生|出现)?(?:实际)?(?:溢流|井涌|井喷|井控异常|井控事件)*(?:情况|事件)?", text):
+        return "无"
+    return f"{text[:180]}。"
+
+
+def _normalize_monthly_narrative_result(value: object) -> str:
+    text = re.sub(r"\s+", " ", str(value or "").strip().strip('"')).strip()
+    if not text:
+        return ""
+    if re.fullmatch(
+        r"(?:(?:NPT|非生产时间|事故、?复杂及停待(?:情况)?)\s*[:：]\s*)?"
+        r"(?:无|没有|未发现|未发生|无相关事项|无特别说明)[。.]?",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        return "无"
+    return text
+
+
+def _aggregate_scope_key(scope: dict[str, object]) -> str:
+    grain = str(scope.get("grain", "") or "")
+    if grain == "well":
+        well_id = int(scope.get("well_id") or 0)
+        return f"WELL:{well_id}:ALL" if well_id else ""
+    if grain == "well_job":
+        project_id = int(scope.get("project_id") or 0)
+        well_id = int(scope.get("well_id") or 0)
+        sequence = int(scope.get("job_sequence_no") or 0)
+        return f"WELL_JOB:{project_id}:{well_id}:{sequence}" if project_id and well_id and sequence else ""
+    period = str(scope.get("period_start", "") or "")[:7]
+    profession = str(scope.get("profession", "") or "-")
+    if grain == "well_month":
+        project_id = int(scope.get("project_id") or 0)
+        well_id = int(scope.get("well_id") or 0)
+        return f"WELL_MONTH:{project_id}:{well_id}:{profession}:{period}" if project_id and well_id and period else ""
+    if grain == "team_month":
+        team_id = int(scope.get("team_id") or 0)
+        return f"TEAM_MONTH:{team_id}:{profession}:{period}" if team_id and period else ""
+    return ""
+
+
+def _aggregate_extraction_values(
+    database_path: Path,
+    scopes: list[dict[str, object]],
+    *,
+    included_target_fields: set[str] | None = None,
+    excluded_target_fields: set[str] | None = None,
+) -> dict[str, dict[str, str]]:
+    normalized_scopes: list[dict[str, object]] = []
+    seen_scope_keys: set[str] = set()
+    for source in scopes:
+        scope = dict(source)
+        scope_key = _aggregate_scope_key(scope)
+        if not scope_key or scope_key in seen_scope_keys:
+            continue
+        seen_scope_keys.add(scope_key)
+        scope["scope_key"] = scope_key
+        normalized_scopes.append(scope)
+    if not normalized_scopes:
+        return {}
+    excluded_targets = excluded_target_fields or set()
+    included_targets = included_target_fields or set()
+    rules = [
+        rule for rule in _enabled_aggregate_extraction_rules()
+        if any(str(scope.get("grain", "")) == str(rule.get("grain", "")) for scope in normalized_scopes)
+        and (not included_targets or str(rule.get("target_field", "") or "") in included_targets)
+        and str(rule.get("target_field", "") or "") not in excluded_targets
+    ]
+    if not rules:
+        return {}
+    existing_rows = load_aggregate_extraction_results(
+        database_path, scope_keys=[str(scope["scope_key"]) for scope in normalized_scopes],
+    )
+    existing = {
+        (str(row.get("scope_key", "")), str(row.get("rule_id", "")), str(row.get("target_field", ""))): row
+        for row in existing_rows
+    }
+    config_version = str(_load_ai_extraction_config().get("version", "") or "")
+    values: dict[str, dict[str, str]] = {}
+    payload_cache: dict[str, dict[str, object]] = {}
+    for scope in normalized_scopes:
+        scope_key = str(scope["scope_key"])
+        for rule in rules:
+            if str(rule.get("grain", "")) != str(scope.get("grain", "")):
+                continue
+            report_types = _normalize_ai_extraction_report_types(rule)
+            scope_report_types = scope.get("scope_report_types") if isinstance(scope.get("scope_report_types"), list) else []
+            if scope_report_types:
+                report_types = [item for item in report_types if item in scope_report_types]
+            if not report_types:
+                continue
+            records = list_aggregate_scope_report_records(database_path, scope=scope, report_types=report_types)
+            record_ids = [str(item.get("record_id", "") or "") for item in records if item.get("record_id")]
+            missing_ids = [record_id for record_id in record_ids if record_id not in payload_cache]
+            if missing_ids:
+                payload_cache.update(load_report_payloads(database_path, missing_ids, include_translations=False))
+            source_rows: list[dict[str, str]] = []
+            evidence_lines: list[str] = []
+            lineage_rows: list[dict[str, object]] = []
+            target_field = str(rule.get("target_field", "") or "")
+            for record in records:
+                record_id = str(record.get("record_id", "") or "")
+                report_type = str(record.get("report_type", "") or "")
+                payload = payload_cache.get(record_id, {})
+                sources = _ai_extraction_rule_sources(rule, report_type)
+                unit = _ai_extraction_record_unit(payload, sources) if isinstance(payload, dict) else None
+                source_text = str(unit.get("source_text", "") or "") if unit else ""
+                prompt_text = str(unit.get("prompt_text", "") or source_text) if unit else ""
+                source_rows.append({"record_id": record_id, "source_text": source_text})
+                if prompt_text:
+                    header = f"{record.get('report_date', '')} | {record.get('well_name', '')} | {TRANSLATION_REPORT_TYPE_LABELS.get(report_type, report_type)}"
+                    evidence_lines.append(f"【{header}】\n{prompt_text}")
+                for source in sources:
+                    lineage_rows.append({
+                        "scope_key": scope_key, "rule_id": rule.get("id", ""), "target_field": target_field,
+                        "record_id": record_id, "source_section": source.get("section", ""), "source_row_no": 0,
+                        "source_field": source.get("field", ""), "source_hash": hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
+                    })
+            if not record_ids:
+                continue
+            source_hash_value = hashlib.sha256(json.dumps(
+                {"pipeline": AI_EXTRACTION_PIPELINE_VERSION, "sources": source_rows},
+                ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+            ).encode("utf-8")).hexdigest()
+            old = existing.get((scope_key, str(rule.get("id", "")), target_field), {})
+            if old.get("extraction_status") == "COMPLETED" and old.get("source_hash") == source_hash_value and old.get("rule_version") == config_version:
+                values.setdefault(scope_key, {})[target_field] = str(old.get("result_text", "") or "")
+                continue
+            now = datetime.now().isoformat(timespec="seconds")
+            result_text = ""
+            status = "COMPLETED"
+            error = ""
+            model_id = ""
+            try:
+                if target_field in {"well_control_incident", "team_month_well_control_incident"}:
+                    signal_lines = [line for block in evidence_lines for line in block.splitlines() if WELL_CONTROL_SIGNAL_PATTERN.search(line)]
+                    if not signal_lines:
+                        result_text = "无"
+                    else:
+                        model = _extraction_model(rule)
+                        if not model:
+                            raise RuntimeError("井控提炼规则没有可用的AI模型")
+                        model_id = str(model.get("id", "") or "")
+                        result = _run_ai_extraction_test(model, rule, "\n".join(signal_lines[:100]))
+                        result_text = _normalize_monthly_well_control_result(result.get("result"))
+                else:
+                    model = _extraction_model(rule)
+                    if not model:
+                        raise RuntimeError("聚合提炼规则没有可用的AI模型")
+                    model_id = str(model.get("id", "") or "")
+                    result = _run_ai_extraction_test(model, rule, "\n\n".join(evidence_lines))
+                    result_text = _normalize_monthly_narrative_result(result.get("result", ""))
+            except Exception as exc:
+                status = "FAILED"
+                error = str(exc)[:500]
+                result_text = str(old.get("result_text", "") or "") if old.get("extraction_status") == "COMPLETED" else ""
+            output_format = str(rule.get("output_format", "text") or "text")
+            result_number: float | None = None
+            result_date = ""
+            if result_text and output_format == "number":
+                try:
+                    result_number = float(result_text.replace(",", ""))
+                except ValueError:
+                    status = "FAILED"
+                    error = "模型返回值不是有效数值"
+            elif result_text and output_format == "date":
+                candidate_date = result_text[:10]
+                try:
+                    result_date = date.fromisoformat(candidate_date).isoformat()
+                except ValueError:
+                    status = "FAILED"
+                    error = "模型返回值不是有效日期"
+            row = {
+                **scope, "rule_id": rule.get("id", ""), "target_field": target_field,
+                "output_format": output_format, "source_hash": source_hash_value,
+                "source_record_count": len(record_ids), "source_record_ids": record_ids,
+                "result_text": result_text, "result_number": result_number, "result_date": result_date,
+                "extraction_status": status, "error_message": error,
+                "model_config_id": model_id, "rule_version": config_version,
+                "attempt_count": int(old.get("attempt_count", 0) or 0) + 1,
+                "completed_at": now if status == "COMPLETED" else "", "updated_at": now,
+            }
+            save_aggregate_extraction_results(database_path, [row])
+            if lineage_rows:
+                save_extraction_result_sources(database_path, lineage_rows)
+            if result_text:
+                values.setdefault(scope_key, {})[target_field] = result_text
+    return values
+
+
+MONTHLY_AGGREGATE_TARGET_ROW_KEYS = {
+    "well_control_incident": "well_control_incident",
+    "team_month_well_control_incident": "well_control_incident",
+    "accident_waiting": "accident_waiting",
+    "basic_monthly_remarks": "remarks",
+    "nonproductive_description": "nonproductive_description",
+    "efficiency_monthly_remarks": "remarks",
+    "workload_monthly_remarks": "remarks",
+}
+
+
+def _apply_monthly_aggregate_extractions(
+    database_path: Path,
+    rows: list[dict[str, object]],
+    *,
+    grain: str,
+    period_start: str = "",
+    period_end: str = "",
+    report_types: list[str] | None = None,
+    profession: str = "",
+    included_target_fields: set[str] | None = None,
+    excluded_target_fields: set[str] | None = None,
+) -> None:
+    scopes: list[dict[str, object]] = []
+    row_scope_keys: list[str] = []
+    for row in rows:
+        scope = {
+            "grain": grain,
+            "project_id": int(row.get("project_id") or 0),
+            "job_id": int(row.get("job_id") or 0),
+            "job_sequence_no": int(row.get("job_sequence_no") or 0),
+            "well_id": int(row.get("well_id") or 0),
+            "team_id": int(row.get("team_id") or 0),
+            "profession": str(row.get("profession", "") or profession),
+            "period_start": period_start,
+            "period_end": period_end,
+            "scope_report_types": list(report_types or []),
+        }
+        if grain == "team_month":
+            scope["project_id"] = 0
+        scope_key = _aggregate_scope_key(scope)
+        scopes.append(scope)
+        row_scope_keys.append(scope_key)
+    excluded_targets = excluded_target_fields or set()
+    included_targets = included_target_fields or set()
+    values = _aggregate_extraction_values(
+        database_path, scopes, included_target_fields=included_target_fields,
+        excluded_target_fields=excluded_targets,
+    )
+    for row, scope_key in zip(rows, row_scope_keys):
+        for target_field, value in values.get(scope_key, {}).items():
+            if target_field in excluded_targets or (included_targets and target_field not in included_targets):
+                continue
+            row_key = MONTHLY_AGGREGATE_TARGET_ROW_KEYS.get(target_field)
+            if row_key:
+                row[row_key] = value
 
 
 def _explicit_responsible_party(source_text: str) -> str:
@@ -4125,28 +4862,112 @@ def _normalize_responsible_party(value: str, payload: dict[str, object]) -> str:
     return cleaned.upper()
 
 
+def _ai_extraction_rule_sources(rule: dict[str, object], report_type: str = "") -> list[dict[str, object]]:
+    raw_sources = rule.get("source_fields") if isinstance(rule.get("source_fields"), list) else []
+    if not raw_sources:
+        raw_sources = [{"section": rule.get("source_section", ""), "field": rule.get("source_field", "")}]
+    sources: list[dict[str, object]] = []
+    seen: set[tuple[str, str]] = set()
+    for item in raw_sources:
+        if not isinstance(item, dict):
+            continue
+        section = str(item.get("section", item.get("source_section", "")) or "").strip()
+        field = str(item.get("field", item.get("source_field", "")) or "").strip()
+        source_report_types = item.get("report_types") if isinstance(item.get("report_types"), list) else []
+        if report_type and source_report_types and report_type not in source_report_types:
+            continue
+        key = (section, field)
+        if not section or not field or key in seen:
+            continue
+        seen.add(key)
+        sources.append({"section": section, "field": field})
+    return sources
+
+
+def _ai_extraction_record_unit(
+    payload: dict[str, object],
+    sources: list[dict[str, str]],
+) -> dict[str, object] | None:
+    source_lines: list[str] = []
+    prompt_lines: list[str] = []
+    translated_lines: list[str] = []
+    source_count = 0
+    sections: list[str] = []
+    paths: list[str] = []
+    fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
+    for source in sources:
+        section = source["section"]
+        field = source["field"]
+        path = f"{section}.{field}"
+        if section not in sections:
+            sections.append(section)
+        if path not in paths:
+            paths.append(path)
+        if section == "report_fields":
+            text = str(fields.get(field, "") or "").strip()
+            if not text:
+                continue
+            source_count += 1
+            source_lines.append(f"{path}={text}")
+            prompt_lines.append(f"【{TRANSLATION_FIELD_LABELS.get(field, field)} · {path}】\n{text}")
+            translated = _extraction_translation_reference(
+                payload, section=section, row_no=0, field=field, source_text=text,
+            )
+            if translated:
+                translated_lines.append(f"{path}={translated}")
+            continue
+        rows = payload.get(section) if isinstance(payload.get(section), list) else []
+        for row_no, row in enumerate(rows, start=1):
+            if not isinstance(row, dict):
+                continue
+            text = str(row.get(field, "") or "").strip()
+            if not text:
+                continue
+            source_count += 1
+            context = {
+                key: row.get(key)
+                for key in ("from", "to", "hours", "op_code", "op_sub", "op_type", "system_op_type", "confirmed_op_type")
+                if row.get(key) not in (None, "")
+            }
+            source_lines.append(f"{path}[{row_no}]={text}")
+            context_text = f" {json.dumps(context, ensure_ascii=False)}" if context else ""
+            prompt_lines.append(
+                f"【{TRANSLATION_SECTION_LABELS.get(section, section)} 第{row_no}行 · {path}】{context_text}\n{text}"
+            )
+            translated = _extraction_translation_reference(
+                payload, section=section, row_no=row_no, field=field, source_text=text,
+            )
+            if translated:
+                translated_lines.append(f"{path}[{row_no}]={translated}")
+    if not source_lines:
+        return None
+    source_section = sections[0] if len(sections) == 1 else "multiple"
+    source_field = ",".join(paths)[:128]
+    translated_text = "\n".join(translated_lines)
+    prompt_text = "\n\n".join(prompt_lines)
+    if translated_text:
+        prompt_text += (
+            f"\n\n中文参考译文（仅辅助理解）：\n{translated_text}"
+            "\n\n证据规则：如有冲突，以来源原文为准。"
+        )
+    return {
+        "source_section": source_section,
+        "source_row_no": 0,
+        "source_field": source_field,
+        "source_text": "\n".join(source_lines),
+        "translated_text": translated_text,
+        "prompt_text": prompt_text,
+        "source_count": source_count,
+    }
+
+
 def _ai_extraction_source_from_payload(payload: dict[str, object], rule: dict[str, object]) -> tuple[str, int]:
-    section = str(rule.get("source_section", "") or "")
-    field = str(rule.get("source_field", "") or "")
-    if section == "report_fields":
-        fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
-        value = str(fields.get(field, "") or "").strip()
-        return value, 1 if value else 0
-    rows = payload.get(section) if isinstance(payload.get(section), list) else []
-    values: list[str] = []
-    for index, row in enumerate(rows, start=1):
-        if not isinstance(row, dict):
-            continue
-        value = str(row.get(field, "") or "").strip()
-        if not value:
-            continue
-        context = {
-            key: row.get(key)
-            for key in ("from", "to", "hours", "op_code", "op_sub", "op_type", "system_op_type", "confirmed_op_type")
-            if row.get(key) not in (None, "")
-        }
-        values.append(f"明细{index} {json.dumps(context, ensure_ascii=False)}\n{value}" if context else value)
-    return "\n\n".join(values), len(values)
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    report_type = str(metadata.get("report_type", "") or "")
+    unit = _ai_extraction_record_unit(payload, _ai_extraction_rule_sources(rule, report_type))
+    if not unit:
+        return "", 0
+    return str(unit.get("prompt_text", "") or ""), int(unit.get("source_count", 0) or 0)
 
 
 def _extraction_translation_reference(
@@ -4179,49 +5000,55 @@ def _extraction_translation_reference(
 
 
 def _ai_extraction_units(payload: dict[str, object], rule: dict[str, object]) -> list[dict[str, object]]:
-    section = str(rule.get("source_section", "") or "")
-    field = str(rule.get("source_field", "") or "")
-    if section == "report_fields":
-        fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
-        text = str(fields.get(field, "") or "").strip()
-        if not text:
-            return []
-        translated_text = _extraction_translation_reference(
-            payload, section=section, row_no=0, field=field, source_text=text,
-        )
-        prompt_text = f"来源原文：\n{text}"
-        if translated_text:
-            prompt_text += f"\n\n中文参考译文（仅辅助理解）：\n{translated_text}\n\n证据规则：如有冲突，以来源原文为准。"
-        return [{
-            "source_section": section,
-            "source_row_no": 0,
-            "source_field": field,
-            "source_text": text,
-            "translated_text": translated_text,
-            "prompt_text": prompt_text,
-        }]
-    rows = payload.get(section) if isinstance(payload.get(section), list) else []
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    report_type = str(metadata.get("report_type", "") or "")
+    sources = _ai_extraction_rule_sources(rule, report_type)
+    target_field = str(rule.get("target_field", "") or "")
+    operation_fields = [source["field"] for source in sources if source["section"] == "operations"]
+    if target_field not in AI_EXTRACTION_ROW_TARGET_FIELDS or not operation_fields:
+        unit = _ai_extraction_record_unit(payload, sources)
+        return [unit] if unit else []
+    rows = payload.get("operations") if isinstance(payload.get("operations"), list) else []
     fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
     report_context = {key: fields.get(key) for key in ("reportDate", "wellbore", "rig") if fields.get(key) not in (None, "")}
+    selected_report_fields = [source["field"] for source in sources if source["section"] == "report_fields"]
+    for field in selected_report_fields:
+        if fields.get(field) not in (None, ""):
+            report_context[field] = fields.get(field)
     units: list[dict[str, object]] = []
-    npt_only = str(rule.get("target_field", "") or "") == "service_line" or "NPT" in str(rule.get("condition", "") or "").upper()
+    npt_only = target_field == "service_line" or "NPT" in str(rule.get("condition", "") or "").upper()
     for row_no, row in enumerate(rows, start=1):
         if not isinstance(row, dict):
             continue
         op_type = str(row.get("confirmed_op_type", "") or row.get("op_type", "") or row.get("system_op_type", "") or "").strip().upper()
         if npt_only and op_type != "NPT":
             continue
-        text = str(row.get(field, "") or "").strip()
-        if not text:
+        selected_values = {
+            field: str(row.get(field, "") or "").strip()
+            for field in operation_fields
+            if str(row.get(field, "") or "").strip()
+        }
+        if not selected_values:
             continue
         context = {key: row.get(key) for key in ("from", "to", "hours", "op_code", "op_sub", "op_type", "confirmed_op_type") if row.get(key) not in (None, "")}
-        translated_text = _extraction_translation_reference(
-            payload, section=section, row_no=row_no, field=field, source_text=text,
+        translations: list[str] = []
+        for field, text in selected_values.items():
+            translated = _extraction_translation_reference(
+                payload, section="operations", row_no=row_no, field=field, source_text=text,
+            )
+            if translated:
+                translations.append(translated if len(selected_values) == 1 else f"{field}={translated}")
+        translated_text = "\n".join(translations)
+        source_text = (
+            next(iter(selected_values.values()))
+            if len(selected_values) == 1
+            else "\n".join(f"{field}={text}" for field, text in selected_values.items())
         )
         prompt_text = (
             f"日报上下文：{json.dumps(report_context, ensure_ascii=False)}\n"
             f"明细上下文：{json.dumps(context, ensure_ascii=False)}\n"
-            f"作业原文：\n{text}"
+            f"来源字段：{', '.join(f'operations.{field}' for field in selected_values)}\n"
+            f"作业原文：\n{source_text}"
         )
         if translated_text:
             prompt_text += (
@@ -4229,10 +5056,10 @@ def _ai_extraction_units(payload: dict[str, object], rule: dict[str, object]) ->
                 "\n\n证据规则：原文是最终证据；如有冲突，以作业原文为准，不得根据译文增加原文不存在的责任关系。"
             )
         units.append({
-            "source_section": section,
+            "source_section": "operations",
             "source_row_no": row_no,
-            "source_field": field,
-            "source_text": text,
+            "source_field": ",".join(selected_values)[:128],
+            "source_text": source_text,
             "translated_text": translated_text,
             "prompt_text": prompt_text,
         })
@@ -4261,13 +5088,32 @@ def _extraction_input_signature(
 def _enabled_extraction_rules(report_type: str = "") -> list[dict[str, object]]:
     config = _load_ai_extraction_config()
     rules = config.get("rules") if isinstance(config.get("rules"), list) else []
-    return [rule for rule in rules if isinstance(rule, dict) and rule.get("enabled") and (not report_type or rule.get("report_type") in {report_type, "all"})]
+    return [
+        rule for rule in rules
+        if isinstance(rule, dict) and rule.get("enabled") and rule.get("grain", "report") in {"detail_row", "report"}
+        and (not report_type or _ai_extraction_rule_applies(rule, report_type))
+    ]
+
+
+def _enabled_aggregate_extraction_rules(grain: str = "") -> list[dict[str, object]]:
+    config = _load_ai_extraction_config()
+    rules = config.get("rules") if isinstance(config.get("rules"), list) else []
+    return [
+        rule for rule in rules
+        if isinstance(rule, dict) and rule.get("enabled")
+        and rule.get("grain") in AI_EXTRACTION_AGGREGATE_GRAINS
+        and (not grain or rule.get("grain") == grain)
+    ]
+
+
+def _enabled_team_month_extraction_rules() -> list[dict[str, object]]:
+    return _enabled_aggregate_extraction_rules("team_month")
 
 
 def _payload_has_extraction_units(payload: dict[str, object], report_type: str, rules: list[dict[str, object]] | None = None) -> bool:
     candidates = rules if rules is not None else _enabled_extraction_rules(report_type)
     return any(
-        rule.get("report_type") in {report_type, "all"} and bool(_ai_extraction_units(payload, rule))
+        _ai_extraction_rule_applies(rule, report_type) and bool(_ai_extraction_units(payload, rule))
         for rule in candidates
     )
 
@@ -4298,7 +5144,7 @@ def _refresh_extraction_after_translation(record_id: str, *, changed_field_code:
     report_type = str(metadata.get("report_type", "") or "") if isinstance(metadata, dict) else ""
     rules = _enabled_extraction_rules(report_type)
     if changed_field_code and not any(
-        f"{rule.get('source_section', '')}.{rule.get('source_field', '')}" == changed_field_code
+        any(f"{source['section']}.{source['field']}" == changed_field_code for source in _ai_extraction_rule_sources(rule, report_type))
         for rule in rules
     ):
         return False
@@ -5803,6 +6649,17 @@ def _monthly_drilling_basic_report_payload(database_path: Path, params: dict[str
     ]
     for index, row in enumerate(rows, start=1):
         row["sequence"] = index
+    _apply_monthly_aggregate_extractions(
+        database_path, rows, grain="well_job", report_types=["drilling", "completion"],
+        included_target_fields={"accident_waiting", "basic_monthly_remarks"},
+    )
+    _apply_monthly_aggregate_extractions(
+        database_path, rows, grain="team_month",
+        period_start=str(source.get("month_start", "") or ""),
+        period_end=str(source.get("month_end", "") or ""),
+        report_types=["drilling", "completion"], profession="drilling",
+        included_target_fields={"team_month_well_control_incident"},
+    )
     return {
         "report_month": selected_month,
         "report_date": selected_date,
@@ -5822,7 +6679,7 @@ def _monthly_drilling_basic_report_payload(database_path: Path, params: dict[str
         },
         "rows": rows,
         "grain": "selected natural month + project/well/job sequence",
-        "scope_note": "选定自然月内出现钻井或完井日报的井均纳入；开钻日期取钻井日报Report No.=1，完钻日期取钻井日报最大Report No.日期；月/年进尺按钻井日报自然月和自然年累计；钻井、完井周期分别按对应日报小时合计除以24。",
+        "scope_note": "选定自然月内出现钻井或完井日报的井均纳入；开钻日期取钻井日报Report No.=1，完钻日期取钻井日报最大Report No.日期；月/年进尺按钻井日报自然月和自然年累计；井控异常按井队钻井专业自然月汇总，事故停待与备注按项目、井和作业序列汇总并独立追溯。",
     }
 
 
@@ -5941,6 +6798,10 @@ def _monthly_workover_basic_report_payload(database_path: Path, params: dict[str
     ]
     for index, row in enumerate(rows, start=1):
         row["sequence"] = index
+    _apply_monthly_aggregate_extractions(
+        database_path, rows, grain="well_job", report_types=["workover"],
+        included_target_fields={"well_control_incident", "accident_waiting", "basic_monthly_remarks"},
+    )
     return {
         "report_month": selected_month,
         "report_date": selected_date,
@@ -5956,7 +6817,7 @@ def _monthly_workover_basic_report_payload(database_path: Path, params: dict[str
         },
         "rows": rows,
         "grain": "selected natural month + workover job",
-        "scope_note": "选定自然月内存在修井日报的作业均纳入；开工日期取修井日报Report No.=1，完工日期取该修井作业最大Report No.日期；作业主要内容仅使用Razón Prim字段的中文译文，暂无译文时留空。",
+        "scope_note": "选定自然月内存在修井日报的作业均纳入；开工日期取修井日报Report No.=1，完工日期取该修井作业最大Report No.日期；作业主要内容使用Razón Prim字段译文，井控异常、事故停待与备注按项目、井和修井作业序列综合全部相关日报。",
     }
 
 
@@ -6052,6 +6913,11 @@ def _monthly_drilling_workover_efficiency_report_payload(database_path: Path, pa
     ]
     for index, row in enumerate(rows, start=1):
         row["sequence"] = index
+    _apply_monthly_aggregate_extractions(
+        database_path, rows, grain="well_month",
+        period_start=str(source.get("month_start", "") or ""), period_end=str(source.get("month_end", "") or ""),
+        included_target_fields={"nonproductive_description", "efficiency_monthly_remarks"},
+    )
     return {
         "report_month": selected_month,
         "report_date": selected_date,
@@ -6064,7 +6930,7 @@ def _monthly_drilling_workover_efficiency_report_payload(database_path: Path, pa
         },
         "rows": rows,
         "grain": "selected natural month + project + well + profession",
-        "scope_note": "按选定自然月、项目、井号和专业汇总；钻井专业合并钻井及完井日报，修井专业单独统计。搬安时间取搬迁Event日报的Operation小时；生产时间为非搬迁日报P+SC；NPT按项目允许NPT拆分有日费和零日费。",
+        "scope_note": "按选定自然月、项目、井号和专业汇总；钻井专业合并钻井及完井日报，修井专业单独统计。搬安时间取搬迁Event日报的Operation小时；生产时间为非搬迁日报P+SC；非生产原因和备注由AI综合该井当月同专业日报提炼。",
     }
 
 
@@ -6149,16 +7015,18 @@ def _monthly_team_workload_report_payload(database_path: Path, params: dict[str,
         "force_majeure_hours",
         "zero_rate_repair_hours",
     )
-    grouped: dict[tuple[str, str], dict[str, object]] = {}
+    grouped: dict[tuple[str, int], dict[str, object]] = {}
     for source_row in filtered_rows:
         profession = str(source_row.get("profession", "drilling") or "drilling").lower()
         team_name = str(source_row.get("team_name") or source_row.get("team_code") or "未匹配队伍")
-        group = grouped.setdefault((profession, team_name), {
+        team_id = int(source_row.get("team_id") or 0)
+        group = grouped.setdefault((profession, team_id), {
             "profession": profession,
             "profession_label": "修井" if profession == "workover" else "钻井",
             "category_label": "修井" if profession == "workover" else "钻机",
             "team_code": team_name,
             "team_name": team_name,
+            "team_id": team_id,
             "remarks": "",
             **{key: 0.0 for key in hour_keys},
         })
@@ -6173,6 +7041,11 @@ def _monthly_team_workload_report_payload(database_path: Path, params: dict[str,
             row[key] = round(float(row.get(key, 0) or 0), 1)
         row["total_hours"] = round(sum(float(row.get(key, 0) or 0) for key in hour_keys), 1)
         row["sequence"] = index
+    _apply_monthly_aggregate_extractions(
+        database_path, rows, grain="team_month",
+        period_start=str(source.get("month_start", "") or ""), period_end=str(source.get("month_end", "") or ""),
+        included_target_fields={"workload_monthly_remarks"},
+    )
     return {
         "report_month": selected_month,
         "report_date": selected_date,
@@ -6185,7 +7058,7 @@ def _monthly_team_workload_report_payload(database_path: Path, params: dict[str,
         },
         "rows": rows,
         "grain": "selected natural month + standard team + profession",
-        "scope_note": "按标准队伍和专业汇总。钻井包含搬迁、钻井及完井日报；作业时间=P+SC+项目允许NPT内的有日费维修，维修/零日费为超出允许NPT部分；有人待工、无人待工和不可抗力待工暂按0。",
+        "scope_note": "按标准队伍、专业和自然月汇总。钻井包含搬迁、钻井及完井日报；作业时间=P+SC+项目允许NPT内的有日费维修，维修/零日费为超出允许NPT部分；备注由AI综合该井队当月同专业日报提炼。",
     }
 
 

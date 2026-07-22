@@ -113,6 +113,27 @@ def test_report_content_language_is_global_and_persistent_across_modules() -> No
     assert 'return globalReportContentLanguage === "zh"' in script
 
 
+def test_monthly_report_navigation_uses_short_names_in_all_languages() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+
+    for label in ("钻井月报", "修井月报", "钻修井月报", "月度工作量统计"):
+        assert label in html
+        assert label in script
+    for label in (
+        "Drilling Monthly Report",
+        "Workover Monthly Report",
+        "Drilling & Workover Monthly Report",
+        "Monthly Workload Statistics",
+        "Reporte Mensual de Perforación",
+        "Reporte Mensual de Workover",
+        "Reporte Mensual de Perforación y Workover",
+        "Estadística Mensual de Carga de Trabajo",
+    ):
+        assert label in script
+
+
 def test_drilling_basic_monthly_report_page_matches_appendix_4_structure() -> None:
     root = Path(__file__).parents[1]
     html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
@@ -141,6 +162,11 @@ def test_drilling_basic_monthly_report_page_matches_appendix_4_structure() -> No
     assert 'name="report_date" data-drilling-basic-date' not in html
     assert 'data-drilling-basic-status-note' not in html
     assert 'minimumFractionDigits: 1, maximumFractionDigits: 1' in script
+    assert 'escapeHtml(row.well_control_incident)' in script
+    assert 'escapeHtml(row.accident_waiting)' in script
+    assert 'escapeHtml(row.remarks)' in script
+    assert script.count('escapeHtml(row.well_control_incident)') >= 2
+    assert 'escapeHtml(row.nonproductive_description)' in script
     assert ".template-highlight {\n  background: #fff;" in styles
     assert ".template-fill-time {\n  margin-left: 64px;" in styles
     assert ".drilling-basic-monthly-workspace {\n  display: grid;\n  gap: 14px;\n  padding: 14px 0 28px;" in styles
@@ -171,7 +197,7 @@ def test_drilling_basic_monthly_template_export_populates_exact_static_workbook(
             "drilling_start_date": "2026-07-01", "drilling_end_date": "2026-07-10", "completion_date": "2026-07-12",
             "design_depth_ft": 10000, "current_depth_ft": 10000, "month_progress_ft": 10000, "year_progress_ft": 10000,
             "actual_drilling_cycle_days": 9.5, "actual_completion_cycle_days": 2,
-            "well_control_incident": "", "accident_waiting": "", "remarks": "",
+            "well_control_incident": "无", "accident_waiting": "", "remarks": "",
         }],
     }
     with patch.object(form_server, "_monthly_drilling_basic_report_payload", return_value=payload):
@@ -191,7 +217,7 @@ def test_drilling_basic_monthly_template_export_populates_exact_static_workbook(
     assert _yellow_filled_cells(worksheet) == []
     assert worksheet["G4"].value == "PCNA-001"
     assert worksheet["I4"].value.strftime("%Y-%m-%d") == "2026-07-01"
-    assert worksheet["T4"].value is None
+    assert worksheet["T4"].value == "无"
     assert worksheet["U4"].value is None
     assert worksheet["V4"].value is None
     assert worksheet["H5"].value == "开钻井数"
@@ -252,6 +278,40 @@ def test_drilling_basic_monthly_payload_filters_rows_and_keeps_ai_fields_blank()
         "month_progress_ft": 200.0,
         "year_progress_ft": 300.0,
     }
+
+
+def test_drilling_basic_monthly_payload_uses_team_month_well_control_result() -> None:
+    source = {
+        "month_start": "2026-07-01", "month_end": "2026-07-31", "year_start": "2026-01-01",
+        "rows": [{
+            "job_id": 1, "job_sequence_no": 1, "project_id": 10, "project_name": "A", "well_id": 11,
+            "team_id": 9, "team_code": "248",
+            "well_name": "W-1", "drilling_start_date": "2026-07-01", "completion_date": "",
+            "month_progress_ft": 100, "year_progress_ft": 100, "well_control_incident": "",
+            "accident_waiting": "", "remarks": "",
+        }],
+    }
+    with (
+        patch.object(form_server, "load_drilling_basic_monthly_report_rows", return_value=source),
+        patch.object(form_server, "_aggregate_extraction_values", side_effect=[
+            {"WELL_JOB:10:11:1": {"well_control_incident": "旧单井结果"}},
+            {"TEAM_MONTH:9:drilling:2026-07": {"team_month_well_control_incident": "无"}},
+        ]) as load_well_control,
+    ):
+        payload = form_server._monthly_drilling_basic_report_payload(
+            Path("mysql"), {"report_date": ["2026-07-20"]},
+        )
+
+    assert payload["rows"][0]["well_control_incident"] == "无"
+    assert load_well_control.call_count == 2
+    well_job_scope = load_well_control.call_args_list[0].args[1][0]
+    team_month_scope = load_well_control.call_args_list[1].args[1][0]
+    assert well_job_scope["grain"] == "well_job"
+    assert team_month_scope["grain"] == "team_month"
+    assert team_month_scope["team_id"] == 9
+    assert team_month_scope["profession"] == "drilling"
+    assert team_month_scope["period_start"] == "2026-07-01"
+    assert team_month_scope["period_end"] == "2026-07-31"
 
 
 def test_monthly_report_fill_date_uses_today_for_current_month_and_month_end_for_history() -> None:
@@ -1379,7 +1439,296 @@ class FormServerImportTest(unittest.TestCase):
 
         self.assertEqual(len(config["rules"]), 1)
         self.assertEqual(config["rules"][0]["target_field"], "service_line")
+        self.assertEqual(config["rules"][0]["output_format"], "text")
+        self.assertEqual(
+            [item["value"] for item in config["catalog"]["output_formats"]],
+            ["text", "number", "date"],
+        )
         self.assertIn("target_fields", config["catalog"])
+
+    def test_ai_extraction_supports_grouped_multi_source_fields_and_all_modules(self) -> None:
+        config = form_server._normalize_ai_extraction_config({
+            "rules": [{
+                "id": "monthly-incident-summary",
+                "name": "月度事故摘要",
+                "report_type": "all",
+                "source_fields": [
+                    {"section": "report_fields", "field": "incidentComments"},
+                    {"section": "report_fields", "field": "otherRemarks"},
+                    {"section": "operations", "field": "operation_details"},
+                    {"section": "perforation_intervals", "field": "comments"},
+                ],
+                "instruction": "总结事故和停待情况",
+                "target_field": "monthly_incident_summary",
+                "target_field_label": "月度事故摘要",
+                "output_format": "text",
+                "enabled": True,
+            }],
+        })
+
+        rule = config["rules"][0]
+        # The all-report rule keeps fields that apply to any selected report
+        # type; unavailable sections are simply empty for that report.
+        self.assertEqual(
+            rule["source_fields"],
+            [
+                {"section": "report_fields", "field": "incidentComments", "report_types": ["drilling"]},
+                {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
+                {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
+                {"section": "perforation_intervals", "field": "comments", "report_types": ["completion", "workover"]},
+            ],
+        )
+        sections = {item["value"] for item in config["catalog"]["report_types"][0]["sections"]}
+        self.assertTrue({
+            "report_fields", "operations", "survey_data", "bha_components", "fluid_losses",
+            "bulks", "mud_products", "perforation_intervals",
+        }.issubset(sections))
+        custom = next(item for item in config["catalog"]["target_fields"] if item["value"] == "monthly_incident_summary")
+        self.assertEqual(custom["label"], "月度事故摘要")
+
+    def test_ai_extraction_catalog_uses_chinese_labels_without_changing_field_codes(self) -> None:
+        catalog = form_server._ai_extraction_catalog()
+        actual_reports = [item for item in catalog["report_types"] if item["value"] != "all"]
+        fields = [field for report in actual_reports for section in report["sections"] for field in section["fields"]]
+
+        self.assertTrue(fields)
+        self.assertTrue(all(field["value"] in form_server.FIELD_LABELS_ZH for field in fields))
+        self.assertTrue(all(field["label"] == form_server.FIELD_LABELS_ZH[field["value"]] for field in fields))
+        self.assertTrue(all(any("\u4e00" <= char <= "\u9fff" for char in field["label"]) for field in fields))
+        self.assertIn({"value": "reportDate", "label": "报告日期"}, fields)
+        self.assertIn({"value": "afeNumber", "label": "AFE编号"}, fields)
+
+    def test_ai_extraction_record_target_combines_selected_fields_into_one_unit(self) -> None:
+        payload = {
+            "report_fields": {"currentOps": "DRILL AHEAD", "otherRemarks": "NO INCIDENT"},
+            "operations": [
+                {"from": "00:00", "to": "06:00", "operation_details": "DRILLING"},
+                {"from": "06:00", "to": "08:00", "operation_details": "WAIT ON SERVICE"},
+            ],
+        }
+        rule = {
+            "source_fields": [
+                {"section": "report_fields", "field": "currentOps"},
+                {"section": "report_fields", "field": "otherRemarks"},
+                {"section": "operations", "field": "operation_details"},
+            ],
+            "target_field": "monthly_incident_summary",
+        }
+
+        units = form_server._ai_extraction_units(payload, rule)
+
+        self.assertEqual(len(units), 1)
+        self.assertEqual(units[0]["source_section"], "multiple")
+        self.assertIn("DRILL AHEAD", units[0]["prompt_text"])
+        self.assertIn("WAIT ON SERVICE", units[0]["prompt_text"])
+
+    def test_ai_extraction_admin_uses_grouped_checkbox_sources_and_custom_targets(self) -> None:
+        script = Path(__file__).parents[1].joinpath("web_form", "admin.js").read_text(encoding="utf-8")
+
+        self.assertIn('name="aiExtractionSourceField"', script)
+        self.assertIn("aiExtractionSourceFieldPicker", script)
+        self.assertIn('class="ai-extraction-source-dropdown"', script)
+        self.assertIn("data-ai-extraction-source-preview", script)
+        self.assertIn("ai-extraction-source-report", script)
+        self.assertIn("ai-extraction-source-module", script)
+        self.assertIn('name="aiExtractionReportType"', script)
+        self.assertIn("data-ai-extraction-report-dropdown", script)
+        self.assertIn("data-ai-extraction-section-toggle", script)
+        self.assertIn("data-ai-extraction-new-target", script)
+        self.assertIn('name="aiExtractionCustomTargetActive"', script)
+        self.assertNotIn('<option value="__new__"', script)
+        self.assertIn('name="aiExtractionCustomTargetCode"', script)
+        self.assertIn('name="aiExtractionGrain"', script)
+        self.assertIn("ai-extraction-scope-preview", script)
+
+    def test_monthly_well_control_rule_uses_well_job_storage_grain(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule({
+            **form_server._monthly_well_control_rule(),
+            "grain": "team_month",
+        }, 0)
+
+        self.assertEqual(rule["grain"], "well_job")
+        catalog = form_server._ai_extraction_catalog()
+        target = next(item for item in catalog["target_fields"] if item["value"] == "well_control_incident")
+        self.assertEqual(target["grain"], "well_job")
+        self.assertEqual(target["allowed_grains"], ["well_job"])
+        self.assertEqual(
+            [item["value"] for item in catalog["grains"]],
+            ["detail_row", "report", "well", "well_job", "well_month", "team_month"],
+        )
+
+    def test_team_month_well_control_rule_has_its_own_target_field(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._team_month_well_control_rule(), 0)
+        catalog = form_server._ai_extraction_catalog()
+        target = next(
+            item for item in catalog["target_fields"]
+            if item["value"] == "team_month_well_control_incident"
+        )
+
+        self.assertEqual(rule["grain"], "team_month")
+        self.assertEqual(rule["report_types"], ["drilling", "completion"])
+        self.assertEqual(rule["target_field"], "team_month_well_control_incident")
+        self.assertEqual(target["grain"], "team_month")
+        self.assertEqual(target["allowed_grains"], ["team_month"])
+
+    def test_canonical_monthly_ai_rules_cover_every_narrative_report_field(self) -> None:
+        rules = form_server._canonical_monthly_extraction_rules()
+        rule_targets = {str(rule["target_field"]): str(rule["grain"]) for rule in rules}
+
+        self.assertEqual(rule_targets, {
+            "well_control_incident": "well_job",
+            "team_month_well_control_incident": "team_month",
+            "accident_waiting": "well_job",
+            "basic_monthly_remarks": "well_job",
+            "nonproductive_description": "well_month",
+            "efficiency_monthly_remarks": "well_month",
+            "workload_monthly_remarks": "team_month",
+        })
+        self.assertTrue(all(rule["enabled"] for rule in rules))
+        self.assertTrue(all(rule["source_fields"] for rule in rules))
+
+    def test_monthly_narrative_empty_variants_normalize_to_no(self) -> None:
+        self.assertEqual(form_server._normalize_monthly_narrative_result("NPT: 无"), "无")
+        self.assertEqual(form_server._normalize_monthly_narrative_result("无特别说明。"), "无")
+        self.assertEqual(form_server._normalize_monthly_narrative_result("等待指令5小时"), "等待指令5小时")
+
+    def test_ai_extraction_target_fields_belong_to_exactly_one_grain(self) -> None:
+        catalog = form_server._ai_extraction_catalog([{
+            "field_code": "monthly_custom_summary",
+            "field_label": "月度自定义摘要",
+            "allowed_grains": ["well_month", "team_month"],
+        }])
+
+        for target in catalog["target_fields"]:
+            self.assertIn(target["grain"], {item["value"] for item in catalog["grains"]})
+            self.assertEqual(target["allowed_grains"], [target["grain"]])
+        custom = next(item for item in catalog["target_fields"] if item["value"] == "monthly_custom_summary")
+        self.assertEqual(custom["grain"], "well_month")
+
+    def test_ai_extraction_sources_can_differ_by_report_type(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule({
+            "id": "typed-sources",
+            "name": "分类来源字段",
+            "report_types": ["drilling", "workover"],
+            "source_fields": [
+                {"section": "report_fields", "field": "incidentComments", "report_types": ["drilling"]},
+                {"section": "report_fields", "field": "description", "report_types": ["workover"]},
+            ],
+            "instruction": "分别读取来源字段",
+            "target_field": "remarks",
+        }, 0)
+
+        self.assertIsNotNone(rule)
+        self.assertEqual(
+            form_server._ai_extraction_rule_sources(rule, "drilling"),
+            [{"section": "report_fields", "field": "incidentComments"}],
+        )
+        self.assertEqual(
+            form_server._ai_extraction_rule_sources(rule, "workover"),
+            [{"section": "report_fields", "field": "description"}],
+        )
+
+    def test_well_job_well_control_rule_returns_none_without_signal_and_persists_lineage(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._monthly_well_control_rule(), 0)
+        records = [{
+            "record_id": "drilling:W-1:2026-07-01:1", "report_type": "drilling",
+            "report_date": "2026-07-01", "project_id": 10, "well_id": 7, "well_name": "W-1",
+            "job_sequence_no": 1, "team_id": 9, "team_name": "队伍9",
+        }]
+        payloads = {
+            records[0]["record_id"]: {
+                "metadata": {"report_type": "drilling"},
+                "report_fields": {"summary24h": "正常钻进，无异常。"},
+                "operations": [],
+            },
+        }
+        scope = {"grain": "well_job", "project_id": 10, "well_id": 7, "job_sequence_no": 1}
+        with (
+            patch.object(form_server, "_enabled_aggregate_extraction_rules", return_value=[rule]),
+            patch.object(form_server, "list_aggregate_scope_report_records", return_value=records),
+            patch.object(form_server, "load_report_payloads", return_value=payloads),
+            patch.object(form_server, "load_aggregate_extraction_results", return_value=[]),
+            patch.object(form_server, "save_aggregate_extraction_results") as save_results,
+            patch.object(form_server, "save_extraction_result_sources") as save_sources,
+            patch.object(form_server, "_load_ai_extraction_config", return_value={"version": "rules-v1"}),
+            patch.object(form_server, "_run_ai_extraction_test") as run_model,
+        ):
+            values = form_server._aggregate_extraction_values(Path("mysql"), [scope])
+
+        self.assertEqual(values, {"WELL_JOB:10:7:1": {"well_control_incident": "无"}})
+        run_model.assert_not_called()
+        saved = save_results.call_args.args[1][0]
+        self.assertEqual(saved["grain"], "well_job")
+        self.assertEqual(saved["source_record_ids"], [records[0]["record_id"]])
+        self.assertEqual(saved["result_text"], "无")
+        save_sources.assert_called_once()
+
+    def test_well_job_well_control_rule_uses_model_for_actual_signal(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._monthly_well_control_rule(), 0)
+        records = [{
+            "record_id": "completion:W-2:2026-07-02:2", "report_type": "completion",
+            "report_date": "2026-07-02", "project_id": 12, "well_id": 6, "well_name": "W-2",
+            "job_sequence_no": 2, "team_id": 8, "team_name": "队伍8",
+        }]
+        payloads = {
+            records[0]["record_id"]: {
+                "metadata": {"report_type": "completion"},
+                "report_fields": {"summary24h": "SE REGISTRA INFLUJO DURANTE LA OPERACIÓN."},
+                "operations": [],
+            },
+        }
+        scope = {"grain": "well_job", "project_id": 12, "well_id": 6, "job_sequence_no": 2}
+        with (
+            patch.object(form_server, "_enabled_aggregate_extraction_rules", return_value=[rule]),
+            patch.object(form_server, "list_aggregate_scope_report_records", return_value=records),
+            patch.object(form_server, "load_report_payloads", return_value=payloads),
+            patch.object(form_server, "load_aggregate_extraction_results", return_value=[]),
+            patch.object(form_server, "save_aggregate_extraction_results"),
+            patch.object(form_server, "save_extraction_result_sources"),
+            patch.object(form_server, "_load_ai_extraction_config", return_value={"version": "rules-v1"}),
+            patch.object(form_server, "_extraction_model", return_value={"id": "model-1"}),
+            patch.object(form_server, "_run_ai_extraction_test", return_value={"result": "W-2井发生井涌1次"}) as run_model,
+        ):
+            values = form_server._aggregate_extraction_values(Path("mysql"), [scope])
+
+        self.assertEqual(values, {"WELL_JOB:12:6:2": {"well_control_incident": "W-2井发生井涌1次。"}})
+        self.assertIn("INFLUJO", run_model.call_args.args[2])
+
+    def test_team_month_well_control_rule_persists_by_team_profession_and_month(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._team_month_well_control_rule(), 0)
+        records = [{
+            "record_id": "drilling:W-1:2026-07-01:1", "report_type": "drilling",
+            "report_date": "2026-07-01", "well_id": 7, "well_name": "W-1",
+            "team_id": 9, "team_name": "队伍9",
+        }]
+        payloads = {records[0]["record_id"]: {
+            "metadata": {"report_type": "drilling"},
+            "report_fields": {"summary24h": "正常钻进，作业平稳。"},
+            "operations": [],
+        }}
+        scope = {
+            "grain": "team_month", "team_id": 9, "profession": "drilling",
+            "period_start": "2026-07-01", "period_end": "2026-07-31",
+        }
+        with (
+            patch.object(form_server, "_enabled_aggregate_extraction_rules", return_value=[rule]),
+            patch.object(form_server, "list_aggregate_scope_report_records", return_value=records),
+            patch.object(form_server, "load_report_payloads", return_value=payloads),
+            patch.object(form_server, "load_aggregate_extraction_results", return_value=[]),
+            patch.object(form_server, "save_aggregate_extraction_results") as save_results,
+            patch.object(form_server, "save_extraction_result_sources"),
+            patch.object(form_server, "_load_ai_extraction_config", return_value={"version": "rules-v1"}),
+            patch.object(form_server, "_run_ai_extraction_test") as run_model,
+        ):
+            values = form_server._aggregate_extraction_values(Path("mysql"), [scope])
+
+        self.assertEqual(values, {
+            "TEAM_MONTH:9:drilling:2026-07": {"team_month_well_control_incident": "无"},
+        })
+        run_model.assert_not_called()
+        saved = save_results.call_args.args[1][0]
+        self.assertEqual(saved["grain"], "team_month")
+        self.assertEqual(saved["target_field"], "team_month_well_control_incident")
 
     def test_stopped_extraction_is_available_to_continue(self) -> None:
         self.assertTrue(form_server._extraction_record_needs_processing(
@@ -1690,6 +2039,7 @@ class FormServerImportTest(unittest.TestCase):
         })
 
         self.assertEqual(config["rules"][0]["report_type"], "all")
+        self.assertEqual(config["rules"][0]["report_types"], ["drilling", "completion", "workover"])
         self.assertEqual(config["catalog"]["report_types"][0]["value"], "all")
         enabled = [config["rules"][0]]
         self.assertTrue(form_server._payload_has_extraction_units(
@@ -1697,6 +2047,26 @@ class FormServerImportTest(unittest.TestCase):
             "completion",
             enabled,
         ))
+
+    def test_extraction_rule_supports_multiple_selected_report_types(self) -> None:
+        config = form_server._normalize_ai_extraction_config({
+            "rules": [{
+                "id": "drilling-workover-summary",
+                "name": "钻修井摘要",
+                "report_types": ["drilling", "workover"],
+                "source_fields": [{"section": "operations", "field": "operation_details"}],
+                "instruction": "提炼作业摘要",
+                "target_field": "remarks",
+                "output_format": "text",
+                "enabled": True,
+            }],
+        })
+
+        rule = config["rules"][0]
+        self.assertEqual(rule["report_types"], ["drilling", "workover"])
+        self.assertTrue(form_server._ai_extraction_rule_applies(rule, "drilling"))
+        self.assertTrue(form_server._ai_extraction_rule_applies(rule, "workover"))
+        self.assertFalse(form_server._ai_extraction_rule_applies(rule, "completion"))
 
     def test_explicit_npt_responsibility_is_extracted_and_expanded_to_rig(self) -> None:
         source = "CONTINUA OPERACION; NPT A CARGO DE SINOPEC;"

@@ -350,6 +350,98 @@ def load_extraction_results(database_path: str | Path, record_id: str = "") -> l
     return rows
 
 
+def save_aggregate_extraction_results(database_path: str | Path, rows: list[dict[str, Any]]) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.save_aggregate_extraction_results(None, rows)
+    _clear_mysql_failure()
+
+
+def load_aggregate_extraction_results(
+    database_path: str | Path,
+    *,
+    rule_id: str = "",
+    target_field: str = "",
+    period_start: str = "",
+    team_ids: list[int] | None = None,
+    well_ids: list[int] | None = None,
+    scope_keys: list[str] | None = None,
+    grain: str = "",
+) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.load_aggregate_extraction_results(
+        None, rule_id=rule_id, target_field=target_field, period_start=period_start, team_ids=team_ids,
+        well_ids=well_ids, scope_keys=scope_keys, grain=grain,
+    )
+    _clear_mysql_failure()
+    return rows
+
+
+def save_extraction_result_sources(database_path: str | Path, rows: list[dict[str, Any]]) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.save_extraction_result_sources(None, rows)
+    _clear_mysql_failure()
+
+
+def list_aggregate_scope_report_records(
+    database_path: str | Path,
+    *,
+    scope: dict[str, Any],
+    report_types: list[str] | tuple[str, ...],
+) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_aggregate_scope_report_records(None, scope=scope, report_types=report_types)
+    _clear_mysql_failure()
+    return rows
+
+
+def list_team_month_report_records(
+    database_path: str | Path,
+    *,
+    period_start: str,
+    period_end: str,
+    report_types: list[str] | tuple[str, ...] = ("drilling", "completion"),
+    team_ids: list[int] | None = None,
+) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_team_month_report_records(
+        None, period_start=period_start, period_end=period_end, report_types=report_types, team_ids=team_ids,
+    )
+    _clear_mysql_failure()
+    return rows
+
+
+def save_ai_extraction_target_fields(
+    database_path: str | Path,
+    fields: list[dict[str, Any]],
+    *,
+    actor: str = "system",
+) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.save_ai_extraction_target_fields(None, fields, actor=actor)
+    _clear_mysql_failure()
+
+
+def list_ai_extraction_target_fields(database_path: str | Path) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_ai_extraction_target_fields(None)
+    _clear_mysql_failure()
+    return rows
+
+
 def clear_extraction_results(database_path: str | Path, record_ids: list[str]) -> None:
     _validate_mysql_label(database_path)
     from . import mysql_database

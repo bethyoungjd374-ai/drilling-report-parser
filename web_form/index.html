@@ -6,6 +6,7 @@
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" type="image/svg+xml" href="./assets/drilling-completion-logo.svg" />
     <link rel="stylesheet" href="./styles.css?v=monthly-grid-picker-v2" />
+    <link rel="stylesheet" href="./ui-system.css?v=operational-clarity-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -52,10 +53,10 @@
               <img class="menu-chevron" src="./icons/nav/chevron-down.svg" alt="" />
             </button>
             <div class="menu-items">
-              <a href="#" class="menu-link" data-menu-target="drilling-basic-monthly-report" data-title-i18n="menuDrillingBasicMonthlyReport" data-desc-i18n="descDrillingBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuDrillingBasicMonthlyReport">钻井基础指标数据月报表</span></a>
-              <a href="#" class="menu-link" data-menu-target="workover-basic-monthly-report" data-title-i18n="menuWorkoverBasicMonthlyReport" data-desc-i18n="descWorkoverBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuWorkoverBasicMonthlyReport">修井基础指标数据月报表</span></a>
-              <a href="#" class="menu-link" data-menu-target="drilling-workover-efficiency-monthly-report" data-title-i18n="menuDrillingWorkoverEfficiencyMonthlyReport" data-desc-i18n="descDrillingWorkoverEfficiencyMonthlyReport"><img class="menu-item-icon" src="./icons/nav/calendar-stats.svg" alt="" /><span data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井基础时效数据月报</span></a>
-              <a href="#" class="menu-link" data-menu-target="monthly-team-workload-report" data-title-i18n="menuMonthlyTeamWorkloadReport" data-desc-i18n="descMonthlyTeamWorkloadReport"><img class="menu-item-icon" src="./icons/nav/report-analytics.svg" alt="" /><span data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计表</span></a>
+              <a href="#" class="menu-link" data-menu-target="drilling-basic-monthly-report" data-title-i18n="menuDrillingBasicMonthlyReport" data-desc-i18n="descDrillingBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuDrillingBasicMonthlyReport">钻井月报</span></a>
+              <a href="#" class="menu-link" data-menu-target="workover-basic-monthly-report" data-title-i18n="menuWorkoverBasicMonthlyReport" data-desc-i18n="descWorkoverBasicMonthlyReport"><img class="menu-item-icon" src="./icons/nav/file-report.svg" alt="" /><span data-i18n="menuWorkoverBasicMonthlyReport">修井月报</span></a>
+              <a href="#" class="menu-link" data-menu-target="drilling-workover-efficiency-monthly-report" data-title-i18n="menuDrillingWorkoverEfficiencyMonthlyReport" data-desc-i18n="descDrillingWorkoverEfficiencyMonthlyReport"><img class="menu-item-icon" src="./icons/nav/calendar-stats.svg" alt="" /><span data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井月报</span></a>
+              <a href="#" class="menu-link" data-menu-target="monthly-team-workload-report" data-title-i18n="menuMonthlyTeamWorkloadReport" data-desc-i18n="descMonthlyTeamWorkloadReport"><img class="menu-item-icon" src="./icons/nav/report-analytics.svg" alt="" /><span data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计</span></a>
             </div>
           </div>
           <div class="menu-group open">
@@ -847,7 +848,7 @@
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuMonthlyReport">月度报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <strong data-i18n="menuDrillingBasicMonthlyReport">钻井基础指标数据月报表</strong>
+                <strong data-i18n="menuDrillingBasicMonthlyReport">钻井月报</strong>
               </nav>
             </div>
           </header>
@@ -880,7 +881,7 @@
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuMonthlyReport">月度报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <strong data-i18n="menuWorkoverBasicMonthlyReport">修井基础指标数据月报表</strong>
+                <strong data-i18n="menuWorkoverBasicMonthlyReport">修井月报</strong>
               </nav>
             </div>
           </header>
@@ -913,7 +914,7 @@
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuMonthlyReport">月度报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <strong data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井基础时效数据月报</strong>
+                <strong data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井月报</strong>
               </nav>
             </div>
           </header>
@@ -946,7 +947,7 @@
               <nav class="page-breadcrumb" aria-label="页面路径">
                 <span data-i18n="menuMonthlyReport">月度报表</span>
                 <span class="breadcrumb-separator">/</span>
-                <strong data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计表</strong>
+                <strong data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计</strong>
               </nav>
             </div>
           </header>
@@ -1210,8 +1211,7 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./liquid-glass.js"></script>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=monthly-team-workload-v1"></script>
+    <script src="./app.js?v=monthly-ai-fields-v4"></script>
   </body>
 </html>
