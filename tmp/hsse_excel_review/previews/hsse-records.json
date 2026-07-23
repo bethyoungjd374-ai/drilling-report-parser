@@ -1,0 +1,2281 @@
+{
+  "source_file": "/Users/jason/Documents/厄瓜钻井日报解析/厄瓜多尔资料/华为ai任务资料/安全生产运行重要事宜和异常事件汇总-6月10日.xlsx",
+  "record_count": 65,
+  "records": [
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 127",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "LOBC-010/完井",
+      "drilled_remaining": "3口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K5",
+      "source_row": 5,
+      "raw_text": "1.人的不安全行为（违章事件）：甩3 1/2钻杆时用吊带，应使用提丝，发现后及时滞止并更换。\n2.安全操作隐患：甲监督促司钻起钻速度过快，实际26柱/小时，正常情况下20柱/小时-基多办公室与厄国油沟通操作安全隐患，避免甲监盲目追求速度。\n3.不放心员工：场地工；措施：由钻工等专人指导和监督。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "甩3 1/2钻杆时用吊带，应使用提丝，发现后及时滞止并更换。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "甲监督促司钻起钻速度过快，实际26柱/小时，正常情况下20柱/小时-基多办公室与厄国油沟通操作安全隐患，避免甲监盲目追求速度。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地工；措施：由钻工等专人指导和监督。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 127",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "LOBC-010/完井",
+      "drilled_remaining": "3口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M5",
+      "source_row": 5,
+      "raw_text": "1.人的不安全行为：下管柱作业中，司钻临时离岗后由小班队长代操作刹把，未及时刹住，造成1根油管母扣/节箍磕碰；已要求外方写明经过并报工程、HSE，组织操作复盘和专题培训。\n2.物的不安全状态：无。\n3.不放心的人：小班队长、司钻交接及刹把操作，需重点盯防。\n4.生产异常情况：下管柱作业，设备方案未汇报异常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "下管柱作业中，司钻临时离岗后由小班队长代操作刹把，未及时刹住，造成1根油管母扣/节箍磕碰；已要求外方写明经过并报工程、HSE，组织操作复盘和专题培训。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "小班队长、司钻交接及刹把操作，需重点盯防。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "下管柱作业，设备方案未汇报异常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 127",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "LOBC-010/完井",
+      "drilled_remaining": "3口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O5",
+      "source_row": 5,
+      "raw_text": "1.人的不安全行为：顶驱工程师检查顶驱时扳手滑脱掉落至钻台，虽下方无人，仍属于高空落物风险；已要求工具上钻台必须系挂防坠并加强服务人员安全意识教育。\n2.物的不安全状态：未反馈。\n3.不放心的人：顶驱服务人员及高处工具使用人员，需井队机械师/电气师现场监护。\n4.生产(异常)情况：正在开展试油作业，预计明日结束。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "顶驱工程师检查顶驱时扳手滑脱掉落至钻台，虽下方无人，仍属于高空落物风险；已要求工具上钻台必须系挂防坠并加强服务人员安全意识教育。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "未反馈。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "顶驱服务人员及高处工具使用人员，需井队机械师/电气师现场监护。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "正在开展试油作业，预计明日结束。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 183",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "GCLH-023/钻井",
+      "drilled_remaining": "4口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K6",
+      "source_row": 6,
+      "raw_text": "1.人的不安全行为：拆防溢管时，2人中有1人未挂保险绳，及时制止并挂到防坠YOYO上。\n2.物的不安全状态：吊带磨损严重，及时进行更换。\n3.不放心员工：司钻操作；措施：中方人员和小班队长监管。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "拆防溢管时，2人中有1人未挂保险绳，及时制止并挂到防坠YOYO上。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "吊带磨损严重，及时进行更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "司钻操作；措施：中方人员和小班队长监管。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 183",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "GCLH-023/钻井",
+      "drilled_remaining": "4口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M6",
+      "source_row": 6,
+      "raw_text": "1.人的不安全行为：组合扶正器等工具时，人员直接用吊带在滑道内提拉，且下方有场地工，存在坠物伤人风险，已现场制止并提示安全官加强监护。\n2.物的不安全状态：焊工围裙、手套使用时间较长，已更换。\n3.不放心的人：无。\n4.生产异常情况：导管已下完固井，正在扫塞，准备一开钻进。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "组合扶正器等工具时，人员直接用吊带在滑道内提拉，且下方有场地工，存在坠物伤人风险，已现场制止并提示安全官加强监护。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "焊工围裙、手套使用时间较长，已更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "导管已下完固井，正在扫塞，准备一开钻进。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 183",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "GCLH-023/钻井",
+      "drilled_remaining": "4口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O6",
+      "source_row": 6,
+      "raw_text": "1.人的不安全行为：场地人员刷钻杆架时未戴手套，已批评教育。\n2.物的不安全状态：钻机平移后上钻台梯子下方存在水坑，场地局部积水较大，已安排平整。\n3.不放心的人：场地人员及一开钻进配合作业人员，需继续盯防场地湿滑风险。\n4.生产(异常)情况：钻机平移后已进入一开钻进，现场生产正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "场地人员刷钻杆架时未戴手套，已批评教育。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "钻机平移后上钻台梯子下方存在水坑，场地局部积水较大，已安排平整。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地人员及一开钻进配合作业人员，需继续盯防场地湿滑风险。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "钻机平移后已进入一开钻进，现场生产正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 168",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "建圆井，5月下旬动迁",
+      "drilled_remaining": "0口/4口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K7",
+      "source_row": 7,
+      "raw_text": "正在搬迁至15区块TUICH井场。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "正在搬迁至15区块TUICH井场。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 168",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "建圆井，5月下旬动迁",
+      "drilled_remaining": "0口/4口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M7",
+      "source_row": 7,
+      "raw_text": "1.人的不安全行为：临建罐栏杆、走道板安装顺序不合理，已要求先恢复栏杆、减少临边作业，再组织吊车吊装重件。\n2.物的不安全状态：营地接地装置部分仅打1根接地极，未满足三根接地要求，已整改；冷库通电后制冷效果差，疑似缺氟或泄漏，安排检漏、补氟并连续试运。\n3.不放心的人：搬迁安装人员及生活服务进场人员。\n4.生产异常情况：搬迁第4天，搬迁进度约53%，安装进度约20%；营区、临建罐完成，井场已卸车77车，基地仍有约6车待发。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "临建罐栏杆、走道板安装顺序不合理，已要求先恢复栏杆、减少临边作业，再组织吊车吊装重件。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "营地接地装置部分仅打1根接地极，未满足三根接地要求，已整改；冷库通电后制冷效果差，疑似缺氟或泄漏，安排检漏、补氟并连续试运。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "搬迁安装人员及生活服务进场人员。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "搬迁第4天，搬迁进度约53%，安装进度约20%；营区、临建罐完成，井场已卸车77车，基地仍有约6车待发。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC：西区二期总包",
+      "team_code": "SINOPEC 168",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "建圆井，5月下旬动迁",
+      "drilled_remaining": "0口/4口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O7",
+      "source_row": 7,
+      "raw_text": "1.人的不安全行为：新到社区人员暂不参与井场安装和吊装，仅安排挖砂、摆放灭火器等低风险作业，并组织安全视频学习。\n2.物的不安全状态：搬迁运输车辆状态不稳定，低平板车辆途中故障，高平板装车时后部支撑/固定件异常导致车辆和货物倾斜；已使用吊车处置，并要求承运方检查车辆状态、慢速操作。\n3.不放心的人：新到社区人员及搬迁车辆司机，需加强入场教育和现场监护。\n4.生产(异常)情况：搬迁第6天，搬迁进度约80%、安装进度约30%，已装车117车；明日计划搬运固控设备约20车，三台吊车分区配合作业，减少交叉作业。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "新到社区人员暂不参与井场安装和吊装，仅安排挖砂、摆放灭火器等低风险作业，并组织安全视频学习。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "搬迁运输车辆状态不稳定，低平板车辆途中故障，高平板装车时后部支撑/固定件异常导致车辆和货物倾斜；已使用吊车处置，并要求承运方检查车辆状态、慢速操作。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "新到社区人员及搬迁车辆司机，需加强入场教育和现场监护。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "搬迁第6天，搬迁进度约80%、安装进度约30%，已装车117车；明日计划搬运固控设备约20车，三台吊车分区配合作业，减少交叉作业。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 129",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHO-611/开钻",
+      "drilled_remaining": "2口/3口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K8",
+      "source_row": 8,
+      "raw_text": "1.人的不安全行为：泥浆罐受限空间清洗作业，场地工罐面监管时突然离开，监管失效，及时制止。\n2.物的不安全状态：材料房空调不工作，及时更换；猫道上栏杆处增加链子，避免人员跌落。\n3.不放心员工：场地工；措施：老员工带新员工、井架工修泵作业时场地工只能打扫卫生，不能上手砸榔头，避免缺乏经验造成人员伤害。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "泥浆罐受限空间清洗作业，场地工罐面监管时突然离开，监管失效，及时制止。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "材料房空调不工作，及时更换；猫道上栏杆处增加链子，避免人员跌落。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地工；措施：老员工带新员工、井架工修泵作业时场地工只能打扫卫生，不能上手砸榔头，避免缺乏经验造成人员伤害。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 129",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHO-611/开钻",
+      "drilled_remaining": "2口/3口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M8",
+      "source_row": 8,
+      "raw_text": "1.人的不安全行为：焊工制作二层台部件、打磨焊渣时虽佩戴面罩但未佩戴护目镜，已要求落实双重眼部防护。\n2.物的不安全状态：营房发电机风扇皮带开裂，已更换。\n3.不放心的人：无。\n4.生产异常情况：二开钻进正常；SACHA 470井场钻井队与修井队同场作业，空间小、两台叉车交叉使用，要求双方每日沟通作业计划、区域及车辆使用范围。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "焊工制作二层台部件、打磨焊渣时虽佩戴面罩但未佩戴护目镜，已要求落实双重眼部防护。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "营房发电机风扇皮带开裂，已更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "二开钻进正常；SACHA 470井场钻井队与修井队同场作业，空间小、两台叉车交叉使用，要求双方每日沟通作业计划、区域及车辆使用范围。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 129",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHO-611/开钻",
+      "drilled_remaining": "2口/3口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O8",
+      "source_row": 8,
+      "raw_text": "1.人的不安全行为：甩钻具组合/定向工具时，叉车插取工具过程中人员站位靠近叉车正前方及吊带附近，已要求人员站在侧面安全位置。\n2.物的不安全状态：压缩机间歇性不工作，经电气师检查为继电器问题，已安排处理并跟踪。\n3.不放心的人：甩钻具组合期间叉车配合作业人员，需落实指挥和站位管控。\n4.生产(异常)情况：二开钻进结束，钻具组合即将甩完，准备下9-5/8 in套管并开展固井作业。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "甩钻具组合/定向工具时，叉车插取工具过程中人员站位靠近叉车正前方及吊带附近，已要求人员站在侧面安全位置。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "压缩机间歇性不工作，经电气师检查为继电器问题，已安排处理并跟踪。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "甩钻具组合期间叉车配合作业人员，需落实指挥和站位管控。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "二开钻进结束，钻具组合即将甩完，准备下9-5/8 in套管并开展固井作业。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 219",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHAS-513/完井",
+      "drilled_remaining": "3口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K9",
+      "source_row": 9,
+      "raw_text": "1.人的不安全行为：倒大绳时气动绞车未使用导向轮；大门坡道上场地工用手接触钢丝绳，及时制止并采用牵引绳。\n2.物的不安全状态：无。\n3.不放心的人：司钻操作、井架工修泵、倒班期间人员更换。\n4.生产异常情况：7寸尾管固井后，尾管内有100ft未侯凝的水泥，初步分析未碰压导致；平移距离42m，叉车需要时间较长，由总包项目组协调解决。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "倒大绳时气动绞车未使用导向轮；大门坡道上场地工用手接触钢丝绳，及时制止并采用牵引绳。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "司钻操作、井架工修泵、倒班期间人员更换。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "7寸尾管固井后，尾管内有100ft未侯凝的水泥，初步分析未碰压导致；平移距离42m，叉车需要时间较长，由总包项目组协调解决。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 219",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHAS-513/完井",
+      "drilled_remaining": "3口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M9",
+      "source_row": 9,
+      "raw_text": "1.人的不安全行为：无。\n2.物的不安全状态：录井车曾停靠井架附近，存在井场通行和作业风险，已移至井架后方安全距离。\n3.不放心的人：无。\n4.生产异常情况：新钻具连续两口井后下部约66-70根耐磨带磨损严重，已甩下送修；初步判断与井眼轨迹定向角度变化过快、磨损集中有关，需与甲方及定向工程师沟通优化防磨措施。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "录井车曾停靠井架附近，存在井场通行和作业风险，已移至井架后方安全距离。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "新钻具连续两口井后下部约66-70根耐磨带磨损严重，已甩下送修；初步判断与井眼轨迹定向角度变化过快、磨损集中有关，需与甲方及定向工程师沟通优化防磨措施。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 219",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHAS-513/完井",
+      "drilled_remaining": "3口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O9",
+      "source_row": 9,
+      "raw_text": "1.人的不安全行为：检查罐体/设备内部时未安排监护人，已要求探查前必须落实监护；社区焊工对井队工作不适应，已谈心并暂时降低工作量。\n2.物的不安全状态：未反馈典型设备异常。\n3.不放心的人：社区焊工，需持续观察工作质量、工作态度和安全意识，必要时调整岗位或人员。\n4.生产(异常)情况：下射孔枪/封隔器过程中遇阻，甲方决定起出后下入通井/探查工具确认情况；起出作业仍在进行，剩余约4000 ft；到遇阻点需安排中方人员或小班重点盯防，慢通慢放。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "检查罐体/设备内部时未安排监护人，已要求探查前必须落实监护；社区焊工对井队工作不适应，已谈心并暂时降低工作量。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "未反馈典型设备异常。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "社区焊工，需持续观察工作质量、工作态度和安全意识，必要时调整岗位或人员。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "下射孔枪/封隔器过程中遇阻，甲方决定起出后下入通井/探查工具确认情况；起出作业仍在进行，剩余约4000 ft；到遇阻点需安排中方人员或小班重点盯防，慢通慢放。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 191",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHR-407/开钻",
+      "drilled_remaining": "2口/2口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K10",
+      "source_row": 10,
+      "raw_text": "1.人的不安全行为：卸套管时人员站在叉车正前方，叉车上有套管，有被砸风险 。\n2.物的不安全状态：铁钻工钳头状况不好，检查销子等固定，防止井内落物发生。\n3.不放心的人：场地工（挂套管等作业时），措施：由钻工等专人指导和监督。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "卸套管时人员站在叉车正前方，叉车上有套管，有被砸风险 。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "铁钻工钳头状况不好，检查销子等固定，防止井内落物发生。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地工（挂套管等作业时），措施：由钻工等专人指导和监督。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 191",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHR-407/开钻",
+      "drilled_remaining": "2口/2口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M10",
+      "source_row": 10,
+      "raw_text": "1.人的不安全行为：气动卡瓦固定链区域有人员跨越，已现场警告并要求严禁跨越固定链。\n2.物的不安全状态：吊套管时气动绞车挂载后操作人员离岗，已要求挂载期间严禁离开操作位。\n3.不放心的人：场地工，安排井架工或副队长全程盯防。\n4.生产异常情况：下9-5/8套管，前期8463ft起钻遇阻，判断井段缩径；套管下至约8165ft遇阻，现场循环、缓慢划眼，要求控制下放载荷和扭矩，避免套管压死或变形。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "气动卡瓦固定链区域有人员跨越，已现场警告并要求严禁跨越固定链。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "吊套管时气动绞车挂载后操作人员离岗，已要求挂载期间严禁离开操作位。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地工，安排井架工或副队长全程盯防。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "下9-5/8套管，前期8463ft起钻遇阻，判断井段缩径；套管下至约8165ft遇阻，现场循环、缓慢划眼，要求控制下放载荷和扭矩，避免套管压死或变形。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC：SACHA三期总包",
+      "team_code": "SINOPEC 191",
+      "organization_name": "江汉",
+      "discipline": "钻机",
+      "well_descriptor": "SCHR-407/开钻",
+      "drilled_remaining": "2口/2口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O10",
+      "source_row": 10,
+      "raw_text": "1.人的不安全行为：服务人员在钻台吊运工具后准备将吊带从钻台向下抛掷，已立即制止并强调钻台严禁向下抛物。\n2.物的不安全状态：气动设备/气源使用后未及时关闭，已要求现场对气源关闭和设备复位进行强调；缩径段处置过程中顶驱相关连接件受损，已快速修复。\n3.不放心的人：服务人员及复杂工况下顶驱、套管作业人员，需平台经理和中方人员重点盯防。\n4.生产(异常)情况：SACHA 407井下套管通过缩径井段，采用控制扭矩、循环、缓慢加压/提放等方式处理后套管下到底并一次成功；该案例可作为类似遇阻处置参考，但参数和操作必须谨慎控制。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "服务人员在钻台吊运工具后准备将吊带从钻台向下抛掷，已立即制止并强调钻台严禁向下抛物。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "气动设备/气源使用后未及时关闭，已要求现场对气源关闭和设备复位进行强调；缩径段处置过程中顶驱相关连接件受损，已快速修复。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "服务人员及复杂工况下顶驱、套管作业人员，需平台经理和中方人员重点盯防。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "SACHA 407井下套管通过缩径井段，采用控制扭矩、循环、缓慢加压/提放等方式处理后套管下到底并一次成功；该案例可作为类似遇阻处置参考，但参数和操作必须谨慎控制。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC：北区一期总包",
+      "team_code": "SINOPEC 156",
+      "organization_name": "华东",
+      "discipline": "钻机",
+      "well_descriptor": "返迁",
+      "drilled_remaining": "1口/0口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K11",
+      "source_row": 11,
+      "raw_text": "COCA基地检测认证。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "COCA基地检测认证。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC：北区一期总包",
+      "team_code": "SINOPEC 156",
+      "organization_name": "华东",
+      "discipline": "钻机",
+      "well_descriptor": "返迁",
+      "drilled_remaining": "1口/0口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M11",
+      "source_row": 11,
+      "raw_text": "/",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "/"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHAYA公司钻机",
+      "team_code": "SINOPEC 185",
+      "organization_name": "华东",
+      "discipline": "钻机",
+      "well_descriptor": "ACAP-258I/开钻",
+      "drilled_remaining": "6口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K12",
+      "source_row": 12,
+      "raw_text": "1.人的不安全行为：清洗套管时，周围空间较小，叉车放置套管时有人员挤伤风险，措施：扩大空间。\n2.物的不安全状态：工具箱内发现黄鼠狼；组合BHA时，吊带吊装短节时不居中有挂扣风险，措施：将吊带换成吊卡，居中，平稳。\n3.不放心的人：场地工、营地管理员、叉车皮卡中巴车司机，例如叉车司机下车后未熄火、中巴车发生刮蹭。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "清洗套管时，周围空间较小，叉车放置套管时有人员挤伤风险，措施：扩大空间。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "工具箱内发现黄鼠狼；组合BHA时，吊带吊装短节时不居中有挂扣风险，措施：将吊带换成吊卡，居中，平稳。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地工、营地管理员、叉车皮卡中巴车司机，例如叉车司机下车后未熄火、中巴车发生刮蹭。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHAYA公司钻机",
+      "team_code": "SINOPEC 185",
+      "organization_name": "华东",
+      "discipline": "钻机",
+      "well_descriptor": "ACAP-258I/开钻",
+      "drilled_remaining": "6口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M12",
+      "source_row": 12,
+      "raw_text": "1.人的不安全行为：新员工在高压泄压管线附近长时间停留，对管线风险识别不足，已在班前会组织提示培训。\n2.物的不安全状态：叉车叉运吨包化学药剂时，因木托盘损坏、堆放层数偏高及空间受限，造成吨包翻倒、少量药剂散落，已清理；要求按甲方标准控制吨包和袋装药品堆放层数，叉车司机发现风险可暂停作业。\n3.不放心的人：新员工。\n4.生产异常情况：生产正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "新员工在高压泄压管线附近长时间停留，对管线风险识别不足，已在班前会组织提示培训。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "叉车叉运吨包化学药剂时，因木托盘损坏、堆放层数偏高及空间受限，造成吨包翻倒、少量药剂散落，已清理；要求按甲方标准控制吨包和袋装药品堆放层数，叉车司机发现风险可暂停作业。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "新员工。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "生产正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHAYA公司钻机",
+      "team_code": "SINOPEC 185",
+      "organization_name": "华东",
+      "discipline": "钻机",
+      "well_descriptor": "ACAP-258I/开钻",
+      "drilled_remaining": "6口/1口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O12",
+      "source_row": 12,
+      "raw_text": "1.人的不安全行为：作业人员使用非专用提丝/吊具操作相关井下工具，已要求专用工具做颜色标识、专物专用。\n2.物的不安全状态：相关设备封堵件缺失，已补装，防止介质外溢。\n3.不放心的人：新到机械师/关键岗位人员，对现场设备和甲方要求尚不熟悉，已由中方大班及HSE现场带教。\n4.生产(异常)情况：起钻作业进行中，甲方调整为每1000 ft提放、冲洗循环一次，现场继续跟踪。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "作业人员使用非专用提丝/吊具操作相关井下工具，已要求专用工具做颜色标识、专物专用。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "相关设备封堵件缺失，已补装，防止介质外溢。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "新到机械师/关键岗位人员，对现场设备和甲方要求尚不熟悉，已由中方大班及HSE现场带教。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "起钻作业进行中，甲方调整为每1000 ft提放、冲洗循环一次，现场继续跟踪。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "HAL:IGAPO公司钻机",
+      "team_code": "SINOPEC 248",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "PCNC-040/开钻",
+      "drilled_remaining": "7口/2口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K13",
+      "source_row": 13,
+      "raw_text": "1.人的不安全行为：HAL固井人员站在大门坡道旁边，大门坡道门未挂安全链，措施：及时制止并挂上安全链。\n2.物的不安全状态：消防泵出水压力大溢出但未有围堰，及时放置围堰。\n3.不放心的人：场地工，执行绿帽子制度、专人监督。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "HAL固井人员站在大门坡道旁边，大门坡道门未挂安全链，措施：及时制止并挂上安全链。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "消防泵出水压力大溢出但未有围堰，及时放置围堰。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "场地工，执行绿帽子制度、专人监督。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "HAL:IGAPO公司钻机",
+      "team_code": "SINOPEC 248",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "PCNC-040/开钻",
+      "drilled_remaining": "7口/2口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M13",
+      "source_row": 13,
+      "raw_text": "1.人的不安全行为：钻工血压异常，医生已处理并安排休息；该员工列为重点关注人员，不安排上钻台、高处或其他高风险岗位。\n2.物的不安全状态：远控房过桥梯子设计简陋、台阶不足，焊工已重新加工并布置到位。\n3.不放心的人：血压异常钻工，后续仅安排低风险地面辅助工作并持续观察。\n4.生产异常情况：二开全天钻进，生产正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "钻工血压异常，医生已处理并安排休息；该员工列为重点关注人员，不安排上钻台、高处或其他高风险岗位。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "远控房过桥梯子设计简陋、台阶不足，焊工已重新加工并布置到位。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "血压异常钻工，后续仅安排低风险地面辅助工作并持续观察。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "二开全天钻进，生产正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "HAL:IGAPO公司钻机",
+      "team_code": "SINOPEC 248",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "PCNC-040/开钻",
+      "drilled_remaining": "7口/2口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O13",
+      "source_row": 13,
+      "raw_text": "1.人的不安全行为：本次未发现典型人的不安全行为。\n2.物的不安全状态：重锤防碰装置连接卸扣有孔但未穿开口销，已整改；顶驱相关油温曾高温报警，经与现场监督沟通降低转速后温度恢复正常。\n3.不放心的人：随钻定向服务人员和顶驱运行监护人员，需对异常信号、温度报警保持敏感并及时上报。\n4.生产(异常)情况：随钻定向工具信号异常，起钻/倒划眼处置中；顶驱油温报警经降速处理后恢复，现场继续跟踪。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "本次未发现典型人的不安全行为。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "重锤防碰装置连接卸扣有孔但未穿开口销，已整改；顶驱相关油温曾高温报警，经与现场监督沟通降低转速后温度恢复正常。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "随钻定向服务人员和顶驱运行监护人员，需对异常信号、温度报警保持敏感并及时上报。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "随钻定向工具信号异常，起钻/倒划眼处置中；顶驱油温报警经降速处理后恢复，现场继续跟踪。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PANATURI:总包",
+      "team_code": "SINOPEC 220",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "设备保养",
+      "drilled_remaining": "6口/0口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K14",
+      "source_row": 14,
+      "raw_text": "启动验收。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "启动验收。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PANATURI:总包",
+      "team_code": "SINOPEC 220",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "设备保养",
+      "drilled_remaining": "6口/0口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M14",
+      "source_row": 14,
+      "raw_text": "启动和搬迁准备：设备继续保养，已开始捆绑、打包并做搬迁准备；计划2026年6月9日赴PANATURI现场查看井场，2026年6月11日前配合国油验收并完善资料，预计2026年6月16日搬迁。安全异常未汇报。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "启动和搬迁准备：设备继续保养，已开始捆绑、打包并做搬迁准备；计划2026年6月9日赴PANATURI现场查看井场，2026年6月11日前配合国油验收并完善资料，预计2026年6月16日搬迁。安全异常未汇报。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PANATURI:总包",
+      "team_code": "SINOPEC 220",
+      "organization_name": "西南",
+      "discipline": "钻机",
+      "well_descriptor": "设备保养",
+      "drilled_remaining": "6口/0口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O14",
+      "source_row": 14,
+      "raw_text": "1.人的不安全行为：未反馈典型人的不安全行为。\n2.物的不安全状态：保养2号泵时发现阀箱/法兰密封部位渗漏，已拆检并更换相关部件。\n3.不放心的人：设备保养和验收准备人员，需按验收标准逐项复核。\n4.生产(异常)情况：国油计划星期五验收，监督及甲方人员已到场，设备保养和资料准备继续推进。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "未反馈典型人的不安全行为。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "保养2号泵时发现阀箱/法兰密封部位渗漏，已拆检并更换相关部件。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "设备保养和验收准备人员，需按验收标准逐项复核。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "国油计划星期五验收，监督及甲方人员已到场，设备保养和资料准备继续推进。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 903",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "SHSA-183/检泵",
+      "drilled_remaining": "10口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K15",
+      "source_row": 15,
+      "raw_text": "1.人的不安全行为：起油管时由于扭矩大使用铜锤砸套管，钻工未带护目镜，及时制止并佩戴。\n2.物的不安全状态：计量罐上部分松软、塌陷，有人员坠罐风险，及时更换。\n3.不放心的人：司钻、场地工、新晋升一组人员工作配合。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "起油管时由于扭矩大使用铜锤砸套管，钻工未带护目镜，及时制止并佩戴。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "计量罐上部分松软、塌陷，有人员坠罐风险，及时更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "司钻、场地工、新晋升一组人员工作配合。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 903",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "SHSA-183/检泵",
+      "drilled_remaining": "10口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M15",
+      "source_row": 15,
+      "raw_text": "1.人的不安全行为：焊工旧面罩材质较软、较薄且隔热效果差，已更换质量较好的防护面罩。\n2.物的不安全状态：计量罐罐面板更换中，预计2026年6月9日完成。\n3.不放心的人：配合作业人员观察正常。\n4.生产异常情况：安装第三方工具并组合电泵；因技术员到场较晚，等待期间开展设备除油、刷漆等整改。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "焊工旧面罩材质较软、较薄且隔热效果差，已更换质量较好的防护面罩。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "计量罐罐面板更换中，预计2026年6月9日完成。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "配合作业人员观察正常。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "安装第三方工具并组合电泵；因技术员到场较晚，等待期间开展设备除油、刷漆等整改。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 903",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "SHSA-183/检泵",
+      "drilled_remaining": "10口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O15",
+      "source_row": 15,
+      "raw_text": "1.人的不安全行为：员工使用气管吹扫后未断开气源，并将气管折叠捆扎，存在气管甩动伤人风险，已要求断气、收管并规范存放。\n2.物的不安全状态：手推辅助工具使用效果不佳，已重新优化，便于现场推移和挂取相关部件。\n3.不放心的人：气动工具使用人员，需持续提示断气、泄压和复位要求。\n4.生产(异常)情况：下油管电缆作业推进至约9300 ft，现场继续按计划施工。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "员工使用气管吹扫后未断开气源，并将气管折叠捆扎，存在气管甩动伤人风险，已要求断气、收管并规范存放。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "手推辅助工具使用效果不佳，已重新优化，便于现场推移和挂取相关部件。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "气动工具使用人员，需持续提示断气、泄压和复位要求。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "下油管电缆作业推进至约9300 ft，现场继续按计划施工。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 904",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "AGRA-012/检泵",
+      "drilled_remaining": "11口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K16",
+      "source_row": 16,
+      "raw_text": "1.人的不安全行为：割大绳时机械师带普通手套，及时制止，更换为防割手套。\n2.物的不安全状态：液压钳头绷绳疲劳，断丝，及时更换。\n3.不放心的人：焊工、钻井队调过来的机械师、从905新调来的HSE、新晋升的小班队长、新招聘司钻。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "割大绳时机械师带普通手套，及时制止，更换为防割手套。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "液压钳头绷绳疲劳，断丝，及时更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "焊工、钻井队调过来的机械师、从905新调来的HSE、新晋升的小班队长、新招聘司钻。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 904",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "AGRA-012/检泵",
+      "drilled_remaining": "11口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M16",
+      "source_row": 16,
+      "raw_text": "1.人的不安全行为：当地电气师及SSE使用消防泵冲洗设备，已制止并警告，强调消防器材仅限消防和演练；叉运油管时推拉杆损坏未更换，人员用手推油管，已叫停并组织叉车司机、场地工和小班队长教育。\n2.物的不安全状态：管面盖板小链损坏已修复；推拉杆损坏未及时发现、更换。\n3.不放心的人：新到HSE能力需继续观察，必要时报HSE协调限期更换。\n4.生产异常情况：下油管、电泵作业，生产正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "当地电气师及SSE使用消防泵冲洗设备，已制止并警告，强调消防器材仅限消防和演练；叉运油管时推拉杆损坏未更换，人员用手推油管，已叫停并组织叉车司机、场地工和小班队长教育。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "管面盖板小链损坏已修复；推拉杆损坏未及时发现、更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "新到HSE能力需继续观察，必要时报HSE协调限期更换。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "下油管、电泵作业，生产正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 904",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "AGRA-012/检泵",
+      "drilled_remaining": "11口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O16",
+      "source_row": 16,
+      "raw_text": "1.人的不安全行为：/\n2.物的不安全状态：/\n3.不放心的人：队长请假期间，现场监管人员需继续盯防下油管/电泵相关拆甩作业。\n4.生产(异常)情况：现场由相关人员监管下油管、电泵相关作业，未反馈生产异常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "队长请假期间，现场监管人员需继续盯防下油管/电泵相关拆甩作业。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "现场由相关人员监管下油管、电泵相关作业，未反馈生产异常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 905",
+      "organization_name": "江汉",
+      "discipline": "修井机",
+      "well_descriptor": "SHSG-160/检泵",
+      "drilled_remaining": "12口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K17",
+      "source_row": 17,
+      "raw_text": "1.人的不安全行为：SLB第三方CAMERON公司坐封井口大四通时未带安全绳，及时制止并挂在钻台底部防坠器上。\n2.物的不安全状态：猫道扶梯踏板松动，已修补；用专用带保险帽的B型钳卸扣。\n3.不放心的人： 叉车司机、新招聘场地工。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "SLB第三方CAMERON公司坐封井口大四通时未带安全绳，及时制止并挂在钻台底部防坠器上。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "猫道扶梯踏板松动，已修补；用专用带保险帽的B型钳卸扣。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "叉车司机、新招聘场地工。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 905",
+      "organization_name": "江汉",
+      "discipline": "修井机",
+      "well_descriptor": "SHSG-160/检泵",
+      "drilled_remaining": "12口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M17",
+      "source_row": 17,
+      "raw_text": "1.人的不安全行为：拆法兰螺栓时井口工未使用专用安全手工具，改用尼龙绳，存在滑脱风险，已纠正；叉车转运油管时第三方土建人员靠近行驶路线，已劝离至安全区。\n2.物的不安全状态：消防泵水龙头开关不灵活，已拆洗恢复正常。\n3.不放心的人：新到场/新招聘场地工，指定老员工全程跟踪安全操作。\n4.生产异常情况：生产正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "拆法兰螺栓时井口工未使用专用安全手工具，改用尼龙绳，存在滑脱风险，已纠正；叉车转运油管时第三方土建人员靠近行驶路线，已劝离至安全区。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "消防泵水龙头开关不灵活，已拆洗恢复正常。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "新到场/新招聘场地工，指定老员工全程跟踪安全操作。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "生产正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHUSHUFINDI修井",
+      "team_code": "SINOPEC 905",
+      "organization_name": "江汉",
+      "discipline": "修井机",
+      "well_descriptor": "SHSG-160/检泵",
+      "drilled_remaining": "12口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O17",
+      "source_row": 17,
+      "raw_text": "1.人的不安全行为：摆放营房时支架未到位，人员准备徒手推移调整，已制止并要求使用合适工具；第三方人员踩踏井口/阀门区域接测试仪器，脚下无可靠支撑，已停止作业并要求搭设踏板、系挂安全带。\n2.物的不安全状态：拆营房电缆时发现电缆受挤压变形，电工已切除变形段并重新接头连接。\n3.不放心的人：搬迁安装人员及第三方测试人员，需核实踏板和安全带挂点承载可靠性。\n4.生产(异常)情况：设备搬迁作业正常推进。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "摆放营房时支架未到位，人员准备徒手推移调整，已制止并要求使用合适工具；第三方人员踩踏井口/阀门区域接测试仪器，脚下无可靠支撑，已停止作业并要求搭设踏板、系挂安全带。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "拆营房电缆时发现电缆受挤压变形，电工已切除变形段并重新接头连接。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "搬迁安装人员及第三方测试人员，需核实踏板和安全带挂点承载可靠性。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "设备搬迁作业正常推进。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 932",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "CNO-015/检泵",
+      "drilled_remaining": "7口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K18",
+      "source_row": 18,
+      "raw_text": "1.人的不安全行为：SLB第三方CAMERON公司安装井口时未带安全绳，及时制止并挂在钻台底部防坠器上 。\n2.物的不安全状态：SLB第三方CAMERON公司手工具乱丢，有井口落物风险，及时制止并重新放置。\n3.不放心的人： 司钻（操作过猛、活绳头打防护罩未能及时发现）风险较大，小班队长监管和提醒。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "SLB第三方CAMERON公司安装井口时未带安全绳，及时制止并挂在钻台底部防坠器上 。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "SLB第三方CAMERON公司手工具乱丢，有井口落物风险，及时制止并重新放置。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "司钻（操作过猛、活绳头打防护罩未能及时发现）风险较大，小班队长监管和提醒。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 932",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "CNO-015/检泵",
+      "drilled_remaining": "7口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M18",
+      "source_row": 18,
+      "raw_text": "1.人的不安全行为：安装井口闸门时，人员站在栏杆上帮扶且未系安全带，已叫下并要求按高处作业要求执行；叉车作业时人员站在叉刀正前方，已要求改站侧面。\n2.物的不安全状态：无。\n3.不放心的人：既有重点人员继续加强培训和盯防。\n4.生产异常情况：社区人员阻拦作业约2小时，警察到场后恢复。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "安装井口闸门时，人员站在栏杆上帮扶且未系安全带，已叫下并要求按高处作业要求执行；叉车作业时人员站在叉刀正前方，已要求改站侧面。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "既有重点人员继续加强培训和盯防。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "社区人员阻拦作业约2小时，警察到场后恢复。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 932",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "CNO-015/检泵",
+      "drilled_remaining": "7口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O18",
+      "source_row": 18,
+      "raw_text": "1.人的不安全行为：服务公司人员在猫道/作业区域长时间等待吊环或工具下放，已要求设备到位后再进入操作位置。\n2.物的不安全状态：开工后巡检发现部分接地线连接不规范/松脱，已安排电工重新连接。\n3.不放心的人：服务公司配合作业人员，需加强作业等待区和进入时机管控。\n4.生产(异常)情况：起钻及相关作业正常推进，未反馈生产异常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "服务公司人员在猫道/作业区域长时间等待吊环或工具下放，已要求设备到位后再进入操作位置。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "开工后巡检发现部分接地线连接不规范/松脱，已安排电工重新连接。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "服务公司配合作业人员，需加强作业等待区和进入时机管控。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "起钻及相关作业正常推进，未反馈生产异常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 933",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "ACAH-270H/检泵",
+      "drilled_remaining": "8口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K19",
+      "source_row": 19,
+      "raw_text": "1.人的不安全行为：SLB第三方下电泵电缆作业时人员腰疼，井队医生检查，送离井场。\n2.物的不安全状态：更换B型钳头。\n3.不放心的人：人员变动较大（医生，水处理工程师、HSE）、电气师（水平太差，缺乏专业知识，不能正常作业）风险较大。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "SLB第三方下电泵电缆作业时人员腰疼，井队医生检查，送离井场。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "更换B型钳头。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "人员变动较大（医生，水处理工程师、HSE）、电气师（水平太差，缺乏专业知识，不能正常作业）风险较大。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 933",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "ACAH-270H/检泵",
+      "drilled_remaining": "8口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M19",
+      "source_row": 19,
+      "raw_text": "1.人的不安全行为：起升井架第一节后，井架工在上方安装井架大腿固定螺栓时，下方两名钻工同时连接井架大腿与底座支撑，形成上下交叉作业，已叫停下方作业，待上方固定完成后再施工。\n2.物的不安全状态：营地主电缆移位，电缆存在车辆碾压风险；拟加装挂钩固定，防止电缆跑出。\n3.不放心的人：无。\n4.生产异常情况：搬迁完成并起升井架。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "起升井架第一节后，井架工在上方安装井架大腿固定螺栓时，下方两名钻工同时连接井架大腿与底座支撑，形成上下交叉作业，已叫停下方作业，待上方固定完成后再施工。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "营地主电缆移位，电缆存在车辆碾压风险；拟加装挂钩固定，防止电缆跑出。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "搬迁完成并起升井架。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 933",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "ACAH-270H/检泵",
+      "drilled_remaining": "8口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O19",
+      "source_row": 19,
+      "raw_text": "1.人的不安全行为：/\n2.物的不安全状态：试消防泵时发现消防泵电瓶亏电，已更换备用电瓶。\n3.不放心的人：班组人员变更后，司钻、小班队长、井架工等关键岗位需新老搭配，由有经验人员和中方机械师重点盯防。\n4.生产(异常)情况：起油管和电泵作业正常推进。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "试消防泵时发现消防泵电瓶亏电，已更换备用电瓶。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "班组人员变更后，司钻、小班队长、井架工等关键岗位需新老搭配，由有经验人员和中方机械师重点盯防。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "起油管和电泵作业正常推进。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 976",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "ACSC-029/检泵",
+      "drilled_remaining": "8口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K20",
+      "source_row": 20,
+      "raw_text": "AUSENTE",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "AUSENTE"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 976",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "ACSC-029/检泵",
+      "drilled_remaining": "8口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M20",
+      "source_row": 20,
+      "raw_text": "1.人的不安全行为：司钻及巡检人员对冷却水回水温度异常敏感性不足，要求发现刹车冷却异常第一时间报告中方人员。\n2.物的不安全状态：冷却水回水温度异常升高接近70℃，检查发现水龙头密封损坏、循环不畅，连夜更换后恢复。\n3.不放心的人：司钻岗位对设备异常识别能力需加强。\n4.生产异常情况：扫塞作业中，扫完后准备起钻。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "司钻及巡检人员对冷却水回水温度异常敏感性不足，要求发现刹车冷却异常第一时间报告中方人员。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "冷却水回水温度异常升高接近70℃，检查发现水龙头密封损坏、循环不畅，连夜更换后恢复。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "司钻岗位对设备异常识别能力需加强。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "扫塞作业中，扫完后准备起钻。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "SLB:SHAYA公司修井",
+      "team_code": "SINOPEC 976",
+      "organization_name": "华东",
+      "discipline": "修井机",
+      "well_descriptor": "ACSC-029/检泵",
+      "drilled_remaining": "8口/ 口",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O20",
+      "source_row": 20,
+      "raw_text": "1.人的不安全行为：/\n2.物的不安全状态：/\n3.不放心的人：小班队长调整后实行新老搭配，新小班队长配老司钻，新司钻配老小班队长，关键环节重点监督。\n4.生产(异常)情况：下钻/替浆相关作业进行中，预计替浆时间较长；现场来访人员较多，需加强作业区域管控。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "小班队长调整后实行新老搭配，新小班队长配老司钻，新司钻配老小班队长，关键环节重点监督。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "下钻/替浆相关作业进行中，预计替浆时间较长；现场来访人员较多，需加强作业区域管控。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "暂无",
+      "team_code": "SINOPEC 907",
+      "organization_name": "江汉",
+      "discipline": "修井机",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K21",
+      "source_row": 21,
+      "raw_text": "停工",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "停工"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC/CCDC",
+      "team_code": "SINOPEC 1011",
+      "organization_name": "江汉",
+      "discipline": "钻完井液\n（5支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K22",
+      "source_row": 22,
+      "raw_text": "正常作业",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "正常作业"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC/CCDC",
+      "team_code": "SINOPEC 1011",
+      "organization_name": "江汉",
+      "discipline": "钻完井液\n（5支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M22",
+      "source_row": 22,
+      "raw_text": "1.人的不安全行为：无。\n2.物的不安全状态：168实验室搬迁过程中发现空调未固定，已完成固定。\n3.不放心的人：无。\n4.生产异常情况：正常作业。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "168实验室搬迁过程中发现空调未固定，已完成固定。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "正常作业。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC/CCDC",
+      "team_code": "SINOPEC 1011",
+      "organization_name": "江汉",
+      "discipline": "钻完井液\n（5支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O22",
+      "source_row": 22,
+      "raw_text": "1.人的不安全行为：/\n2.物的不安全状态：/\n3.不放心的人：168队钻完井液低位安装人员安排需继续确认。\n4.生产(异常)情况：钻完井液5支分队正常施工，168队相关人员和物资准备继续推进。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "168队钻完井液低位安装人员安排需继续确认。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "钻完井液5支分队正常施工，168队相关人员和物资准备继续推进。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 1105",
+      "organization_name": "西南",
+      "discipline": "下套管\n（10支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K23",
+      "source_row": 23,
+      "raw_text": "1.人的不安全行为：基地作业，砸榔头时人员在正对面，及时制止。\n2.物的不安全状态：快拔接头漏油，及时修复；10米和3米吊带吊装套管，状况不佳的及时更换。\n3.不放心的人：小班队长、新招聘员工；措施：招聘1名专职HSE人员。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "基地作业，砸榔头时人员在正对面，及时制止。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "快拔接头漏油，及时修复；10米和3米吊带吊装套管，状况不佳的及时更换。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "小班队长、新招聘员工；措施：招聘1名专职HSE人员。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 1105",
+      "organization_name": "西南",
+      "discipline": "下套管\n（10支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M23",
+      "source_row": 23,
+      "raw_text": "1.人的不安全行为：未发现现场违规。\n2.物的不安全状态：183队收拢设备后，安全门/防护装置固定螺栓规格偏小，计划由6mm改为8mm并重新扩孔加固。\n3.不放心的人：191队下套管现场跟班人员，需关注遇阻井段扭矩、下放载荷和硬压风险。\n4.生产异常情况：配合套管作业，未汇报异常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "未发现现场违规。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "183队收拢设备后，安全门/防护装置固定螺栓规格偏小，计划由6mm改为8mm并重新扩孔加固。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "191队下套管现场跟班人员，需关注遇阻井段扭矩、下放载荷和硬压风险。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "配合套管作业，未汇报异常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 1105",
+      "organization_name": "西南",
+      "discipline": "下套管\n（10支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O23",
+      "source_row": 23,
+      "raw_text": "1.人的不安全行为：191队处理复杂工况、大扭矩活动管柱期间，人员仍靠近钻台边缘/危险区域，已提醒尽量避开高空落物、旋转及大扭矩作业风险区域。\n2.物的不安全状态：需与厂家确认套管钳、相关旋转工具在大吨位、大扭矩工况下的推荐扭矩和载荷参数；大扭矩作业后需检查套管钳、旋转头及附件状态。\n3.不放心的人：复杂工况下套管作业和工具操作人员，需中方人员全过程盯防。\n4.生产(异常)情况：两支分队开展完井/下套管相关作业，其余人员待令准备施工。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "191队处理复杂工况、大扭矩活动管柱期间，人员仍靠近钻台边缘/危险区域，已提醒尽量避开高空落物、旋转及大扭矩作业风险区域。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "需与厂家确认套管钳、相关旋转工具在大吨位、大扭矩工况下的推荐扭矩和载荷参数；大扭矩作业后需检查套管钳、旋转头及附件状态。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "复杂工况下套管作业和工具操作人员，需中方人员全过程盯防。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "两支分队开展完井/下套管相关作业，其余人员待令准备施工。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 627",
+      "organization_name": "西南",
+      "discipline": "固控\n（6支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K24",
+      "source_row": 24,
+      "raw_text": "1.人的不安全行为：发生一起公共安全事件，CCDC作业分队，一名社区工人，休假期间饮酒时，被骑摩托车人员开枪打死，据初步了解与社会人员发生冲突，警方介入进行调查处理。\n2.物的不安全状态：无。\n3.不放心的人：罐面操作人员，有跌落风险。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "发生一起公共安全事件，CCDC作业分队，一名社区工人，休假期间饮酒时，被骑摩托车人员开枪打死，据初步了解与社会人员发生冲突，警方介入进行调查处理。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "罐面操作人员，有跌落风险。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 627",
+      "organization_name": "西南",
+      "discipline": "固控\n（6支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M24",
+      "source_row": 24,
+      "raw_text": "1.人的不安全行为：129队固控分队加化学药剂时，人员防化手套穿戴不规范，袖口未纳入防护服，已纠正。\n2.物的不安全状态：CCDC反馈照明不足，夜间操作视线差，已派电工检查线路并更换灯具。\n3.不放心的人：罐面及加药人员。\n4.生产异常情况：正常作业。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "129队固控分队加化学药剂时，人员防化手套穿戴不规范，袖口未纳入防护服，已纠正。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "CCDC反馈照明不足，夜间操作视线差，已派电工检查线路并更换灯具。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "罐面及加药人员。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "正常作业。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 627",
+      "organization_name": "西南",
+      "discipline": "固控\n（6支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O24",
+      "source_row": 24,
+      "raw_text": "1.人的不安全行为：/\n2.物的不安全状态：循环罐保养时，配电柜检修后柜门/紧固和密封未完全恢复，准备接高压水枪清洗前被中方电气师发现并叫停，完成紧固密封后方可继续作业。\n3.不放心的人：电气检修和清罐作业人员，需执行检修恢复确认。\n4.生产(异常)情况：各分队生产正常；168队固控设备准备搬迁，人员和物资按计划送场。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "/"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "循环罐保养时，配电柜检修后柜门/紧固和密封未完全恢复，准备接高压水枪清洗前被中方电气师发现并叫停，完成紧固密封后方可继续作业。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "电气检修和清罐作业人员，需执行检修恢复确认。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "各分队生产正常；168队固控设备准备搬迁，人员和物资按计划送场。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "CCDC：技术服务项目",
+      "team_code": "SINOPEC 1701",
+      "organization_name": "华东",
+      "discipline": "岩屑回注\n（1支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K25",
+      "source_row": 25,
+      "raw_text": "1.人的不安全行为：球磨机梯子未正确安装牢固，存在人员跌落风险，已整改确保牢固。\n2.物的不安全状态：皮卡车内进入老鼠，检查线路确保安全；材料不能及时进场，由于NAPO河流水位较低，与CCDC沟通解决。\n3.不放心的人：电工，社区员工（有1人不干活）。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "球磨机梯子未正确安装牢固，存在人员跌落风险，已整改确保牢固。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "皮卡车内进入老鼠，检查线路确保安全；材料不能及时进场，由于NAPO河流水位较低，与CCDC沟通解决。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "电工，社区员工（有1人不干活）。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "CCDC：技术服务项目",
+      "team_code": "SINOPEC 1701",
+      "organization_name": "华东",
+      "discipline": "岩屑回注\n（1支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M25",
+      "source_row": 25,
+      "raw_text": "1.人的不安全行为：无。\n2.物的不安全状态：岩屑回注作业照明灯照射方向不合理，已增设照明；回注泵动力端壳体焊缝发现裂纹，虽非承压油池且油量小，仍要求排查原因并安排检测公司检测焊缝，防止环保风险。\n3.不放心的人：设备巡检岗位。\n4.生产异常情况：生产正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "岩屑回注作业照明灯照射方向不合理，已增设照明；回注泵动力端壳体焊缝发现裂纹，虽非承压油池且油量小，仍要求排查原因并安排检测公司检测焊缝，防止环保风险。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "设备巡检岗位。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "生产正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "CCDC：技术服务项目",
+      "team_code": "SINOPEC 1701",
+      "organization_name": "华东",
+      "discipline": "岩屑回注\n（1支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O25",
+      "source_row": 25,
+      "raw_text": "1.人的不安全行为：处理岩屑/相关作业时劳保佩戴不规范，护目镜或面部防护落实不到位，已叫停并教育。\n2.物的不安全状态：现场道路发现两处岩屑散落，判断为运输或设备行走过程中带出，已组织清理，防止环保和现场管理风险。\n3.不放心的人：岩屑处理和运输配合作业人员，需加强个人防护和清洁检查。\n4.生产(异常)情况：岩屑回注作业正常运行，未反馈其他生产异常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "处理岩屑/相关作业时劳保佩戴不规范，护目镜或面部防护落实不到位，已叫停并教育。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "现场道路发现两处岩屑散落，判断为运输或设备行走过程中带出，已组织清理，防止环保和现场管理风险。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "岩屑处理和运输配合作业人员，需加强个人防护和清洁检查。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "岩屑回注作业正常运行，未反馈其他生产异常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 551",
+      "organization_name": "经纬",
+      "discipline": "录井\n（6支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K26",
+      "source_row": 26,
+      "raw_text": "1.人的不安全行为：无。\n2.物的不安全状态：CCDC28队入门梯子松动，及时垫平牢固。\n3.不放心的人：采集工、地质师；措施：穿戴劳保、远离高压区等。\n4.生产异常情况：无。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": "无。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "CCDC28队入门梯子松动，及时垫平牢固。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "采集工、地质师；措施：穿戴劳保、远离高压区等。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-08",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 551",
+      "organization_name": "经纬",
+      "discipline": "录井\n（6支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "M26",
+      "source_row": 26,
+      "raw_text": "无",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": false,
+          "description": "无"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-10",
+      "project_name": "PEC/HAL/CCDC",
+      "team_code": "SINOPEC 551",
+      "organization_name": "经纬",
+      "discipline": "录井\n（6支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "O26",
+      "source_row": 26,
+      "raw_text": "1.人的不安全行为：调整脱气器高度时，雇员因视线受影响摘下护目镜擦拭，导致泥浆溅到面部；已教育上罐和靠近泥浆区域不得随意摘除护目镜。\n2.物的不安全状态：168队录井设备准备中，相关传感器及压力监测部件已送有资质第三方检测，预计下周取回。\n3.不放心的人：上罐作业和泥浆接触区域作业人员，需持续盯防眼面部防护。\n4.生产(异常)情况：录井现场4支队伍施工，服务整体正常。",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": true,
+          "description": "调整脱气器高度时，雇员因视线受影响摘下护目镜擦拭，导致泥浆溅到面部；已教育上罐和靠近泥浆区域不得随意摘除护目镜。"
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": true,
+          "description": "168队录井设备准备中，相关传感器及压力监测部件已送有资质第三方检测，预计下周取回。"
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": true,
+          "description": "上罐作业和泥浆接触区域作业人员，需持续盯防眼面部防护。"
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "录井现场4支队伍施工，服务整体正常。"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "DRILLCOTEC：设备租赁",
+      "team_code": "SINOPEC 736",
+      "organization_name": "华东",
+      "discipline": "固井\n（1支分队）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K27",
+      "source_row": 27,
+      "raw_text": "正常作业",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "正常作业"
+        }
+      ]
+    },
+    {
+      "record_date": "2026-06-06",
+      "project_name": "暂无",
+      "team_code": "SINOPEC 435",
+      "organization_name": "经纬",
+      "discipline": "测井（射孔）",
+      "well_descriptor": "/",
+      "drilled_remaining": "/",
+      "source_sheet": "每日运行重要和异常情况汇总-6月",
+      "source_cell": "K28",
+      "source_row": 28,
+      "raw_text": "停工",
+      "items": [
+        {
+          "category_code": "UNSAFE_BEHAVIOR",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "SAFETY_HAZARD",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "CONCERN_EMPLOYEE",
+          "has_issue": false,
+          "description": ""
+        },
+        {
+          "category_code": "PRODUCTION_ANOMALY",
+          "has_issue": true,
+          "description": "停工"
+        }
+      ]
+    }
+  ]
+}

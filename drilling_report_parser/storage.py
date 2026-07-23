@@ -442,6 +442,70 @@ def list_ai_extraction_target_fields(database_path: str | Path) -> list[dict[str
     return rows
 
 
+def list_ai_extraction_source_records(database_path: str | Path) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_ai_extraction_source_records(None)
+    _clear_mysql_failure()
+    return rows
+
+
+def save_ai_extraction_tasks(
+    database_path: str | Path,
+    tasks: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+    *,
+    replace_manifest: bool = False,
+) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.save_ai_extraction_tasks(None, tasks, sources, replace_manifest=replace_manifest)
+    _clear_mysql_failure()
+
+
+def list_ai_extraction_tasks(
+    database_path: str | Path,
+    *,
+    task_ids: list[str] | None = None,
+    active_only: bool = True,
+) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_ai_extraction_tasks(None, task_ids=task_ids, active_only=active_only)
+    _clear_mysql_failure()
+    return rows
+
+
+def list_ai_extraction_task_sources(database_path: str | Path, task_id: str) -> list[dict[str, Any]]:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    rows = mysql_database.list_ai_extraction_task_sources(None, task_id)
+    _clear_mysql_failure()
+    return rows
+
+
+def update_ai_extraction_task_status(
+    database_path: str | Path,
+    task_id: str,
+    *,
+    status: str,
+    progress: int | None = None,
+    error: str = "",
+    increment_attempt: bool = False,
+) -> None:
+    _validate_mysql_label(database_path)
+    from . import mysql_database
+
+    mysql_database.update_ai_extraction_task_status(
+        None, task_id, status=status, progress=progress, error=error, increment_attempt=increment_attempt,
+    )
+    _clear_mysql_failure()
+
+
 def clear_extraction_results(database_path: str | Path, record_ids: list[str]) -> None:
     _validate_mysql_label(database_path)
     from . import mysql_database

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NexoRig 钻完井管理平台</title>
     <link rel="icon" type="image/svg+xml" href="./assets/drilling-completion-logo.svg" />
-    <link rel="stylesheet" href="./styles.css?v=monthly-grid-picker-v2" />
+    <link rel="stylesheet" href="./styles.css?v=hsse-safety-dashboard-v9" />
     <link rel="stylesheet" href="./ui-system.css?v=operational-clarity-v1" />
   </head>
   <body>
@@ -851,6 +851,13 @@
                 <strong data-i18n="menuDrillingBasicMonthlyReport">钻井月报</strong>
               </nav>
             </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
           </header>
           <section class="drilling-basic-monthly-workspace">
             <div class="panel drilling-basic-monthly-toolbar">
@@ -883,6 +890,13 @@
                 <span class="breadcrumb-separator">/</span>
                 <strong data-i18n="menuWorkoverBasicMonthlyReport">修井月报</strong>
               </nav>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
             </div>
           </header>
           <section class="drilling-basic-monthly-workspace">
@@ -917,6 +931,13 @@
                 <strong data-i18n="menuDrillingWorkoverEfficiencyMonthlyReport">钻修井月报</strong>
               </nav>
             </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
           </header>
           <section class="drilling-basic-monthly-workspace">
             <div class="panel drilling-basic-monthly-toolbar">
@@ -949,6 +970,13 @@
                 <span class="breadcrumb-separator">/</span>
                 <strong data-i18n="menuMonthlyTeamWorkloadReport">月度工作量统计</strong>
               </nav>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
             </div>
           </header>
           <section class="drilling-basic-monthly-workspace">
@@ -1161,6 +1189,219 @@
           </section>
         </section>
 
+        <section id="hsseCollectionPage" class="module-page hsse-collection-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuHsse">HSSE管理</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuHsseCollection">HSSE填报</strong>
+              </nav>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+
+          <section class="hsse-entry-layout">
+            <section class="panel hsse-entry-panel">
+              <div class="panel-heading hsse-entry-heading">
+                <div>
+                  <p class="hsse-section-kicker">DAILY SAFETY MEETING</p>
+                  <h2>队伍每日安全生产记录</h2>
+                  <span class="panel-note">选择日期和队伍，项目、关联井及当日/前一日工况自动带出</span>
+                </div>
+                <button class="button secondary" type="button" data-hsse-new>新建填报</button>
+              </div>
+
+              <div class="hsse-context-form">
+                <input type="hidden" data-hsse-project />
+                <label>填报日期<input type="date" data-hsse-date /><small>用于匹配当日队伍、井号和日报</small></label>
+                <label>队伍<select data-hsse-team><option value="">请选择队伍</option></select><small>仅需选择队伍，项目及基础信息自动带出</small></label>
+                <label class="hsse-well-field">关联井号
+                  <div class="hsse-well-picker">
+                    <button class="hsse-well-trigger" type="button" data-hsse-well-trigger aria-haspopup="true" aria-expanded="false" disabled>
+                      <span data-hsse-well-summary>选择队伍后自动带出当日关联井</span><span aria-hidden="true">⌄</span>
+                    </button>
+                    <div class="hsse-well-menu" data-hsse-well-menu hidden>
+                      <label class="hsse-well-select-all"><input type="checkbox" data-hsse-well-all /> 全选当日关联井</label>
+                      <div class="hsse-well-options" data-hsse-well-options></div>
+                    </div>
+                  </div>
+                  <small data-hsse-well-hint>井号来自所选队伍填报日期当天的日报，默认全选</small>
+                </label>
+              </div>
+
+              <div class="hsse-derived-context" aria-label="系统自动带出信息">
+                <div><span>项目</span><strong data-hsse-project-name>—</strong></div>
+                <div><span>所属单位</span><strong data-hsse-company>—</strong></div>
+                <div><span>专业</span><strong data-hsse-team-type>—</strong></div>
+                <div><span>设备型号</span><strong data-hsse-team-model>—</strong></div>
+              </div>
+
+              <section class="hsse-operation-summary" aria-label="井队24小时工况摘要">
+                <header>
+                  <div><h3>井队24小时工况摘要</h3><p>所选队伍全部井；分别读取填报当日与前一日日报的 24 小时总结</p></div>
+                  <span data-hsse-operation-count>选择队伍后自动带出</span>
+                </header>
+                <div class="hsse-operation-days" data-hsse-operation-days>
+                  <div class="hsse-operation-empty">请选择队伍查看工况摘要</div>
+                </div>
+              </section>
+
+              <div class="hsse-item-toolbar">
+                <div>
+                  <h3>当日四类事项</h3>
+                  <p>每一项都需确认；确无事项时选择“无异常”即可。</p>
+                </div>
+                <button class="button secondary" type="button" data-hsse-all-clear>一键全部无</button>
+              </div>
+
+              <div class="hsse-item-grid">
+                <article class="hsse-item-card" data-hsse-category="UNSAFE_BEHAVIOR">
+                  <header><span class="hsse-item-icon" aria-hidden="true"></span><div><h3><span class="hsse-item-index">1</span>人的不安全行为</h3><p>违章事件、错误站位、违规操作等</p></div></header>
+                  <label>当日情况<select data-hsse-presence><option value="0">无异常</option><option value="1">有记录</option></select></label>
+                  <label class="hsse-item-description">事项描述<textarea data-hsse-description rows="3" maxlength="2000" placeholder="选择“有记录”后填写事件经过和现场事实" disabled></textarea></label>
+                </article>
+                <article class="hsse-item-card" data-hsse-category="SAFETY_HAZARD">
+                  <header><span class="hsse-item-icon" aria-hidden="true"></span><div><h3><span class="hsse-item-index">2</span>物的不安全状态</h3><p>设备设施、作业环境和操作条件隐患</p></div></header>
+                  <label>当日情况<select data-hsse-presence><option value="0">无异常</option><option value="1">有记录</option></select></label>
+                  <label class="hsse-item-description">事项描述<textarea data-hsse-description rows="3" maxlength="2000" placeholder="填写不安全状态的位置、现象和影响" disabled></textarea></label>
+                </article>
+                <article class="hsse-item-card" data-hsse-category="CONCERN_EMPLOYEE">
+                  <header><span class="hsse-item-icon" aria-hidden="true"></span><div><h3><span class="hsse-item-index">3</span>不放心员工</h3><p>身体状态、能力、情绪或新岗位重点人员</p></div></header>
+                  <label>当日情况<select data-hsse-presence><option value="0">无异常</option><option value="1">有记录</option></select></label>
+                  <label class="hsse-item-description">事项描述<textarea data-hsse-description rows="3" maxlength="2000" placeholder="填写岗位或人员及需要关注的客观原因" disabled></textarea></label>
+                </article>
+                <article class="hsse-item-card" data-hsse-category="PRODUCTION_ANOMALY">
+                  <header><span class="hsse-item-icon" aria-hidden="true"></span><div><h3><span class="hsse-item-index">4</span>生产异常情况</h3><p>影响安全生产的工况、设备或外部异常</p></div></header>
+                  <label>当日情况<select data-hsse-presence><option value="0">无异常</option><option value="1">有记录</option></select></label>
+                  <label class="hsse-item-description">事项描述<textarea data-hsse-description rows="3" maxlength="2000" placeholder="填写异常经过、影响范围和当前状态" disabled></textarea></label>
+                </article>
+              </div>
+
+              <div class="hsse-form-footer">
+                <p data-hsse-save-hint>保存后按“队伍 + 日期”唯一更新，不会生成重复记录。</p>
+                <button class="button" type="button" data-hsse-save>保存当日记录</button>
+              </div>
+            </section>
+
+            <section class="panel hsse-month-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="hsse-section-kicker">MONTHLY LOG</p>
+                  <h2>本月填报记录</h2>
+                </div>
+                <span class="panel-note">点击“编辑”可快速回填</span>
+              </div>
+              <div class="hsse-list-filters">
+                <input type="month" data-hsse-filter-month aria-label="月份" />
+                <select data-hsse-filter-project aria-label="项目"><option value="">全部项目</option></select>
+                <select data-hsse-filter-team aria-label="队伍"><option value="">全部队伍</option></select>
+                <button class="button secondary" type="button" data-hsse-search>查询</button>
+              </div>
+              <div class="hsse-summary-strip" data-hsse-summary></div>
+              <div class="table-wrap hsse-record-table-wrap">
+                <table class="record-table hsse-record-table">
+                  <thead><tr><th>日期</th><th>项目 / 队伍</th><th>井号</th><th>四类事项</th><th>更新时间</th><th>操作</th></tr></thead>
+                  <tbody data-hsse-records></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <section id="hsseDashboardPage" class="module-page hsse-dashboard-page" hidden>
+          <header class="topbar placeholder-topbar">
+            <div>
+              <nav class="page-breadcrumb" aria-label="页面路径">
+                <span data-i18n="menuHsse">HSSE管理</span>
+                <span class="breadcrumb-separator">/</span>
+                <strong data-i18n="menuHsseDashboard">安全驾驶舱</strong>
+              </nav>
+            </div>
+            <div class="top-actions">
+              <div class="language-switch" role="group" aria-label="Language">
+                <button type="button" data-lang="original" data-i18n="originalReport">原文</button>
+                <button type="button" data-lang="zh">中</button>
+                <button type="button" data-lang="es">ES</button>
+              </div>
+            </div>
+          </header>
+
+          <section class="panel hsse-dashboard-shell">
+            <div class="hsse-dashboard-titlebar">
+              <div>
+                <p class="hsse-section-kicker">MONTHLY SAFETY COCKPIT</p>
+                <h2>月度安全生产运行总览</h2>
+                <span>按项目、队伍和日期汇总真实填报与标记化模拟数据</span>
+              </div>
+              <span class="hsse-dashboard-asof" data-hsse-dashboard-asof>—</span>
+            </div>
+
+            <div class="hsse-dashboard-toolbar" aria-label="安全驾驶舱筛选条件">
+              <label>月份<input type="month" data-hsse-dashboard-month /></label>
+              <label>项目<select data-hsse-dashboard-project><option value="">全部项目</option></select></label>
+              <label>地区公司<select data-hsse-dashboard-organization><option value="">全部地区公司</option></select></label>
+              <label>专业<select data-hsse-dashboard-discipline><option value="">全部专业</option></select></label>
+              <label>队伍<select data-hsse-dashboard-team><option value="">全部队伍</option></select></label>
+              <label>数据属性<select data-hsse-dashboard-source><option value="">全部数据</option></select></label>
+              <label class="hsse-dashboard-check"><input type="checkbox" data-hsse-dashboard-only-issues /> 仅显示有事项队伍</label>
+              <div class="hsse-dashboard-actions">
+                <button class="button" type="button" data-hsse-dashboard-search>查询</button>
+                <button class="button secondary" type="button" data-hsse-dashboard-reset>重置</button>
+                <button class="button secondary hsse-dashboard-export-button" type="button" data-hsse-dashboard-export><span aria-hidden="true"></span>导出 Excel</button>
+              </div>
+            </div>
+
+            <section class="hsse-dashboard-summary" data-hsse-dashboard-summary aria-label="月度安全统计摘要"></section>
+
+            <section class="hsse-dashboard-section">
+              <div class="hsse-dashboard-section-heading">
+                <div><h3>队伍月度填报与事项统计</h3><p>点击队伍行展开当月逐日记录；事项进度按“事项次数 / 本月应填报天数”计算</p></div>
+                <span data-hsse-dashboard-team-count>0 支队伍</span>
+              </div>
+              <div class="table-wrap hsse-dashboard-team-wrap">
+                <table class="record-table hsse-dashboard-team-table">
+                  <thead>
+                    <tr>
+                      <th>序号</th><th>项目名称</th><th>队伍编号</th><th>地区公司</th><th>专业</th><th>井号 / 当前状态</th>
+                      <th>已钻 / 剩余</th><th>填报天数</th><th>人的不安全行为</th><th>物的不安全状态</th><th>不放心员工</th><th>生产异常</th><th>数据来源</th><th>风险等级</th>
+                    </tr>
+                  </thead>
+                  <tbody data-hsse-dashboard-teams></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="hsse-dashboard-detail-grid">
+              <section class="hsse-dashboard-section hsse-dashboard-events-panel">
+                <div class="hsse-dashboard-section-heading">
+                  <div><h3>月度异常事件明细</h3><p>同一天、同一队伍的事项合并为一行</p></div>
+                  <span data-hsse-dashboard-event-count>0 条</span>
+                </div>
+                <div class="table-wrap hsse-dashboard-event-wrap">
+                  <table class="record-table hsse-dashboard-event-table">
+                    <thead><tr><th>日期</th><th>项目 / 队伍</th><th>井号</th><th>分类</th><th>事件摘要</th><th>操作</th></tr></thead>
+                    <tbody data-hsse-dashboard-events></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <aside class="hsse-dashboard-event-detail" data-hsse-dashboard-event-detail>
+                <div class="hsse-dashboard-detail-empty">
+                  <strong>事件详情</strong>
+                  <p>从左侧事件明细中选择一条记录查看完整内容。</p>
+                </div>
+              </aside>
+            </section>
+          </section>
+        </section>
+
         <section id="modulePlaceholder" class="module-page module-placeholder" hidden>
           <header class="topbar placeholder-topbar">
             <div>
@@ -1212,6 +1453,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./http-client.js?v=1"></script>
-    <script src="./app.js?v=monthly-ai-fields-v4"></script>
+    <script src="./app.js?v=hsse-safety-dashboard-v9"></script>
   </body>
 </html>

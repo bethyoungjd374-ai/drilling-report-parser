@@ -30,11 +30,11 @@
       "output_format": "text",
       "model_id": "b613f4e8-033b-4433-b9ff-9fc515a982fe",
       "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "team-month-well-control-incident",
-      "name": "井队月度井控异常提炼",
+      "name": "钻井月报-井队-是否有溢流等",
       "grain": "team_month",
       "report_type": "drilling",
       "report_types": [
@@ -70,13 +70,6 @@
         },
         {
           "section": "report_fields",
-          "field": "incidentComments",
-          "report_types": [
-            "drilling"
-          ]
-        },
-        {
-          "section": "report_fields",
           "field": "safetyIncident",
           "report_types": [
             "drilling"
@@ -84,9 +77,9 @@
         },
         {
           "section": "report_fields",
-          "field": "safetyComments",
+          "field": "incidentComments",
           "report_types": [
-            "completion"
+            "drilling"
           ]
         },
         {
@@ -96,16 +89,23 @@
             "drilling",
             "completion"
           ]
+        },
+        {
+          "section": "report_fields",
+          "field": "safetyComments",
+          "report_types": [
+            "completion"
+          ]
         }
       ],
       "condition": "按井队、钻井专业和自然月综合该井队当月全部钻井、完井日报；仅认定实际发生的溢流、井涌或井喷，排除演练、流程检查、设备名称及正常流动描述。",
-      "instruction": "判断该井队本月是否实际发生溢流、井涌或井喷。没有实际事件时只返回“无”。存在事件时，用一句简短中文汇总涉及井及发生次数，例如“W-2井发生井涌1次”；同一事件跨日报连续记录不得重复计数。不要把井控演练、Kick Out设备测试、Flow Line/Niple de Flujo、正常流量或常规井控检查判定为事件。",
+      "instruction": "遍历所有日报的Operation Details是否实际发生溢流、井涌或井喷。然后按井队、每个月份聚合提炼出。没有实际事件时只返回“无”。存在事件时，用一句简短中文汇总涉及井及发生次数，例如“W-2井发生井涌1次”；同一事件跨日报连续记录不得重复计数。不要把井控演练、Kick Out设备测试、Flow Line/Niple de Flujo、正常流量或常规井控检查判定为事件。字数尽可能简短。",
       "target_field": "team_month_well_control_incident",
       "target_field_label": "井队月度是否有溢流、井涌或井喷",
       "output_format": "text",
       "model_id": "",
       "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "monthly-team-well-control-incident",
@@ -186,7 +186,7 @@
       "output_format": "text",
       "model_id": "",
       "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "monthly-well-job-accident-waiting",
@@ -267,7 +267,7 @@
       "output_format": "text",
       "model_id": "",
       "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "monthly-well-job-basic-remarks",
@@ -334,8 +334,8 @@
       "target_field_label": "钻修井月报综合备注",
       "output_format": "text",
       "model_id": "",
-      "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "enabled": false,
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "monthly-well-npt-description",
@@ -347,27 +347,9 @@
         "completion",
         "workover"
       ],
-      "source_section": "report_fields",
-      "source_field": "summary24h",
+      "source_section": "operations",
+      "source_field": "operation_details",
       "source_fields": [
-        {
-          "section": "report_fields",
-          "field": "summary24h",
-          "report_types": [
-            "drilling",
-            "completion",
-            "workover"
-          ]
-        },
-        {
-          "section": "report_fields",
-          "field": "otherRemarks",
-          "report_types": [
-            "drilling",
-            "completion",
-            "workover"
-          ]
-        },
         {
           "section": "operations",
           "field": "operation_details",
@@ -378,14 +360,14 @@
           ]
         }
       ],
-      "condition": "按项目、井、专业和自然月综合当月日报，只提炼NPT、维修、事故复杂及其他非生产时间的原因。",
-      "instruction": "按影响程度提炼本井本月非生产时间原因，优先说明NPT、零日费维修、事故复杂及等待的具体对象、原因和累计时长；同一事件跨日报连续记录不得重复。不要写生产作业内容。没有非生产时间时只返回“无”；有内容时用精炼中文分号分隔，限220字。",
+      "condition": "系统仅提供确认状态为CONFIRMED/AUTO_CONFIRMED、统计状态为READY且有效作业类型为NPT的作业明细；按项目、井、专业和自然月汇总。没有合格NPT明细时不调用模型，月报直接显示“无”。",
+      "instruction": "仅根据输入的已确认NPT明细，按影响程度提炼本井本月非生产时间原因，说明具体对象、原因和累计时长；同一事件跨日报连续记录不得重复。不得把P或SC作业、常规作业、日报摘要和备注推断为非生产时间。用精炼中文分号分隔，限220字。",
       "target_field": "nonproductive_description",
       "target_field_label": "非生产时间原因描述",
       "output_format": "text",
       "model_id": "",
       "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "monthly-well-efficiency-remarks",
@@ -443,8 +425,8 @@
       "target_field_label": "钻修井月报备注",
       "output_format": "text",
       "model_id": "",
-      "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "enabled": false,
+      "updated_at": "2026-07-22T19:23:54"
     },
     {
       "id": "monthly-team-workload-remarks",
@@ -502,13 +484,13 @@
       "target_field_label": "月度工作量统计备注",
       "output_format": "text",
       "model_id": "",
-      "enabled": true,
-      "updated_at": "2026-07-21T23:16:07"
+      "enabled": false,
+      "updated_at": "2026-07-22T19:23:54"
     }
   ],
   "custom_target_fields": [],
   "auto_execute": true,
-  "version": "ai-extraction-73b8d3e6f165",
+  "version": "ai-extraction-397b2f0d21df",
   "catalog": {
     "report_types": [
       {
@@ -2926,5 +2908,5 @@
       }
     ]
   },
-  "updated_at": "2026-07-21T23:16:07"
+  "updated_at": "2026-07-22T19:23:54"
 }

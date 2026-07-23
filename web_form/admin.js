@@ -19,6 +19,8 @@ const adminState = {
   aiExtractionQueuePage: 1,
   aiExtractionQueuePageSize: ADMIN_DEFAULT_PAGE_SIZE,
   aiExtractionQueueStatusTab: "pending",
+  aiExtractionQueueGrainTab: "all",
+  aiExtractionQueueFilters: { rule: "all", reportType: "all", search: "" },
   selectedAiExtractionRuleId: "",
   aiExtractionTestRecordId: "",
   aiExtractionTestSource: "",
@@ -262,14 +264,13 @@ function updateTranslationQueueSnapshot(queue = {}) {
 }
 
 function updateExtractionQueueSnapshot(queue = {}) {
-  const statusById = new Map((queue.records || []).map((row) => [String(row.record_id || ""), row]));
-  adminState.records = (adminState.records || []).map((record) => {
-    const status = statusById.get(String(record.record_id || ""));
-    return status ? { ...record, extraction_status: status.status, extraction_progress: status.progress, extraction_error: status.error, extraction_updated_at: status.updated_at } : record;
-  });
+  const statusById = new Map((queue.records || []).map((row) => [String(row.task_id || row.record_id || ""), row]));
   const records = (adminState.aiExtractionQueue?.records || []).map((row) => {
-    const status = statusById.get(String(row.record_id || ""));
-    return status ? { ...row, ...status } : row;
+    const status = statusById.get(String(row.task_id || row.record_id || ""));
+    if (!status) return row;
+    const merged = { ...row, ...status };
+    merged.needs_extraction = ["PENDING", "STALE", "STOPPED", "FAILED", ""].includes(String(merged.status || "").toUpperCase());
+    return merged;
   });
   const mergedQueue = { ...adminState.aiExtractionQueue, ...queue, records };
   adminState.aiExtractionQueue = mergedQueue;
@@ -282,7 +283,7 @@ function updateExtractionQueueSnapshot(queue = {}) {
     return;
   }
   refreshTuningQueueCount("extraction", mergedQueue.processing_count);
-  const byId = new Map(records.map((row) => [String(row.record_id || ""), row]));
+  const byId = new Map(records.map((row) => [String(row.task_id || row.record_id || ""), row]));
   document.querySelectorAll("[data-extraction-job-status]").forEach((cell) => {
     const row = byId.get(String(cell.dataset.extractionJobStatus || ""));
     if (row) cell.innerHTML = extractionJobStatusMarkup(row);
@@ -337,15 +338,15 @@ function refreshTranslationQueueTable(records = []) {
 function refreshExtractionQueueTable(records = []) {
   const body = document.querySelector("[data-extraction-queue-body]");
   if (!body) return;
-  const inputs = [...body.querySelectorAll("[data-ai-extraction-record]")];
+  const inputs = [...body.querySelectorAll("[data-ai-extraction-task]")];
   const checked = new Set(inputs.filter((input) => input.checked).map((input) => input.value));
-  const filtered = filterAiQueueRecords(records, adminState.aiExtractionQueueStatusTab || "pending");
+  const filtered = filterAiExtractionQueueRecords(records);
   const pageSize = Number(adminState.aiExtractionQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   adminState.aiExtractionQueuePage = clampPage(adminState.aiExtractionQueuePage, totalPages);
   const visible = filtered.slice((adminState.aiExtractionQueuePage - 1) * pageSize, adminState.aiExtractionQueuePage * pageSize);
   body.innerHTML = extractionQueueRowsMarkup(visible, adminState.aiExtractionQueueStatusTab === "completed");
-  if (inputs.length) body.querySelectorAll("[data-ai-extraction-record]").forEach((input) => { input.checked = checked.has(input.value); });
+  if (inputs.length) body.querySelectorAll("[data-ai-extraction-task]").forEach((input) => { input.checked = checked.has(input.value); });
   const pagination = document.querySelector("[data-extraction-queue-pagination]");
   if (pagination) pagination.innerHTML = adminPaginationMarkup("aiExtractionQueue", filtered.length, adminState.aiExtractionQueuePage, totalPages, pageSize);
 }
@@ -1294,11 +1295,12 @@ function renderAdminAiExtraction() {
       ${aiExtractionRuleForm(selected)}
     </section>`;
   host.innerHTML = `
-    <section class="admin-kpi-grid compact">
+    <section class="admin-kpi-grid compact extraction-kpis">
       ${adminKpi("提炼规则", rules.length, `${enabledCount} 条启用`, "sliders")}
-      ${adminKpi("待处理日报", queue.pending_count || 0, "可继续或覆盖提炼", "logs", 'role="button" tabindex="0" data-ai-extraction-view="queue"')}
+      ${adminKpi("源日报覆盖", `${Number(queue.source_report_count || 0)}/${Number(queue.total_report_count || 0)}`, `${Math.max(0, Number(queue.total_report_count || 0) - Number(queue.source_report_count || 0))} 份尚未纳入`, "database", 'role="button" tabindex="0" data-ai-extraction-view="queue"')}
+      ${adminKpi("待处理任务", queue.pending_count || 0, "按提炼粒度统一排队", "logs", 'role="button" tabindex="0" data-ai-extraction-view="queue"')}
       ${adminKpi("执行中", queue.processing_count || 0, `${queue.worker_count || 0} 个并发任务`, "overview")}
-      ${adminKpi("默认模型", defaultAiModelName(), "可按规则覆盖", "shield")}
+      ${adminKpi("失败任务", queue.failed_count || 0, "可筛选后批量重试", "shield")}
     </section>
     <nav class="tuning-tabs" aria-label="数据提炼视图">
       ${aiExtractionTab("rules", "规则配置")}${aiExtractionTab("queue", "任务队列", queue.processing_count)}${aiExtractionTab("test", "测试工作台")}
@@ -1315,6 +1317,7 @@ function aiQueueStatusGroup(status = "", row = {}) {
   const value = String(status || "PENDING").toUpperCase();
   if (value === "FAILED") return "failed";
   if (["QUEUED", "IN_PROGRESS"].includes(value)) return "processing";
+  if (row.task_id && value === "COMPLETED") return "completed";
   if (row.needs_translation || row.needs_extraction) return "pending";
   if (value === "COMPLETED") return "completed";
   if (["PENDING", "STOPPED", "STALE", ""].includes(value)) return "pending";
@@ -1323,6 +1326,25 @@ function aiQueueStatusGroup(status = "", row = {}) {
 
 function filterAiQueueRecords(records = [], tab = "all") {
   return tab === "all" ? records : records.filter((row) => aiQueueStatusGroup(row.status, row) === tab);
+}
+
+function aiExtractionGrainGroup(grain = "") {
+  const value = String(grain || "report");
+  return ["detail_row", "report"].includes(value) ? "daily" : value;
+}
+
+function filterAiExtractionQueueRecords(records = []) {
+  const status = adminState.aiExtractionQueueStatusTab || "pending";
+  const grain = adminState.aiExtractionQueueGrainTab || "all";
+  const filters = adminState.aiExtractionQueueFilters || {};
+  const query = String(filters.search || "").trim().toLowerCase();
+  return filterAiQueueRecords(records, status).filter((row) => {
+    if (grain !== "all" && aiExtractionGrainGroup(row.grain) !== grain) return false;
+    if (filters.rule && filters.rule !== "all" && String(row.rule_id || "") !== filters.rule) return false;
+    if (filters.reportType && filters.reportType !== "all" && !(row.report_types || []).includes(filters.reportType)) return false;
+    if (query && ![row.scope_label, row.rule_name, row.target_field_label, row.well_name, row.team_name].some((value) => String(value || "").toLowerCase().includes(query))) return false;
+    return true;
+  });
 }
 
 function preferredExtractionQueueStatusTab(records = [], currentTab = "pending") {
@@ -1340,22 +1362,49 @@ function aiQueueStatusTabsMarkup(kind, records = [], activeTab = "pending") {
   return `<nav class="queue-status-tabs" aria-label="任务状态筛选">${Object.entries(labels).map(([value, label]) => `<button type="button" class="${activeTab === value ? "active" : ""}" data-ai-queue-status-tab="${kind}" data-ai-queue-status-value="${value}">${label}<span data-ai-queue-status-count="${kind}:${value}">${counts[value]}</span></button>`).join("")}</nav>`;
 }
 
+function aiExtractionGrainTabsMarkup(records = []) {
+  const counts = { all: records.length, daily: 0, well_job: 0, well_month: 0, team_month: 0 };
+  records.forEach((row) => { const group = aiExtractionGrainGroup(row.grain); if (counts[group] !== undefined) counts[group] += 1; });
+  const labels = { all: "全部任务", daily: "日报明细", well_job: "单井作业周期", well_month: "单井月度", team_month: "井队月度" };
+  const active = adminState.aiExtractionQueueGrainTab || "all";
+  return `<nav class="queue-grain-tabs" aria-label="提炼粒度">${Object.entries(labels).map(([value, label]) => `<button type="button" class="${active === value ? "active" : ""}" data-ai-extraction-grain-tab="${value}"><span>${label}</span><em>${counts[value]}</em></button>`).join("")}</nav>`;
+}
+
+function aiExtractionQueueFiltersMarkup(records = []) {
+  const filters = adminState.aiExtractionQueueFilters || {};
+  const rules = [...new Map(records.map((row) => [String(row.rule_id || ""), String(row.rule_name || row.rule_id || "")])).entries()].filter(([id]) => id);
+  return `<div class="queue-filter-bar">
+    <label><span>规则</span><select data-ai-extraction-filter="rule"><option value="all">全部规则</option>${rules.map(([id, name]) => `<option value="${escapeHtml(id)}" ${filters.rule === id ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></label>
+    <label><span>日报类型</span><select data-ai-extraction-filter="reportType"><option value="all">全部类型</option><option value="drilling" ${filters.reportType === "drilling" ? "selected" : ""}>钻井日报</option><option value="completion" ${filters.reportType === "completion" ? "selected" : ""}>完井日报</option><option value="workover" ${filters.reportType === "workover" ? "selected" : ""}>修井日报</option></select></label>
+    <label class="queue-filter-search"><span>搜索</span><input type="search" value="${escapeHtml(filters.search || "")}" placeholder="井号、井队、规则或目标字段" data-ai-extraction-filter="search" /></label>
+  </div>`;
+}
+
 function aiExtractionQueueMarkup() {
   const queue = adminState.aiExtractionQueue || {};
   const rows = queue.records || [];
   const statusTab = adminState.aiExtractionQueueStatusTab || "pending";
-  const filteredRows = filterAiQueueRecords(rows, statusTab);
+  const filteredRows = filterAiExtractionQueueRecords(rows);
   const pageSize = Number(adminState.aiExtractionQueuePageSize || ADMIN_DEFAULT_PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const currentPage = clampPage(adminState.aiExtractionQueuePage, totalPages);
   adminState.aiExtractionQueuePage = currentPage;
   const visibleRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  return `<div class="ai-queue-stack"><section class="panel">
-    <div class="panel-heading"><h2>数据提炼任务</h2>
+  const coverage = Number(queue.total_report_count || 0) ? Math.round(Number(queue.source_report_count || 0) / Number(queue.total_report_count || 1) * 100) : 0;
+  return `<div class="ai-queue-stack">
+    <section class="panel extraction-coverage-panel">
+      <div class="extraction-coverage-heading"><div><span class="eyebrow">SOURCE COVERAGE</span><h2>源日报覆盖</h2><p>任务按业务粒度生成，来源日报只计一次；任务数不再等同于日报数。</p></div><strong>${Number(queue.source_report_count || 0)}<small> / ${Number(queue.total_report_count || 0)} 份</small></strong></div>
+      <div class="coverage-progress"><span style="width:${coverage}%"></span></div>
+      <div class="coverage-meta"><span>覆盖率 ${coverage}%</span><span>统一任务 ${Number(queue.task_count || rows.length)} 条</span><span>已完成 ${Number(queue.completed_count || 0)} 条</span><button class="button secondary small" type="button" data-admin-rebuild-extraction-tasks>生成全部历史任务</button></div>
+    </section>
+    <section class="panel">
+    <div class="panel-heading"><div><h2>数据提炼任务</h2><span class="panel-note">按日报明细、单井作业、单井月度和井队月度统一管理</span></div>
       <div class="admin-actions heading-actions" data-extraction-queue-actions>${extractionQueueActionsMarkup(queue)}</div>
     </div>
+    ${aiExtractionGrainTabsMarkup(rows)}
     ${aiQueueStatusTabsMarkup("extraction", rows, statusTab)}
-    <div class="table-wrap"><table class="record-table admin-table queue-select-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all ${statusTab === "completed" && visibleRows.length ? "checked" : ""} /></th><th>日期 / 井号</th><th>井队</th><th>状态</th><th>进度</th><th>更新时间</th></tr></thead>
+    ${aiExtractionQueueFiltersMarkup(rows)}
+    <div class="table-wrap"><table class="record-table admin-table queue-select-table extraction-task-table"><thead><tr><th><input type="checkbox" data-ai-extraction-check-all ${statusTab === "completed" && visibleRows.length ? "checked" : ""} /></th><th>提炼对象</th><th>粒度</th><th>规则 / 目标字段</th><th>来源日报</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>
       <tbody data-extraction-queue-body>${extractionQueueRowsMarkup(visibleRows, statusTab === "completed")}</tbody>
     </table></div>
     <div data-extraction-queue-pagination>${adminPaginationMarkup("aiExtractionQueue", filteredRows.length, currentPage, totalPages, pageSize)}</div>
@@ -1365,8 +1414,17 @@ function aiExtractionQueueMarkup() {
 function extractionQueueRowsMarkup(rows = [], selectCompleted = false) {
   return rows.map((row) => {
     const checked = row.needs_extraction || (selectCompleted && aiQueueStatusGroup(row.status, row) === "completed");
-    return `<tr><td><input type="checkbox" data-ai-extraction-record value="${escapeHtml(row.record_id)}" ${checked ? "checked" : ""} /></td><td><strong>${escapeHtml(row.report_date || "-")} / ${escapeHtml(row.wellbore || "-")}</strong><small>${escapeHtml(row.report_no || "")}</small></td><td>${escapeHtml(row.rig || "-")}</td><td data-extraction-job-status="${escapeHtml(row.record_id)}">${extractionJobStatusMarkup(row)}</td><td data-extraction-job-progress="${escapeHtml(row.record_id)}">${escapeHtml(row.progress || "0")}%</td><td data-extraction-job-updated="${escapeHtml(row.record_id)}">${escapeHtml(row.updated_at || "-")}</td></tr>`;
-  }).join("") || `<tr><td colspan="6">当前状态下没有日报任务</td></tr>`;
+    const grainLabels = { detail_row: "日报明细", report: "日报", well_job: "单井作业周期", well_month: "单井月度", team_month: "井队月度" };
+    const types = (row.report_types || []).map((value) => ({ drilling: "钻井", completion: "完井", workover: "修井" }[value] || value)).join(" / ");
+    return `<tr><td><input type="checkbox" data-ai-extraction-task value="${escapeHtml(row.task_id)}" ${checked ? "checked" : ""} /></td>
+      <td><strong>${escapeHtml(row.scope_label || "-")}</strong><small>${escapeHtml(types || "-")}</small></td>
+      <td><span class="task-grain-badge grain-${escapeHtml(aiExtractionGrainGroup(row.grain))}">${escapeHtml(grainLabels[row.grain] || row.grain || "日报")}</span></td>
+      <td><strong>${escapeHtml(row.rule_name || "-")}</strong><small>${escapeHtml(row.target_field_label || row.target_field || "")}</small></td>
+      <td><button class="source-count-button" type="button" data-ai-extraction-task-detail="${escapeHtml(row.task_id)}">${Number(row.source_record_count || 0)} 份<span>查看来源</span></button></td>
+      <td data-extraction-job-status="${escapeHtml(row.task_id)}">${extractionJobStatusMarkup(row)}<small class="task-progress" data-extraction-job-progress="${escapeHtml(row.task_id)}">${escapeHtml(row.progress || "0")}%</small></td>
+      <td data-extraction-job-updated="${escapeHtml(row.task_id)}">${escapeHtml(row.updated_at || "-")}</td>
+      <td><button class="link-button" type="button" data-ai-extraction-task-detail="${escapeHtml(row.task_id)}">详情</button></td></tr>`;
+  }).join("") || `<tr><td colspan="8"><div class="admin-empty-panel compact"><p>当前筛选条件下没有提炼任务</p></div></td></tr>`;
 }
 
 function extractionQueueActionsMarkup(queue = {}) {
@@ -1530,6 +1588,7 @@ function aiExtractionRuleForm(rule = {}) {
     <label>输出格式<select name="aiExtractionOutputFormat">${(catalog.output_formats || []).map((item) => `<option value="${escapeHtml(item.value)}" ${item.value === rule.output_format ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}</select></label>
     <label>使用模型<select name="aiExtractionModelId"><option value="">默认模型</option>${(adminState.aiModels.models || []).filter((item) => item.enabled !== false).map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === rule.model_id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}</select></label>
     <label>状态<select name="aiExtractionEnabled"><option value="true" ${rule.enabled !== false ? "selected" : ""}>启用</option><option value="false" ${rule.enabled === false ? "selected" : ""}>停用</option></select></label>
+    ${rule.target_field === "nonproductive_description" ? `<div class="wide ai-extraction-system-policy"><strong>系统执行门控</strong><span>仅使用已确认、可统计且有效类型为 NPT 的作业明细；无合格明细时不调用模型，结果固定为“无”。</span></div>` : ""}
     <label class="wide">适用条件<textarea name="aiExtractionCondition" rows="3" placeholder="例如：仅处理作业类型为 NPT 的明细">${escapeHtml(rule.condition || "")}</textarea></label>
     <label class="wide">提炼要求<textarea name="aiExtractionInstruction" rows="4" placeholder="说明需要识别什么、无法判断时如何处理">${escapeHtml(rule.instruction || "")}</textarea></label>
     <div class="admin-actions wide"><button class="button" type="button" data-admin-save-extraction-rules ${Number(adminState.aiExtractionQueue?.processing_count || 0) ? "disabled" : ""}>保存规则</button><button class="button secondary" type="button" data-admin-delete-extraction-rule>删除规则</button></div>
@@ -2931,17 +2990,49 @@ async function saveAiExtractionRules() {
 }
 
 async function queueAiExtractions(mode = "continue") {
-  const recordIds = [...document.querySelectorAll("[data-ai-extraction-record]:checked")].map((input) => input.value);
-  if (!recordIds.length) return showToast("请勾选要提炼的日报；已完成列表默认全选");
+  const taskIds = [...document.querySelectorAll("[data-ai-extraction-task]:checked")].map((input) => input.value);
+  if (!taskIds.length) return showToast("请勾选要执行的提炼任务；已完成列表默认全选");
   const action = mode === "overwrite" ? "按当前规则覆盖提炼" : "执行待处理提炼";
-  if (!window.confirm(`确认对 ${recordIds.length} 条日报${action}？`)) return;
+  if (!window.confirm(`确认对 ${taskIds.length} 条任务${action}？`)) return;
   try {
-    const result = await adminRequest("/api/admin/ai-extractions/queue", { method: "POST", body: JSON.stringify({ mode, record_ids: recordIds }) });
-    showToast(`已加入提炼队列：${result.queued_records || 0} 条`);
+    const result = await adminRequest("/api/admin/ai-extractions/queue", { method: "POST", body: JSON.stringify({ mode, task_ids: taskIds }) });
+    showToast(`已加入提炼队列：${result.queued_tasks || result.queued_records || 0} 条任务`);
     adminState.aiExtractionQueue = await adminRequest("/api/admin/ai-extractions");
     adminState.aiExtractionQueueStatusTab = preferredExtractionQueueStatusTab(adminState.aiExtractionQueue.records || [], "processing");
     adminState.aiExtractionQueuePage = 1;
     renderAdminAiExtraction();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function rebuildAiExtractionTasks() {
+  try {
+    const result = await adminRequest("/api/admin/ai-extractions/queue", { method: "POST", body: JSON.stringify({ mode: "rebuild" }) });
+    adminState.aiExtractionQueue = await adminRequest("/api/admin/ai-extractions");
+    adminState.aiExtractionQueuePage = 1;
+    renderAdminAiExtraction();
+    showToast(`历史任务已生成：${Number(result.task_count || 0)} 条，覆盖 ${Number(result.source_report_count || 0)} 份日报`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function openAiExtractionTaskDetail(taskId) {
+  try {
+    const payload = await adminRequest(`/api/admin/ai-extractions?task_id=${encodeURIComponent(taskId)}`);
+    const task = payload.task || {};
+    const sources = payload.sources || [];
+    const result = payload.result || {};
+    const resultText = result.result_text || (result.rows || []).map((row) => row.result_text).filter(Boolean).join("；") || "尚未生成结果";
+    openAdminModal("提炼任务详情", `
+      <div class="extraction-task-detail">
+        <section class="task-detail-summary"><div><span>提炼对象</span><strong>${escapeHtml(task.scope_label || "-")}</strong></div><div><span>规则</span><strong>${escapeHtml(task.rule_name || "-")}</strong></div><div><span>目标字段</span><strong>${escapeHtml(task.target_field_label || task.target_field || "-")}</strong></div><div><span>来源日报</span><strong>${sources.length} 份</strong></div></section>
+        <section class="task-result-card"><span>当前提炼结果</span><p>${escapeHtml(resultText)}</p></section>
+        <section><div class="panel-heading compact"><div><h3>来源日报与字段</h3><span class="panel-note">每份来源均保留日期、井号、井队和读取字段</span></div></div>
+          <div class="table-wrap"><table class="record-table admin-table"><thead><tr><th>日期</th><th>类型</th><th>井号</th><th>井队</th><th>来源字段</th></tr></thead><tbody>${sources.map((source) => `<tr><td>${escapeHtml(source.report_date || "-")}</td><td>${escapeHtml(({ drilling: "钻井", completion: "完井", workover: "修井" }[source.report_type] || source.report_type || "-"))}</td><td>${escapeHtml(source.well_name || "-")}</td><td>${escapeHtml(source.team_name || "-")}</td><td><small>${escapeHtml((source.source_fields || []).join("、") || "-")}</small></td></tr>`).join("") || `<tr><td colspan="5">暂无来源日报</td></tr>`}</tbody></table></div>
+        </section>
+      </div>`, `<button class="button secondary" type="button" data-admin-modal-close>关闭</button>`);
   } catch (error) {
     showToast(error.message);
   }
@@ -3404,6 +3495,15 @@ document.addEventListener("click", (event) => {
   }
   const queueExtraction = event.target.closest("[data-admin-queue-extractions]");
   if (queueExtraction) return queueAiExtractions(queueExtraction.dataset.adminQueueExtractions || "continue");
+  if (event.target.closest("[data-admin-rebuild-extraction-tasks]")) return rebuildAiExtractionTasks();
+  const extractionGrainTab = event.target.closest("[data-ai-extraction-grain-tab]");
+  if (extractionGrainTab) {
+    adminState.aiExtractionQueueGrainTab = extractionGrainTab.dataset.aiExtractionGrainTab || "all";
+    adminState.aiExtractionQueuePage = 1;
+    return renderAdminAiExtraction();
+  }
+  const extractionTaskDetail = event.target.closest("[data-ai-extraction-task-detail]");
+  if (extractionTaskDetail) return openAiExtractionTaskDetail(extractionTaskDetail.dataset.aiExtractionTaskDetail);
   const queueStatusTab = event.target.closest("[data-ai-queue-status-tab]");
   if (queueStatusTab) return switchAiQueueStatusTab(queueStatusTab.dataset.aiQueueStatusTab, queueStatusTab.dataset.aiQueueStatusValue);
   if (event.target.closest("[data-admin-stop-extractions]")) return stopExtractionsAndRefresh();
@@ -3532,7 +3632,13 @@ document.addEventListener("change", (event) => {
     adminState.aiExtractionTestResult = null;
   }
   if (event.target.matches("[data-ai-extraction-check-all]")) {
-    document.querySelectorAll("[data-ai-extraction-record]:not(:disabled)").forEach((input) => { input.checked = event.target.checked; });
+    document.querySelectorAll("[data-ai-extraction-task]:not(:disabled)").forEach((input) => { input.checked = event.target.checked; });
+  }
+  if (event.target.matches('[data-ai-extraction-filter="rule"], [data-ai-extraction-filter="reportType"]')) {
+    const key = event.target.dataset.aiExtractionFilter;
+    adminState.aiExtractionQueueFilters[key] = event.target.value || "all";
+    adminState.aiExtractionQueuePage = 1;
+    return renderAdminAiExtraction();
   }
   if (event.target.matches("[data-translation-term-file]")) {
     const file = event.target.files?.[0];
@@ -3545,6 +3651,11 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  if (event.target.matches('[data-ai-extraction-filter="search"]')) {
+    adminState.aiExtractionQueueFilters.search = event.target.value || "";
+    adminState.aiExtractionQueuePage = 1;
+    return refreshExtractionQueueTable(adminState.aiExtractionQueue?.records || []);
+  }
   if (event.target.matches("[data-translation-term-search]")) {
     adminState.translationTerms.protected_terms = captureProtectedTerms();
     adminState.translationTermSearch = event.target.value;

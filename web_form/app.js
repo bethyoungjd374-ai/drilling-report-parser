@@ -9,7 +9,7 @@ const i18n = {
       descDrillingDaily: "上传钻井日报 PDF，按原模板或独立兼容模板解析井基础信息及 Operation 内容。",
       descCompletionDaily: "上传完井日报 PDF，解析基础信息、Operation、库存和射孔区间，预览后可二次编辑。", descWorkoverDaily: "上传修井日报 PDF，解析 WO 信息、Operation、库存、安全备注和射孔区间，预览后可二次编辑。", descMoveDaily: "上传搬迁日报 PDF，解析 Operation、重型设备和载荷清单，预览后可二次编辑。",
       descRigProductionSummary: "基于日报解析数据，按井队、日报类型和月份展示生产作业时效。", descProductionDetailReport: "按项目周期、井队和井号归属查询生产时效明细。", descDrillingBasicMonthlyReport: "严格按附表4格式展示并导出钻井基础指标数据月报表。", descWorkoverBasicMonthlyReport: "严格按附表5格式展示并导出修井基础指标数据月报表。", descDrillingWorkoverEfficiencyMonthlyReport: "严格按附表6格式展示并导出钻修井基础时效数据月报。", descMonthlyTeamWorkloadReport: "按标准队伍和钻井、修井专业汇总并导出月度工作量统计表。", descMonthlyEfficiencyReport: "按月汇总钻、完、修井基础数据与时效，缺少明确来源的字段保持待定。", descWellNptConfirm: "统计各钻井队历史作业 NPT 时长、占比及排名，支持井队对比分析。", descRigNptRanking: "确认每口井 P、SC、NPT 时长及具体情况，并支持后续按时效确认表修正。",
-      descHsseCollection: "按井、按队伍记录每日安全生产信息，包括人的不安全行为、物的不安全状态、不放心人员、生产异常和公共安全事件。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
+      descHsseCollection: "按项目和队伍记录每日四类安全生产事项：人的不安全行为、物的不安全状态、不放心员工和生产异常情况。", descHsseDashboard: "集中展示全油田各队伍 HSSE 关键指标、异常情况和跟踪总览。", descDailySafetySummary: "基于 HSSE 采集数据生成安全报表。", descPeriodSafetyReport: "合并日报统计与周月报，基于 HSSE 数据生成安全报表，支持阶段性分析和汇报。",
       moduleStatusPlanned: "功能规划", moduleComingSoon: "功能待开发", moduleCurrent: "当前菜单", moduleComingSoonDesc: "该功能已按需求菜单预留入口，后续可在此接入数据采集、统计报表或数据分析页面。",
       navBasic: "基础信息", navSummary: "作业摘要", navWellControl: "施工参数", navSurvey: "测斜数据", navMud: "泥浆数据", navBitBha: "钻头与 BHA", navOperations: "作业明细", navCosts: "漏失与库存", navIncidents: "事故与备注",
       importPdf: "导入 PDF 日报", pdfTemplateProfile: "PDF 模板", pdfTemplateOriginal: "原模板", pdfTemplateCompatible: "兼容模板（自动识别）", originalReport: "原文", translateChinese: "翻译为中文", translationRunning: "正在切换日报语言...", translationRunningShort: "翻译中", translationReady: "日报语言已切换。", translationFailed: "翻译数据暂不可用，请确认本地大模型服务或后台翻译任务状态。", translationPreviewNotice: "当前显示数据库译文，只读展示；切回原文可编辑原始日报。", translationTitle: "中英西混合日报翻译", translationOriginal: "原文", translationLanguage: "语言", translationChinese: "中文翻译", translationPath: "字段", translationTerms: "术语替换", translationWarnings: "告警", translationEmpty: "暂无可显示翻译结果", saveDatabase: "保存", downloadDatabase: "数据库状态", backRecords: "返回记录", databaseSaved: "已保存到 MySQL 数据库。", databaseSaveFailed: "保存 MySQL 数据库失败。", recordLoadFailed: "打开日报详情失败。", databaseRecord: "数据库记录", sourceFileEmpty: "未上传文件",
@@ -84,7 +84,7 @@ const i18n = {
       descDrillingDaily: "Upload drilling daily PDFs and parse well basics and Operation content with the original or compatible template strategy.",
       descCompletionDaily: "Upload completion daily PDFs, parse basics, operations, bulks, and perforated intervals, then preview and edit.", descWorkoverDaily: "Upload workover daily PDFs, parse WO information, operations, bulks, safety comments, and perforated intervals, then preview and edit.", descMoveDaily: "Rig-move reports share the drilling parser and data tables; Event distinguishes the lifecycle stage.",
       descRigProductionSummary: "Show production time by rig, report type, and month from parsed daily reports.", descProductionDetailReport: "Query production time details by project period, rig, and well assignment.", descDrillingBasicMonthlyReport: "Display and export the drilling basic indicators report in the exact Appendix 4 format.", descWorkoverBasicMonthlyReport: "Display and export the workover basic indicators report in the exact Appendix 5 format.", descDrillingWorkoverEfficiencyMonthlyReport: "Display and export the drilling and workover efficiency report in the exact Appendix 6 format.", descMonthlyTeamWorkloadReport: "Summarize monthly workload by standard team and drilling or workover profession.", descMonthlyEfficiencyReport: "Summarize drilling, completion, and workover data and efficiency by month.", descWellNptConfirm: "Rank drilling rigs by historical NPT duration and share for comparison analysis.", descRigNptRanking: "Confirm P, SC, and NPT hours by well, with later updates from time-class confirmation sheets.",
-      descHsseCollection: "Capture daily HSSE information by well and team, including unsafe acts, unsafe conditions, personnel concerns, production exceptions, and public security events.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
+      descHsseCollection: "Capture four daily HSSE categories by project and team: unsafe acts, operational hazards, personnel concerns, and production anomalies.", descHsseDashboard: "Show field-wide HSSE KPIs, exceptions, tracking, and overview by team.", descDailySafetySummary: "Generate safety reports from HSSE collection data.", descPeriodSafetyReport: "Combine daily safety stats with weekly and monthly reporting into one safety report entry.",
       moduleStatusPlanned: "Planned Feature", moduleComingSoon: "Feature Reserved", moduleCurrent: "Current Menu", moduleComingSoonDesc: "This menu entry is reserved from the requirement list. Data entry, reporting, or analytics pages can be connected here later.",
       navBasic: "Basic Info", navSummary: "Operations Summary", navWellControl: "Operational Parameters", navSurvey: "Survey Data", navMud: "Mud Data", navBitBha: "Bit & BHA", navOperations: "Operations Log", navCosts: "Fluid Loss & Inventory", navIncidents: "Incidents & Remarks",
       importPdf: "Import PDF Report", pdfTemplateProfile: "PDF Template", pdfTemplateOriginal: "Original template", pdfTemplateCompatible: "Compatible (auto-detect)", originalReport: "Original", translateChinese: "Translate to Chinese", translationRunning: "Switching report language...", translationRunningShort: "Translating", translationReady: "Report language switched.", translationFailed: "Translation data is not available. Check the local model service or translation task status.", translationPreviewNotice: "Database translation is shown read-only. Switch back to Original to edit the source report.", translationTitle: "Mixed EN/ES Drilling Report Translation", translationOriginal: "Original", translationLanguage: "Language", translationChinese: "Chinese", translationPath: "Field", translationTerms: "Terms", translationWarnings: "Warnings", translationEmpty: "No translation results to show", saveDatabase: "Save", downloadDatabase: "Database Status", backRecords: "Back to Records", databaseSaved: "Saved to MySQL.", databaseSaveFailed: "Failed to save to MySQL.", recordLoadFailed: "Failed to open report detail.", databaseRecord: "Database record", sourceFileEmpty: "No file uploaded",
@@ -159,7 +159,7 @@ const i18n = {
       descDrillingDaily: "Carga reportes diarios PDF de perforación o movilización, extrae datos básicos y operaciones, y permite editar el reporte diario de perforación.",
       descCompletionDaily: "Carga PDFs diarios de completación, extrae datos básicos, operaciones, inventarios e intervalos cañoneados, y permite revisar y editar.", descWorkoverDaily: "Carga PDFs diarios de workover, extrae información WO, operaciones, inventarios, comentarios de seguridad e intervalos cañoneados, y permite revisar y editar.", descMoveDaily: "Entrada reservada para análisis PDF y captura estructurada de reportes diarios de movilización.",
       descRigProductionSummary: "Muestra tiempos de producción por equipo, tipo de reporte y mes desde reportes diarios procesados.", descProductionDetailReport: "Consulta detalles de producción por periodo de proyecto, equipo y asignación de pozo.", descDrillingBasicMonthlyReport: "Muestra y exporta el reporte con el formato exacto del Anexo 4.", descWorkoverBasicMonthlyReport: "Muestra y exporta el reporte con el formato exacto del Anexo 5.", descDrillingWorkoverEfficiencyMonthlyReport: "Muestra y exporta el reporte con el formato exacto del Anexo 6.", descMonthlyTeamWorkloadReport: "Resume la carga mensual por equipo estándar y especialidad de perforación o workover.", descMonthlyEfficiencyReport: "Resume por mes datos y eficiencia de perforación, completación y workover; los campos sin fuente quedan pendientes.", descWellNptConfirm: "Clasifica equipos de perforación por duración y proporción histórica de NPT.", descRigNptRanking: "Confirma horas P, SC y NPT por pozo, con actualización posterior desde tablas de confirmación de tiempos.",
-      descHsseCollection: "Registra información HSSE diaria por pozo y equipo, incluyendo actos inseguros, condiciones inseguras, personal vulnerable, anomalías productivas y seguridad pública.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
+      descHsseCollection: "Registra cuatro categorías HSSE diarias por proyecto y equipo: actos inseguros, riesgos operativos, personal de atención y anomalías de producción.", descHsseDashboard: "Muestra KPIs HSSE, excepciones y seguimiento general por equipo.", descDailySafetySummary: "Genera reportes de seguridad a partir de datos HSSE.", descPeriodSafetyReport: "Combina estadísticas diarias y reportes semanales o mensuales en una entrada de reporte de seguridad.",
       moduleStatusPlanned: "Función Planificada", moduleComingSoon: "Función Reservada", moduleCurrent: "Menú Actual", moduleComingSoonDesc: "Esta entrada queda reservada según la lista de requisitos. Luego se podrá conectar captura de datos, reportes o análisis.",
       navBasic: "Información Básica", navSummary: "Resumen Operacional", navWellControl: "Parámetros Operacionales", navSurvey: "Datos Direccionales", navMud: "Datos de Lodo", navBitBha: "Broca y BHA", navOperations: "Registro de Operaciones", navCosts: "Pérdida de Fluido e Inventario", navIncidents: "Incidentes y Observaciones",
       importPdf: "Importar Reporte PDF", pdfTemplateProfile: "Plantilla PDF", pdfTemplateOriginal: "Plantilla original", pdfTemplateCompatible: "Compatible (detección automática)", originalReport: "Original", translateChinese: "Traducir a chino", translationRunning: "Cambiando idioma del reporte...", translationRunningShort: "Traduciendo", translationReady: "Idioma del reporte cambiado.", translationFailed: "Los datos traducidos no están disponibles. Revise el modelo local o el estado de la tarea.", translationPreviewNotice: "Se muestra la traducción de base de datos en modo lectura. Vuelva a Original para editar el reporte fuente.", translationTitle: "Traducción EN/ES del Reporte Diario", translationOriginal: "Original", translationLanguage: "Idioma", translationChinese: "Chino", translationPath: "Campo", translationTerms: "Términos", translationWarnings: "Alertas", translationEmpty: "No hay resultados de traducción", saveDatabase: "Guardar", downloadDatabase: "Estado BD", backRecords: "Volver a registros", databaseSaved: "Guardado en MySQL.", databaseSaveFailed: "No se pudo guardar en MySQL.", recordLoadFailed: "No se pudo abrir el detalle del reporte.", databaseRecord: "Registro de base", sourceFileEmpty: "No se ha cargado archivo",
@@ -378,6 +378,8 @@ const drillingBasicMonthlyState = { payload: null, loading: false };
 const workoverBasicMonthlyState = { payload: null, loading: false };
 const drillingWorkoverEfficiencyMonthlyState = { payload: null, loading: false };
 const monthlyTeamWorkloadState = { payload: null, loading: false };
+const hsseState = { options: null, records: [], editing: null, loading: false };
+const hsseDashboardState = { payload: null, loading: false, expandedTeamId: 0, selectedEventKey: "" };
 const REPORT_HOME_TARGETS = {
   drilling: "drilling-daily",
   completion: "completion-daily",
@@ -538,6 +540,7 @@ function renderFrontUserBar() {
     const bar = document.createElement("div");
     bar.className = "front-userbar";
     bar.innerHTML = `
+      <span class="front-user-avatar" aria-hidden="true"><img src="./icons/nav/users.svg" alt="" /></span>
       <span class="front-user-name">${escapeHtml(name)}</span>
       <small>${escapeHtml(frontRoleLabel(user.role))}</small>
       <button class="link-button" type="button" data-front-logout>${escapeHtml(ui("logout"))}</button>
@@ -574,6 +577,19 @@ function applyFrontPermissions() {
   });
   document.querySelectorAll(".report-form input,.report-form textarea,.report-form select,.report-form button").forEach((el) => {
     el.disabled = !canEdit;
+  });
+  document.querySelectorAll("#hsseCollectionPage .hsse-entry-panel input,#hsseCollectionPage .hsse-entry-panel textarea,#hsseCollectionPage .hsse-entry-panel select,#hsseCollectionPage .hsse-entry-panel button").forEach((el) => {
+    if (el.matches("[data-hsse-save]")) {
+      el.disabled = !canSave;
+    } else if (el.matches("[data-hsse-team]")) {
+      el.disabled = !canEdit;
+    } else if (el.matches("[data-hsse-well-trigger]")) {
+      el.disabled = !canEdit || !document.querySelector("[data-hsse-team]")?.value || !document.querySelectorAll("[data-hsse-well-id]").length;
+    } else if (el.matches("[data-hsse-description]")) {
+      el.disabled = !canEdit || el.closest("[data-hsse-category]")?.querySelector("[data-hsse-presence]")?.value !== "1";
+    } else {
+      el.disabled = !canEdit;
+    }
   });
   applyTranslationPreviewState();
 }
@@ -1132,6 +1148,569 @@ async function loadMonthlyTeamWorkloadReport() {
   }
 }
 
+const HSSE_CATEGORY_LABELS = Object.freeze({
+  UNSAFE_BEHAVIOR: "人的不安全行为",
+  SAFETY_HAZARD: "物的不安全状态",
+  CONCERN_EMPLOYEE: "不放心员工",
+  PRODUCTION_ANOMALY: "生产异常情况",
+});
+
+function replaceHsseSelectOptions(select, items, emptyLabel, selected = "") {
+  if (!select) return;
+  const normalized = items.map((item) => [String(item[0] ?? ""), String(item[1] ?? item[0] ?? "")]);
+  select.innerHTML = `<option value="">${escapeHtml(emptyLabel)}</option>${normalized.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
+  select.value = normalized.some(([value]) => value === String(selected || "")) ? String(selected || "") : "";
+}
+
+function hsseItemCards() {
+  return [...document.querySelectorAll("[data-hsse-category]")];
+}
+
+function setHsseItemPresence(card, hasIssue, description = "") {
+  const select = card?.querySelector("[data-hsse-presence]");
+  const textarea = card?.querySelector("[data-hsse-description]");
+  if (!select || !textarea) return;
+  select.value = hasIssue ? "1" : "0";
+  textarea.disabled = !hasIssue || !frontCan("edit");
+  textarea.value = hasIssue ? String(description || "") : "";
+  card.classList.toggle("has-issue", Boolean(hasIssue));
+}
+
+function resetHsseItems() {
+  hsseItemCards().forEach((card) => setHsseItemPresence(card, false, ""));
+}
+
+function hsseProjectTeams(projectId) {
+  return (hsseState.options?.teams || []).filter((item) => String(item.project_id) === String(projectId || ""));
+}
+
+function hsseTeamById(teamId) {
+  return (hsseState.options?.teams || []).find((item) => String(item.team_id) === String(teamId || "")) || null;
+}
+
+function hsseTeamDailyWells(teamId) {
+  return (hsseState.options?.daily_wells || []).filter((item) => String(item.team_id) === String(teamId || ""));
+}
+
+function hsseSelectedWellIds() {
+  return [...document.querySelectorAll("[data-hsse-well-id]:checked")].map((input) => Number(input.value)).filter(Boolean);
+}
+
+function updateHsseWellPickerState() {
+  const options = [...document.querySelectorAll("[data-hsse-well-id]")];
+  const selected = options.filter((input) => input.checked);
+  const summary = document.querySelector("[data-hsse-well-summary]");
+  const selectAll = document.querySelector("[data-hsse-well-all]");
+  if (selectAll) {
+    selectAll.checked = Boolean(options.length) && selected.length === options.length;
+    selectAll.indeterminate = selected.length > 0 && selected.length < options.length;
+  }
+  if (summary) {
+    if (!options.length) summary.textContent = "当日无关联井日报";
+    else if (!selected.length) summary.textContent = "未选择关联井";
+    else if (selected.length === options.length) summary.textContent = `已全选 ${selected.length} 口井`;
+    else summary.textContent = `已选 ${selected.length}/${options.length} 口井`;
+  }
+}
+
+function closeHsseWellMenu() {
+  const menu = document.querySelector("[data-hsse-well-menu]");
+  const trigger = document.querySelector("[data-hsse-well-trigger]");
+  if (menu) menu.hidden = true;
+  if (trigger) trigger.setAttribute("aria-expanded", "false");
+}
+
+function renderHsseWellPicker(teamId, selectedWellIds = null) {
+  const wells = hsseTeamDailyWells(teamId);
+  const selected = selectedWellIds === null ? new Set(wells.map((item) => Number(item.well_id))) : new Set(selectedWellIds.map(Number));
+  const host = document.querySelector("[data-hsse-well-options]");
+  const trigger = document.querySelector("[data-hsse-well-trigger]");
+  const hint = document.querySelector("[data-hsse-well-hint]");
+  if (host) {
+    host.innerHTML = wells.length ? wells.map((well) => `<label class="hsse-well-option"><input type="checkbox" value="${Number(well.well_id)}" data-hsse-well-id ${selected.has(Number(well.well_id)) ? "checked" : ""} /> <span>${escapeHtml(well.well_name || well.well_code || "未命名井")}</span></label>`).join("") : `<div class="hsse-well-empty">该队伍在填报日期没有已匹配的日报井号</div>`;
+  }
+  document.querySelectorAll("[data-hsse-well-id],[data-hsse-well-all]").forEach((input) => { input.disabled = !frontCan("edit") || !wells.length; });
+  if (trigger) trigger.disabled = !teamId || !wells.length || !frontCan("edit");
+  if (hint) hint.textContent = wells.length ? `来自当日 ${wells.length} 口井的已匹配日报，默认全选` : (teamId ? "该队伍当日暂无已匹配日报井号" : "井号来自所选队伍填报日期当天的日报，默认全选");
+  updateHsseWellPickerState();
+  closeHsseWellMenu();
+}
+
+function renderHsseOperationSummaries(teamId) {
+  const host = document.querySelector("[data-hsse-operation-days]");
+  const count = document.querySelector("[data-hsse-operation-count]");
+  if (!host) return;
+  if (!teamId) {
+    host.innerHTML = `<div class="hsse-operation-empty">请选择队伍查看工况摘要</div>`;
+    if (count) count.textContent = "选择队伍后自动带出";
+    return;
+  }
+  const summaries = (hsseState.options?.daily_summaries || []).filter((item) => String(item.team_id) === String(teamId));
+  const dates = [
+    { value: hsseState.options?.record_date || "", label: "填报当日" },
+    { value: hsseState.options?.previous_date || "", label: "前一日" },
+  ];
+  host.innerHTML = dates.map((day) => {
+    const rows = summaries.filter((item) => String(item.report_date) === String(day.value));
+    const body = rows.length ? `<div class="hsse-operation-list">${rows.map((row) => {
+      const wantsChinese = globalReportContentLanguage === "zh";
+      const summary = wantsChinese
+        ? (row.summary_24h_zh || (row.summary_24h ? "中文译文暂未生成" : "日报未填写24小时总结"))
+        : (row.summary_24h || "日报未填写24小时总结");
+      return `<div class="hsse-operation-row"><strong>${escapeHtml(row.well_name || row.well_code || "未命名井")}</strong><span${wantsChinese && !row.summary_24h_zh && row.summary_24h ? ` class="is-translation-pending" title="${escapeHtml(row.summary_24h)}"` : ""}>${escapeHtml(summary)}</span></div>`;
+    }).join("")}</div>` : `<div class="hsse-operation-empty">该队伍当日无已匹配日报</div>`;
+    return `<article class="hsse-operation-day"><header><strong>${day.label}</strong><span>${escapeHtml(day.value)}</span></header>${body}</article>`;
+  }).join("");
+  if (count) count.textContent = `覆盖 ${new Set(summaries.map((item) => item.well_id)).size} 口井 / ${summaries.length} 份日报`;
+}
+
+function renderHsseDerivedContext({ selectedWellIds = null } = {}) {
+  const teamId = document.querySelector("[data-hsse-team]")?.value || "";
+  const team = hsseTeamById(teamId);
+  const projectInput = document.querySelector("[data-hsse-project]");
+  const projectName = document.querySelector("[data-hsse-project-name]");
+  const company = document.querySelector("[data-hsse-company]");
+  const type = document.querySelector("[data-hsse-team-type]");
+  const model = document.querySelector("[data-hsse-team-model]");
+  if (projectInput) projectInput.value = team?.project_id || "";
+  if (projectName) projectName.textContent = team?.project_name || "—";
+  if (company) company.textContent = team?.company_name || "—";
+  if (type) type.textContent = team?.service_discipline || "—";
+  if (model) model.textContent = team?.model_code || "—";
+  renderHsseWellPicker(teamId, selectedWellIds);
+  renderHsseOperationSummaries(teamId);
+}
+
+function syncHsseFilterTeams() {
+  const projectId = document.querySelector("[data-hsse-filter-project]")?.value || "";
+  const teamSelect = document.querySelector("[data-hsse-filter-team]");
+  const current = teamSelect?.value || "";
+  const source = projectId ? hsseProjectTeams(projectId) : (hsseState.options?.teams || []);
+  const unique = new Map();
+  source.forEach((item) => unique.set(String(item.team_id), item.team_name || item.team_code));
+  replaceHsseSelectOptions(teamSelect, [...unique.entries()], "全部队伍", current);
+}
+
+async function loadHsseOptions({ preferredTeam = "", preferredWellIds = null } = {}) {
+  const dateInput = document.querySelector("[data-hsse-date]");
+  if (!dateInput) return;
+  dateInput.value ||= localIsoDate();
+  const teamSelect = document.querySelector("[data-hsse-team]");
+  const currentTeam = preferredTeam || teamSelect?.value || "";
+  const payload = await adminRequest(`/api/hsse/form-options?record_date=${encodeURIComponent(dateInput.value)}`);
+  hsseState.options = payload;
+  const filterProject = document.querySelector("[data-hsse-filter-project]");
+  const projectItems = (payload.projects || []).map((item) => [item.id, item.project_name || item.project_code]);
+  replaceHsseSelectOptions(teamSelect, (payload.teams || []).map((item) => [item.team_id, item.team_name || item.team_code]), "请选择队伍", currentTeam);
+  replaceHsseSelectOptions(filterProject, projectItems, "全部项目", filterProject?.value || "");
+  renderHsseDerivedContext({ selectedWellIds: preferredWellIds });
+  syncHsseFilterTeams();
+}
+
+function renderHsseSummary(summary = {}) {
+  const host = document.querySelector("[data-hsse-summary]");
+  if (!host) return;
+  const counts = summary.issue_counts || {};
+  host.innerHTML = `
+    <div><span>填报</span><strong>${Number(summary.record_count || 0)}</strong><small>队次</small></div>
+    <div><span>违章</span><strong>${Number(counts.UNSAFE_BEHAVIOR || 0)}</strong></div>
+    <div><span>物的不安全状态</span><strong>${Number(counts.SAFETY_HAZARD || 0)}</strong></div>
+    <div><span>人员关注</span><strong>${Number(counts.CONCERN_EMPLOYEE || 0)}</strong></div>
+    <div><span>生产异常</span><strong>${Number(counts.PRODUCTION_ANOMALY || 0)}</strong></div>`;
+}
+
+function renderHsseRecords(records = []) {
+  const body = document.querySelector("[data-hsse-records]");
+  if (!body) return;
+  if (!records.length) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-records">当前筛选范围暂无填报记录</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = records.map((record) => {
+    const itemMap = Object.fromEntries((record.items || []).map((item) => [item.category_code, item]));
+    const flags = Object.keys(HSSE_CATEGORY_LABELS).map((code, index) => {
+      const item = itemMap[code] || {};
+      const active = Boolean(item.has_issue);
+      return `<span class="hsse-category-flag category-${code.toLowerCase()} ${active ? "has-issue" : "is-clear"}" title="${escapeHtml(`${HSSE_CATEGORY_LABELS[code]}：${active ? item.description || "有记录" : "无异常"}`)}">${index + 1}</span>`;
+    }).join("");
+    const wellNames = (record.wells || []).map((well) => well.well_name_snapshot).filter(Boolean);
+    return `<tr>
+      <td>${escapeHtml(String(record.record_date || "").slice(0, 10))}</td>
+      <td><strong>${escapeHtml(record.team_name_snapshot || record.team_code_snapshot || "—")}</strong><small>${escapeHtml(record.project_name_snapshot || "—")}</small></td>
+      <td>${escapeHtml(wellNames.join("、") || record.well_name_snapshot || "—")}</td>
+      <td><div class="hsse-category-flags">${flags}</div></td>
+      <td>${escapeHtml(String(record.updated_at || "").replace("T", " ").slice(0, 16))}</td>
+      <td><button class="link-button" type="button" data-hsse-edit="${Number(record.id)}">编辑</button></td>
+    </tr>`;
+  }).join("");
+}
+
+async function loadHsseRecords() {
+  const month = document.querySelector("[data-hsse-filter-month]")?.value || localIsoMonth();
+  const projectId = document.querySelector("[data-hsse-filter-project]")?.value || "";
+  const teamId = document.querySelector("[data-hsse-filter-team]")?.value || "";
+  const params = new URLSearchParams({ month });
+  if (projectId) params.set("project_id", projectId);
+  if (teamId) params.set("team_id", teamId);
+  const payload = await adminRequest(`/api/hsse/daily-records?${params.toString()}`);
+  hsseState.records = payload.records || [];
+  renderHsseSummary(payload.summary || {});
+  renderHsseRecords(hsseState.records);
+}
+
+async function initializeHsseCollection() {
+  if (hsseState.loading) return;
+  hsseState.loading = true;
+  try {
+    const dateInput = document.querySelector("[data-hsse-date]");
+    const monthInput = document.querySelector("[data-hsse-filter-month]");
+    if (dateInput) dateInput.value ||= localIsoDate();
+    if (monthInput) monthInput.value ||= localIsoMonth();
+    await loadHsseOptions();
+    await loadHsseRecords();
+  } catch (error) {
+    showToast(error.message || "HSSE填报数据加载失败");
+  } finally {
+    hsseState.loading = false;
+    applyFrontPermissions();
+  }
+}
+
+const HSSE_DASHBOARD_COLORS = Object.freeze({
+  UNSAFE_BEHAVIOR: "#2f80ed",
+  SAFETY_HAZARD: "#2aa65a",
+  CONCERN_EMPLOYEE: "#f2a900",
+  PRODUCTION_ANOMALY: "#e6484f",
+});
+
+const HSSE_DASHBOARD_ICONS = Object.freeze({
+  UNSAFE_BEHAVIOR: "./icons/nav/users.svg",
+  SAFETY_HAZARD: "./icons/nav/shield-check.svg",
+  CONCERN_EMPLOYEE: "./icons/nav/briefcase.svg",
+  PRODUCTION_ANOMALY: "./icons/nav/calendar-bolt.svg",
+});
+
+const HSSE_DASHBOARD_UNITS = Object.freeze({
+  UNSAFE_BEHAVIOR: "件",
+  SAFETY_HAZARD: "处",
+  CONCERN_EMPLOYEE: "人",
+  PRODUCTION_ANOMALY: "起",
+});
+
+function hsseDashboardParams() {
+  const params = new URLSearchParams({
+    month: document.querySelector("[data-hsse-dashboard-month]")?.value || localIsoMonth(),
+  });
+  const fields = [
+    ["project_id", "[data-hsse-dashboard-project]"],
+    ["organization_id", "[data-hsse-dashboard-organization]"],
+    ["discipline", "[data-hsse-dashboard-discipline]"],
+    ["team_id", "[data-hsse-dashboard-team]"],
+    ["source_type", "[data-hsse-dashboard-source]"],
+  ];
+  fields.forEach(([key, selector]) => {
+    const value = document.querySelector(selector)?.value || "";
+    if (value) params.set(key, value);
+  });
+  if (document.querySelector("[data-hsse-dashboard-only-issues]")?.checked) params.set("only_issues", "1");
+  return params;
+}
+
+function setHsseDashboardSelect(selector, items = [], placeholder, selected = "") {
+  const select = document.querySelector(selector);
+  if (!select) return;
+  const options = items.map((item) => Array.isArray(item) ? item : [item, item]);
+  select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>${options.map(([value, label]) => `<option value="${escapeHtml(String(value))}">${escapeHtml(String(label || value))}</option>`).join("")}`;
+  select.value = selected;
+}
+
+function renderHsseDashboardFilters(filters = {}) {
+  const values = {
+    project: document.querySelector("[data-hsse-dashboard-project]")?.value || "",
+    organization: document.querySelector("[data-hsse-dashboard-organization]")?.value || "",
+    discipline: document.querySelector("[data-hsse-dashboard-discipline]")?.value || "",
+    team: document.querySelector("[data-hsse-dashboard-team]")?.value || "",
+    source: document.querySelector("[data-hsse-dashboard-source]")?.value || "",
+  };
+  setHsseDashboardSelect("[data-hsse-dashboard-project]", filters.projects || [], "全部项目", values.project);
+  setHsseDashboardSelect("[data-hsse-dashboard-organization]", filters.organizations || [], "全部地区公司", values.organization);
+  setHsseDashboardSelect("[data-hsse-dashboard-discipline]", filters.disciplines || [], "全部专业", values.discipline);
+  setHsseDashboardSelect("[data-hsse-dashboard-team]", filters.teams || [], "全部队伍", values.team);
+  setHsseDashboardSelect("[data-hsse-dashboard-source]", filters.source_types || [], "全部数据", values.source);
+}
+
+function renderHsseDashboardSummary(summary = {}, categories = []) {
+  const host = document.querySelector("[data-hsse-dashboard-summary]");
+  if (!host) return;
+  const counts = summary.issue_counts || {};
+  const distribution = summary.category_distribution || {};
+  const metric = (label, value, note, color, progress = null, icon = "", unit = "") => `
+    <article class="hsse-dashboard-metric ${icon ? "is-category-metric" : ""}" style="--metric-color:${color};${icon ? `--metric-icon:url('${icon}');` : ""}${progress === null ? "" : `--progress:${Math.max(0, Math.min(100, Number(progress) || 0))}%`}">
+      <span>${icon ? `<i class="hsse-dashboard-metric-icon" aria-hidden="true"></i>` : ""}${escapeHtml(label)}</span>
+      <strong>${escapeHtml(String(value))}${unit ? `<em>${escapeHtml(unit)}</em>` : ""}</strong><small>${escapeHtml(note)}</small>
+      ${progress === null ? "" : `<div class="hsse-dashboard-progress"><i></i></div>`}
+    </article>`;
+  const categoryMetrics = categories.map((category) => metric(
+    category.label,
+    Number(counts[category.code] || 0),
+    `${Number(distribution[category.code] || 0).toFixed(1)}% 事项占比`,
+    HSSE_DASHBOARD_COLORS[category.code] || "#1473b8",
+    null,
+    HSSE_DASHBOARD_ICONS[category.code] || "",
+    HSSE_DASHBOARD_UNITS[category.code] || "项",
+  )).join("");
+  const segments = categories.map((category) => {
+    const percent = Number(distribution[category.code] || 0);
+    return `<span title="${escapeHtml(`${category.label} ${percent.toFixed(1)}%`)}" style="width:${percent}%;background:${HSSE_DASHBOARD_COLORS[category.code] || "#1473b8"}"></span>`;
+  }).join("");
+  const legend = categories.map((category) => {
+    const percent = Number(distribution[category.code] || 0);
+    return `<span><i style="background:${HSSE_DASHBOARD_COLORS[category.code] || "#1473b8"}"></i>${escapeHtml(category.label.replace("人的不安全行为（违章事件）", "人的不安全行为").replace("生产异常情况", "生产异常"))} ${percent.toFixed(1)}%</span>`;
+  }).join("");
+  host.innerHTML = `
+    <div class="hsse-dashboard-overview-heading"><strong>总体概览</strong><span>（${escapeHtml(document.querySelector("[data-hsse-dashboard-month]")?.value || "")}）</span></div>
+    ${metric("队伍填报覆盖率", `${Number(summary.team_coverage_pct || 0).toFixed(1)}%`, `${Number(summary.reported_team_count || 0)} / ${Number(summary.roster_team_count || 0)} 支有效队伍`, "#1473b8", summary.team_coverage_pct)}
+    ${metric("应填完整率", `${Number(summary.completeness_pct || 0).toFixed(1)}%`, `${Number(summary.filled_team_days || 0)} / ${Number(summary.expected_team_days || 0)} 个队日`, "#26a269", summary.completeness_pct)}
+    ${categoryMetrics}
+    <div class="hsse-dashboard-distribution">
+      <div><strong>四类事项分布</strong><small>共 ${Number(summary.total_issues || 0)} 条原始事项</small></div>
+      <div><div class="hsse-dashboard-distribution-bar" aria-label="四类事项比例">${segments}</div><div class="hsse-dashboard-distribution-legend">${legend}</div></div>
+    </div>`;
+}
+
+function hsseDashboardTimeline(team) {
+  const days = (team.timeline || []).map((day) => {
+    const stateClass = day.recorded ? (day.issue_count ? "recorded has-issues" : "recorded") : (day.is_due ? "missing" : "future");
+    const activeLabels = Object.entries(day.issues || {}).filter(([, active]) => active).map(([code]) => HSSE_CATEGORY_LABELS[code]).join("、");
+    const title = day.recorded ? (activeLabels || "已填报，无异常") : (day.is_due ? "应填未报" : "未到填报日期");
+    return `<span class="hsse-dashboard-day ${stateClass}" title="${escapeHtml(`${day.date} · ${title}`)}"><i class="hsse-dashboard-day-dot"></i><b>${Number(day.day)}</b></span>`;
+  }).join("");
+  return `<tr class="hsse-dashboard-timeline-row"><td colspan="14">
+    <div class="hsse-dashboard-timeline">
+      <div class="hsse-dashboard-timeline-heading"><strong>${escapeHtml(team.team_code || team.team_name || "队伍")} · 逐日记录</strong><span>绿色：已填无事项<br>橙色：已填有事项　红圈：应填未报</span></div>
+      <div class="hsse-dashboard-days">${days}</div>
+    </div>
+  </td></tr>`;
+}
+
+function renderHsseDashboardTeams(teams = []) {
+  const body = document.querySelector("[data-hsse-dashboard-teams]");
+  const count = document.querySelector("[data-hsse-dashboard-team-count]");
+  if (count) count.textContent = `${teams.length} 支队伍`;
+  if (!body) return;
+  if (!teams.length) {
+    body.innerHTML = `<tr class="hsse-dashboard-empty-row"><td colspan="14">当前筛选范围没有有效队伍或事项记录</td></tr>`;
+    return;
+  }
+  body.innerHTML = teams.map((team, index) => {
+    const selected = Number(team.team_id) === Number(hsseDashboardState.expandedTeamId);
+    const counts = team.issue_counts || {};
+    const expectedDays = Number(team.expected_days || 0);
+    const countCell = (code) => {
+      const value = Number(counts[code] || 0);
+      const width = expectedDays ? Math.max(0, Math.min(100, value / expectedDays * 100)) : 0;
+      const label = `${value} / ${expectedDays}`;
+      return `<span class="hsse-dashboard-count is-category ${value ? "has-value" : ""}" style="--category-color:${HSSE_DASHBOARD_COLORS[code] || "#2f80ed"}" title="事项次数 ${value} ÷ 本月应填报天数 ${expectedDays} = ${width.toFixed(1)}%" aria-label="${escapeHtml(label)}"><b>${escapeHtml(label)}</b><span class="hsse-dashboard-category-track"><i style="width:${width.toFixed(1)}%"></i></span></span>`;
+    };
+    const sourceSummary = Array.isArray(team.source_summary) ? team.source_summary : [];
+    const sourceCell = sourceSummary.length
+      ? sourceSummary.map((source) => {
+        const references = Array.isArray(source.references) ? source.references.filter(Boolean).join("；") : "";
+        const title = references || `${source.label || source.type}，${Number(source.record_days || 0)} 个队日`;
+        return `<span class="hsse-dashboard-source-badge is-${escapeHtml(String(source.type || "manual").toLowerCase())}" title="${escapeHtml(title)}">${escapeHtml(source.label || source.type || "HSSE填报")} ${Number(source.record_days || 0)}天</span>`;
+      }).join("")
+      : `<span class="hsse-dashboard-source-empty">暂无记录</span>`;
+    const row = `<tr class="hsse-dashboard-team-row ${selected ? "is-selected" : ""}" data-hsse-dashboard-team-row="${Number(team.team_id)}" tabindex="0" aria-expanded="${selected ? "true" : "false"}">
+      <td>${index + 1}</td>
+      <td><span class="hsse-dashboard-team-primary">${escapeHtml(team.project_name || "—")}</span></td>
+      <td><span class="hsse-dashboard-team-primary">${escapeHtml(team.team_code || team.team_name || "—")}</span></td>
+      <td>${escapeHtml(team.organization_name || "—")}</td><td>${escapeHtml(team.discipline || "—")}</td><td>${escapeHtml(team.current_well || "—")}</td>
+      <td>${escapeHtml(team.progress_summary || "—")}</td><td><strong>${Number(team.filled_days || 0)} / ${Number(team.expected_days || 0)}</strong></td>
+      <td>${countCell("UNSAFE_BEHAVIOR")}</td><td>${countCell("SAFETY_HAZARD")}</td><td>${countCell("CONCERN_EMPLOYEE")}</td><td>${countCell("PRODUCTION_ANOMALY")}</td>
+      <td><div class="hsse-dashboard-source-summary">${sourceCell}</div></td>
+      <td><span class="hsse-dashboard-attention risk-${escapeHtml(String(team.risk_code || "low"))}">${escapeHtml(team.risk_level || "低")}</span></td>
+    </tr>`;
+    return row + (selected ? hsseDashboardTimeline(team) : "");
+  }).join("");
+}
+
+function renderHsseDashboardEventDetail(event = null) {
+  const host = document.querySelector("[data-hsse-dashboard-event-detail]");
+  if (!host) return;
+  if (!event) {
+    host.innerHTML = `<div class="hsse-dashboard-detail-empty"><strong>事件详情</strong><p>从左侧事件明细中选择一条记录查看完整内容。</p></div>`;
+    return;
+  }
+  const categories = Array.isArray(event.categories) && event.categories.length
+    ? event.categories
+    : [{
+      category_code: event.category_code,
+      category_label: event.category_label,
+      description: event.description,
+    }];
+  const categoryBadges = categories
+    .map((item) => `<span class="hsse-dashboard-category is-${escapeHtml(String(item.category_code || "").toLowerCase())}">${escapeHtml(item.category_label || "异常事项")}</span>`)
+    .join("");
+  const recordIds = Array.isArray(event.record_ids) && event.record_ids.length
+    ? event.record_ids
+    : (event.record_id ? [event.record_id] : []);
+  host.innerHTML = `
+    <header class="hsse-dashboard-detail-header">
+      <div class="hsse-dashboard-category-list">${categoryBadges}</div>
+      <h3>${escapeHtml(event.project_name || "—")} · ${escapeHtml(event.team_code || event.team_name || "—")}</h3>
+    </header>
+    <div class="hsse-dashboard-detail-meta">
+      <div><span>日期</span><strong>${escapeHtml(event.date || "—")}</strong></div>
+      <div><span>关联井</span><strong>${escapeHtml((event.well_names || []).join("、") || "无关联井")}</strong></div>
+      <div><span>数据来源</span><strong>${escapeHtml(event.source || "HSSE填报")}</strong></div>
+      <div><span>填报人</span><strong>${escapeHtml(event.submitter || "—")}</strong></div>
+      <div><span>更新时间</span><strong>${escapeHtml(String(event.updated_at || "—").replace("T", " ").slice(0, 16))}</strong></div>
+      <div><span>记录编号</span><strong>${escapeHtml(recordIds.length ? recordIds.map((item) => `#${Number(item)}`).join("、") : "—")}</strong></div>
+      <div class="hsse-dashboard-source-reference"><span>来源引用</span><strong title="${escapeHtml(event.source_reference || "")}">${escapeHtml(String(event.source_reference || "—").split(" · ").slice(-2).join(" · "))}</strong></div>
+    </div>
+    <div class="hsse-dashboard-detail-content">
+      <span>当日事项内容（${categories.length}项）</span>
+      <div class="hsse-dashboard-detail-items">${categories.map((item) => `
+        <article>
+          <strong>${escapeHtml(item.category_label || "异常事项")}</strong>
+          <p>${escapeHtml(item.description || "未填写描述")}</p>
+        </article>`).join("")}
+      </div>
+    </div>`;
+}
+
+function renderHsseDashboardEvents(events = []) {
+  const body = document.querySelector("[data-hsse-dashboard-events]");
+  const count = document.querySelector("[data-hsse-dashboard-event-count]");
+  if (count) count.textContent = `${events.length} 条`;
+  if (!body) return;
+  if (!events.length) {
+    body.innerHTML = `<tr class="hsse-dashboard-empty-row"><td colspan="6">当前筛选范围没有异常事项记录</td></tr>`;
+    hsseDashboardState.selectedEventKey = "";
+    renderHsseDashboardEventDetail();
+    return;
+  }
+  if (!events.some((item) => item.event_key === hsseDashboardState.selectedEventKey)) hsseDashboardState.selectedEventKey = events[0].event_key;
+  body.innerHTML = events.map((event) => {
+    const categories = Array.isArray(event.categories) && event.categories.length
+      ? event.categories
+      : [{ category_label: event.category_label }];
+    const categoryBadges = categories
+      .map((item) => `<span class="hsse-dashboard-category is-${escapeHtml(String(item.category_code || "").toLowerCase())}">${escapeHtml(item.category_label || "—")}</span>`)
+      .join("");
+    return `<tr class="${event.event_key === hsseDashboardState.selectedEventKey ? "is-selected" : ""}" data-hsse-dashboard-event="${escapeHtml(event.event_key)}">
+      <td>${escapeHtml(event.date || "—")}</td>
+      <td><span class="hsse-dashboard-team-primary">${escapeHtml(event.team_code || event.team_name || "—")}</span><span class="hsse-dashboard-team-secondary">${escapeHtml(event.project_name || "—")}</span></td>
+      <td>${escapeHtml((event.well_names || []).join("、") || "—")}</td>
+      <td><div class="hsse-dashboard-category-list">${categoryBadges}</div></td>
+      <td><span class="hsse-dashboard-event-summary" title="${escapeHtml(event.description || "")}">${escapeHtml(event.description || "—")}</span></td>
+      <td><button class="link-button" type="button" data-hsse-dashboard-view="${escapeHtml(event.event_key)}">查看</button></td>
+    </tr>`;
+  }).join("");
+  renderHsseDashboardEventDetail(events.find((item) => item.event_key === hsseDashboardState.selectedEventKey) || events[0]);
+}
+
+function renderHsseDashboard(payload = {}) {
+  renderHsseDashboardFilters(payload.filters || {});
+  renderHsseDashboardSummary(payload.summary || {}, payload.categories || []);
+  renderHsseDashboardTeams(payload.teams || []);
+  renderHsseDashboardEvents(payload.event_groups || []);
+  const asOf = document.querySelector("[data-hsse-dashboard-asof]");
+  if (asOf) asOf.textContent = payload.as_of_date ? `统计截至 ${payload.as_of_date}` : "所选月份尚未开始";
+}
+
+async function loadHsseDashboard() {
+  if (hsseDashboardState.loading) return;
+  hsseDashboardState.loading = true;
+  const page = document.querySelector("#hsseDashboardPage");
+  page?.classList.add("is-loading");
+  try {
+    const payload = await adminRequest(`/api/hsse/dashboard?${hsseDashboardParams().toString()}`);
+    hsseDashboardState.payload = payload;
+    if (!hsseDashboardState.expandedTeamId && payload.teams?.length) hsseDashboardState.expandedTeamId = Number(payload.teams[0].team_id || 0);
+    renderHsseDashboard(payload);
+  } finally {
+    hsseDashboardState.loading = false;
+    page?.classList.remove("is-loading");
+  }
+}
+
+async function initializeHsseDashboard() {
+  const month = document.querySelector("[data-hsse-dashboard-month]");
+  if (month) month.value ||= localIsoMonth();
+  try {
+    await loadHsseDashboard();
+  } catch (error) {
+    showToast(error.message || "安全驾驶舱数据加载失败");
+  }
+}
+
+async function editHsseRecord(recordId) {
+  const record = hsseState.records.find((item) => Number(item.id) === Number(recordId));
+  if (!record) return;
+  hsseState.editing = record;
+  const dateInput = document.querySelector("[data-hsse-date]");
+  if (dateInput) dateInput.value = String(record.record_date || "").slice(0, 10);
+  await loadHsseOptions({ preferredTeam: record.team_id, preferredWellIds: record.well_ids || [] });
+  const itemMap = Object.fromEntries((record.items || []).map((item) => [item.category_code, item]));
+  hsseItemCards().forEach((card) => {
+    const item = itemMap[card.dataset.hsseCategory] || {};
+    setHsseItemPresence(card, Boolean(item.has_issue), item.description || "");
+  });
+  const hint = document.querySelector("[data-hsse-save-hint]");
+  if (hint) hint.textContent = `正在编辑 ${record.record_date} · ${record.team_name_snapshot || record.team_code_snapshot}，保存后更新原记录。`;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function resetHsseForm() {
+  hsseState.editing = null;
+  const dateInput = document.querySelector("[data-hsse-date]");
+  if (dateInput) dateInput.value = localIsoDate();
+  await loadHsseOptions();
+  resetHsseItems();
+  const hint = document.querySelector("[data-hsse-save-hint]");
+  if (hint) hint.textContent = "保存后按“队伍 + 日期”唯一更新，不会生成重复记录。";
+}
+
+async function saveHsseRecord() {
+  if (!frontCan("save")) return showToast("当前账号没有保存权限");
+  const recordDate = document.querySelector("[data-hsse-date]")?.value || "";
+  const teamId = document.querySelector("[data-hsse-team]")?.value || "";
+  const wellIds = hsseSelectedWellIds();
+  if (!recordDate || !teamId) return showToast("请先选择填报日期和队伍");
+  const items = hsseItemCards().map((card) => ({
+    category_code: card.dataset.hsseCategory,
+    has_issue: card.querySelector("[data-hsse-presence]")?.value === "1",
+    description: card.querySelector("[data-hsse-description]")?.value.trim() || "",
+  }));
+  const incomplete = items.find((item) => item.has_issue && !item.description);
+  if (incomplete) return showToast(`${HSSE_CATEGORY_LABELS[incomplete.category_code]}选择“有记录”后必须填写内容`);
+  const button = document.querySelector("[data-hsse-save]");
+  if (button) button.disabled = true;
+  try {
+    const payload = await adminRequest("/api/hsse/daily-records", {
+      method: "POST",
+      body: JSON.stringify({
+        id: hsseState.editing?.id || 0,
+        version: hsseState.editing?.version || 0,
+        record_date: recordDate,
+        team_id: teamId,
+        well_ids: wellIds,
+        items,
+      }),
+    });
+    hsseState.editing = payload.record || null;
+    showToast("HSSE当日记录已保存");
+    const monthInput = document.querySelector("[data-hsse-filter-month]");
+    if (monthInput) monthInput.value = recordDate.slice(0, 7);
+    await loadHsseRecords();
+  } catch (error) {
+    showToast(error.message || "HSSE记录保存失败");
+  } finally {
+    if (button) button.disabled = !frontCan("save");
+  }
+}
+
 function renderModulePlaceholder(link = activeMenuLink()) {
   if (!link || activeMenuTarget === "drilling-daily" || activeMenuTarget === "completion-daily" || activeMenuTarget === "workover-daily" || activeMenuTarget === "move-daily" || activeMenuTarget === "rig-production-summary" || activeMenuTarget === "production-report" || activeMenuTarget === "drilling-basic-monthly-report" || activeMenuTarget === "workover-basic-monthly-report" || activeMenuTarget === "drilling-workover-efficiency-monthly-report" || activeMenuTarget === "monthly-team-workload-report" || activeMenuTarget === "monthly-efficiency-report" || activeMenuTarget === "well-npt-confirm" || activeMenuTarget === "rig-npt-ranking") return;
   const parentKey = link.closest(".menu-group")?.querySelector(".menu-group-toggle span[data-i18n]")?.dataset.i18n || "moduleStatusPlanned";
@@ -1158,6 +1737,8 @@ const FRONT_PAGE_BY_TARGET = Object.freeze({
   "monthly-efficiency-report": "monthlyEfficiencyReportPage",
   "well-npt-confirm": "nptStatsPage",
   "rig-npt-ranking": "nptConfirmPage",
+  "hsse-collection": "hsseCollectionPage",
+  "hsse-dashboard": "hsseDashboardPage",
 });
 
 function setActiveMenu(target) {
@@ -1187,6 +1768,8 @@ function setActiveMenu(target) {
     case "monthly-efficiency-report": loadAnalytics("monthlyEfficiency"); break;
     case "well-npt-confirm": loadAnalytics("npt"); break;
     case "rig-npt-ranking": loadNptConfirmations(); break;
+    case "hsse-collection": initializeHsseCollection(); break;
+    case "hsse-dashboard": initializeHsseDashboard(); break;
     default: break;
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1253,6 +1836,9 @@ function applyLanguage(language) {
   if (workoverBasicMonthlyState.payload) renderWorkoverBasicMonthlyTable(workoverBasicMonthlyState.payload);
   syncMonthlyDateRangeControl();
   if (analyticsState.npt.payload) renderNptAnalytics(analyticsState.npt.payload);
+  if (document.querySelector("#hsseCollectionPage.active")) {
+    renderHsseOperationSummaries(document.querySelector("[data-hsse-team]")?.value || "");
+  }
   renderModulePlaceholder();
   validate();
   validateCompletion();
@@ -5766,6 +6352,96 @@ document.querySelector("[data-monthly-team-workload-export]")?.addEventListener(
   document.body.appendChild(link);
   link.click();
   link.remove();
+});
+
+document.querySelector("[data-hsse-date]")?.addEventListener("change", async () => {
+  hsseState.editing = null;
+  try {
+    await loadHsseOptions();
+  } catch (error) {
+    showToast(error.message || "日期对应主数据加载失败");
+  }
+});
+document.querySelector("[data-hsse-team]")?.addEventListener("change", () => {
+  hsseState.editing = null;
+  renderHsseDerivedContext();
+});
+document.querySelector("[data-hsse-well-trigger]")?.addEventListener("click", () => {
+  const menu = document.querySelector("[data-hsse-well-menu]");
+  const trigger = document.querySelector("[data-hsse-well-trigger]");
+  if (!menu || trigger?.disabled) return;
+  menu.hidden = !menu.hidden;
+  trigger.setAttribute("aria-expanded", menu.hidden ? "false" : "true");
+});
+document.querySelector("[data-hsse-well-all]")?.addEventListener("change", (event) => {
+  document.querySelectorAll("[data-hsse-well-id]").forEach((input) => { input.checked = event.target.checked; });
+  updateHsseWellPickerState();
+});
+document.querySelector("[data-hsse-well-options]")?.addEventListener("change", (event) => {
+  if (event.target.matches("[data-hsse-well-id]")) updateHsseWellPickerState();
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".hsse-well-picker")) closeHsseWellMenu();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeHsseWellMenu();
+});
+document.querySelector("[data-hsse-filter-project]")?.addEventListener("change", syncHsseFilterTeams);
+document.querySelectorAll("[data-hsse-presence]").forEach((select) => {
+  select.addEventListener("change", () => setHsseItemPresence(select.closest("[data-hsse-category]"), select.value === "1", select.closest("[data-hsse-category]")?.querySelector("[data-hsse-description]")?.value || ""));
+});
+document.querySelector("[data-hsse-all-clear]")?.addEventListener("click", resetHsseItems);
+document.querySelector("[data-hsse-new]")?.addEventListener("click", () => resetHsseForm().catch((error) => showToast(error.message || "新建填报初始化失败")));
+document.querySelector("[data-hsse-save]")?.addEventListener("click", saveHsseRecord);
+document.querySelector("[data-hsse-search]")?.addEventListener("click", () => loadHsseRecords().catch((error) => showToast(error.message || "HSSE记录查询失败")));
+document.querySelector("[data-hsse-records]")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-hsse-edit]");
+  if (!button) return;
+  editHsseRecord(button.dataset.hsseEdit).catch((error) => showToast(error.message || "HSSE记录加载失败"));
+});
+document.querySelector("[data-hsse-dashboard-search]")?.addEventListener("click", () => {
+  hsseDashboardState.expandedTeamId = 0;
+  hsseDashboardState.selectedEventKey = "";
+  loadHsseDashboard().catch((error) => showToast(error.message || "安全驾驶舱查询失败"));
+});
+document.querySelector("[data-hsse-dashboard-reset]")?.addEventListener("click", () => {
+  const month = document.querySelector("[data-hsse-dashboard-month]");
+  if (month) month.value = localIsoMonth();
+  document.querySelectorAll("[data-hsse-dashboard-project],[data-hsse-dashboard-organization],[data-hsse-dashboard-discipline],[data-hsse-dashboard-team],[data-hsse-dashboard-source]").forEach((control) => { control.value = ""; });
+  const onlyIssues = document.querySelector("[data-hsse-dashboard-only-issues]");
+  if (onlyIssues) onlyIssues.checked = false;
+  hsseDashboardState.expandedTeamId = 0;
+  hsseDashboardState.selectedEventKey = "";
+  loadHsseDashboard().catch((error) => showToast(error.message || "安全驾驶舱重置失败"));
+});
+document.querySelector("[data-hsse-dashboard-export]")?.addEventListener("click", () => {
+  if (!frontCan("export")) return showToast("当前账号没有导出权限");
+  const link = document.createElement("a");
+  link.href = `/api/hsse/dashboard-export?${hsseDashboardParams().toString()}`;
+  link.download = "安全驾驶舱.xlsx";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
+document.querySelector("[data-hsse-dashboard-teams]")?.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-hsse-dashboard-team-row]");
+  if (!row) return;
+  const teamId = Number(row.dataset.hsseDashboardTeamRow || 0);
+  hsseDashboardState.expandedTeamId = Number(hsseDashboardState.expandedTeamId) === teamId ? 0 : teamId;
+  renderHsseDashboardTeams(hsseDashboardState.payload?.teams || []);
+});
+document.querySelector("[data-hsse-dashboard-teams]")?.addEventListener("keydown", (event) => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const row = event.target.closest("[data-hsse-dashboard-team-row]");
+  if (!row) return;
+  event.preventDefault();
+  row.click();
+});
+document.querySelector("[data-hsse-dashboard-events]")?.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-hsse-dashboard-event]");
+  if (!row) return;
+  hsseDashboardState.selectedEventKey = row.dataset.hsseDashboardEvent || "";
+  renderHsseDashboardEvents(hsseDashboardState.payload?.event_groups || []);
 });
 
 document.querySelector("#importPdf").addEventListener("click", () => {

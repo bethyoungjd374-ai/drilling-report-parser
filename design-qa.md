@@ -1,60 +1,53 @@
-# Operational Clarity（风格 1）设计验收记录
-
-## 验收结论
-
-- 最终结果：**passed**
-- P0：0
-- P1：0
-- P2：0
-- P3：1（图标笔画和顶部操作区的细节仍可继续微调，不影响一致性与使用）
+# HSSE 填报核心事项视觉与语言验收
 
 ## 对照基准
 
-- 视觉真值：`/Users/jason/.codex/generated_images/019f8064-cfbc-7641-95a2-c1cdd6b8c2ba/exec-4bcbdd3a-1a69-479f-9498-0bba65efce92.png`
-- 实现截图：`/Users/jason/Documents/GitHub/drilling-report-parser/outputs/ui-redesign-2026-07-21/10-daily-dashboard-desktop-final.png`
-- 全页并排对照：`/Users/jason/Documents/GitHub/drilling-report-parser/outputs/ui-redesign-2026-07-21/design-qa-comparison.png`
-- 重点区域对照：`/Users/jason/Documents/GitHub/drilling-report-parser/outputs/ui-redesign-2026-07-21/design-qa-focused.png`
-- 验收状态：钻井日报、GCLH-024、2026 年 7 月、中文界面、真实系统数据。
-- 目标图尺寸：1487 × 1058 px。
-- 实现桌面视图：1440 CSS px 宽，截图为 1800 × 1421 px（设备像素比 1.6）；并排图统一到同一视觉比例进行检查。
+- 原始页面视觉：`/Users/jason/Documents/GitHub/drilling-report-parser/artifacts/hsse-fill-standard-frame.png`。
+- 四类事项图标与颜色真值：`/Users/jason/Downloads/已生成图像 3 (1).png`。
+- 浏览器实现截图：`/Users/jason/Documents/GitHub/drilling-report-parser/artifacts/hsse-entry-category-icons-translated.png`。
+- 全视图前后对照：`/Users/jason/Documents/GitHub/drilling-report-parser/artifacts/hsse-entry-before-after-comparison.png`。
+- 聚焦对照：`/Users/jason/Documents/GitHub/drilling-report-parser/artifacts/hsse-entry-category-focused-comparison.png`。
+- CSS 视口：1666 × 1136；原始页面截图 1708 × 1684 px，实现截图 1708 × 1760 px；两张页面截图由同一应用内浏览器以相同宽度捕获，聚焦对照仅裁剪和等比缩放。
+- 状态：HSSE 填报页，2026-06-17，SINOPEC 933，中文模式；当日和前一日概况均有日报及已完成译文。
 
-## 视觉检查
+## Findings
 
-| 区域 | 结果 | 说明 |
-| --- | --- | --- |
-| 全局导航 | 通过 | 深海军蓝侧栏、低干扰分组、明确的蓝色选中态与目标一致。 |
-| 页面头部 | 通过 | 面包屑、语言、模板、导入与用户操作建立清晰的全局层级。 |
-| 井选择栏 | 通过 | 搜索、分段筛选、井卡片状态与目标信息密度一致。 |
-| 日历 | 通过 | 月份导航、日期网格、事件状态色、选中态和留白关系一致。 |
-| 关键指标 | 通过 | 采用克制的语义浅色，重要数字优先，说明文字退后。 |
-| 上传记录 | 通过 | 浅色表头、紧凑行高、状态标签与操作入口统一。 |
-| 月报正式表格 | 通过 | 保留 Excel 正式报表结构，仅统一外围工具栏与页面容器。 |
-| 窄屏 | 通过 | 当前业务分组展开，其余分组收起；无页面级横向溢出。 |
+- 无未解决的 P0/P1/P2 问题。
+- P3：中文概况中的 `BES`、`FT`、`hanger` 等受保护专业术语按既有翻译规则保留，不属于漏译。
 
-## 发现与修复记录
+## 必检视觉面
 
-1. P2：窄屏下所有菜单分组同时展开，首屏过长。已改为仅展开当前业务分组，并保留横向滚动的系统导航。
-2. P2：生产报表和 NPT 页面旧的 ID 级样式导致浅色表头出现白色文字。已提高公共表格规则的覆盖精度并统一深色文字。
-3. P2：桌面端日历和指标区域高度低于目标图，信息层级不够稳定。已统一面板最小高度、日期单元格和指标卡高度。
-4. P3：实现使用现有真实图标资源，个别图标笔画与概念图不完全一致。保留现有资源以避免引入伪造图形，后续可单独校准图标库。
+| 检查面 | 结论 |
+| --- | --- |
+| 字体与排版 | 通过。四个记录状态标签均为 10px Arial、20px 行高，数字视觉居中；事项标题层级保持一致。 |
+| 间距与布局 | 通过。四个状态标签均为 21.99 × 21.99px，Y 坐标完全一致；四张事项卡继续使用同一两列网格，页面无横向溢出。 |
+| 颜色与视觉令牌 | 通过。人的不安全行为、物的不安全状态、不放心员工、生产异常分别使用蓝、绿、黄、红，与安全驾驶舱一致；卡片边框、图标、序号和记录标签共用相同语义色。 |
+| 图像与资源质量 | 通过。四类事项复用项目现有 `users.svg`、`shield-check.svg`、`briefcase.svg`、`calendar-bolt.svg` 图标资产，无占位图或临时字符图标。 |
+| 文案与内容 | 通过。中文模式读取 `report_fields.summary24h` 的已完成中文译文；原文模式恢复西班牙语原文。 |
 
 ## 功能与质量验证
 
-- 前台导航：日报管理、生产分析、月度报表分组展开/收起和页面切换通过。
-- 真实数据加载：钻井日报、生产报表、NPT 统计、三类基础月报、月度工作量统计表通过。
-- 日历钻取：已完成日期可进入日报详情，返回路径正常。
-- 月报筛选：月份、项目、队伍筛选与正式表格容器正常。
-- 后台：总览和翻译策略页面布局、表格、标签状态通过。
-- 响应式：687 × 1137 窄视口无页面级横向溢出；正式月报画布在自身容器内滚动。
-- 浏览器控制台：最终验收流程无日志或运行时错误。
-- 自动化测试：335 passed，15 skipped。
-- JavaScript 语法检查：`app.js`、`admin.js`、`login.js` 通过。
-- 代码差异检查：无空白错误。
+- 状态标签：移除会被全局 `.issue` 样式覆盖的通用类名，改用 `has-issue` / `is-clear` 模块专用状态类。
+- 事项录入：选择“有记录”后对应卡片进入语义色强调状态，描述框立即可编辑；恢复“无异常”后状态复原。
+- 语言切换：SINOPEC 933 的 2026-06-17 概况在“原文”显示西班牙语，在“中”显示中文；切换无需重新选择队伍。
+- 译文校验：仅采用状态为 `COMPLETED/NOT_REQUIRED` 且来源文本哈希匹配当前概况的译文，避免显示过期译文。
+- 浏览器：`scrollWidth == clientWidth == 1666`。
+- 静态检查：`node --check web_form/app.js`、`git diff --check` 通过。
+- 自动化测试：373 passed，15 skipped。
 
 ## 比较历史
 
-| 轮次 | 重点 | 结果 |
-| --- | --- | --- |
-| 1 | 公共色彩、侧栏、面板、表格、表单统一 | 建立 Operational Clarity 基线。 |
-| 2 | 真实数据页面与后台页面走查 | 修复窄屏导航和表头冲突。 |
-| 3 | 与风格 1 全页及重点区域并排比较 | 调整日历与指标高度，P0/P1/P2 清零。 |
+1. 修复前：第 1、4 个标签额外命中全局 `.issue`，字号变为 12px、内边距变为 8px 9px、圆角变为 6px，而第 2、3 个标签为 9px/0px/50%，判定 P2。
+2. 第一轮修复：状态类改为模块专用命名；四个标签统一为 22px 方形圆角标签，并接入四类事项语义色。复检尺寸、行高和纵向位置完全一致，P2 关闭。
+3. 视觉增强：四张核心事项卡加入与安全驾驶舱一致的图标、左侧语义色边框、序号色和事项激活态。聚焦对照未发现新的 P1/P2。
+4. 语言修复：HSSE 表单数据源增加 `summary_24h_zh`，并在语言切换时重新渲染概况。原文/中文往返验证通过。
+
+## Open Questions
+
+- 无。
+
+## Follow-up Polish
+
+- 无阻塞项。
+
+final result: passed

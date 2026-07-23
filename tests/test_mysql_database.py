@@ -9,12 +9,15 @@ from drilling_report_parser.mysql_database import (
     DPR_TABLE_ALIASES,
     INIT_SQL_PATH,
     _ensure_master_data_v3_columns,
+    _ensure_hsse_source_columns,
     _drilling_basic_monthly_scope_row,
     _drilling_workover_efficiency_monthly_row,
+    _ai_extraction_task_manifest_runtime,
     _monthly_team_workload_row,
     _workover_basic_monthly_job_row,
     _ensure_report_record_columns,
     load_analytics_view_rows,
+    list_aggregate_scope_report_records,
     _migrate_dpr_table_names,
     _npt_row_revision,
     _operation_hour_summary,
@@ -40,6 +43,76 @@ class FakeCursor:
 
 
 class MySQLDatabaseMigrationTest(unittest.TestCase):
+    def test_hsse_source_migration_adds_provenance_columns(self) -> None:
+        cursor = FakeCursor(["id", "record_date"])
+
+        _ensure_hsse_source_columns(cursor)
+
+        statements = "\n".join(cursor.statements)
+        self.assertIn("ADD COLUMN data_source_type", statements)
+        self.assertIn("ADD COLUMN source_reference", statements)
+        self.assertIn("ADD COLUMN source_context_json", statements)
+
+    def test_aggregate_scope_query_uses_only_dimensions_owned_by_grain(self) -> None:
+        def captured_query(scope: dict[str, object]) -> tuple[str, list[object]]:
+            connection = MagicMock()
+            connection.__enter__.return_value = connection
+            cursor = MagicMock()
+            cursor.__enter__.return_value = cursor
+            cursor.fetchall.return_value = []
+            connection.cursor.return_value = cursor
+            with patch("drilling_report_parser.mysql_database.initialize_database"), patch(
+                "drilling_report_parser.mysql_database._connect", return_value=connection,
+            ):
+                list_aggregate_scope_report_records(
+                    None, scope=scope, report_types=["drilling", "completion", "workover"],
+                )
+            call = cursor.execute.call_args
+            return call.args[0], list(call.args[1])
+
+        team_sql, team_args = captured_query({
+            "grain": "team_month", "project_id": 3, "well_id": 7, "team_id": 9,
+            "job_sequence_no": 2, "profession": "drilling",
+            "period_start": "2026-07-01", "period_end": "2026-07-31",
+        })
+        self.assertIn("rig.team_id=%s", team_sql)
+        self.assertIn("report.report_date BETWEEN %s AND %s", team_sql)
+        self.assertNotIn("report.project_id=%s", team_sql)
+        self.assertNotIn("report.well_id=%s", team_sql)
+        self.assertNotIn("job.sequence_no=%s", team_sql)
+        self.assertEqual(team_args, ["drilling", "completion", 9, "2026-07-01", "2026-07-31"])
+
+        job_sql, job_args = captured_query({
+            "grain": "well_job", "project_id": 3, "well_id": 7, "team_id": 9,
+            "job_sequence_no": 2, "profession": "drilling",
+            "period_start": "2026-07-01", "period_end": "2026-07-31",
+        })
+        self.assertIn("report.project_id=%s", job_sql)
+        self.assertIn("report.well_id=%s", job_sql)
+        self.assertIn("job.sequence_no=%s", job_sql)
+        self.assertNotIn("rig.team_id=%s", job_sql)
+        self.assertNotIn("report.report_date BETWEEN %s AND %s", job_sql)
+        self.assertEqual(job_args, ["drilling", "completion", 3, 7, 2])
+
+    def test_manifest_reconcile_cannot_overwrite_worker_terminal_status(self) -> None:
+        incoming = {
+            "source_hash": "same", "rule_version": "rules-v1", "status": "IN_PROGRESS",
+            "progress": 1, "attempt_count": 2, "error_message": "", "started_at": "start-old",
+            "completed_at": "", "updated_at": "read-before-worker-finished",
+        }
+        current = {
+            "source_hash": "same", "rule_version": "rules-v1", "status": "COMPLETED",
+            "progress": 100, "attempt_count": 3, "error_message": "", "started_at": "start",
+            "completed_at": "finished", "updated_at": "worker-finished",
+        }
+
+        runtime = _ai_extraction_task_manifest_runtime(incoming, current)
+
+        self.assertEqual(runtime["status"], "COMPLETED")
+        self.assertEqual(runtime["progress"], 100)
+        self.assertEqual(runtime["completed_at"], "finished")
+        self.assertEqual(runtime["updated_at"], "worker-finished")
+
     def test_nullable_pdf_segment_metadata_round_trips_as_null(self) -> None:
         record = _record_from_payload(
             "drilling:WELL-1:2026-01-01:1",
@@ -116,6 +189,8 @@ class MySQLDatabaseMigrationTest(unittest.TestCase):
         self.assertIn("CREATE TABLE IF NOT EXISTS ai_extraction_target_field", schema)
         self.assertIn("CREATE TABLE IF NOT EXISTS ai_extraction_aggregate_result", schema)
         self.assertIn("CREATE TABLE IF NOT EXISTS ai_extraction_result_source", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS ai_extraction_task", schema)
+        self.assertIn("CREATE TABLE IF NOT EXISTS ai_extraction_task_source", schema)
         self.assertIn("grain VARCHAR(32) NOT NULL DEFAULT 'report'", schema)
         self.assertIn("allowed_grains JSON", schema)
         self.assertIn("well_id BIGINT UNSIGNED NULL", schema)

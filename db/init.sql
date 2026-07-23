@@ -249,6 +249,64 @@ CREATE TABLE IF NOT EXISTS ai_extraction_result_source (
   CONSTRAINT fk_ai_result_source_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS ai_extraction_task (
+  task_id CHAR(64) NOT NULL,
+  rule_id VARCHAR(80) NOT NULL,
+  rule_name VARCHAR(255) NOT NULL DEFAULT '',
+  grain VARCHAR(32) NOT NULL,
+  scope_key VARCHAR(191) NOT NULL,
+  scope_label VARCHAR(512) NOT NULL DEFAULT '',
+  record_id VARCHAR(191) NULL,
+  project_id BIGINT UNSIGNED NULL,
+  job_id BIGINT UNSIGNED NULL,
+  job_sequence_no INT UNSIGNED NULL,
+  well_id BIGINT UNSIGNED NULL,
+  well_name VARCHAR(255) NOT NULL DEFAULT '',
+  team_id BIGINT UNSIGNED NULL,
+  team_name VARCHAR(255) NOT NULL DEFAULT '',
+  profession VARCHAR(32) NOT NULL DEFAULT '',
+  report_types JSON NULL,
+  period_start DATE NULL,
+  period_end DATE NULL,
+  target_field VARCHAR(128) NOT NULL,
+  target_field_label VARCHAR(128) NOT NULL DEFAULT '',
+  source_record_count INT UNSIGNED NOT NULL DEFAULT 0,
+  source_hash VARCHAR(64) NOT NULL DEFAULT '',
+  rule_version VARCHAR(64) NOT NULL DEFAULT '',
+  status VARCHAR(64) NOT NULL DEFAULT 'PENDING',
+  progress INT UNSIGNED NOT NULL DEFAULT 0,
+  attempt_count INT UNSIGNED NOT NULL DEFAULT 0,
+  error_message TEXT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  started_at VARCHAR(64) NOT NULL DEFAULT '',
+  completed_at VARCHAR(64) NOT NULL DEFAULT '',
+  updated_at VARCHAR(64) NOT NULL DEFAULT '',
+  mysql_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (task_id),
+  UNIQUE KEY uq_ai_extraction_task_scope (rule_id, scope_key, target_field),
+  KEY idx_ai_extraction_task_queue (active, status, grain),
+  KEY idx_ai_extraction_task_period (period_start, period_end),
+  KEY idx_ai_extraction_task_record (record_id),
+  KEY idx_ai_extraction_task_well (well_id, period_start),
+  KEY idx_ai_extraction_task_team (team_id, period_start)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_extraction_task_source (
+  task_id CHAR(64) NOT NULL,
+  record_id VARCHAR(191) NOT NULL,
+  report_type VARCHAR(32) NOT NULL DEFAULT '',
+  report_date DATE NULL,
+  well_name VARCHAR(255) NOT NULL DEFAULT '',
+  team_name VARCHAR(255) NOT NULL DEFAULT '',
+  source_fields JSON NULL,
+  source_hash VARCHAR(64) NOT NULL DEFAULT '',
+  created_at VARCHAR(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (task_id, record_id),
+  KEY idx_ai_extraction_task_source_record (record_id),
+  CONSTRAINT fk_ai_extraction_task_source_task FOREIGN KEY (task_id) REFERENCES ai_extraction_task(task_id) ON DELETE CASCADE,
+  CONSTRAINT fk_ai_extraction_task_source_record FOREIGN KEY (record_id) REFERENCES dpr_report_record(record_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS md_geo_region (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   region_code VARCHAR(64) NOT NULL,
@@ -605,6 +663,77 @@ CREATE TABLE IF NOT EXISTS rel_project_well_scope (
   CONSTRAINT fk_project_well_scope_project FOREIGN KEY (project_id) REFERENCES md_project(id),
   CONSTRAINT fk_project_well_scope_well FOREIGN KEY (well_id) REFERENCES md_well(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS hsse_daily_record (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'HSSE每日填报主记录ID',
+  record_date DATE NOT NULL COMMENT '安全会议/填报日期',
+  project_id BIGINT UNSIGNED NOT NULL COMMENT '项目主数据ID',
+  team_id BIGINT UNSIGNED NOT NULL COMMENT '队伍主数据ID；一支队伍一天一条',
+  well_id BIGINT UNSIGNED NULL COMMENT '当日关联井，可按项目范围修正',
+  organization_id BIGINT UNSIGNED NULL COMMENT '队伍所属单位快照来源ID',
+  project_name_snapshot VARCHAR(255) NOT NULL DEFAULT '',
+  team_code_snapshot VARCHAR(64) NOT NULL DEFAULT '',
+  team_name_snapshot VARCHAR(255) NOT NULL DEFAULT '',
+  organization_name_snapshot VARCHAR(255) NOT NULL DEFAULT '',
+  team_type_snapshot VARCHAR(64) NOT NULL DEFAULT '',
+  team_model_snapshot VARCHAR(64) NOT NULL DEFAULT '',
+  well_name_snapshot VARCHAR(255) NOT NULL DEFAULT '',
+  work_status_snapshot TEXT NULL COMMENT '保存时由最近日报带出的生产工况',
+  data_source_type VARCHAR(32) NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL/EXCEL_IMPORT/SIMULATED',
+  source_reference VARCHAR(512) NOT NULL DEFAULT '' COMMENT '来源文件、工作表及单元格等追溯信息',
+  source_context_json JSON NULL COMMENT '导入来源的井号、进度及原始上下文',
+  status VARCHAR(32) NOT NULL DEFAULT 'submitted',
+  version INT UNSIGNED NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by VARCHAR(128) NOT NULL DEFAULT '',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by VARCHAR(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_hsse_daily_team_date (team_id, record_date),
+  KEY idx_hsse_daily_month_project (record_date, project_id, team_id),
+  KEY idx_hsse_daily_well (well_id, record_date),
+  CONSTRAINT fk_hsse_daily_project FOREIGN KEY (project_id) REFERENCES md_project(id),
+  CONSTRAINT fk_hsse_daily_team FOREIGN KEY (team_id) REFERENCES md_team(id),
+  CONSTRAINT fk_hsse_daily_well FOREIGN KEY (well_id) REFERENCES md_well(id),
+  CONSTRAINT fk_hsse_daily_organization FOREIGN KEY (organization_id) REFERENCES md_organization(id),
+  CONSTRAINT ck_hsse_daily_source CHECK (data_source_type IN ('MANUAL','EXCEL_IMPORT','SIMULATED')),
+  CONSTRAINT ck_hsse_daily_status CHECK (status IN ('draft','submitted'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='HSSE队伍每日安全会议填报主表';
+
+CREATE TABLE IF NOT EXISTS hsse_daily_record_well (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'HSSE每日记录关联井ID',
+  daily_record_id BIGINT UNSIGNED NOT NULL,
+  well_id BIGINT UNSIGNED NOT NULL,
+  well_name_snapshot VARCHAR(255) NOT NULL DEFAULT '',
+  sort_order INT NOT NULL DEFAULT 100,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by VARCHAR(128) NOT NULL DEFAULT '',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by VARCHAR(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_hsse_daily_record_well (daily_record_id, well_id),
+  KEY idx_hsse_daily_record_well_lookup (well_id, daily_record_id),
+  CONSTRAINT fk_hsse_daily_record_well_record FOREIGN KEY (daily_record_id) REFERENCES hsse_daily_record(id) ON DELETE CASCADE,
+  CONSTRAINT fk_hsse_daily_record_well_well FOREIGN KEY (well_id) REFERENCES md_well(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='HSSE队伍日记录关联井（同日可关联多井）';
+
+CREATE TABLE IF NOT EXISTS hsse_daily_item (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'HSSE分类事项ID',
+  daily_record_id BIGINT UNSIGNED NOT NULL,
+  category_code VARCHAR(48) NOT NULL COMMENT 'UNSAFE_BEHAVIOR/SAFETY_HAZARD/CONCERN_EMPLOYEE/PRODUCTION_ANOMALY',
+  has_issue BOOLEAN NOT NULL DEFAULT FALSE COMMENT '当日该分类是否有记录',
+  description TEXT NULL COMMENT '结构化分类下的事项描述',
+  sort_order INT NOT NULL DEFAULT 100,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by VARCHAR(128) NOT NULL DEFAULT '',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by VARCHAR(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_hsse_daily_item_category (daily_record_id, category_code),
+  KEY idx_hsse_item_category_issue (category_code, has_issue),
+  CONSTRAINT fk_hsse_item_record FOREIGN KEY (daily_record_id) REFERENCES hsse_daily_record(id) ON DELETE CASCADE,
+  CONSTRAINT ck_hsse_item_category CHECK (category_code IN ('UNSAFE_BEHAVIOR','SAFETY_HAZARD','CONCERN_EMPLOYEE','PRODUCTION_ANOMALY'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='HSSE每日四类安全生产事项明细';
 
 CREATE TABLE IF NOT EXISTS biz_job (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

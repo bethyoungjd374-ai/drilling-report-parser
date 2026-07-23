@@ -134,6 +134,26 @@ def test_monthly_report_navigation_uses_short_names_in_all_languages() -> None:
         assert label in script
 
 
+def test_four_monthly_report_headers_include_shared_global_actions() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+
+    for page_id in (
+        "drillingBasicMonthlyReportPage",
+        "workoverBasicMonthlyReportPage",
+        "drillingWorkoverEfficiencyMonthlyReportPage",
+        "monthlyTeamWorkloadReportPage",
+    ):
+        page_start = html.index(f'id="{page_id}"')
+        next_page_start = html.find('<section id="', page_start + 1)
+        page_html = html[page_start:next_page_start if next_page_start >= 0 else None]
+        assert 'class="top-actions"' in page_html, f"missing top actions in {page_id}"
+        assert 'class="language-switch"' in page_html, f"missing language switch in {page_id}"
+        assert 'data-lang="original"' in page_html
+        assert 'data-lang="zh"' in page_html
+        assert 'data-lang="es"' in page_html
+
+
 def test_drilling_basic_monthly_report_page_matches_appendix_4_structure() -> None:
     root = Path(__file__).parents[1]
     html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
@@ -205,6 +225,7 @@ def test_drilling_basic_monthly_template_export_populates_exact_static_workbook(
 
     handler.send_response.assert_called_once_with(200)
     workbook = load_workbook(BytesIO(handler.wfile.getvalue()), data_only=False)
+    assert workbook.sheetnames == ["表4钻井基础指标数据月报"]
     worksheet = workbook["表4钻井基础指标数据月报"]
     assert "2026年7月20日" in worksheet["A2"].value
     assert worksheet["B4"].value == "SINOPEC 248钻井队"
@@ -396,6 +417,7 @@ def test_workover_basic_monthly_template_export_populates_exact_static_workbook(
 
     handler.send_response.assert_called_once_with(200)
     workbook = load_workbook(BytesIO(handler.wfile.getvalue()), data_only=False)
+    assert workbook.sheetnames == ["表5 修井基础指标数据月报"]
     worksheet = workbook["表5 修井基础指标数据月报"]
     assert worksheet["A2"].value == "填报单位：厄瓜多尔子公司"
     assert worksheet["K2"].value == "填报时间：2026年7月20日"
@@ -505,6 +527,7 @@ def test_drilling_workover_efficiency_monthly_template_export_uses_exact_appendi
 
     handler.send_response.assert_called_once_with(200)
     workbook = load_workbook(BytesIO(handler.wfile.getvalue()), data_only=False)
+    assert workbook.sheetnames == ["表6钻修井基础时效数据月报 "]
     worksheet = workbook["表6钻修井基础时效数据月报 "]
     assert "2026年7月21日" in worksheet["A2"].value
     assert worksheet["B6"].value == "SINOPEC 933修井队"
@@ -551,6 +574,32 @@ def test_drilling_workover_efficiency_monthly_payload_filters_rows() -> None:
     assert payload["rows"][0]["sequence"] == 1
 
 
+def test_drilling_workover_efficiency_monthly_hides_ai_text_when_nonproductive_hours_are_zero() -> None:
+    source = {
+        "month_start": "2026-07-01", "month_end": "2026-07-31",
+        "rows": [{
+            "project_id": 20, "project_name": "B", "well_id": 30,
+            "team_code": "SINOPEC 933", "well_name": "W-2", "profession": "drilling",
+            "paid_repair_hours": 0, "zero_rate_repair_hours": 0,
+            "accident_complex_hours": 0, "other_hours": 0,
+            "nonproductive_description": "",
+        }],
+    }
+
+    def inject_stale_text(_database_path, rows, **_kwargs):
+        rows[0]["nonproductive_description"] = "不应显示的旧提炼结果"
+
+    with (
+        patch.object(form_server, "load_drilling_workover_efficiency_monthly_report_rows", return_value=source),
+        patch.object(form_server, "_apply_monthly_aggregate_extractions", side_effect=inject_stale_text),
+    ):
+        payload = form_server._monthly_drilling_workover_efficiency_report_payload(
+            Path("mysql"), {"report_date": ["2026-07-20"]},
+        )
+
+    assert payload["rows"][0]["nonproductive_description"] == "无"
+
+
 def test_monthly_team_workload_page_is_fourth_monthly_report_and_has_shared_controls() -> None:
     root = Path(__file__).parents[1]
     html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
@@ -569,6 +618,61 @@ def test_monthly_team_workload_page_is_fourth_monthly_report_and_has_shared_cont
     assert "填报单位：厄瓜多尔子公司" not in script.split('function renderMonthlyTeamWorkloadTable', 1)[1].split('async function loadMonthlyTeamWorkloadReport', 1)[0]
     for header in ("作业队伍", "工作时间（单位：小时）", "有人待工", "无人待工", "不可抗力待工", "维修/零日费"):
         assert header in script
+
+
+def test_hsse_collection_page_uses_structured_daily_four_category_entry() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+    schema = root.joinpath("db", "init.sql").read_text(encoding="utf-8")
+
+    assert 'id="hsseCollectionPage"' in html
+    assert '"hsse-collection": "hsseCollectionPage"' in script
+    for code in ("UNSAFE_BEHAVIOR", "SAFETY_HAZARD", "CONCERN_EMPLOYEE", "PRODUCTION_ANOMALY"):
+        assert f'data-hsse-category="{code}"' in html
+        assert code in schema
+    assert "CREATE TABLE IF NOT EXISTS hsse_daily_record" in schema
+    assert "UNIQUE KEY uq_hsse_daily_team_date (team_id, record_date)" in schema
+    assert "data_source_type VARCHAR(32)" in schema
+    assert "source_context_json JSON" in schema
+    assert "CREATE TABLE IF NOT EXISTS hsse_daily_record_well" in schema
+    assert "CREATE TABLE IF NOT EXISTS hsse_daily_item" in schema
+    assert 'type="hidden" data-hsse-project' in html
+    assert "data-hsse-well-trigger" in html
+    assert "data-hsse-well-id" in script
+    assert "井队24小时工况摘要" in html
+    assert "preferredWellIds" in script
+    assert 'adminRequest("/api/hsse/daily-records"' in script
+
+
+def test_hsse_dashboard_uses_full_roster_and_excludes_rectification_workflow() -> None:
+    root = Path(__file__).parents[1]
+    html = root.joinpath("web_form", "index.html").read_text(encoding="utf-8")
+    script = root.joinpath("web_form", "app.js").read_text(encoding="utf-8")
+    service = root.joinpath("drilling_report_parser", "hsse_service.py").read_text(encoding="utf-8")
+    server = root.joinpath("drilling_report_parser", "form_server.py").read_text(encoding="utf-8")
+
+    assert 'id="hsseDashboardPage"' in html
+    assert '"hsse-dashboard": "hsseDashboardPage"' in script
+    assert 'adminRequest(`/api/hsse/dashboard?' in script
+    assert 'parsed.path == "/api/hsse/dashboard"' in server
+    assert 'parsed.path == "/api/hsse/dashboard-export"' in server
+    assert "rel_project_team_assignment" in service
+    assert "expected_team_days" in service
+    assert "EXCEL_IMPORT" in service
+    assert "SIMULATED" in service
+    assert "Excel真实记录" in service
+    assert "模拟数据" in service
+    dashboard_markup = html.split('id="hsseDashboardPage"', 1)[1].split('id="modulePlaceholder"', 1)[0]
+    assert "data-hsse-dashboard-source" in dashboard_markup
+    assert "数据来源" in dashboard_markup
+    assert "漏报（天）" not in dashboard_markup
+    assert "事项次数 / 本月应填报天数" in dashboard_markup
+    assert "value / expectedDays * 100" in script
+    assert "source_summary" in service
+    assert "source_reference" in service
+    for forbidden in ("整改措施", "整改状态", "闭环状态", "计划完成", "审核状态"):
+        assert forbidden not in dashboard_markup
 
 
 def test_monthly_team_workload_payload_groups_projects_by_standard_team_and_profession() -> None:
@@ -607,6 +711,7 @@ def test_monthly_team_workload_export_has_dynamic_rows_and_clean_formulas() -> N
         ],
     })
     workbook = load_workbook(BytesIO(data), data_only=False)
+    assert workbook.sheetnames == ["6月份"]
     worksheet = workbook["6月份"]
 
     assert worksheet["A1"].value == "2026年6月厄子公司石油工程项目工作量统计表"
@@ -1587,10 +1692,103 @@ class FormServerImportTest(unittest.TestCase):
         self.assertTrue(all(rule["enabled"] for rule in rules))
         self.assertTrue(all(rule["source_fields"] for rule in rules))
 
+    def test_monthly_nonproductive_rule_only_reads_confirmed_npt_operations(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._monthly_npt_description_rule(), 0)
+        self.assertEqual(rule["source_fields"], [{
+            "section": "operations", "field": "operation_details",
+            "report_types": ["drilling", "completion", "workover"],
+        }])
+        payload = {
+            "operations": [
+                {"hours": 5, "op_type": "P", "operation_details": "WAITING BUT CLASSIFIED P"},
+                {"hours": 2, "op_type": "SC", "operation_details": "SPECIAL CONDITION"},
+                {"hours": 1.5, "op_type": "SC", "operation_details": "CONFIRMED NPT EVENT"},
+            ],
+        }
+        classifications = {
+            ("r-1", 1): {"source_op_type": "P", "confirmed_op_type": "P", "confirmation_status": "AUTO_CONFIRMED"},
+            ("r-1", 2): {"source_op_type": "SC", "confirmed_op_type": "SC", "confirmation_status": "CONFIRMED"},
+            ("r-1", 3): {"source_op_type": "SC", "confirmed_op_type": "NPT", "confirmation_status": "CONFIRMED"},
+        }
+
+        unit, sources = form_server._aggregate_rule_record_unit(
+            payload, rule, "drilling", "r-1", classifications,
+        )
+
+        self.assertEqual(sources, [{"section": "operations", "field": "operation_details"}])
+        self.assertIsNotNone(unit)
+        self.assertNotIn("WAITING BUT CLASSIFIED P", unit["source_text"])
+        self.assertNotIn("SPECIAL CONDITION", unit["source_text"])
+        self.assertIn("CONFIRMED NPT EVENT", unit["source_text"])
+        self.assertEqual(unit["source_entries"][0]["row_no"], 3)
+
+    def test_monthly_nonproductive_rule_has_no_unit_without_confirmed_npt(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._monthly_npt_description_rule(), 0)
+        payload = {"operations": [{"hours": 4, "op_type": "P", "operation_details": "WAIT ON INSTRUCTIONS"}]}
+        classifications = {
+            ("r-1", 1): {"source_op_type": "P", "confirmed_op_type": "P", "confirmation_status": "AUTO_CONFIRMED"},
+        }
+
+        unit, _ = form_server._aggregate_rule_record_unit(
+            payload, rule, "drilling", "r-1", classifications,
+        )
+
+        self.assertIsNone(unit)
+
     def test_monthly_narrative_empty_variants_normalize_to_no(self) -> None:
         self.assertEqual(form_server._normalize_monthly_narrative_result("NPT: 无"), "无")
         self.assertEqual(form_server._normalize_monthly_narrative_result("无特别说明。"), "无")
         self.assertEqual(form_server._normalize_monthly_narrative_result("等待指令5小时"), "等待指令5小时")
+
+    def test_extraction_task_scope_maps_completion_into_drilling_monthly_profession(self) -> None:
+        scope = form_server._extraction_task_scope("team_month", {
+            "record_id": "r-1", "report_type": "completion", "report_date": "2026-07-15",
+            "project_id": 3, "well_id": 7, "team_id": 9,
+        })
+
+        self.assertIsNotNone(scope)
+        self.assertEqual(scope["profession"], "drilling")
+        self.assertEqual(scope["period_start"], "2026-07-01")
+        self.assertEqual(scope["period_end"], "2026-07-31")
+        self.assertEqual(scope["scope_key"], "TEAM_MONTH:9:drilling:2026-07")
+        self.assertNotIn("project_id", scope)
+        self.assertNotIn("well_id", scope)
+        self.assertNotIn("job_sequence_no", scope)
+
+    def test_extraction_task_scopes_discard_dimensions_from_other_grains(self) -> None:
+        record = {
+            "record_id": "r-1", "report_type": "drilling", "report_date": "2026-07-15",
+            "project_id": 3, "job_id": 5, "job_sequence_no": 2, "well_id": 7, "team_id": 9,
+        }
+
+        job_scope = form_server._extraction_task_scope("well_job", record)
+        month_scope = form_server._extraction_task_scope("well_month", record)
+
+        self.assertEqual(job_scope["scope_key"], "WELL_JOB:3:7:2")
+        self.assertNotIn("team_id", job_scope)
+        self.assertNotIn("period_start", job_scope)
+        self.assertNotIn("period_end", job_scope)
+        self.assertEqual(month_scope["scope_key"], "WELL_MONTH:3:7:drilling:2026-07")
+        self.assertNotIn("team_id", month_scope)
+        self.assertNotIn("job_id", month_scope)
+        self.assertNotIn("job_sequence_no", month_scope)
+
+    def test_extraction_task_scope_requires_aggregate_master_dimensions(self) -> None:
+        scope = form_server._extraction_task_scope("well_job", {
+            "record_id": "r-1", "report_type": "drilling", "report_date": "2026-07-15",
+            "project_id": 0, "well_id": 0, "job_sequence_no": 0,
+        })
+
+        self.assertIsNone(scope)
+
+    def test_admin_extraction_queue_uses_unified_task_language(self) -> None:
+        script = Path(__file__).parents[1].joinpath("web_form", "admin.js").read_text(encoding="utf-8")
+
+        self.assertIn("源日报覆盖", script)
+        self.assertIn("单井作业周期", script)
+        self.assertIn("data-ai-extraction-task", script)
+        self.assertIn("生成全部历史任务", script)
+        self.assertIn("系统执行门控", script)
 
     def test_ai_extraction_target_fields_belong_to_exactly_one_grain(self) -> None:
         catalog = form_server._ai_extraction_catalog([{
@@ -1729,6 +1927,38 @@ class FormServerImportTest(unittest.TestCase):
         saved = save_results.call_args.args[1][0]
         self.assertEqual(saved["grain"], "team_month")
         self.assertEqual(saved["target_field"], "team_month_well_control_incident")
+
+    def test_monthly_report_does_not_display_stale_aggregate_result(self) -> None:
+        rule = form_server._normalize_ai_extraction_rule(form_server._monthly_well_control_rule(), 0)
+        records = [{
+            "record_id": "drilling:W-1:2026-07-01:1", "report_type": "drilling",
+            "report_date": "2026-07-01", "project_id": 10, "well_id": 7,
+            "well_name": "W-1", "job_sequence_no": 1,
+        }]
+        payloads = {records[0]["record_id"]: {
+            "metadata": {"report_type": "drilling"},
+            "report_fields": {"summary24h": "正常钻进，无异常。"}, "operations": [],
+        }}
+        stale = {
+            "scope_key": "WELL_JOB:10:7:1", "rule_id": rule["id"],
+            "target_field": rule["target_field"], "extraction_status": "COMPLETED",
+            "result_text": "不应显示的旧结果", "source_hash": "old-source",
+            "rule_version": "old-rules",
+        }
+        with (
+            patch.object(form_server, "_enabled_aggregate_extraction_rules", return_value=[rule]),
+            patch.object(form_server, "list_aggregate_scope_report_records", return_value=records),
+            patch.object(form_server, "load_report_payloads", return_value=payloads),
+            patch.object(form_server, "load_aggregate_extraction_results", return_value=[stale]),
+            patch.object(form_server, "_load_ai_extraction_config", return_value={"version": "rules-v2"}),
+        ):
+            values = form_server._aggregate_extraction_values(
+                Path("mysql"),
+                [{"grain": "well_job", "project_id": 10, "well_id": 7, "job_sequence_no": 1}],
+                execute_missing=False,
+            )
+
+        self.assertEqual(values, {})
 
     def test_stopped_extraction_is_available_to_continue(self) -> None:
         self.assertTrue(form_server._extraction_record_needs_processing(

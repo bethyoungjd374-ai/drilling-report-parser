@@ -129,6 +129,7 @@ def initialize_database() -> None:
                 _ensure_ai_extraction_storage_columns(cursor)
                 _ensure_project_relationship_columns(cursor)
                 _ensure_master_data_v3_columns(cursor)
+                _ensure_hsse_source_columns(cursor)
                 _migrate_remove_wellbore_master(cursor)
                 _migrate_master_data_v3(cursor)
                 _retire_legacy_database_objects(cursor)
@@ -638,6 +639,19 @@ def _ensure_project_relationship_columns(cursor: Any) -> None:
         for column, definition in definitions:
             if column not in columns:
                 cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def _ensure_hsse_source_columns(cursor: Any) -> None:
+    cursor.execute("SHOW COLUMNS FROM hsse_daily_record")
+    columns = {str(row.get("Field", "") or "") for row in cursor.fetchall()}
+    migrations = (
+        ("data_source_type", "VARCHAR(32) NOT NULL DEFAULT 'MANUAL' AFTER work_status_snapshot"),
+        ("source_reference", "VARCHAR(512) NOT NULL DEFAULT '' AFTER data_source_type"),
+        ("source_context_json", "JSON NULL AFTER source_reference"),
+    )
+    for column, definition in migrations:
+        if column not in columns:
+            cursor.execute(f"ALTER TABLE hsse_daily_record ADD COLUMN {column} {definition}")
 
 
 def _ensure_master_data_v3_columns(cursor: Any) -> None:
@@ -2146,6 +2160,257 @@ def load_aggregate_extraction_results(
     return result
 
 
+def list_ai_extraction_source_records(database_path: str | Path | None = None) -> list[dict[str, Any]]:
+    """Return every normalized daily report with the dimensions used by extraction grains."""
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT report.record_id,report.report_type,DATE_FORMAT(report.report_date,'%Y-%m-%d') AS report_date,
+                       report.project_id,COALESCE(project.project_name,'') AS project_name,
+                       report.job_id,COALESCE(job.sequence_no,0) AS job_sequence_no,
+                       report.well_id,COALESCE(well.well_name,raw_record.wellbore,'') AS well_name,
+                       rig.team_id,COALESCE(team.team_name,raw_record.rig,'') AS team_name,
+                       COALESCE(raw_record.updated_at,'') AS record_updated_at,
+                       COALESCE(raw_record.translation_updated_at,'') AS translation_updated_at
+                FROM dpr_report report
+                JOIN dpr_report_record raw_record ON raw_record.record_id=report.record_id
+                LEFT JOIN md_project project ON project.id=report.project_id
+                LEFT JOIN biz_job job ON job.id=report.job_id
+                LEFT JOIN md_well well ON well.id=report.well_id
+                LEFT JOIN md_rig rig ON rig.id=report.rig_id
+                LEFT JOIN md_team team ON team.id=rig.team_id
+                ORDER BY report.report_date,report.report_type,report.record_id
+                """
+            )
+            rows = cursor.fetchall() or []
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        item = {key: value for key, value in row.items()}
+        for key in ("project_id", "job_id", "job_sequence_no", "well_id", "team_id"):
+            item[key] = int(item.get(key) or 0)
+        for key in (
+            "record_id", "report_type", "report_date", "project_name", "well_name",
+            "team_name", "record_updated_at", "translation_updated_at",
+        ):
+            item[key] = _text(item.get(key))
+        result.append(item)
+    return result
+
+
+def save_ai_extraction_tasks(
+    database_path: str | Path | None,
+    tasks: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+    *,
+    replace_manifest: bool = False,
+) -> None:
+    """Upsert the current task manifest and its source-report membership."""
+    del database_path
+    initialize_database()
+    now = _now()
+    active_ids = [_text(task.get("task_id")) for task in tasks if _text(task.get("task_id"))]
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            current_runtime: dict[str, dict[str, Any]] = {}
+            if active_ids:
+                placeholders = ",".join(["%s"] * len(active_ids))
+                cursor.execute(
+                    f"""SELECT task_id,source_hash,rule_version,status,progress,attempt_count,error_message,
+                               started_at,completed_at,updated_at
+                        FROM ai_extraction_task WHERE task_id IN ({placeholders}) FOR UPDATE""",
+                    active_ids,
+                )
+                current_runtime = {
+                    _text(row.get("task_id")): row for row in (cursor.fetchall() or [])
+                }
+            if replace_manifest:
+                cursor.execute("UPDATE ai_extraction_task SET active=0 WHERE active=1")
+            for task in tasks:
+                report_types = task.get("report_types") if isinstance(task.get("report_types"), list) else []
+                runtime = _ai_extraction_task_manifest_runtime(
+                    task, current_runtime.get(_text(task.get("task_id")), {}),
+                )
+                cursor.execute(
+                    """INSERT INTO ai_extraction_task
+                    (task_id,rule_id,rule_name,grain,scope_key,scope_label,record_id,project_id,job_id,
+                     job_sequence_no,well_id,well_name,team_id,team_name,profession,report_types,
+                     period_start,period_end,target_field,target_field_label,source_record_count,source_hash,
+                     rule_version,status,progress,attempt_count,error_message,active,started_at,completed_at,updated_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1,%s,%s,%s)
+                    ON DUPLICATE KEY UPDATE rule_name=VALUES(rule_name),grain=VALUES(grain),scope_key=VALUES(scope_key),
+                    scope_label=VALUES(scope_label),record_id=VALUES(record_id),project_id=VALUES(project_id),
+                    job_id=VALUES(job_id),job_sequence_no=VALUES(job_sequence_no),well_id=VALUES(well_id),
+                    well_name=VALUES(well_name),team_id=VALUES(team_id),team_name=VALUES(team_name),
+                    profession=VALUES(profession),report_types=VALUES(report_types),period_start=VALUES(period_start),
+                    period_end=VALUES(period_end),target_field=VALUES(target_field),
+                    target_field_label=VALUES(target_field_label),source_record_count=VALUES(source_record_count),
+                    source_hash=VALUES(source_hash),rule_version=VALUES(rule_version),status=VALUES(status),
+                    progress=VALUES(progress),attempt_count=GREATEST(attempt_count,VALUES(attempt_count)),
+                    error_message=VALUES(error_message),active=1,started_at=VALUES(started_at),
+                    completed_at=VALUES(completed_at),updated_at=VALUES(updated_at)""",
+                    (
+                        _text(task.get("task_id")), _text(task.get("rule_id")), _text(task.get("rule_name")),
+                        _text(task.get("grain")), _text(task.get("scope_key")), _text(task.get("scope_label"))[:512],
+                        _text(task.get("record_id")) or None, int(task.get("project_id") or 0) or None,
+                        int(task.get("job_id") or 0) or None, int(task.get("job_sequence_no") or 0) or None,
+                        int(task.get("well_id") or 0) or None, _text(task.get("well_name"))[:255],
+                        int(task.get("team_id") or 0) or None, _text(task.get("team_name"))[:255],
+                        _text(task.get("profession"))[:32], json.dumps(report_types, ensure_ascii=False),
+                        _text(task.get("period_start")) or None, _text(task.get("period_end")) or None,
+                        _text(task.get("target_field")), _text(task.get("target_field_label"))[:128],
+                        int(task.get("source_record_count") or 0), _text(task.get("source_hash")),
+                        _text(task.get("rule_version")), runtime["status"],
+                        runtime["progress"], runtime["attempt_count"],
+                        runtime["error_message"], runtime["started_at"],
+                        runtime["completed_at"], runtime["updated_at"] or now,
+                    ),
+                )
+            if active_ids:
+                placeholders = ",".join(["%s"] * len(active_ids))
+                cursor.execute(f"DELETE FROM ai_extraction_task_source WHERE task_id IN ({placeholders})", active_ids)
+            for source in sources:
+                source_fields = source.get("source_fields") if isinstance(source.get("source_fields"), list) else []
+                cursor.execute(
+                    """INSERT INTO ai_extraction_task_source
+                    (task_id,record_id,report_type,report_date,well_name,team_name,source_fields,source_hash,created_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON DUPLICATE KEY UPDATE report_type=VALUES(report_type),report_date=VALUES(report_date),
+                    well_name=VALUES(well_name),team_name=VALUES(team_name),source_fields=VALUES(source_fields),
+                    source_hash=VALUES(source_hash),created_at=VALUES(created_at)""",
+                    (
+                        _text(source.get("task_id")), _text(source.get("record_id")),
+                        _text(source.get("report_type"))[:32], _text(source.get("report_date")) or None,
+                        _text(source.get("well_name"))[:255], _text(source.get("team_name"))[:255],
+                        json.dumps(source_fields, ensure_ascii=False), _text(source.get("source_hash")), now,
+                    ),
+                )
+        connection.commit()
+
+
+def _ai_extraction_task_manifest_runtime(
+    task: dict[str, Any],
+    current: dict[str, Any],
+) -> dict[str, Any]:
+    """Keep a worker's terminal write when manifest reconciliation read an older active state."""
+    incoming_status = _text(task.get("status") or "PENDING").upper()
+    current_status = _text(current.get("status")).upper()
+    same_manifest = bool(current) and (
+        _text(current.get("source_hash")) == _text(task.get("source_hash"))
+        and _text(current.get("rule_version")) == _text(task.get("rule_version"))
+    )
+    preserve_current = (
+        same_manifest
+        and incoming_status in {"QUEUED", "IN_PROGRESS"}
+        and current_status not in {"QUEUED", "IN_PROGRESS"}
+    )
+    source = current if preserve_current else task
+    return {
+        "status": _text(source.get("status") or "PENDING").upper(),
+        "progress": int(source.get("progress") or 0),
+        "attempt_count": int(source.get("attempt_count") or 0),
+        "error_message": _text(source.get("error_message"))[:500],
+        "started_at": _text(source.get("started_at")),
+        "completed_at": _text(source.get("completed_at")),
+        "updated_at": _text(source.get("updated_at")),
+    }
+
+
+def list_ai_extraction_tasks(
+    database_path: str | Path | None = None,
+    *,
+    task_ids: list[str] | None = None,
+    active_only: bool = True,
+) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    conditions: list[str] = ["active=1"] if active_only else []
+    args: list[object] = []
+    normalized_ids = [_text(value) for value in (task_ids or []) if _text(value)]
+    if normalized_ids:
+        conditions.append(f"task_id IN ({','.join(['%s'] * len(normalized_ids))})")
+        args.extend(normalized_ids)
+    sql = "SELECT * FROM ai_extraction_task"
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY period_start DESC,grain,scope_label,rule_name"
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, args)
+            rows = cursor.fetchall() or []
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        item = {key: value for key, value in row.items() if key != "mysql_updated_at"}
+        for key in ("project_id", "job_id", "job_sequence_no", "well_id", "team_id", "source_record_count", "progress", "attempt_count"):
+            item[key] = int(item.get(key) or 0)
+        item["active"] = bool(item.get("active"))
+        raw_types = item.get("report_types")
+        item["report_types"] = _json_loads(raw_types, []) if not isinstance(raw_types, list) else raw_types
+        for key in ("period_start", "period_end"):
+            item[key] = _text(item.get(key))[:10]
+        for key in (
+            "task_id", "rule_id", "rule_name", "grain", "scope_key", "scope_label", "record_id",
+            "well_name", "team_name", "profession", "target_field", "target_field_label", "source_hash",
+            "rule_version", "status", "error_message", "started_at", "completed_at", "updated_at",
+        ):
+            item[key] = _text(item.get(key))
+        result.append(item)
+    return result
+
+
+def list_ai_extraction_task_sources(database_path: str | Path | None, task_id: str) -> list[dict[str, Any]]:
+    del database_path
+    initialize_database()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM ai_extraction_task_source WHERE task_id=%s ORDER BY report_date,report_type,record_id",
+                (_text(task_id),),
+            )
+            rows = cursor.fetchall() or []
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        item = {key: value for key, value in row.items()}
+        raw_fields = item.get("source_fields")
+        item["source_fields"] = _json_loads(raw_fields, []) if not isinstance(raw_fields, list) else raw_fields
+        item["report_date"] = _text(item.get("report_date"))[:10]
+        for key in ("task_id", "record_id", "report_type", "well_name", "team_name", "source_hash", "created_at"):
+            item[key] = _text(item.get(key))
+        result.append(item)
+    return result
+
+
+def update_ai_extraction_task_status(
+    database_path: str | Path | None,
+    task_id: str,
+    *,
+    status: str,
+    progress: int | None = None,
+    error: str = "",
+    increment_attempt: bool = False,
+) -> None:
+    del database_path
+    if not task_id:
+        return
+    initialize_database()
+    now = _now()
+    with _connect() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE ai_extraction_task SET status=%s,progress=COALESCE(%s,progress),error_message=%s,
+                   attempt_count=attempt_count+%s,started_at=IF(%s='IN_PROGRESS' AND started_at='',%s,started_at),
+                   completed_at=IF(%s='COMPLETED',%s,IF(%s IN ('PENDING','STALE','QUEUED','IN_PROGRESS'),'',completed_at)),
+                   updated_at=%s WHERE task_id=%s""",
+                (
+                    _text(status), progress, _text(error)[:500], 1 if increment_attempt else 0,
+                    _text(status), now, _text(status), now, _text(status), now, _text(task_id),
+                ),
+            )
+        connection.commit()
+
+
 def save_extraction_result_sources(database_path: str | Path | None, rows: list[dict[str, Any]]) -> None:
     del database_path
     if not rows:
@@ -2198,20 +2463,27 @@ def list_aggregate_scope_report_records(
         normalized_types = [value for value in normalized_types if value in {"drilling", "completion"}]
     if not normalized_types:
         return []
+    grain = _text(scope.get("grain")).lower()
     conditions = [f"report.report_type IN ({','.join(['%s'] * len(normalized_types))})"]
     args: list[object] = [*normalized_types]
-    for key, column in (("project_id", "report.project_id"), ("well_id", "report.well_id"), ("team_id", "rig.team_id")):
+    dimension_columns = {
+        "well": (("well_id", "report.well_id"),),
+        "well_job": (("project_id", "report.project_id"), ("well_id", "report.well_id")),
+        "well_month": (("project_id", "report.project_id"), ("well_id", "report.well_id")),
+        "team_month": (("team_id", "rig.team_id"),),
+    }.get(grain, (("project_id", "report.project_id"), ("well_id", "report.well_id"), ("team_id", "rig.team_id")))
+    for key, column in dimension_columns:
         value = int(scope.get(key) or 0)
         if value:
             conditions.append(f"{column}=%s")
             args.append(value)
     sequence = int(scope.get("job_sequence_no") or 0)
-    if sequence:
+    if grain == "well_job" and sequence:
         conditions.append("job.sequence_no=%s")
         args.append(sequence)
     period_start = _text(scope.get("period_start"))[:10]
     period_end = _text(scope.get("period_end"))[:10]
-    if period_start and period_end:
+    if grain in {"well_month", "team_month"} and period_start and period_end:
         conditions.append("report.report_date BETWEEN %s AND %s")
         args.extend([period_start, period_end])
     sql = f"""

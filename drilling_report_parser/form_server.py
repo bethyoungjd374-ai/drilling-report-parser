@@ -44,6 +44,9 @@ from .storage import (
     initialize_database,
     list_npt_confirmation_wells,
     list_ai_job_status,
+    list_ai_extraction_source_records,
+    list_ai_extraction_tasks,
+    list_ai_extraction_task_sources,
     list_ai_extraction_target_fields,
     list_aggregate_scope_report_records,
     list_team_month_report_records,
@@ -56,6 +59,7 @@ from .storage import (
     load_workover_basic_monthly_report_rows,
     load_monthly_efficiency_report_rows,
     load_npt_confirmation_detail,
+    load_activity_classifications,
     load_operation_translations,
     load_production_report_remarks,
     load_report_payload,
@@ -74,12 +78,14 @@ from .storage import (
     save_aggregate_extraction_results,
     save_extraction_result_sources,
     save_ai_extraction_target_fields,
+    save_ai_extraction_tasks,
     save_translation_content,
     save_translation_memory_entry,
     delete_translation_memory_entry,
     revise_translation_content,
     update_record_translation_status,
     update_record_extraction_status,
+    update_ai_extraction_task_status,
     upsert_translation_content,
 )
 from .master_data_service import (
@@ -92,6 +98,12 @@ from .master_data_service import (
     save_master_entity,
     save_project_relationships,
     validate_assignment,
+)
+from .hsse_service import (
+    list_hsse_daily_records,
+    load_hsse_dashboard,
+    load_hsse_form_options,
+    save_hsse_daily_record,
 )
 from .pdf_batch import PdfReportSegment, split_pdf_daily_reports
 from .pdf_import_service import (
@@ -169,7 +181,7 @@ TRANSLATION_TERMS_PATH = ROOT / "outputs" / "translation_terms.json"
 TRANSLATION_TUNING_PATH = ROOT / "outputs" / "translation_tuning.json"
 AI_MODELS_PATH = ROOT / "outputs" / "ai_model_configs.json"
 AI_EXTRACTION_RULES_PATH = ROOT / "outputs" / "ai_extraction_rules.json"
-AI_EXTRACTION_PIPELINE_VERSION = "monthly-narrative-zh-v5"
+AI_EXTRACTION_PIPELINE_VERSION = "monthly-narrative-zh-v6"
 DEFAULT_TRANSLATION_TERMS_PATH = ROOT / "drilling_report_parser" / "translation" / "drilling_terms.json"
 AUDIT_LOG_PATH = ROOT / "outputs" / "audit_logs.jsonl"
 TRANSLATION_METRICS_PATH = ROOT / "outputs" / "runtime" / "translation_metrics.jsonl"
@@ -370,6 +382,43 @@ class FormHandler(BaseHTTPRequestHandler):
                 return
             self._npt_confirmation_detail(parsed.query, user)
             return
+        if parsed.path == "/api/hsse/form-options":
+            if not self._require_permission("view"):
+                return
+            query = parse_qs(parsed.query)
+            self._v2_json_call(lambda: load_hsse_form_options(
+                str((query.get("record_date") or [date.today().isoformat()])[0])
+            ))
+            return
+        if parsed.path == "/api/hsse/daily-records":
+            if not self._require_permission("view"):
+                return
+            query = parse_qs(parsed.query)
+            self._v2_json_call(lambda: list_hsse_daily_records(
+                month=str((query.get("month") or [date.today().strftime("%Y-%m")])[0]),
+                project_id=str((query.get("project_id") or [""])[0]),
+                team_id=str((query.get("team_id") or [""])[0]),
+            ))
+            return
+        if parsed.path == "/api/hsse/dashboard":
+            if not self._require_permission("view"):
+                return
+            query = parse_qs(parsed.query)
+            self._v2_json_call(lambda: load_hsse_dashboard(
+                month=str((query.get("month") or [date.today().strftime("%Y-%m")])[0]),
+                project_id=str((query.get("project_id") or [""])[0]),
+                organization_id=str((query.get("organization_id") or [""])[0]),
+                discipline=str((query.get("discipline") or [""])[0]),
+                team_id=str((query.get("team_id") or [""])[0]),
+                source_type=str((query.get("source_type") or [""])[0]),
+                only_issues=str((query.get("only_issues") or [""])[0]).lower() in {"1", "true", "yes"},
+            ))
+            return
+        if parsed.path == "/api/hsse/dashboard-export":
+            if not self._require_permission("export"):
+                return
+            self._hsse_dashboard_export(parsed.query)
+            return
         if parsed.path == "/api/source-pdf":
             if not self._require_permission("view"):
                 return
@@ -431,7 +480,7 @@ class FormHandler(BaseHTTPRequestHandler):
             self._admin_ai_extraction_rules()
             return
         if parsed.path == "/api/admin/ai-extractions":
-            self._admin_ai_extractions()
+            self._admin_ai_extractions(parsed.query)
             return
         if parsed.path == "/api/admin/ai-extractions/status":
             self._admin_ai_extraction_status()
@@ -608,6 +657,21 @@ class FormHandler(BaseHTTPRequestHandler):
             if not user:
                 return
             self._save_npt_confirmation(user)
+            return
+        if self.path == "/api/hsse/daily-records":
+            user = self._require_permission("save")
+            if not user:
+                return
+            payload = self._read_json_body()
+            self._v2_json_call(
+                lambda: {"record": save_hsse_daily_record(
+                    payload,
+                    actor=str(user.get("username") or "web-form"),
+                )},
+                audit_user=user,
+                audit_action="save_hsse_daily_record",
+                audit_target=f"{payload.get('record_date', '')}:{payload.get('team_id', '')}",
+            )
             return
         self.send_error(404)
 
@@ -1401,9 +1465,36 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         self._send_json(_load_ai_extraction_config())
 
-    def _admin_ai_extractions(self) -> None:
+    def _admin_ai_extractions(self, query_string: str = "") -> None:
         user = self._require_admin()
         if not user:
+            return
+        params = parse_qs(query_string)
+        task_id = str((params.get("task_id") or [""])[0] or "").strip()
+        if task_id:
+            tasks = list_ai_extraction_tasks(DATABASE_PATH, task_ids=[task_id])
+            if not tasks:
+                self._send_json({"error": "提炼任务不存在或已失效。"}, status=404)
+                return
+            task = tasks[0]
+            result: dict[str, object] = {}
+            grain = str(task.get("grain", "") or "")
+            if grain in {"detail_row", "report"}:
+                result_rows = load_extraction_results(DATABASE_PATH, str(task.get("record_id", "") or ""))
+                result = {
+                    "rows": [row for row in result_rows if str(row.get("rule_id", "")) == str(task.get("rule_id", ""))]
+                }
+            else:
+                result_rows = load_aggregate_extraction_results(
+                    DATABASE_PATH, rule_id=str(task.get("rule_id", "") or ""),
+                    scope_keys=[str(task.get("scope_key", "") or "")],
+                    target_field=str(task.get("target_field", "") or ""),
+                )
+                result = result_rows[0] if result_rows else {}
+            self._send_json({
+                "task": task, "sources": list_ai_extraction_task_sources(DATABASE_PATH, task_id),
+                "result": result,
+            })
             return
         self._send_json(_extraction_queue_snapshot())
 
@@ -1442,8 +1533,9 @@ class FormHandler(BaseHTTPRequestHandler):
             if record_id and status not in {"NOT_REQUIRED", "QUEUED", "IN_PROGRESS"} and str(record.get("extraction_version", "") or "") != config["version"]:
                 update_record_extraction_status(DATABASE_PATH, record_id, status="STALE", progress=record.get("extraction_progress", ""), error="")
                 stale += 1
+        task_manifest = _reconcile_ai_extraction_tasks()
         _write_audit(user, "save_ai_extraction_rules", "ai_service", "field_extraction", True, f"{len(config['rules'])} rules / {stale} stale")
-        self._send_json({"ok": True, "stale_records": stale, **config})
+        self._send_json({"ok": True, "stale_records": stale, "task_manifest": task_manifest, **config})
 
     def _admin_test_ai_extraction_rule(self) -> None:
         user = self._require_admin()
@@ -1517,43 +1609,61 @@ class FormHandler(BaseHTTPRequestHandler):
             return
         payload = self._read_json_body()
         mode = str(payload.get("mode", "continue") or "continue").strip().lower()
-        if mode not in {"continue", "overwrite"}:
-            self._send_json({"error": "执行模式必须是继续提炼或覆盖提炼。"}, status=400)
+        if mode not in {"continue", "overwrite", "rebuild"}:
+            self._send_json({"error": "执行模式必须是生成历史任务、继续提炼或覆盖提炼。"}, status=400)
             return
-        requested_ids = payload.get("record_ids") if isinstance(payload.get("record_ids"), list) else None
-        selected_ids = {str(item or "").strip() for item in requested_ids or [] if str(item or "").strip()}
-        if requested_ids is not None and not selected_ids:
-            self._send_json({"error": "请至少选择一条日报。"}, status=400)
+        coverage = _reconcile_ai_extraction_tasks()
+        if mode == "rebuild":
+            _write_audit(
+                user, "rebuild_ai_extraction_tasks", "ai_service", "task_manifest", True,
+                f"{coverage['task_count']} tasks / {coverage['source_report_count']} sources",
+            )
+            self._send_json({"ok": True, "mode": mode, **coverage})
             return
-        current_version = str(_load_ai_extraction_config().get("version", "") or "")
-        enabled_rules = _enabled_extraction_rules()
+        requested_task_ids = payload.get("task_ids") if isinstance(payload.get("task_ids"), list) else None
+        legacy_record_ids = payload.get("record_ids") if isinstance(payload.get("record_ids"), list) else None
+        selected_task_ids = {str(item or "").strip() for item in requested_task_ids or [] if str(item or "").strip()}
+        tasks = list_ai_extraction_tasks(DATABASE_PATH)
+        if requested_task_ids is not None and not selected_task_ids:
+            self._send_json({"error": "请至少选择一条提炼任务。"}, status=400)
+            return
+        if selected_task_ids:
+            tasks = [task for task in tasks if str(task.get("task_id", "")) in selected_task_ids]
+        elif legacy_record_ids is not None:
+            selected_record_ids = {str(item or "").strip() for item in legacy_record_ids if str(item or "").strip()}
+            tasks = [task for task in tasks if str(task.get("record_id", "")) in selected_record_ids]
+        else:
+            tasks = [
+                task for task in tasks
+                if mode == "overwrite" or str(task.get("status", "") or "").upper() in {"PENDING", "STALE", "STOPPED", "FAILED"}
+            ]
         queued = skipped = 0
-        for record in list_records(DATABASE_PATH):
-            record_id = str(record.get("record_id", "") or "")
-            if not record_id or (selected_ids and record_id not in selected_ids):
-                continue
-            status = str(record.get("extraction_status", "") or "").strip().upper()
-            if status in {"QUEUED", "IN_PROGRESS", "NOT_REQUIRED"}:
+        scheduled_records: set[str] = set()
+        for task in tasks:
+            task_id = str(task.get("task_id", "") or "")
+            status = str(task.get("status", "") or "").upper()
+            if not task_id or status in {"QUEUED", "IN_PROGRESS"} or (mode == "continue" and status == "COMPLETED"):
                 skipped += 1
                 continue
-            try:
-                report_payload = load_report_payload(DATABASE_PATH, record_id)
-            except (KeyError, FileNotFoundError, ValueError):
-                skipped += 1
-                continue
-            if not _payload_has_extraction_units(report_payload, str(record.get("report_type", "") or ""), enabled_rules):
-                update_record_extraction_status(DATABASE_PATH, record_id, status="NOT_REQUIRED", progress=100, error="", version=current_version)
-                skipped += 1
-                continue
-            if mode == "continue" and not _extraction_record_needs_processing(record, current_version):
-                skipped += 1
-                continue
-            _invalidate_extraction_jobs([record_id])
-            update_record_extraction_status(DATABASE_PATH, record_id, status="QUEUED", progress=0, error="")
-            _schedule_extraction_job(record_id, overwrite=mode == "overwrite")
+            update_ai_extraction_task_status(DATABASE_PATH, task_id, status="QUEUED", progress=0, error="")
+            grain = str(task.get("grain", "") or "")
+            if grain in {"detail_row", "report"}:
+                record_id = str(task.get("record_id", "") or "")
+                if not record_id:
+                    skipped += 1
+                    continue
+                if record_id in scheduled_records:
+                    queued += 1
+                    continue
+                scheduled_records.add(record_id)
+                _invalidate_extraction_jobs([record_id])
+                update_record_extraction_status(DATABASE_PATH, record_id, status="QUEUED", progress=0, error="")
+                _schedule_extraction_job(record_id, overwrite=mode == "overwrite")
+            else:
+                _schedule_aggregate_extraction_task(task_id, overwrite=mode == "overwrite")
             queued += 1
-        _write_audit(user, "queue_ai_extractions", "ai_service", mode, True, f"{queued} queued / {skipped} skipped")
-        self._send_json({"ok": True, "mode": mode, "queued_records": queued, "skipped_records": skipped})
+        _write_audit(user, "queue_ai_extractions", "ai_service", mode, True, f"{queued} tasks queued / {skipped} skipped")
+        self._send_json({"ok": True, "mode": mode, "queued_tasks": queued, "queued_records": queued, "skipped_tasks": skipped})
 
     def _admin_stop_translations(self) -> None:
         user = self._require_admin()
@@ -2058,6 +2168,121 @@ class FormHandler(BaseHTTPRequestHandler):
 
     def _npt_stats(self, query: str) -> None:
         self._send_json(_npt_stats_payload(DATABASE_PATH, parse_qs(query)))
+
+    def _hsse_dashboard_export(self, query: str) -> None:
+        params = parse_qs(query)
+        payload = load_hsse_dashboard(
+            month=str((params.get("month") or [date.today().strftime("%Y-%m")])[0]),
+            project_id=str((params.get("project_id") or [""])[0]),
+            organization_id=str((params.get("organization_id") or [""])[0]),
+            discipline=str((params.get("discipline") or [""])[0]),
+            team_id=str((params.get("team_id") or [""])[0]),
+            source_type=str((params.get("source_type") or [""])[0]),
+            only_issues=str((params.get("only_issues") or [""])[0]).lower() in {"1", "true", "yes"},
+        )
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "安全驾驶舱"
+        dark_fill = PatternFill("solid", fgColor="0B3558")
+        blue_fill = PatternFill("solid", fgColor="DDEEFF")
+        pale_fill = PatternFill("solid", fgColor="F5F8FB")
+        thin = Side(style="thin", color="CBD5E1")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        left = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+        sheet.merge_cells("A1:N1")
+        sheet["A1"] = f"安全驾驶舱月报（{payload.get('month', '')}）"
+        sheet["A1"].font = Font(name="Microsoft YaHei", size=16, bold=True, color="FFFFFF")
+        sheet["A1"].fill = dark_fill
+        sheet["A1"].alignment = center
+        summary = payload.get("summary", {})
+        summary_rows = [
+            ("队伍覆盖率", f"{summary.get('team_coverage_pct', 0)}%"),
+            ("填报完整率", f"{summary.get('completeness_pct', 0)}%"),
+            ("应填队日", summary.get("expected_team_days", 0)),
+            ("已填队日", summary.get("filled_team_days", 0)),
+            ("事项总数", summary.get("total_issues", 0)),
+        ]
+        sheet.append([])
+        for index, (label, value) in enumerate(summary_rows, start=1):
+            column = (index - 1) * 2 + 1
+            sheet.cell(3, column, label)
+            sheet.cell(3, column + 1, value)
+            sheet.cell(3, column).fill = blue_fill
+            sheet.cell(3, column).font = Font(bold=True)
+            for current in (sheet.cell(3, column), sheet.cell(3, column + 1)):
+                current.border = border
+                current.alignment = center
+
+        team_headers = ["序号", "项目", "队伍", "所属单位", "专业", "当前井/状态", "已钻/剩余", "填报/应填", "人的不安全行为/应填", "物的不安全状态/应填", "不放心员工/应填", "生产异常/应填", "数据来源", "风险等级"]
+        team_start = 5
+        for column, header in enumerate(team_headers, start=1):
+            cell = sheet.cell(team_start, column, header)
+            cell.fill = dark_fill
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.alignment = center
+            cell.border = border
+        for row_number, team in enumerate(payload.get("teams", []), start=1):
+            counts = team.get("issue_counts", {})
+            expected_days = int(team.get("expected_days") or 0)
+            source_summary = "；".join(
+                f"{item.get('label', item.get('type', ''))} {int(item.get('record_days') or 0)}天"
+                for item in team.get("source_summary", [])
+            ) or "暂无记录"
+            values = [
+                row_number, team.get("project_name", ""), team.get("team_code", ""), team.get("organization_name", ""),
+                team.get("discipline", ""), team.get("current_well", ""), team.get("progress_summary", ""),
+                f"{int(team.get('filled_days') or 0)}/{expected_days}",
+                f"{int(counts.get('UNSAFE_BEHAVIOR') or 0)}/{expected_days}",
+                f"{int(counts.get('SAFETY_HAZARD') or 0)}/{expected_days}",
+                f"{int(counts.get('CONCERN_EMPLOYEE') or 0)}/{expected_days}",
+                f"{int(counts.get('PRODUCTION_ANOMALY') or 0)}/{expected_days}",
+                source_summary, team.get("risk_level", "低"),
+            ]
+            for column, value in enumerate(values, start=1):
+                cell = sheet.cell(team_start + row_number, column, value)
+                cell.border = border
+                cell.alignment = left if column in {2, 3, 4, 5, 6, 7, 13} else center
+                if row_number % 2 == 0:
+                    cell.fill = pale_fill
+
+        event_start = team_start + len(payload.get("teams", [])) + 3
+        sheet.merge_cells(start_row=event_start, start_column=1, end_row=event_start, end_column=14)
+        sheet.cell(event_start, 1, "月度异常事件明细")
+        sheet.cell(event_start, 1).font = Font(bold=True, size=12, color="FFFFFF")
+        sheet.cell(event_start, 1).fill = dark_fill
+        event_headers = ["日期", "项目", "队伍", "井号", "分类", "当日事项汇总", "来源", "填报人", "更新时间"]
+        for column, header in enumerate(event_headers, start=1):
+            cell = sheet.cell(event_start + 1, column, header)
+            cell.fill = blue_fill
+            cell.font = Font(bold=True)
+            cell.border = border
+            cell.alignment = center
+        for row_number, event in enumerate(payload.get("event_groups", []), start=1):
+            values = [
+                event.get("date", ""), event.get("project_name", ""), event.get("team_code", ""),
+                "、".join(event.get("well_names", [])), event.get("category_label", ""), event.get("description", ""),
+                event.get("source", ""), event.get("submitter", ""), event.get("updated_at", ""),
+            ]
+            for column, value in enumerate(values, start=1):
+                cell = sheet.cell(event_start + 1 + row_number, column, value)
+                cell.border = border
+                cell.alignment = left if column in {2, 3, 4, 5, 6} else center
+        widths = [8, 24, 16, 20, 18, 22, 12, 12, 16, 16, 14, 14, 24, 12]
+        for column, width in enumerate(widths, start=1):
+            sheet.column_dimensions[chr(64 + column)].width = width
+        sheet.freeze_panes = "A6"
+        stream = BytesIO()
+        workbook.save(stream)
+        data = stream.getvalue()
+        filename = f"安全驾驶舱-{payload.get('month', '')}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.xlsx"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f"attachment; filename=\"hsse-safety-dashboard.xlsx\"; filename*=UTF-8''{quote(filename)}")
+        self.end_headers()
+        self.wfile.write(data)
 
     def _npt_stats_export(self, query: str) -> None:
         params = parse_qs(query)
@@ -2595,8 +2820,8 @@ def _active_ai_job_counts() -> dict[str, int]:
         if str(record.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
     )
     extraction = sum(
-        1 for record in list_ai_job_status("extraction")
-        if str(record.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
+        1 for task in list_ai_extraction_tasks(DATABASE_PATH)
+        if str(task.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
     )
     return {"translation": translation, "extraction": extraction, "total": translation + extraction}
 
@@ -2604,13 +2829,38 @@ def _active_ai_job_counts() -> dict[str, int]:
 def _ai_job_status_snapshot(kind: str) -> dict[str, object]:
     if kind not in {"translation", "extraction"}:
         raise ValueError("Unsupported AI job kind")
-    records = [{
-        "record_id": record.get("record_id", ""),
-        "status": str(record.get("status", "") or "PENDING").strip().upper(),
-        "progress": record.get("progress", "") or "0",
-        "error": record.get("error", "") or "",
-        "updated_at": record.get("updated_at", "") or "",
-    } for record in list_ai_job_status(kind)]
+    if kind == "extraction":
+        report_statuses = {
+            str(record.get("record_id", "") or ""): record
+            for record in list_ai_job_status("extraction")
+        }
+        tasks = list_ai_extraction_tasks(DATABASE_PATH)
+        for task in tasks:
+            if str(task.get("grain", "") or "") not in {"detail_row", "report"}:
+                continue
+            task_status = str(task.get("status", "") or "").upper()
+            source = report_statuses.get(str(task.get("record_id", "") or ""), {})
+            source_status = str(source.get("status", "") or "").upper()
+            if task_status not in {"QUEUED", "IN_PROGRESS"} or source_status not in {"QUEUED", "IN_PROGRESS", "COMPLETED", "FAILED", "STOPPED"}:
+                continue
+            update_ai_extraction_task_status(
+                DATABASE_PATH, str(task.get("task_id", "") or ""), status=source_status,
+                progress=int(source.get("progress") or 0), error=str(source.get("error", "") or ""),
+            )
+        records = [{
+            "task_id": task.get("task_id", ""), "record_id": task.get("record_id", ""),
+            "status": str(task.get("status", "") or "PENDING").strip().upper(),
+            "progress": task.get("progress", 0), "error": task.get("error_message", "") or "",
+            "updated_at": task.get("updated_at", "") or "",
+        } for task in list_ai_extraction_tasks(DATABASE_PATH)]
+    else:
+        records = [{
+            "record_id": record.get("record_id", ""),
+            "status": str(record.get("status", "") or "PENDING").strip().upper(),
+            "progress": record.get("progress", "") or "0",
+            "error": record.get("error", "") or "",
+            "updated_at": record.get("updated_at", "") or "",
+        } for record in list_ai_job_status(kind)]
     return {
         "kind": kind,
         "processing_count": sum(1 for record in records if record["status"] in {"QUEUED", "IN_PROGRESS"}),
@@ -4034,12 +4284,10 @@ def _monthly_npt_description_rule() -> dict[str, object]:
         "grain": "well_month",
         "report_types": ["drilling", "completion", "workover"],
         "source_fields": [
-            {"section": "report_fields", "field": "summary24h", "report_types": ["drilling", "completion", "workover"]},
-            {"section": "report_fields", "field": "otherRemarks", "report_types": ["drilling", "completion", "workover"]},
             {"section": "operations", "field": "operation_details", "report_types": ["drilling", "completion", "workover"]},
         ],
-        "condition": "按项目、井、专业和自然月综合当月日报，只提炼NPT、维修、事故复杂及其他非生产时间的原因。",
-        "instruction": "按影响程度提炼本井本月非生产时间原因，优先说明NPT、零日费维修、事故复杂及等待的具体对象、原因和累计时长；同一事件跨日报连续记录不得重复。不要写生产作业内容。没有非生产时间时只返回“无”；有内容时用精炼中文分号分隔，限220字。",
+        "condition": "系统仅提供确认状态为CONFIRMED/AUTO_CONFIRMED、统计状态为READY且有效作业类型为NPT的作业明细；按项目、井、专业和自然月汇总。没有合格NPT明细时不调用模型，月报直接显示“无”。",
+        "instruction": "仅根据输入的已确认NPT明细，按影响程度提炼本井本月非生产时间原因，说明具体对象、原因和累计时长；同一事件跨日报连续记录不得重复。不得把P或SC作业、常规作业、日报摘要和备注推断为非生产时间。用精炼中文分号分隔，限220字。",
         "target_field": "nonproductive_description",
         "target_field_label": "非生产时间原因描述",
         "output_format": "text",
@@ -4598,17 +4846,57 @@ def _aggregate_scope_key(scope: dict[str, object]) -> str:
     return ""
 
 
+def _canonical_aggregate_scope(source: dict[str, object]) -> dict[str, object]:
+    """Retain only the dimensions that define the selected extraction grain."""
+    grain = str(source.get("grain", "") or "")
+    scope: dict[str, object] = {"grain": grain}
+    if grain == "well":
+        scope["well_id"] = int(source.get("well_id") or 0)
+    elif grain == "well_job":
+        scope.update({
+            "project_id": int(source.get("project_id") or 0),
+            "job_id": int(source.get("job_id") or 0),
+            "job_sequence_no": int(source.get("job_sequence_no") or 0),
+            "well_id": int(source.get("well_id") or 0),
+            "profession": str(source.get("profession", "") or ""),
+        })
+    elif grain == "well_month":
+        scope.update({
+            "project_id": int(source.get("project_id") or 0),
+            "well_id": int(source.get("well_id") or 0),
+            "profession": str(source.get("profession", "") or ""),
+            "period_start": str(source.get("period_start", "") or "")[:10],
+            "period_end": str(source.get("period_end", "") or "")[:10],
+        })
+    elif grain == "team_month":
+        scope.update({
+            "team_id": int(source.get("team_id") or 0),
+            "profession": str(source.get("profession", "") or ""),
+            "period_start": str(source.get("period_start", "") or "")[:10],
+            "period_end": str(source.get("period_end", "") or "")[:10],
+        })
+    else:
+        scope.update(source)
+    report_types = source.get("scope_report_types")
+    if isinstance(report_types, list):
+        scope["scope_report_types"] = list(report_types)
+    return scope
+
+
 def _aggregate_extraction_values(
     database_path: Path,
     scopes: list[dict[str, object]],
     *,
     included_target_fields: set[str] | None = None,
     excluded_target_fields: set[str] | None = None,
+    included_rule_ids: set[str] | None = None,
+    execute_missing: bool = True,
+    force: bool = False,
 ) -> dict[str, dict[str, str]]:
     normalized_scopes: list[dict[str, object]] = []
     seen_scope_keys: set[str] = set()
     for source in scopes:
-        scope = dict(source)
+        scope = _canonical_aggregate_scope(source)
         scope_key = _aggregate_scope_key(scope)
         if not scope_key or scope_key in seen_scope_keys:
             continue
@@ -4619,10 +4907,12 @@ def _aggregate_extraction_values(
         return {}
     excluded_targets = excluded_target_fields or set()
     included_targets = included_target_fields or set()
+    included_rules = included_rule_ids or set()
     rules = [
         rule for rule in _enabled_aggregate_extraction_rules()
         if any(str(scope.get("grain", "")) == str(rule.get("grain", "")) for scope in normalized_scopes)
         and (not included_targets or str(rule.get("target_field", "") or "") in included_targets)
+        and (not included_rules or str(rule.get("id", "") or "") in included_rules)
         and str(rule.get("target_field", "") or "") not in excluded_targets
     ]
     if not rules:
@@ -4637,6 +4927,8 @@ def _aggregate_extraction_values(
     config_version = str(_load_ai_extraction_config().get("version", "") or "")
     values: dict[str, dict[str, str]] = {}
     payload_cache: dict[str, dict[str, object]] = {}
+    classification_cache: dict[tuple[str, int], dict[str, Any]] = {}
+    classification_record_ids: set[str] = set()
     for scope in normalized_scopes:
         scope_key = str(scope["scope_key"])
         for rule in rules:
@@ -4653,27 +4945,46 @@ def _aggregate_extraction_values(
             missing_ids = [record_id for record_id in record_ids if record_id not in payload_cache]
             if missing_ids:
                 payload_cache.update(load_report_payloads(database_path, missing_ids, include_translations=False))
+            target_field = str(rule.get("target_field", "") or "")
+            if target_field == "nonproductive_description":
+                missing_classification_ids = [
+                    record_id for record_id in record_ids if record_id not in classification_record_ids
+                ]
+                if missing_classification_ids:
+                    classification_cache.update(load_activity_classifications(
+                        database_path, missing_classification_ids,
+                    ))
+                    classification_record_ids.update(missing_classification_ids)
             source_rows: list[dict[str, str]] = []
             evidence_lines: list[str] = []
             lineage_rows: list[dict[str, object]] = []
-            target_field = str(rule.get("target_field", "") or "")
+            evidence_record_ids: list[str] = []
             for record in records:
                 record_id = str(record.get("record_id", "") or "")
                 report_type = str(record.get("report_type", "") or "")
                 payload = payload_cache.get(record_id, {})
-                sources = _ai_extraction_rule_sources(rule, report_type)
-                unit = _ai_extraction_record_unit(payload, sources) if isinstance(payload, dict) else None
+                unit, sources = _aggregate_rule_record_unit(
+                    payload, rule, report_type, record_id, classification_cache,
+                ) if isinstance(payload, dict) else (None, [])
                 source_text = str(unit.get("source_text", "") or "") if unit else ""
                 prompt_text = str(unit.get("prompt_text", "") or source_text) if unit else ""
-                source_rows.append({"record_id": record_id, "source_text": source_text})
+                if source_text:
+                    source_rows.append({"record_id": record_id, "source_text": source_text})
+                    evidence_record_ids.append(record_id)
                 if prompt_text:
                     header = f"{record.get('report_date', '')} | {record.get('well_name', '')} | {TRANSLATION_REPORT_TYPE_LABELS.get(report_type, report_type)}"
                     evidence_lines.append(f"【{header}】\n{prompt_text}")
-                for source in sources:
+                entries = unit.get("source_entries", []) if isinstance(unit, dict) else []
+                for entry in (entries if isinstance(entries, list) else []):
+                    if not isinstance(entry, dict):
+                        continue
+                    entry_text = str(entry.get("source_text", "") or "")
                     lineage_rows.append({
                         "scope_key": scope_key, "rule_id": rule.get("id", ""), "target_field": target_field,
-                        "record_id": record_id, "source_section": source.get("section", ""), "source_row_no": 0,
-                        "source_field": source.get("field", ""), "source_hash": hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
+                        "record_id": record_id, "source_section": entry.get("section", ""),
+                        "source_row_no": int(entry.get("row_no", 0) or 0),
+                        "source_field": entry.get("field", ""),
+                        "source_hash": hashlib.sha256(entry_text.encode("utf-8")).hexdigest(),
                     })
             if not record_ids:
                 continue
@@ -4682,8 +4993,10 @@ def _aggregate_extraction_values(
                 ensure_ascii=False, sort_keys=True, separators=(",", ":"),
             ).encode("utf-8")).hexdigest()
             old = existing.get((scope_key, str(rule.get("id", "")), target_field), {})
-            if old.get("extraction_status") == "COMPLETED" and old.get("source_hash") == source_hash_value and old.get("rule_version") == config_version:
+            if not force and old.get("extraction_status") == "COMPLETED" and old.get("source_hash") == source_hash_value and old.get("rule_version") == config_version:
                 values.setdefault(scope_key, {})[target_field] = str(old.get("result_text", "") or "")
+                continue
+            if not execute_missing:
                 continue
             now = datetime.now().isoformat(timespec="seconds")
             result_text = ""
@@ -4691,7 +5004,9 @@ def _aggregate_extraction_values(
             error = ""
             model_id = ""
             try:
-                if target_field in {"well_control_incident", "team_month_well_control_incident"}:
+                if target_field == "nonproductive_description" and not evidence_lines:
+                    result_text = "无"
+                elif target_field in {"well_control_incident", "team_month_well_control_incident"}:
                     signal_lines = [line for block in evidence_lines for line in block.splitlines() if WELL_CONTROL_SIGNAL_PATTERN.search(line)]
                     if not signal_lines:
                         result_text = "无"
@@ -4732,7 +5047,7 @@ def _aggregate_extraction_values(
             row = {
                 **scope, "rule_id": rule.get("id", ""), "target_field": target_field,
                 "output_format": output_format, "source_hash": source_hash_value,
-                "source_record_count": len(record_ids), "source_record_ids": record_ids,
+                "source_record_count": len(evidence_record_ids), "source_record_ids": evidence_record_ids,
                 "result_text": result_text, "result_number": result_number, "result_date": result_date,
                 "extraction_status": status, "error_message": error,
                 "model_config_id": model_id, "rule_version": config_version,
@@ -4773,7 +5088,7 @@ def _apply_monthly_aggregate_extractions(
     scopes: list[dict[str, object]] = []
     row_scope_keys: list[str] = []
     for row in rows:
-        scope = {
+        scope = _canonical_aggregate_scope({
             "grain": grain,
             "project_id": int(row.get("project_id") or 0),
             "job_id": int(row.get("job_id") or 0),
@@ -4784,9 +5099,7 @@ def _apply_monthly_aggregate_extractions(
             "period_start": period_start,
             "period_end": period_end,
             "scope_report_types": list(report_types or []),
-        }
-        if grain == "team_month":
-            scope["project_id"] = 0
+        })
         scope_key = _aggregate_scope_key(scope)
         scopes.append(scope)
         row_scope_keys.append(scope_key)
@@ -4794,7 +5107,7 @@ def _apply_monthly_aggregate_extractions(
     included_targets = included_target_fields or set()
     values = _aggregate_extraction_values(
         database_path, scopes, included_target_fields=included_target_fields,
-        excluded_target_fields=excluded_targets,
+        excluded_target_fields=excluded_targets, execute_missing=False,
     )
     for row, scope_key in zip(rows, row_scope_keys):
         for target_field, value in values.get(scope_key, {}).items():
@@ -4887,6 +5200,8 @@ def _ai_extraction_rule_sources(rule: dict[str, object], report_type: str = "") 
 def _ai_extraction_record_unit(
     payload: dict[str, object],
     sources: list[dict[str, str]],
+    *,
+    allowed_operation_rows: set[int] | None = None,
 ) -> dict[str, object] | None:
     source_lines: list[str] = []
     prompt_lines: list[str] = []
@@ -4894,6 +5209,7 @@ def _ai_extraction_record_unit(
     source_count = 0
     sections: list[str] = []
     paths: list[str] = []
+    source_entries: list[dict[str, object]] = []
     fields = payload.get("report_fields") if isinstance(payload.get("report_fields"), dict) else {}
     for source in sources:
         section = source["section"]
@@ -4909,6 +5225,9 @@ def _ai_extraction_record_unit(
                 continue
             source_count += 1
             source_lines.append(f"{path}={text}")
+            source_entries.append({
+                "section": section, "row_no": 0, "field": field, "source_text": text,
+            })
             prompt_lines.append(f"【{TRANSLATION_FIELD_LABELS.get(field, field)} · {path}】\n{text}")
             translated = _extraction_translation_reference(
                 payload, section=section, row_no=0, field=field, source_text=text,
@@ -4920,10 +5239,15 @@ def _ai_extraction_record_unit(
         for row_no, row in enumerate(rows, start=1):
             if not isinstance(row, dict):
                 continue
+            if section == "operations" and allowed_operation_rows is not None and row_no not in allowed_operation_rows:
+                continue
             text = str(row.get(field, "") or "").strip()
             if not text:
                 continue
             source_count += 1
+            source_entries.append({
+                "section": section, "row_no": row_no, "field": field, "source_text": text,
+            })
             context = {
                 key: row.get(key)
                 for key in ("from", "to", "hours", "op_code", "op_sub", "op_type", "system_op_type", "confirmed_op_type")
@@ -4958,13 +5282,65 @@ def _ai_extraction_record_unit(
         "translated_text": translated_text,
         "prompt_text": prompt_text,
         "source_count": source_count,
+        "source_entries": source_entries,
     }
+
+
+def _confirmed_npt_operation_rows(
+    record_id: str,
+    classifications: dict[tuple[str, int], dict[str, Any]],
+) -> set[int]:
+    """Return rows that use the same confirmed NPT gate as monthly statistics."""
+
+    allowed: set[int] = set()
+    for (candidate_record_id, row_no), classification in classifications.items():
+        if candidate_record_id != record_id:
+            continue
+        status = str(classification.get("confirmation_status", "") or "").upper()
+        effective_type = str(
+            classification.get("confirmed_op_type", "")
+            or classification.get("source_op_type", "")
+            or ""
+        ).upper()
+        if status in {"CONFIRMED", "AUTO_CONFIRMED"} and effective_type == "NPT":
+            allowed.add(int(row_no))
+    return allowed
+
+
+def _aggregate_rule_record_unit(
+    payload: dict[str, object],
+    rule: dict[str, object],
+    report_type: str,
+    record_id: str,
+    classifications: dict[tuple[str, int], dict[str, Any]],
+) -> tuple[dict[str, object] | None, list[dict[str, object]]]:
+    sources = _ai_extraction_rule_sources(rule, report_type)
+    if str(rule.get("target_field", "") or "") != "nonproductive_description":
+        return _ai_extraction_record_unit(payload, sources), sources
+    sources = [
+        source for source in sources
+        if source.get("section") == "operations" and source.get("field") == "operation_details"
+    ]
+    allowed_rows = _confirmed_npt_operation_rows(record_id, classifications)
+    if not sources or not allowed_rows:
+        return None, sources
+    return _ai_extraction_record_unit(
+        payload, sources, allowed_operation_rows=allowed_rows,
+    ), sources
 
 
 def _ai_extraction_source_from_payload(payload: dict[str, object], rule: dict[str, object]) -> tuple[str, int]:
     metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
     report_type = str(metadata.get("report_type", "") or "")
-    unit = _ai_extraction_record_unit(payload, _ai_extraction_rule_sources(rule, report_type))
+    record_id = str(metadata.get("record_id", "") or "")
+    classifications = (
+        load_activity_classifications(DATABASE_PATH, [record_id])
+        if record_id and str(rule.get("target_field", "") or "") == "nonproductive_description"
+        else {}
+    )
+    unit, _ = _aggregate_rule_record_unit(
+        payload, rule, report_type, record_id, classifications,
+    )
     if not unit:
         return "", 0
     return str(unit.get("prompt_text", "") or ""), int(unit.get("source_count", 0) or 0)
@@ -5185,6 +5561,65 @@ def _schedule_extraction_job(record_id: str, *, overwrite: bool = False) -> None
     executor.submit(_run_extraction_job, record_id, generation, overwrite)
 
 
+def _schedule_aggregate_extraction_task(task_id: str, *, overwrite: bool = False) -> None:
+    if not task_id:
+        return
+    generation_key = f"task:{task_id}"
+    with EXTRACTION_STATE_LOCK:
+        generation = EXTRACTION_JOB_GENERATIONS.get(generation_key, 0) + 1
+        EXTRACTION_JOB_GENERATIONS[generation_key] = generation
+        executor = EXTRACTION_EXECUTOR
+    executor.submit(_run_aggregate_extraction_task, task_id, generation, overwrite)
+
+
+def _run_aggregate_extraction_task(task_id: str, generation: int, overwrite: bool = False) -> None:
+    generation_key = f"task:{task_id}"
+    with background_job_lock("extraction-task", task_id) as acquired:
+        if not acquired:
+            return
+        with EXTRACTION_STATE_LOCK:
+            if EXTRACTION_JOB_GENERATIONS.get(generation_key) != generation:
+                return
+        tasks = list_ai_extraction_tasks(DATABASE_PATH, task_ids=[task_id])
+        if not tasks:
+            return
+        task = tasks[0]
+        update_ai_extraction_task_status(
+            DATABASE_PATH, task_id, status="IN_PROGRESS", progress=1, error="", increment_attempt=True,
+        )
+        scope = {
+            key: task.get(key)
+            for key in (
+                "grain", "scope_key", "project_id", "job_id", "job_sequence_no", "well_id",
+                "team_id", "profession", "period_start", "period_end",
+            )
+        }
+        scope["scope_report_types"] = list(task.get("report_types") or [])
+        try:
+            _aggregate_extraction_values(
+                DATABASE_PATH, [scope], included_rule_ids={str(task.get("rule_id", "") or "")},
+                execute_missing=True, force=overwrite,
+            )
+            rows = load_aggregate_extraction_results(
+                DATABASE_PATH, rule_id=str(task.get("rule_id", "") or ""),
+                scope_keys=[str(task.get("scope_key", "") or "")],
+                target_field=str(task.get("target_field", "") or ""),
+            )
+            result = rows[0] if rows else {}
+            status = str(result.get("extraction_status", "") or "FAILED").upper()
+            if status == "COMPLETED":
+                update_ai_extraction_task_status(DATABASE_PATH, task_id, status="COMPLETED", progress=100, error="")
+            else:
+                update_ai_extraction_task_status(
+                    DATABASE_PATH, task_id, status="FAILED", progress=0,
+                    error=str(result.get("error_message", "") or "未生成提炼结果"),
+                )
+        except Exception as exc:
+            update_ai_extraction_task_status(
+                DATABASE_PATH, task_id, status="FAILED", progress=0, error=str(exc),
+            )
+
+
 def _invalidate_extraction_jobs(record_ids: Iterable[str]) -> None:
     with EXTRACTION_STATE_LOCK:
         for record_id in record_ids:
@@ -5197,9 +5632,16 @@ def _stop_active_extraction_jobs() -> int:
     global EXTRACTION_EXECUTOR
     active = [record for record in list_records(DATABASE_PATH) if str(record.get("extraction_status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}]
     record_ids = [str(record.get("record_id", "") or "") for record in active]
+    active_tasks = [
+        task for task in list_ai_extraction_tasks(DATABASE_PATH)
+        if str(task.get("status", "") or "").strip().upper() in {"QUEUED", "IN_PROGRESS"}
+    ]
     with EXTRACTION_STATE_LOCK:
         for record_id in record_ids:
             EXTRACTION_JOB_GENERATIONS[record_id] = EXTRACTION_JOB_GENERATIONS.get(record_id, 0) + 1
+        for task in active_tasks:
+            generation_key = f"task:{task.get('task_id', '')}"
+            EXTRACTION_JOB_GENERATIONS[generation_key] = EXTRACTION_JOB_GENERATIONS.get(generation_key, 0) + 1
         old_executor = EXTRACTION_EXECUTOR
         EXTRACTION_EXECUTOR = ThreadPoolExecutor(max_workers=EXTRACTION_WORKERS, thread_name_prefix="drp-extraction")
     old_executor.shutdown(wait=False, cancel_futures=True)
@@ -5212,7 +5654,12 @@ def _stop_active_extraction_jobs() -> int:
             progress=record.get("extraction_progress", "") or 0,
             error="",
         )
-    return len(record_ids)
+    for task in active_tasks:
+        update_ai_extraction_task_status(
+            DATABASE_PATH, str(task.get("task_id", "") or ""), status="STOPPED",
+            progress=int(task.get("progress") or 0), error="",
+        )
+    return len(active_tasks)
 
 
 def _extraction_job_is_current(record_id: str, generation: int) -> bool:
@@ -5409,43 +5856,266 @@ def _extraction_record_needs_processing(record: dict[str, object], current_versi
     return bool(current_version and str(record.get("extraction_version", "") or "") != current_version)
 
 
-def _extraction_queue_snapshot() -> dict[str, object]:
-    config = _load_ai_extraction_config()
-    current_version = str(config.get("version", "") or "")
-    enabled_rules = _enabled_extraction_rules()
-    records: list[dict[str, object]] = []
-    for record in list_records(DATABASE_PATH):
+def _extraction_task_id(rule_id: str, scope_key: str, target_field: str) -> str:
+    return hashlib.sha256(f"{rule_id}|{scope_key}|{target_field}".encode("utf-8")).hexdigest()
+
+
+def _extraction_task_profession(report_type: str) -> str:
+    return "workover" if report_type == "workover" else "drilling"
+
+
+def _extraction_task_period(report_date: str) -> tuple[str, str]:
+    value = str(report_date or "")[:10]
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return "", ""
+    year, month = int(value[:4]), int(value[5:7])
+    return f"{year:04d}-{month:02d}-01", f"{year:04d}-{month:02d}-{monthrange(year, month)[1]:02d}"
+
+
+def _extraction_task_scope(
+    grain: str,
+    record: dict[str, object],
+) -> dict[str, object] | None:
+    report_date = str(record.get("report_date", "") or "")[:10]
+    period_start, period_end = _extraction_task_period(report_date)
+    project_id = int(record.get("project_id") or 0)
+    job_id = int(record.get("job_id") or 0)
+    job_sequence_no = int(record.get("job_sequence_no") or 0)
+    well_id = int(record.get("well_id") or 0)
+    team_id = int(record.get("team_id") or 0)
+    profession = _extraction_task_profession(str(record.get("report_type", "") or ""))
+    if grain in {"detail_row", "report"}:
+        record_id = str(record.get("record_id", "") or "")
+        if not record_id:
+            return None
+        return {
+            "grain": grain, "scope_key": f"REPORT:{record_id}", "record_id": record_id,
+            "project_id": project_id, "job_id": job_id, "job_sequence_no": job_sequence_no,
+            "well_id": well_id, "team_id": team_id, "profession": profession,
+            "period_start": report_date, "period_end": report_date,
+        }
+    scope = _canonical_aggregate_scope({
+        "grain": grain, "project_id": project_id, "job_id": job_id,
+        "job_sequence_no": job_sequence_no, "well_id": well_id, "team_id": team_id,
+        "profession": profession, "period_start": period_start, "period_end": period_end,
+    })
+    scope_key = _aggregate_scope_key(scope)
+    if not scope_key:
+        return None
+    scope["scope_key"] = scope_key
+    return scope
+
+
+def _extraction_task_scope_label(scope: dict[str, object], records: list[dict[str, object]]) -> str:
+    first = records[0] if records else {}
+    grain = str(scope.get("grain", "") or "")
+    well_name = str(first.get("well_name", "") or "未匹配井")
+    team_name = str(first.get("team_name", "") or "未匹配井队")
+    project_name = str(first.get("project_name", "") or "未匹配项目")
+    profession = "修井" if str(scope.get("profession", "")) == "workover" else "钻井"
+    period = str(scope.get("period_start", "") or "")[:7]
+    if grain in {"detail_row", "report"}:
+        return f"{first.get('report_date', '')} · {well_name}"
+    if grain == "well_job":
+        return f"{project_name} · {well_name} · 第{int(scope.get('job_sequence_no') or 0)}次作业"
+    if grain == "well_month":
+        return f"{period} · {project_name} · {well_name} · {profession}"
+    if grain == "team_month":
+        return f"{period} · {team_name} · {profession}"
+    return well_name or team_name
+
+
+def _extraction_task_source_hash(
+    rule: dict[str, object],
+    records: list[dict[str, object]],
+    payloads: dict[str, dict[str, object]],
+    classifications: dict[tuple[str, int], dict[str, Any]],
+) -> tuple[str, list[dict[str, object]]]:
+    source_rows: list[dict[str, str]] = []
+    task_sources: list[dict[str, object]] = []
+    for record in records:
         record_id = str(record.get("record_id", "") or "")
         report_type = str(record.get("report_type", "") or "")
-        try:
-            report_payload = load_report_payload(DATABASE_PATH, record_id)
-        except (KeyError, FileNotFoundError, ValueError):
+        payload = payloads.get(record_id, {})
+        unit, sources = _aggregate_rule_record_unit(
+            payload, rule, report_type, record_id, classifications,
+        ) if isinstance(payload, dict) else (None, [])
+        source_text = str(unit.get("source_text", "") or "") if unit else ""
+        if not source_text:
             continue
-        if not _payload_has_extraction_units(report_payload, report_type, enabled_rules):
-            continue
-        status = str(record.get("extraction_status", "") or "PENDING").strip().upper()
-        error = str(record.get("extraction_error", "") or "").strip()
-        if error and status not in {"QUEUED", "IN_PROGRESS", "COMPLETED", "NOT_REQUIRED"}:
-            status = "FAILED"
-        version = str(record.get("extraction_version", "") or "")
-        stale = bool(version and current_version and version != current_version)
-        effective_status = "STALE" if stale and status == "COMPLETED" else status
-        records.append({
+        source_rows.append({"record_id": record_id, "source_text": source_text})
+        task_sources.append({
             "record_id": record_id, "report_type": report_type,
-            "report_date": record.get("reportDate", ""), "report_no": record.get("reportNo", ""),
-            "wellbore": record.get("wellbore", ""), "rig": record.get("rig", ""),
-            "status": effective_status, "progress": record.get("extraction_progress", ""),
-            "error": error, "version": version,
-            "updated_at": record.get("extraction_updated_at", ""),
-            "needs_extraction": _extraction_record_needs_processing(record, current_version),
+            "report_date": str(record.get("report_date", "") or ""),
+            "well_name": str(record.get("well_name", "") or ""),
+            "team_name": str(record.get("team_name", "") or ""),
+            "source_fields": [f"{item.get('section', '')}.{item.get('field', '')}" for item in sources],
+            "source_hash": hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
         })
+    encoded = json.dumps(
+        {"pipeline": AI_EXTRACTION_PIPELINE_VERSION, "sources": source_rows},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest(), task_sources
+
+
+def _reconcile_ai_extraction_tasks() -> dict[str, object]:
+    """Build one durable task per enabled rule and business-grain scope."""
+    config = _load_ai_extraction_config()
+    version = str(config.get("version", "") or "")
+    rules = [rule for rule in config.get("rules", []) if isinstance(rule, dict) and rule.get("enabled")]
+    source_records = list_ai_extraction_source_records(DATABASE_PATH)
+    record_ids = [str(row.get("record_id", "") or "") for row in source_records if row.get("record_id")]
+    payloads = load_report_payloads(DATABASE_PATH, record_ids, include_translations=False) if record_ids else {}
+    classifications = load_activity_classifications(DATABASE_PATH, record_ids) if record_ids else {}
+    existing_tasks = {
+        str(row.get("task_id", "") or ""): row
+        for row in list_ai_extraction_tasks(DATABASE_PATH, active_only=False)
+    }
+    detail_results = load_extraction_results(DATABASE_PATH)
+    detail_by_rule_record: dict[tuple[str, str], list[dict[str, object]]] = {}
+    for row in detail_results:
+        detail_by_rule_record.setdefault(
+            (str(row.get("rule_id", "") or ""), str(row.get("record_id", "") or "")), [],
+        ).append(row)
+    aggregate_results = {
+        (str(row.get("scope_key", "") or ""), str(row.get("rule_id", "") or ""), str(row.get("target_field", "") or "")): row
+        for row in load_aggregate_extraction_results(DATABASE_PATH)
+    }
+    tasks: list[dict[str, object]] = []
+    task_sources: list[dict[str, object]] = []
+    covered_record_ids: set[str] = set()
+    now = datetime.now().isoformat(timespec="seconds")
+    for rule in rules:
+        rule_id = str(rule.get("id", "") or "")
+        grain = str(rule.get("grain", "report") or "report")
+        target_field = str(rule.get("target_field", "") or "")
+        applicable = [
+            record for record in source_records
+            if _ai_extraction_rule_applies(rule, str(record.get("report_type", "") or ""))
+        ]
+        grouped: dict[str, tuple[dict[str, object], list[dict[str, object]]]] = {}
+        for record in applicable:
+            scope = _extraction_task_scope(grain, record)
+            if not scope:
+                continue
+            scope_key = str(scope.get("scope_key", "") or "")
+            if grain in {"detail_row", "report"}:
+                payload = payloads.get(str(record.get("record_id", "") or ""), {})
+                if not _ai_extraction_units(payload, rule):
+                    continue
+            if scope_key not in grouped:
+                grouped[scope_key] = (scope, [])
+            grouped[scope_key][1].append(record)
+        for scope_key, (scope, records) in grouped.items():
+            records.sort(key=lambda item: (
+                str(item.get("report_date", "") or ""), str(item.get("report_type", "") or ""),
+                str(item.get("record_id", "") or ""),
+            ))
+            task_id = _extraction_task_id(rule_id, scope_key, target_field)
+            source_hash, sources = _extraction_task_source_hash(rule, records, payloads, classifications)
+            if target_field == "nonproductive_description" and not sources:
+                continue
+            old_task = existing_tasks.get(task_id, {})
+            result: dict[str, object] = {}
+            if grain in {"detail_row", "report"}:
+                result_rows = detail_by_rule_record.get((rule_id, str(scope.get("record_id", "") or "")), [])
+                if result_rows:
+                    payload = payloads.get(str(scope.get("record_id", "") or ""), {})
+                    expected_units = _ai_extraction_units(payload, rule)
+                    result_map = {
+                        (
+                            str(item.get("source_section", "") or ""), int(item.get("source_row_no", 0) or 0),
+                            str(item.get("target_field", "") or ""),
+                        ): item for item in result_rows
+                    }
+                    all_completed = bool(expected_units) and all(
+                        (
+                            (saved := result_map.get((
+                                str(unit.get("source_section", "") or ""), int(unit.get("source_row_no", 0) or 0),
+                                target_field,
+                            ))) is not None
+                            and str(saved.get("extraction_status", "") or "").upper() == "COMPLETED"
+                            and str(saved.get("rule_version", "") or "") == version
+                            and str(saved.get("source_hash", "") or "") == hashlib.sha256(
+                                str(unit.get("source_text", "") or "").encode("utf-8")
+                            ).hexdigest()
+                        ) for unit in expected_units
+                    )
+                    result = {"extraction_status": "COMPLETED" if all_completed else "STALE", "rule_version": version if all_completed else ""}
+            else:
+                result = aggregate_results.get((scope_key, rule_id, target_field), {})
+            result_status = str(result.get("extraction_status", "") or "").upper()
+            result_current = (
+                result_status == "COMPLETED"
+                and str(result.get("rule_version", "") or "") == version
+                and (grain in {"detail_row", "report"} or str(result.get("source_hash", "") or "") == source_hash)
+            )
+            previous_status = str(old_task.get("status", "") or "").upper()
+            same_manifest = (
+                str(old_task.get("source_hash", "") or "") == source_hash
+                and str(old_task.get("rule_version", "") or "") == version
+            )
+            if result_current:
+                status, progress, error = "COMPLETED", 100, ""
+            elif same_manifest and previous_status in {"QUEUED", "IN_PROGRESS", "FAILED", "STOPPED"}:
+                status = previous_status
+                progress = int(old_task.get("progress") or 0)
+                error = str(old_task.get("error_message", "") or "")
+            elif not result and not old_task.get("completed_at") and int(old_task.get("attempt_count") or 0) == 0:
+                status, progress, error = "PENDING", 0, ""
+            elif result or old_task:
+                status, progress, error = "STALE", 0, ""
+            else:
+                status, progress, error = "PENDING", 0, ""
+            report_types = list(dict.fromkeys(str(item.get("report_type", "") or "") for item in records))
+            first = records[0]
+            task = {
+                **scope, "task_id": task_id, "rule_id": rule_id,
+                "rule_name": str(rule.get("name", "") or ""),
+                "scope_label": _extraction_task_scope_label(scope, records),
+                "well_name": str(first.get("well_name", "") or ""),
+                "team_name": str(first.get("team_name", "") or ""),
+                "report_types": report_types, "target_field": target_field,
+                "target_field_label": str(rule.get("target_field_label", target_field) or target_field),
+                "source_record_count": len(sources), "source_hash": source_hash,
+                "rule_version": version, "status": status, "progress": progress,
+                "attempt_count": int(old_task.get("attempt_count") or result.get("attempt_count") or 0),
+                "error_message": error, "started_at": str(old_task.get("started_at", "") or ""),
+                "completed_at": str(result.get("completed_at", "") or old_task.get("completed_at", "") or ""),
+                "updated_at": str(result.get("updated_at", "") or old_task.get("updated_at", "") or now),
+            }
+            tasks.append(task)
+            for source in sources:
+                source["task_id"] = task_id
+                task_sources.append(source)
+                covered_record_ids.add(str(source.get("record_id", "") or ""))
+    save_ai_extraction_tasks(DATABASE_PATH, tasks, task_sources, replace_manifest=True)
     return {
-        "current_version": current_version, "worker_count": EXTRACTION_WORKERS,
-        "auto_execute": bool(config.get("auto_execute", True)),
-        "pending_count": sum(1 for item in records if item["needs_extraction"] and item["status"] != "FAILED"),
-        "failed_count": sum(1 for item in records if item["status"] == "FAILED"),
-        "processing_count": sum(1 for item in records if item["status"] in {"QUEUED", "IN_PROGRESS"}),
-        "is_running": any(item["status"] in {"QUEUED", "IN_PROGRESS"} for item in records),
+        "task_count": len(tasks), "source_report_count": len(covered_record_ids),
+        "total_report_count": len(source_records),
+    }
+
+
+def _extraction_queue_snapshot() -> dict[str, object]:
+    coverage = _reconcile_ai_extraction_tasks()
+    records = list_ai_extraction_tasks(DATABASE_PATH)
+    for item in records:
+        item["error"] = str(item.get("error_message", "") or "")
+        item["needs_extraction"] = str(item.get("status", "") or "").upper() in {
+            "PENDING", "STALE", "STOPPED", "FAILED", "",
+        }
+        item["version"] = str(item.get("rule_version", "") or "")
+    return {
+        "current_version": str(_load_ai_extraction_config().get("version", "") or ""),
+        "worker_count": EXTRACTION_WORKERS,
+        "auto_execute": bool(_load_ai_extraction_config().get("auto_execute", True)),
+        "pending_count": sum(1 for item in records if str(item.get("status", "")).upper() in {"PENDING", "STALE", "STOPPED"}),
+        "failed_count": sum(1 for item in records if str(item.get("status", "")).upper() == "FAILED"),
+        "completed_count": sum(1 for item in records if str(item.get("status", "")).upper() == "COMPLETED"),
+        "processing_count": sum(1 for item in records if str(item.get("status", "")).upper() in {"QUEUED", "IN_PROGRESS"}),
+        "is_running": any(str(item.get("status", "")).upper() in {"QUEUED", "IN_PROGRESS"} for item in records),
+        **coverage,
         "records": records,
     }
 
@@ -5459,6 +6129,14 @@ def _resume_extraction_jobs() -> None:
         record_id = str(record.get("record_id", "") or "")
         update_record_extraction_status(DATABASE_PATH, record_id, status="QUEUED", progress=0, error="")
         _schedule_extraction_job(record_id)
+    for task in list_ai_extraction_tasks(DATABASE_PATH):
+        if str(task.get("grain", "") or "") in {"detail_row", "report"}:
+            continue
+        if str(task.get("status", "") or "").strip().upper() not in {"QUEUED", "IN_PROGRESS"}:
+            continue
+        task_id = str(task.get("task_id", "") or "")
+        update_ai_extraction_task_status(DATABASE_PATH, task_id, status="QUEUED", progress=0, error="")
+        _schedule_aggregate_extraction_task(task_id)
 
 
 def _translation_record_needs_processing(record: dict[str, object], current_version: str) -> bool:
@@ -6778,6 +7456,7 @@ def _monthly_drilling_basic_workbook_bytes(payload: dict[str, object]) -> bytes:
         workbook.calculation.calcMode = "auto"
         workbook.calculation.fullCalcOnLoad = True
         workbook.calculation.forceFullCalc = True
+    _remove_blank_default_worksheets(workbook)
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
@@ -6893,6 +7572,7 @@ def _monthly_workover_basic_workbook_bytes(payload: dict[str, object]) -> bytes:
         workbook.calculation.calcMode = "auto"
         workbook.calculation.fullCalcOnLoad = True
         workbook.calculation.forceFullCalc = True
+    _remove_blank_default_worksheets(workbook)
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
@@ -6918,6 +7598,16 @@ def _monthly_drilling_workover_efficiency_report_payload(database_path: Path, pa
         period_start=str(source.get("month_start", "") or ""), period_end=str(source.get("month_end", "") or ""),
         included_target_fields={"nonproductive_description", "efficiency_monthly_remarks"},
     )
+    for row in rows:
+        nonproductive_hours = sum(
+            _safe_float(row.get(key))
+            for key in (
+                "paid_repair_hours", "zero_rate_repair_hours",
+                "accident_complex_hours", "other_hours",
+            )
+        )
+        if nonproductive_hours <= 0:
+            row["nonproductive_description"] = "无"
     return {
         "report_month": selected_month,
         "report_date": selected_date,
@@ -6989,6 +7679,7 @@ def _monthly_drilling_workover_efficiency_workbook_bytes(payload: dict[str, obje
         workbook.calculation.calcMode = "auto"
         workbook.calculation.fullCalcOnLoad = True
         workbook.calculation.forceFullCalc = True
+    _remove_blank_default_worksheets(workbook)
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
@@ -7210,9 +7901,31 @@ def _monthly_team_workload_workbook_bytes(payload: dict[str, object]) -> bytes:
         workbook.calculation.calcMode = "auto"
         workbook.calculation.fullCalcOnLoad = True
         workbook.calculation.forceFullCalc = True
+    _remove_blank_default_worksheets(workbook)
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
+
+
+def _remove_blank_default_worksheets(workbook: Workbook) -> None:
+    """Remove empty default sheets without touching intentional report sheets."""
+
+    default_sheet_pattern = re.compile(r"^Sheet\d*$", re.IGNORECASE)
+    for worksheet in list(workbook.worksheets):
+        if len(workbook.worksheets) <= 1 or not default_sheet_pattern.fullmatch(worksheet.title):
+            continue
+        has_values = any(
+            cell.value not in (None, "")
+            for row in worksheet.iter_rows()
+            for cell in row
+        )
+        has_objects = bool(
+            getattr(worksheet, "_images", [])
+            or getattr(worksheet, "_charts", [])
+            or getattr(worksheet, "tables", {})
+        )
+        if not has_values and not has_objects:
+            workbook.remove(worksheet)
 
 
 def _normalize_monthly_workbook_style(
